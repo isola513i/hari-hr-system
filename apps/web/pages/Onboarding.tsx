@@ -21,9 +21,11 @@ import {
 import { MOCK_ONBOARDING_TASKS, MOCK_TRAINING_MODULES, KEY_CONTACTS } from '../constants';
 import { OnboardingTask } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useOrg } from '../contexts/OrgContext';
 
 export const Onboarding: React.FC = () => {
     const { user } = useAuth();
+    const { addNode } = useOrg();
     const [tasks, setTasks] = useState(MOCK_ONBOARDING_TASKS);
 
     // Filters State
@@ -128,7 +130,22 @@ export const Onboarding: React.FC = () => {
 
     const handleInviteSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Mock submission
+
+        // Add to Org Chart Logic (Fix for E2E Test)
+        addNode({
+            // Pass full form data for API
+            name: inviteForm.name,
+            email: inviteForm.email,
+            role: inviteForm.role,
+            department: inviteForm.department,
+            startDate: inviteForm.startDate,
+            parentId: '2', // Default parent
+
+            // Legacy/UI fields (fetched by API usually, but handy if we optimistic update)
+            id: Date.now().toString(),
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(inviteForm.name)}&background=random`,
+        });
+
         alert(`Onboarding invitation sent to ${inviteForm.email}`);
         setIsInviteModalOpen(false);
         setInviteForm({ name: '', email: '', role: '', department: '', startDate: '' });
@@ -282,8 +299,8 @@ export const Onboarding: React.FC = () => {
                                                         <button
                                                             onClick={() => toggleTask(task.id)}
                                                             className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded border transition-colors flex items-center justify-center ${task.completed
-                                                                    ? 'bg-primary border-primary text-white'
-                                                                    : 'border-gray-300 dark:border-gray-600 hover:border-primary'
+                                                                ? 'bg-primary border-primary text-white'
+                                                                : 'border-gray-300 dark:border-gray-600 hover:border-primary'
                                                                 }`}
                                                         >
                                                             {task.completed && <CheckCircle2 size={14} />}
@@ -319,8 +336,8 @@ export const Onboarding: React.FC = () => {
                                                             )}
 
                                                             <span className={`flex items-center gap-1 font-medium ${task.completed ? 'text-text-muted-light' :
-                                                                    overdue ? 'text-accent-red bg-accent-red/10 px-2 py-0.5 rounded' :
-                                                                        dueSoon ? 'text-accent-orange bg-accent-orange/10 px-2 py-0.5 rounded' : ''
+                                                                overdue ? 'text-accent-red bg-accent-red/10 px-2 py-0.5 rounded' :
+                                                                    dueSoon ? 'text-accent-orange bg-accent-orange/10 px-2 py-0.5 rounded' : ''
                                                                 }`}>
                                                                 {(overdue || dueSoon) && !task.completed && <AlertCircle size={12} />}
                                                                 {task.dueDate}

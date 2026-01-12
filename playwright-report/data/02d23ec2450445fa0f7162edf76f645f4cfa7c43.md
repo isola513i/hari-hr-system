@@ -1,0 +1,196 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - complementary [ref=e5]:
+    - generic [ref=e7]:
+      - generic [ref=e9]: "N"
+      - generic [ref=e10]:
+        - heading "NexusHR" [level=1] [ref=e11]
+        - paragraph [ref=e12]: Admin Workspace
+    - navigation [ref=e13]:
+      - paragraph [ref=e14]: Menu
+      - link "Dashboard" [ref=e15] [cursor=pointer]:
+        - /url: "#/"
+        - img [ref=e16]
+        - generic [ref=e21]: Dashboard
+      - link "Well-being" [ref=e22] [cursor=pointer]:
+        - /url: "#/wellbeing"
+        - img [ref=e23]
+        - generic [ref=e26]: Well-being
+      - link "Employees" [ref=e27] [cursor=pointer]:
+        - /url: "#/employees"
+        - img [ref=e28]
+        - generic [ref=e33]: Employees
+      - link "Org Chart" [ref=e34] [cursor=pointer]:
+        - /url: "#/org-chart"
+        - img [ref=e35]
+        - generic [ref=e40]: Org Chart
+      - link "Onboarding" [ref=e41] [cursor=pointer]:
+        - /url: "#/onboarding"
+        - img [ref=e42]
+        - generic [ref=e45]: Onboarding
+      - link "Compliance" [ref=e46] [cursor=pointer]:
+        - /url: "#/compliance"
+        - img [ref=e47]
+        - generic [ref=e50]: Compliance
+      - link "Analytics" [ref=e51] [cursor=pointer]:
+        - /url: "#/analytics"
+        - img [ref=e52]
+        - generic [ref=e53]: Analytics
+      - link "Documents" [ref=e54] [cursor=pointer]:
+        - /url: "#/documents"
+        - img [ref=e55]
+        - generic [ref=e58]: Documents
+    - generic [ref=e60]:
+      - link "Settings" [ref=e61] [cursor=pointer]:
+        - /url: "#/settings"
+        - img [ref=e62]
+        - generic [ref=e65]: Settings
+      - link "Help & Support" [ref=e66] [cursor=pointer]:
+        - /url: "#/help"
+        - img [ref=e67]
+        - generic [ref=e70]: Help & Support
+      - link "Sign Out" [ref=e71] [cursor=pointer]:
+        - /url: "#"
+        - img [ref=e72]
+        - generic [ref=e75]: Sign Out
+  - generic [ref=e76]:
+    - banner [ref=e77]:
+      - generic [ref=e79]:
+        - img [ref=e80]
+        - textbox "Search employees, documents, policies..." [ref=e83]
+      - generic [ref=e84]:
+        - generic [ref=e85]:
+          - button "Admin View" [ref=e86] [cursor=pointer]
+          - button "Employee View" [ref=e87] [cursor=pointer]
+        - button "Toggle Theme" [ref=e88] [cursor=pointer]:
+          - img [ref=e89]
+        - button [ref=e91] [cursor=pointer]:
+          - img [ref=e92]
+        - button "User Olivia Roe CHRO" [ref=e98] [cursor=pointer]:
+          - img "User" [ref=e99]
+          - generic [ref=e100]:
+            - paragraph [ref=e101]: Olivia Roe
+            - paragraph [ref=e102]:
+              - img [ref=e103]
+              - text: CHRO
+          - img [ref=e105]
+    - main [ref=e107]:
+      - navigation "Breadcrumb" [ref=e108]:
+        - link "Home" [ref=e109] [cursor=pointer]:
+          - /url: "#/"
+          - img [ref=e110]
+          - generic [ref=e113]: Home
+        - img [ref=e114]
+        - generic [ref=e116]: Org Chart
+      - generic [ref=e117]:
+        - generic [ref=e118]:
+          - generic [ref=e119]:
+            - heading "Organizational Structure" [level=1] [ref=e120]
+            - paragraph [ref=e121]: Hover over cards to add, edit or remove people.
+          - generic [ref=e122]:
+            - generic [ref=e123]:
+              - img [ref=e124]
+              - textbox "Find employee..." [ref=e127]
+            - generic [ref=e128]:
+              - generic [ref=e129]:
+                - img [ref=e130]
+                - slider [ref=e133] [cursor=pointer]: "1"
+                - img [ref=e134]
+              - button "Reset Zoom" [ref=e138] [cursor=pointer]:
+                - img [ref=e139]
+        - generic [ref=e144]:
+          - generic [ref=e145]:
+            - generic [ref=e146]:
+              - img "Ava Chen" [ref=e147]
+              - heading "Ava Chen" [level=3] [ref=e148]
+              - paragraph [ref=e149]: CEO
+              - button [ref=e150] [cursor=pointer]:
+                - img [ref=e151]
+            - generic [ref=e153]:
+              - button "Edit" [ref=e154] [cursor=pointer]:
+                - img [ref=e155]
+              - button "Add Subordinate" [ref=e157] [cursor=pointer]:
+                - img [ref=e158]
+          - generic [ref=e161]:
+            - generic [ref=e165]:
+              - generic [ref=e166]:
+                - generic [ref=e167]:
+                  - img "David Lee" [ref=e168]
+                  - heading "David Lee" [level=3] [ref=e169]
+                  - paragraph [ref=e170]: CTO
+                  - button [ref=e171] [cursor=pointer]:
+                    - img [ref=e172]
+                - generic [ref=e174]:
+                  - button "Edit" [ref=e175] [cursor=pointer]:
+                    - img [ref=e176]
+                  - button "Add Subordinate" [ref=e178] [cursor=pointer]:
+                    - img [ref=e179]
+                  - button "Delete" [ref=e180] [cursor=pointer]:
+                    - img [ref=e181]
+              - generic [ref=e186]:
+                - generic [ref=e191]:
+                  - generic [ref=e192]:
+                    - img "Noah Brown" [ref=e193]
+                    - heading "Noah Brown" [level=3] [ref=e194]
+                    - paragraph [ref=e195]: Frontend Lead
+                  - generic [ref=e196]:
+                    - button "Edit" [ref=e197] [cursor=pointer]:
+                      - img [ref=e198]
+                    - button "Add Subordinate" [ref=e200] [cursor=pointer]:
+                      - img [ref=e201]
+                    - button "Delete" [ref=e202] [cursor=pointer]:
+                      - img [ref=e203]
+                - generic [ref=e209]:
+                  - generic [ref=e210]:
+                    - img "James Miller" [ref=e211]
+                    - heading "James Miller" [level=3] [ref=e212]
+                    - paragraph [ref=e213]: Backend Lead
+                  - generic [ref=e214]:
+                    - button "Edit" [ref=e215] [cursor=pointer]:
+                      - img [ref=e216]
+                    - button "Add Subordinate" [ref=e218] [cursor=pointer]:
+                      - img [ref=e219]
+                    - button "Delete" [ref=e220] [cursor=pointer]:
+                      - img [ref=e221]
+            - generic [ref=e226]:
+              - generic [ref=e227]:
+                - generic [ref=e228]:
+                  - img "Olivia Roe" [ref=e229]
+                  - heading "Olivia Roe" [level=3] [ref=e230]
+                  - paragraph [ref=e231]: CHRO
+                  - button [ref=e232] [cursor=pointer]:
+                    - img [ref=e233]
+                - generic [ref=e235]:
+                  - button "Edit" [ref=e236] [cursor=pointer]:
+                    - img [ref=e237]
+                  - button "Add Subordinate" [ref=e239] [cursor=pointer]:
+                    - img [ref=e240]
+                  - button "Delete" [ref=e241] [cursor=pointer]:
+                    - img [ref=e242]
+              - generic [ref=e251]:
+                - generic [ref=e252]:
+                  - img "Recruiting" [ref=e253]
+                  - heading "Recruiting" [level=3] [ref=e254]
+                  - paragraph [ref=e255]: Team Lead
+                - generic [ref=e256]:
+                  - button "Edit" [ref=e257] [cursor=pointer]:
+                    - img [ref=e258]
+                  - button "Add Subordinate" [ref=e260] [cursor=pointer]:
+                    - img [ref=e261]
+                  - button "Delete" [ref=e262] [cursor=pointer]:
+                    - img [ref=e263]
+            - generic [ref=e269]:
+              - generic [ref=e270]:
+                - img "Sarah Jones" [ref=e271]
+                - heading "Sarah Jones" [level=3] [ref=e272]
+                - paragraph [ref=e273]: CFO
+              - generic [ref=e274]:
+                - button "Edit" [ref=e275] [cursor=pointer]:
+                  - img [ref=e276]
+                - button "Add Subordinate" [ref=e278] [cursor=pointer]:
+                  - img [ref=e279]
+                - button "Delete" [ref=e280] [cursor=pointer]:
+                  - img [ref=e281]
+```

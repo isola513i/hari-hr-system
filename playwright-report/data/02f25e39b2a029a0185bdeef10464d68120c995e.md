@@ -1,0 +1,263 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - complementary [ref=e5]:
+      - generic [ref=e7]:
+        - generic [ref=e9]: "N"
+        - generic [ref=e10]:
+          - heading "NexusHR" [level=1] [ref=e11]
+          - paragraph [ref=e12]: Admin Workspace
+      - navigation [ref=e13]:
+        - paragraph [ref=e14]: Menu
+        - link "Dashboard" [ref=e15] [cursor=pointer]:
+          - /url: "#/"
+          - img [ref=e16]
+          - generic [ref=e21]: Dashboard
+        - link "Well-being" [ref=e22] [cursor=pointer]:
+          - /url: "#/wellbeing"
+          - img [ref=e23]
+          - generic [ref=e26]: Well-being
+        - link "Employees" [ref=e27] [cursor=pointer]:
+          - /url: "#/employees"
+          - img [ref=e28]
+          - generic [ref=e33]: Employees
+        - link "Org Chart" [ref=e34] [cursor=pointer]:
+          - /url: "#/org-chart"
+          - img [ref=e35]
+          - generic [ref=e40]: Org Chart
+        - link "Onboarding" [ref=e41] [cursor=pointer]:
+          - /url: "#/onboarding"
+          - img [ref=e42]
+          - generic [ref=e45]: Onboarding
+        - link "Compliance" [ref=e46] [cursor=pointer]:
+          - /url: "#/compliance"
+          - img [ref=e47]
+          - generic [ref=e50]: Compliance
+        - link "Analytics" [ref=e51] [cursor=pointer]:
+          - /url: "#/analytics"
+          - img [ref=e52]
+          - generic [ref=e53]: Analytics
+        - link "Documents" [ref=e54] [cursor=pointer]:
+          - /url: "#/documents"
+          - img [ref=e55]
+          - generic [ref=e58]: Documents
+      - generic [ref=e60]:
+        - link "Settings" [ref=e61] [cursor=pointer]:
+          - /url: "#/settings"
+          - img [ref=e62]
+          - generic [ref=e65]: Settings
+        - link "Help & Support" [ref=e66] [cursor=pointer]:
+          - /url: "#/help"
+          - img [ref=e67]
+          - generic [ref=e70]: Help & Support
+        - link "Sign Out" [ref=e71] [cursor=pointer]:
+          - /url: "#"
+          - img [ref=e72]
+          - generic [ref=e75]: Sign Out
+    - generic [ref=e76]:
+      - banner [ref=e77]:
+        - generic [ref=e79]:
+          - img [ref=e80]
+          - textbox "Search employees, documents, policies..." [ref=e83]
+        - generic [ref=e84]:
+          - generic [ref=e85]:
+            - button "Admin View" [ref=e86] [cursor=pointer]
+            - button "Employee View" [ref=e87] [cursor=pointer]
+          - button "Toggle Theme" [ref=e88] [cursor=pointer]:
+            - img [ref=e89]
+          - button [ref=e91] [cursor=pointer]:
+            - img [ref=e92]
+          - button "User Olivia Roe CHRO" [ref=e98] [cursor=pointer]:
+            - img "User" [ref=e99]
+            - generic [ref=e100]:
+              - paragraph [ref=e101]: Olivia Roe
+              - paragraph [ref=e102]:
+                - img [ref=e103]
+                - text: CHRO
+            - img [ref=e105]
+      - main [ref=e107]:
+        - navigation "Breadcrumb" [ref=e108]:
+          - link "Home":
+            - /url: "#/"
+            - img
+            - generic: Home
+        - generic [ref=e109]:
+          - generic [ref=e110]:
+            - generic [ref=e111]:
+              - heading "HR Overview" [level=1] [ref=e112]
+              - paragraph [ref=e113]: Welcome back, Olivia. Here's what's happening today.
+            - generic [ref=e114]:
+              - button "Approve Leave 2" [ref=e115] [cursor=pointer]:
+                - img [ref=e116]
+                - text: Approve Leave
+                - generic [ref=e119]: "2"
+              - button "Initiate Onboarding" [ref=e120] [cursor=pointer]:
+                - img [ref=e121]
+                - text: Initiate Onboarding
+              - button "Add Employee" [ref=e126] [cursor=pointer]:
+                - img [ref=e127]
+                - text: Add Employee
+          - generic [ref=e130]:
+            - generic [ref=e132] [cursor=pointer]:
+              - generic [ref=e133]:
+                - img [ref=e135]
+                - paragraph [ref=e138]: Active Employees
+              - generic [ref=e139]:
+                - paragraph [ref=e140]: "5"
+                - generic [ref=e141]:
+                  - img [ref=e142]
+                  - generic [ref=e145]: 2.5%
+            - generic [ref=e147] [cursor=pointer]:
+              - generic [ref=e148]:
+                - img [ref=e150]
+                - paragraph [ref=e153]: On Leave
+              - paragraph [ref=e155]: "1"
+            - generic [ref=e157] [cursor=pointer]:
+              - generic [ref=e158]:
+                - img [ref=e160]
+                - paragraph [ref=e163]: New Hires (Month)
+              - generic [ref=e164]:
+                - paragraph [ref=e165]: "0"
+                - generic [ref=e166]:
+                  - img [ref=e167]
+                  - generic [ref=e170]: 0%
+            - generic [ref=e172] [cursor=pointer]:
+              - generic [ref=e173]:
+                - img [ref=e175]
+                - paragraph [ref=e178]: Turnover Rate
+              - generic [ref=e179]:
+                - paragraph [ref=e180]: 2.1%
+                - generic [ref=e181]:
+                  - img [ref=e182]
+                  - generic [ref=e185]: 0.4%
+          - generic [ref=e186]:
+            - generic [ref=e187]:
+              - generic [ref=e188]:
+                - generic [ref=e189]:
+                  - img [ref=e191]
+                  - heading "Headcount Trends" [level=2] [ref=e196]
+                - button [ref=e197] [cursor=pointer]:
+                  - img [ref=e198]
+              - application [ref=e205]:
+                - generic [ref=e211]:
+                  - generic [ref=e212]:
+                    - generic [ref=e214]: Jan
+                    - generic [ref=e216]: Feb
+                    - generic [ref=e218]: Mar
+                    - generic [ref=e220]: Apr
+                    - generic [ref=e222]: May
+                    - generic [ref=e224]: Jun
+                  - generic [ref=e225]:
+                    - generic [ref=e227]: "0"
+                    - generic [ref=e229]: "35"
+                    - generic [ref=e231]: "70"
+                    - generic [ref=e233]: "105"
+                    - generic [ref=e235]: "140"
+            - generic [ref=e236]:
+              - generic [ref=e237]:
+                - heading "Events" [level=2] [ref=e239]
+                - button "View All" [ref=e240] [cursor=pointer]
+              - list [ref=e242]:
+                - listitem [ref=e243]:
+                  - img "Liam Johnson's Birthday" [ref=e244]
+                  - generic [ref=e245]:
+                    - paragraph [ref=e246]: Liam Johnson's Birthday
+                    - paragraph [ref=e247]:
+                      - img [ref=e248]
+                      - text: July 18th (Tomorrow)
+                - listitem [ref=e251]:
+                  - img [ref=e253]
+                  - generic [ref=e255]:
+                    - paragraph [ref=e256]: Q3 All-Hands Meeting
+                    - paragraph [ref=e257]: July 25th, 10:00 AM
+                - listitem [ref=e258]:
+                  - img [ref=e260]
+                  - generic [ref=e263]:
+                    - paragraph [ref=e264]: "Team Lunch: Engineering"
+                    - paragraph [ref=e265]: July 26th, 12:30 PM
+            - generic [ref=e266]:
+              - generic [ref=e267]:
+                - heading "Onboarding" [level=2] [ref=e269]
+                - button "View All" [ref=e270] [cursor=pointer]
+              - list [ref=e272]:
+                - listitem [ref=e273]:
+                  - generic [ref=e274]:
+                    - generic [ref=e275]:
+                      - paragraph [ref=e276]: James Miller
+                      - paragraph [ref=e277]: Backend Developer
+                    - paragraph [ref=e278]: 75%
+                - listitem [ref=e281]:
+                  - generic [ref=e282]:
+                    - generic [ref=e283]:
+                      - paragraph [ref=e284]: Chloe Davis
+                      - paragraph [ref=e285]: QA Engineer
+                    - paragraph [ref=e286]: 40%
+                - listitem [ref=e289]:
+                  - generic [ref=e290]:
+                    - generic [ref=e291]:
+                      - paragraph [ref=e292]: Ben Wilson
+                      - paragraph [ref=e293]: Product Analyst
+                    - paragraph [ref=e294]: 90%
+            - generic [ref=e297]:
+              - generic [ref=e298]:
+                - heading "Pending Leave Requests" [level=2] [ref=e300]
+                - generic [ref=e301]: 2 pending
+              - table [ref=e303]:
+                - rowgroup [ref=e304]:
+                  - row "Sophia Garcia Sophia Garcia Vacation Aug 1 - Aug 5 Approve Decline" [ref=e305]:
+                    - cell "Sophia Garcia Sophia Garcia" [ref=e306]:
+                      - generic [ref=e307]:
+                        - img "Sophia Garcia" [ref=e308]
+                        - generic [ref=e309]: Sophia Garcia
+                    - cell "Vacation" [ref=e310]
+                    - cell "Aug 1 - Aug 5" [ref=e311]
+                    - cell "Approve Decline" [ref=e312]:
+                      - generic [ref=e313]:
+                        - button "Approve" [ref=e314] [cursor=pointer]
+                        - button "Decline" [ref=e315] [cursor=pointer]
+                  - row "David Martinez David Martinez Sick Leave Jul 22 Approve Decline" [ref=e316]:
+                    - cell "David Martinez David Martinez" [ref=e317]:
+                      - generic [ref=e318]:
+                        - img "David Martinez" [ref=e319]
+                        - generic [ref=e320]: David Martinez
+                    - cell "Sick Leave" [ref=e321]
+                    - cell "Jul 22" [ref=e322]
+                    - cell "Approve Decline" [ref=e323]:
+                      - generic [ref=e324]:
+                        - button "Approve" [ref=e325] [cursor=pointer]
+                        - button "Decline" [ref=e326] [cursor=pointer]
+            - generic [ref=e327]:
+              - generic [ref=e328]:
+                - heading "Recent Activity" [level=2] [ref=e331]
+                - generic [ref=e332]:
+                  - generic [ref=e333]:
+                    - img [ref=e335]
+                    - generic [ref=e337]:
+                      - paragraph [ref=e338]: Olivia Roe onboarded new employee Leo Martinez
+                      - paragraph [ref=e339]: 2 hours ago
+                  - generic [ref=e340]:
+                    - img [ref=e342]
+                    - generic [ref=e344]:
+                      - paragraph [ref=e345]: System Admin approved leave request for Emma Williams
+                      - paragraph [ref=e346]: Yesterday, 4:30 PM
+                  - generic [ref=e347]:
+                    - img [ref=e349]
+                    - generic [ref=e351]:
+                      - paragraph [ref=e352]: Sophia Garcia updated the "Work From Home" policy
+                      - paragraph [ref=e353]: June 5, 2024, 11:15 AM
+                  - button "View Full Log" [ref=e354] [cursor=pointer]
+              - generic [ref=e355]:
+                - generic [ref=e356]:
+                  - heading "Quick Note" [level=2] [ref=e358]
+                  - button "Save" [ref=e359] [cursor=pointer]
+                - generic [ref=e360]:
+                  - textbox "Type a quick note or task here..." [ref=e361]
+                  - generic [ref=e362]:
+                    - generic [ref=e363]:
+                      - img [ref=e364]
+                      - text: Personal
+                    - generic [ref=e367]: 0 chars
+  - generic [ref=e368]: "0"
+```

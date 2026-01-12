@@ -188,17 +188,21 @@ export const MOCK_DOCUMENTS: DocumentItem[] = [
 export const MOCK_LEAVE_REQUESTS: LeaveRequest[] = [
   {
     id: '1',
+    employeeId: '4',
     employeeName: 'Sophia Garcia',
     type: 'Vacation',
     dates: 'Aug 1 - Aug 5',
+    days: 5,
     status: 'Pending',
     avatar: 'https://picsum.photos/id/1011/200/200',
   },
   {
     id: '2',
+    employeeId: 'mock-id-david', // David not in main list? Or logic gap. Keeping name consistent.
     employeeName: 'David Martinez',
     type: 'Sick Leave',
     dates: 'Jul 22',
+    days: 1,
     status: 'Pending',
     avatar: 'https://picsum.photos/id/1005/200/200',
   }
@@ -279,9 +283,9 @@ export const ONBOARDING_PROGRESS_SUMMARY: OnboardingProgressSummary[] = [
 ];
 
 export const UPCOMING_EVENTS: UpcomingEvent[] = [
-   { id: '1', title: "Liam Johnson's Birthday", date: "July 18th (Tomorrow)", type: 'Birthday', avatar: 'https://picsum.photos/id/1005/200/200', color: 'accent-red' },
-   { id: '2', title: "Q3 All-Hands Meeting", date: "July 25th, 10:00 AM", type: 'Meeting', color: 'accent-teal' },
-   { id: '3', title: "Team Lunch: Engineering", date: "July 26th, 12:30 PM", type: 'Social', color: 'primary' },
+  { id: '1', title: "Liam Johnson's Birthday", date: "July 18th (Tomorrow)", type: 'Birthday', avatar: 'https://picsum.photos/id/1005/200/200', color: 'accent-red' },
+  { id: '2', title: "Q3 All-Hands Meeting", date: "July 25th, 10:00 AM", type: 'Meeting', color: 'accent-teal' },
+  { id: '3', title: "Team Lunch: Engineering", date: "July 26th, 12:30 PM", type: 'Social', color: 'primary' },
 ];
 
 export const KEY_CONTACTS: KeyContact[] = [
@@ -291,9 +295,9 @@ export const KEY_CONTACTS: KeyContact[] = [
 ];
 
 export const MOCK_JOB_HISTORY: JobHistoryItem[] = [
-    { id: '1', role: 'Product Manager', department: 'Product', startDate: '2023-01-15', endDate: 'Present', description: 'Leading the core platform team, responsible for roadmap and strategy.' },
-    { id: '2', role: 'Associate Product Manager', department: 'Product', startDate: '2021-08-15', endDate: '2023-01-14', description: 'Managed feature requests and coordinated with engineering for timely delivery.' },
-    { id: '3', role: 'Product Analyst', department: 'Data Science', startDate: '2020-06-01', endDate: '2021-08-14', description: 'Analyzed user behavior data to inform product decisions.' }
+  { id: '1', role: 'Product Manager', department: 'Product', startDate: '2023-01-15', endDate: 'Present', description: 'Leading the core platform team, responsible for roadmap and strategy.' },
+  { id: '2', role: 'Associate Product Manager', department: 'Product', startDate: '2021-08-15', endDate: '2023-01-14', description: 'Managed feature requests and coordinated with engineering for timely delivery.' },
+  { id: '3', role: 'Product Analyst', department: 'Data Science', startDate: '2020-06-01', endDate: '2021-08-14', description: 'Analyzed user behavior data to inform product decisions.' }
 ];
 
 export const MOCK_EMPLOYEES_TRAINING: EmployeeTrainingRecord[] = [

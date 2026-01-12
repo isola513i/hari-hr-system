@@ -55,11 +55,20 @@ export interface ChartDataPoint {
 
 export interface LeaveRequest {
   id: string;
+  employeeId: string; // Added for correct linking
   employeeName: string;
   type: string;
   dates: string;
+  days: number; // Added for calculation
   status: 'Pending' | 'Approved' | 'Rejected';
   avatar: string;
+}
+
+export interface LeaveBalance {
+  type: string;
+  total: number;
+  used: number;
+  remaining: number;
 }
 
 export interface ComplianceItem {
