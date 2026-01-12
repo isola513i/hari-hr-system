@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     CheckCircle2,
     Circle,
@@ -18,15 +18,18 @@ import {
     Briefcase,
     ExternalLink
 } from 'lucide-react';
-import { MOCK_ONBOARDING_TASKS, MOCK_TRAINING_MODULES, KEY_CONTACTS } from '../constants';
-import { OnboardingTask } from '../types';
+import { OnboardingTask, KeyContact } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrg } from '../contexts/OrgContext';
 
 export const Onboarding: React.FC = () => {
     const { user } = useAuth();
     const { addNode } = useOrg();
-    const [tasks, setTasks] = useState(MOCK_ONBOARDING_TASKS);
+
+    // State
+    const [tasks, setTasks] = useState<OnboardingTask[]>([]);
+    const [keyContacts, setKeyContacts] = useState<KeyContact[]>([]);
+    const [loading, setLoading] = useState(true);
 
     // Filters State
     const [assigneeFilter, setAssigneeFilter] = useState<string>('All');
@@ -42,6 +45,26 @@ export const Onboarding: React.FC = () => {
         department: '',
         startDate: ''
     });
+
+    // Fetch Data
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [tasksRes, contactsRes] = await Promise.all([
+                    fetch('http://localhost:3000/api/tasks'),
+                    fetch('http://localhost:3000/api/contacts')
+                ]);
+
+                if (tasksRes.ok) setTasks(await tasksRes.json());
+                if (contactsRes.ok) setKeyContacts(await contactsRes.json());
+            } catch (error) {
+                console.error('Error fetching onboarding data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
     const toggleTask = (id: string) => {
         setTasks(tasks.map(task =>
@@ -363,7 +386,7 @@ export const Onboarding: React.FC = () => {
                             <h2 className="text-lg font-bold text-text-light dark:text-text-dark">Key Contacts</h2>
                         </div>
                         <div className="p-4 space-y-3">
-                            {KEY_CONTACTS.map(contact => (
+                            {keyContacts.map(contact => (
                                 <div key={contact.id} className="flex items-center gap-3 p-2 hover:bg-background-light dark:hover:bg-background-dark rounded-lg transition-colors">
                                     <img src={contact.avatar} alt={contact.name} className="w-10 h-10 rounded-full object-cover ring-1 ring-border-light dark:ring-border-dark" />
                                     <div className="flex-1 min-w-0">

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { LeaveRequest, LeaveBalance } from '../types';
-import { MOCK_LEAVE_REQUESTS } from '../constants';
+import { api } from '../lib/api';
+// Mocks removed
 
 interface LeaveContextType {
   requests: LeaveRequest[];
@@ -14,19 +15,17 @@ const LeaveContext = createContext<LeaveContextType | undefined>(undefined);
 export const LeaveProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [requests, setRequests] = useState<LeaveRequest[]>([]); // Start empty
 
+
+
+  // ...
+
   const fetchRequests = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/leave-requests');
-      if (response.ok) {
-        const data = await response.json();
-        setRequests(data);
-      } else {
-        console.error('Failed to fetch leave requests');
-        setRequests(MOCK_LEAVE_REQUESTS);
-      }
+      const data = await api.get<LeaveRequest[]>('/leave-requests');
+      setRequests(data);
     } catch (error) {
       console.error('Error fetching leave requests:', error);
-      setRequests(MOCK_LEAVE_REQUESTS);
+      setRequests([]);
     }
   };
 
@@ -35,50 +34,18 @@ export const LeaveProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, []);
 
   const addRequest = async (request: LeaveRequest) => {
-    // API expects: { employeeId, type, startDate, endDate, reason }
-    // request object has keys matching types.ts, which matches frontend needs
-    // We need to extract reason if it's there? type definition of LeaveRequest doesn't have reason?
-    // Let's check LeaveRequest in types.ts. It DOES NOT have reason. 
-    // But TimeOff.tsx form has reason.
-    // TimeOff constructs newRequest WITHOUT reason.
-    // I should probably add reason to LeaveRequest type later, but for now let's pass what we have.
-    // Actually, I can pass extra fields if I cast or if I change type.
-
-    // But wait, the API I wrote consumes 'reason'.
-    // I should stick to what `request` has for now.
-
     try {
-      // We need to parse dates string back to start/end?
-      // Ah, TimeOff calculated dates string but didn't keep raw start/end in the object passed to addRequest.
-      // This is a problem. Local state in TimeOff had it.
-      // I should update TimeOff to pass start/end date in the request object or separate args.
-      // For now, let's look at TimeOff again.
-      // TimeOff: const newRequest: LeaveRequest = { ... dates: dateString ... }
-      // It DOES NOT have startDate/endDate fields.
-
-      // I will fix TimeOff to pass startDate/endDate in the object (I need to update type first or just add it as extra prop)
-      // Or I can parse `dates` string... but that's brittle.
-      // Better: Update LeaveRequest type in types.ts to include startDate and endDate.
-
-      // For this step, I will assume I can pass them in `request`.
-      // Let's CAST it to any for API payload construction.
+      // Ensure payload matches API expectation even if types differ
       const payload = {
         employeeId: request.employeeId,
         type: request.type,
-        startDate: (request as any).startDate, // Need to ensure TimeOff passes this
-        endDate: (request as any).endDate,     // Need to ensure TimeOff passes this
-        reason: (request as any).reason        // Need to ensure TimeOff passes this
+        startDate: (request as any).startDate,
+        endDate: (request as any).endDate,
+        reason: (request as any).reason
       };
 
-      const response = await fetch('http://localhost:3000/api/leave-requests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        fetchRequests(); // Refresh
-      }
+      await api.post('/leave-requests', payload);
+      fetchRequests();
     } catch (e) {
       console.error(e);
     }
@@ -86,14 +53,8 @@ export const LeaveProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const updateRequestStatus = async (id: string, status: 'Approved' | 'Rejected') => {
     try {
-      const response = await fetch(`http://localhost:3000/api/leave-requests/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
-      });
-      if (response.ok) {
-        fetchRequests();
-      }
+      await api.patch(`/leave-requests/${id}`, { status });
+      fetchRequests();
     } catch (e) {
       console.error(e);
     }
@@ -101,19 +62,14 @@ export const LeaveProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const getLeaveBalance = async (employeeId: string): Promise<LeaveBalance[]> => {
     try {
-      const response = await fetch(`http://localhost:3000/api/leave-balances/${employeeId}`);
-      if (response.ok) {
-        return await response.json();
-      }
+      return await api.get<LeaveBalance[]>(`/leave-balances/${employeeId}`);
     } catch (e) {
       console.error(e);
+      return [
+        { type: 'Vacation', total: 20, used: 0, remaining: 20 },
+        { type: 'Sick Leave', total: 10, used: 0, remaining: 10 }
+      ];
     }
-    // Fallback if API fails (calc locally using quotas - duplicated logic or just return default)
-    // Return empty or default
-    return [
-      { type: 'Vacation', total: 20, used: 0, remaining: 20 },
-      { type: 'Sick Leave', total: 10, used: 0, remaining: 10 }
-    ];
   };
 
   return (

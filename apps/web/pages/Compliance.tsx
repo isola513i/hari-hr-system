@@ -1,8 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircle2, AlertCircle, Clock, UserPlus, CheckSquare, FileEdit, Download } from 'lucide-react';
-import { COMPLIANCE_ITEMS, AUDIT_LOGS } from '../constants';
+// Mocks removed
 
 export const Compliance: React.FC = () => {
+  const [items, setItems] = useState<any[]>([]);
+  const [logs, setLogs] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [compRes, logRes] = await Promise.all([
+          fetch('http://localhost:3000/api/compliance'),
+          fetch('http://localhost:3000/api/audit-logs')
+        ]);
+        if (compRes.ok) setItems(await compRes.json());
+        if (logRes.ok) setLogs(await logRes.json());
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchData();
+  }, []);
+
   return (
     <div className="space-y-6 animate-fade-in">
       <header className="flex flex-wrap justify-between items-center gap-4 mb-8">
@@ -27,7 +46,7 @@ export const Compliance: React.FC = () => {
               <p className="text-text-muted-light dark:text-text-muted-dark text-sm mt-1">Track key regulatory requirements.</p>
             </div>
             <div className="p-6 space-y-4">
-              {COMPLIANCE_ITEMS.map((item) => (
+              {items.map((item) => (
                 <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-background-light dark:bg-background-dark/50">
                   <div className="flex items-center gap-3">
                     {item.status === 'Complete' && <CheckCircle2 className="text-accent-green" size={20} />}
@@ -35,11 +54,10 @@ export const Compliance: React.FC = () => {
                     {item.status === 'Overdue' && <AlertCircle className="text-accent-red" size={20} />}
                     <p className="text-text-light dark:text-text-dark font-medium">{item.title}</p>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                    item.status === 'Complete' ? 'text-accent-green bg-accent-green/10' :
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${item.status === 'Complete' ? 'text-accent-green bg-accent-green/10' :
                     item.status === 'In Progress' ? 'text-accent-orange bg-accent-orange/10' :
-                    'text-accent-red bg-accent-red/10'
-                  }`}>
+                      'text-accent-red bg-accent-red/10'
+                    }`}>
                     {item.status}
                   </span>
                 </div>
@@ -54,16 +72,15 @@ export const Compliance: React.FC = () => {
               <p className="text-text-muted-light dark:text-text-muted-dark text-sm mt-1">Recent changes and approvals across the module.</p>
             </div>
             <div className="p-6 space-y-6">
-              {AUDIT_LOGS.map((log) => (
+              {logs.map((log) => (
                 <div key={log.id} className="flex items-start gap-4 relative">
-                  <div className={`rounded-full p-2 flex-shrink-0 ${
-                      log.type === 'user' ? 'bg-primary/10 text-primary' :
-                      log.type === 'leave' ? 'bg-accent-green/10 text-accent-green' :
+                  <div className={`rounded-full p-2 flex-shrink-0 ${log.type === 'user' ? 'bg-primary/10 text-primary' :
+                    log.type === 'leave' ? 'bg-accent-green/10 text-accent-green' :
                       'bg-accent-orange/10 text-accent-orange'
-                  }`}>
-                      {log.type === 'user' && <UserPlus size={16} />}
-                      {log.type === 'leave' && <CheckSquare size={16} />}
-                      {log.type === 'policy' && <FileEdit size={16} />}
+                    }`}>
+                    {log.type === 'user' && <UserPlus size={16} />}
+                    {log.type === 'leave' && <CheckSquare size={16} />}
+                    {log.type === 'policy' && <FileEdit size={16} />}
                   </div>
                   <div>
                     <p className="text-text-light dark:text-text-dark text-sm leading-snug">
@@ -88,10 +105,10 @@ export const Compliance: React.FC = () => {
               <div className="space-y-6 flex-grow">
                 <div>
                   <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2" htmlFor="report-name">Report Name</label>
-                  <input 
-                    className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark placeholder:text-text-muted-light focus:outline-none focus:ring-2 focus:ring-primary" 
-                    id="report-name" 
-                    placeholder="e.g., Q3 Headcount Analysis" 
+                  <input
+                    className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark placeholder:text-text-muted-light focus:outline-none focus:ring-2 focus:ring-primary"
+                    id="report-name"
+                    placeholder="e.g., Q3 Headcount Analysis"
                     type="text"
                   />
                 </div>
@@ -99,7 +116,7 @@ export const Compliance: React.FC = () => {
                   <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">Data Points</label>
                   <div className="grid grid-cols-2 gap-4">
                     {['Employee Name', 'Salary', 'Department', 'Start Date', 'Performance Rating', 'Leave Balance'].map((point, idx) => (
-                       <label key={idx} className="flex items-center space-x-3 cursor-pointer">
+                      <label key={idx} className="flex items-center space-x-3 cursor-pointer">
                         <input type="checkbox" defaultChecked={idx % 2 === 0} className="form-checkbox h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary" />
                         <span className="text-text-light dark:text-text-dark text-sm">{point}</span>
                       </label>

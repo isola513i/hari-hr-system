@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { OrgNode } from '../types';
-import { INITIAL_ORG_DATA } from '../constants';
+// Mocks removed
 
 interface OrgContextType {
     nodes: OrgNode[];
@@ -12,23 +12,22 @@ interface OrgContextType {
 const OrgContext = createContext<OrgContextType | undefined>(undefined);
 
 import { useEffect } from 'react';
+import { api } from '../lib/api';
 
 export const OrgProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [nodes, setNodes] = useState<OrgNode[]>([]); // Start empty, fetch from API
 
+
+
+    // ...
+
     const fetchNodes = async () => {
         try {
-            const response = await fetch('http://localhost:3000/api/org-chart');
-            if (response.ok) {
-                const data = await response.json();
-                setNodes(data);
-            } else {
-                console.error('Failed to fetch org chart');
-                setNodes(INITIAL_ORG_DATA); // Fallback
-            }
+            const data = await api.get<OrgNode[]>('/org-chart');
+            setNodes(data);
         } catch (error) {
             console.error('Error fetching org chart:', error);
-            setNodes(INITIAL_ORG_DATA); // Fallback
+            setNodes([]);
         }
     };
 
@@ -37,36 +36,19 @@ export const OrgProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }, []);
 
     const addNode = async (nodeData: any) => {
-        // nodeData comes from Onboarding form, needs to be mapped to API payload
-        // API expects: { name, email, role, department, managerId, joinDate }
-        // Onboarding passes: { name, email, role, department, startDate, parentId... }
-
         try {
             const payload = {
                 name: nodeData.name,
                 email: nodeData.email,
                 role: nodeData.role,
                 department: nodeData.department,
-                managerId: nodeData.parentId || '2', // Default to David Lee if null
+                managerId: nodeData.parentId || '2',
                 joinDate: nodeData.startDate || new Date().toISOString()
             };
 
-            const response = await fetch('http://localhost:3000/api/employees', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            await api.post('/employees', payload);
+            fetchNodes();
 
-            if (response.ok) {
-                // Re-fetch to update the chart with the new node and its correct DB ID
-                fetchNodes();
-            } else {
-                console.error('Failed to add employee via API');
-                // Optimistic update fallback? No, better to alert.
-                // For legacy compatibility, we might just append to local state if API fails?
-                // But let's stick to API first.
-                // If API fails, we could alert, but we don't have good error handling UI here.
-            }
         } catch (error) {
             console.error('Error adding employee:', error);
         }

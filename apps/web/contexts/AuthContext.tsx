@@ -1,45 +1,71 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { User, UserRole } from '../types';
+import { api } from '../lib/api';
 
 interface AuthContextType {
-  user: User;
-  switchRole: (role: UserRole) => void;
+  user: User | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  isAuthenticated: boolean;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Default to Admin
-  const [user, setUser] = useState<User>({
-    id: '6',
-    name: 'Olivia Roe',
-    role: 'HR_ADMIN',
-    avatar: 'https://picsum.photos/id/338/200/200',
-    jobTitle: 'CHRO'
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const switchRole = (role: UserRole) => {
-    if (role === 'HR_ADMIN') {
-      setUser({
-        id: '6',
-        name: 'Olivia Roe',
-        role: 'HR_ADMIN',
-        avatar: 'https://picsum.photos/id/338/200/200',
-        jobTitle: 'CHRO'
-      });
-    } else {
-      setUser({
-        id: '1',
-        name: 'Liam Johnson',
-        role: 'EMPLOYEE',
-        avatar: 'https://picsum.photos/id/1005/200/200',
-        jobTitle: 'Product Manager'
-      });
+  // Initialize from LocalStorage
+  React.useEffect(() => {
+    const token = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    if (token && storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Failed to parse user from local storage", e);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      }
+    }
+    setLoading(false);
+  }, []);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const data = await api.auth.login({ email, password });
+
+      // Backend returns: { token, user: { userId, email, role, employeeId, name, avatar } }
+      // We define a fallback Job Title since it is missing from current backend response.
+      const userObj: User = {
+        id: data.user.employeeId || data.user.userId,
+        name: data.user.name || 'User',
+        role: data.user.role as UserRole,
+        avatar: data.user.avatar || 'https://ui-avatars.com/api/?name=User',
+        jobTitle: 'Employee'
+      };
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(userObj));
+      setUser(userObj);
+      return true;
+    } catch (err) {
+      console.error(err);
+      return false;
     }
   };
 
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    // Force redirect to login if needed, or let the ProtectedRoute handle it
+    window.location.href = '/login';
+  };
+
   return (
-    <AuthContext.Provider value={{ user, switchRole }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, loading }}>
       {children}
     </AuthContext.Provider>
   );

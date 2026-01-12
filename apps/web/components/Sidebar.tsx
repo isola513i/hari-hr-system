@@ -1,12 +1,12 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Users, 
-  GitGraph, 
-  BarChart2, 
-  FileText, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Users,
+  GitGraph,
+  BarChart2,
+  FileText,
+  Settings,
   HelpCircle,
   LogOut,
   ShieldCheck,
@@ -19,27 +19,27 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 
 export const Sidebar: React.FC = () => {
-  const { user } = useAuth();
-  const isAdmin = user.role === 'HR_ADMIN';
+  const { user, logout } = useAuth();
+  const isAdmin = user?.role === 'HR_ADMIN';
 
   // Define nav items based on role
   const navItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/', allowed: true },
-    
+
     // Employee Focused Tools
     { icon: <Calendar size={20} />, label: 'Time Off', path: '/time-off', allowed: !isAdmin },
     { icon: <DollarSign size={20} />, label: 'Expenses', path: '/expenses', allowed: !isAdmin },
     { icon: <MessageSquare size={20} />, label: 'Surveys', path: '/surveys', allowed: !isAdmin },
-    
+
     { icon: <Smile size={20} />, label: 'Well-being', path: '/wellbeing', allowed: true },
     { icon: <Users size={20} />, label: 'Employees', path: '/employees', allowed: true },
     { icon: <GitGraph size={20} />, label: 'Org Chart', path: '/org-chart', allowed: true },
     { icon: <ClipboardList size={20} />, label: 'Onboarding', path: '/onboarding', allowed: true },
-    
+
     // Admin Specific
     { icon: <ShieldCheck size={20} />, label: 'Compliance', path: '/compliance', allowed: isAdmin },
     { icon: <BarChart2 size={20} />, label: 'Analytics', path: '/analytics', allowed: isAdmin },
-    
+
     { icon: <FileText size={20} />, label: 'Documents', path: '/documents', allowed: true },
   ];
 
@@ -64,10 +64,9 @@ export const Sidebar: React.FC = () => {
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group ${
-                isActive
-                  ? 'bg-primary text-white shadow-md'
-                  : 'text-gray-300 hover:bg-white/10 hover:text-white'
+              `flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group ${isActive
+                ? 'bg-primary text-white shadow-md'
+                : 'text-gray-300 hover:bg-white/10 hover:text-white'
               }`
             }
           >
@@ -79,36 +78,37 @@ export const Sidebar: React.FC = () => {
 
       <div className="p-4 border-t border-white/10">
         <div className="flex flex-col gap-1">
-          <NavLink 
-            to="/settings" 
+          <NavLink
+            to="/settings"
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                isActive 
-                  ? 'bg-white/10 text-white' 
-                  : 'text-gray-300 hover:bg-white/10 hover:text-white'
+              `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
+                ? 'bg-white/10 text-white'
+                : 'text-gray-300 hover:bg-white/10 hover:text-white'
               }`
             }
           >
             <Settings size={18} />
             <span className="text-sm font-medium">Settings</span>
           </NavLink>
-          <NavLink 
-            to="/help" 
+          <NavLink
+            to="/help"
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                isActive 
-                  ? 'bg-white/10 text-white' 
-                  : 'text-gray-300 hover:bg-white/10 hover:text-white'
+              `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
+                ? 'bg-white/10 text-white'
+                : 'text-gray-300 hover:bg-white/10 hover:text-white'
               }`
             }
           >
             <HelpCircle size={18} />
             <span className="text-sm font-medium">Help & Support</span>
           </NavLink>
-           <a href="#" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-red-500/20 hover:text-red-400 transition-colors mt-2">
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-red-500/20 hover:text-red-400 transition-colors mt-2 text-left"
+          >
             <LogOut size={18} />
             <span className="text-sm font-medium">Sign Out</span>
-          </a>
+          </button>
         </div>
       </div>
     </aside>

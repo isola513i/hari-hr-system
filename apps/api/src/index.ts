@@ -2,6 +2,17 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { query } from './db';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+
+// Extend Express Request
+declare global {
+    namespace Express {
+        interface Request {
+            user?: any;
+        }
+    }
+}
 
 dotenv.config();
 
@@ -11,20 +22,320 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+app.get('/ping', (req, res) => res.send('pong'));
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key'; // In prod, strictly from .env
+
+// Middleware: Authenticate Token
+const authenticateToken = (req: Request, res: Response, next: any) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) return res.sendStatus(401);
+
+    jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+};
+
 // ==========================================
-// EMPLOYEES & ORG CHART
+// AUTH ENDPOINTS
 // ==========================================
+
+// POST /api/auth/login
+// ... (Login Endpoint)
+app.post('/api/auth/login', async (req: Request, res: Response) => {
+    // ... (existing code)
+    const { email, password } = req.body;
+
+    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+
+    try {
+        // 1. Find User
+        const userResult = await query('SELECT * FROM users WHERE email = $1', [email]);
+        if (userResult.rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
+
+        const user = userResult.rows[0];
+
+        // 2. Compare Password
+        const validPassword = await bcrypt.compare(password, user.password_hash);
+        if (!validPassword) return res.status(401).json({ error: 'Invalid credentials' });
+
+        // 3. Get Employee Info (for frontend convenience)
+        const empResult = await query('SELECT id, name, role, department, avatar FROM employees WHERE user_id = $1', [user.id]);
+        const employee = empResult.rows[0] || {}; // Might be null if just a user without profile? Unlikely in this design.
+
+        // 4. Generate Token
+        // Payload includes userId and employeeId if available
+        const payload = {
+            userId: user.id,
+            email: user.email,
+            role: user.role,
+            employeeId: employee.id
+        };
+        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
+
+        res.json({ token, user: { ...payload, name: employee.name, avatar: employee.avatar } });
+
+    } catch (err) {
+        console.error('Login error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Protect all subsequent API routes
+app.use('/api', authenticateToken);
+
+// POST /api/auth/change-password
+app.post('/api/auth/change-password', async (req: Request, res: Response) => {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.userId;
+
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: 'Current and new password are required' });
+    }
+
+    try {
+        const userRes = await query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        const user = userRes.rows[0];
+
+        const valid = await bcrypt.compare(currentPassword, user.password_hash);
+        if (!valid) return res.status(401).json({ error: 'Incorrect current password' });
+
+        const saltRounds = 10;
+        const newHash = await bcrypt.hash(newPassword, saltRounds);
+
+        await query('UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [newHash, userId]);
+
+        res.json({ message: 'Password updated successfully' });
+    } catch (err) {
+        console.error('Change password error:', err);
+        res.status(500).json({ error: 'Failed' });
+    }
+});
 
 // GET /api/employees
 app.get('/api/employees', async (req: Request, res: Response) => {
     try {
         const result = await query('SELECT * FROM employees ORDER BY created_at DESC');
-        res.json(result.rows);
+        const employees = result.rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            email: row.email,
+            role: row.role,
+            department: row.department,
+            avatar: row.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(row.name)}&background=random`,
+            status: row.status,
+            onboardingStatus: row.onboarding_status,
+            onboardingPercentage: row.onboarding_percentage,
+            joinDate: row.join_date,
+            location: row.location,
+            skills: row.skills,
+            bio: row.bio,
+            slack: row.slack,
+            emergencyContact: row.emergency_contact
+        }));
+        res.json(employees);
     } catch (err) {
         console.error('Error fetching employees:', err);
         res.status(500).json({ error: 'Failed to fetch employees' });
     }
 });
+
+// ... (Existing Org Chart & POST Employees - Keeping them as is or assuming they are roughly consistent) ...
+
+// ==========================================
+// NEW ENDPOINTS (Tasks, Documents, etc.)
+// ==========================================
+
+// GET /api/tasks
+app.get('/api/tasks', async (req: Request, res: Response) => {
+    try {
+        const result = await query('SELECT * FROM tasks ORDER BY due_date ASC');
+        const tasks = result.rows.map(row => ({
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            stage: row.stage,
+            assignee: row.assignee,
+            dueDate: row.due_date, // Date string
+            completed: row.completed,
+            priority: row.priority,
+            link: row.link
+        }));
+        res.json(tasks);
+    } catch (err) {
+        console.error('Error fetching tasks:', err);
+        res.status(500).json({ error: 'Failed to fetch tasks' });
+    }
+});
+
+// GET /api/training-modules
+app.get('/api/training-modules', async (req: Request, res: Response) => {
+    try {
+        const result = await query('SELECT * FROM training_modules');
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching training modules:', err);
+        res.status(500).json({ error: 'Failed to fetch modules' });
+    }
+});
+
+// GET /api/documents
+app.get('/api/documents', async (req: Request, res: Response) => {
+    try {
+        const result = await query('SELECT * FROM documents ORDER BY id DESC');
+        const docs = result.rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            type: row.type,
+            category: row.category,
+            size: row.size,
+            owner: row.owner_name,
+            lastAccessed: row.last_accessed ? new Date(row.last_accessed).toISOString() : 'Never',
+            status: row.status
+        }));
+        res.json(docs);
+    } catch (err) {
+        console.error('Error fetching documents:', err);
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+// GET /api/job-history
+app.get('/api/job-history', async (req: Request, res: Response) => {
+    const { employeeId } = req.query;
+    try {
+        let queryText = 'SELECT * FROM job_history';
+        const params: any[] = [];
+        if (employeeId) {
+            queryText += ' WHERE employee_id = $1';
+            params.push(employeeId);
+        }
+        queryText += ' ORDER BY start_date DESC';
+
+        const result = await query(queryText, params);
+        const history = result.rows.map(row => ({
+            id: row.id,
+            role: row.role,
+            department: row.department,
+            startDate: row.start_date,
+            endDate: row.end_date || 'Present',
+            description: row.description
+        }));
+        res.json(history);
+    } catch (err) { console.error(err); res.status(500).json({ error: 'Failed' }); }
+});
+
+// GET /api/performance-reviews
+app.get('/api/performance-reviews', async (req: Request, res: Response) => {
+    const { employeeId } = req.query;
+    try {
+        let queryText = 'SELECT * FROM performance_reviews';
+        const params: any[] = [];
+        if (employeeId) {
+            queryText += ' WHERE employee_id = $1';
+            params.push(employeeId);
+        }
+        queryText += ' ORDER BY date DESC';
+
+        const result = await query(queryText, params);
+        const reviews = result.rows.map(row => ({
+            id: row.id,
+            employeeId: row.employee_id,
+            date: row.date,
+            reviewer: row.reviewer,
+            rating: row.rating,
+            notes: row.notes
+        }));
+        res.json(reviews);
+    } catch (err) { console.error(err); res.status(500).json({ error: 'Failed' }); }
+});
+
+// GET /api/events
+app.get('/api/events', async (req: Request, res: Response) => {
+    try {
+        const result = await query('SELECT * FROM events');
+        const events = result.rows.map(row => ({
+            id: row.id,
+            title: row.title,
+            date: row.date_str,
+            type: row.type,
+            avatar: row.avatar,
+            color: row.color
+        }));
+        res.json(events);
+    } catch (err) { console.error(err); res.status(500).json({ error: 'Failed' }); }
+});
+
+// GET /api/announcements
+app.get('/api/announcements', async (req: Request, res: Response) => {
+    try {
+        const result = await query('SELECT * FROM announcements');
+        const items = result.rows.map(row => ({
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            type: row.type,
+            date: row.date_str
+        }));
+        res.json(items);
+    } catch (err) { console.error(err); res.status(500).json({ error: 'Failed' }); }
+});
+
+// GET /api/contacts
+app.get('/api/contacts', async (req: Request, res: Response) => {
+    try {
+        const result = await query('SELECT * FROM contacts');
+        res.json(result.rows);
+    } catch (err) { console.error(err); res.status(500).json({ error: 'Failed' }); }
+});
+
+// GET /api/audit-logs
+app.get('/api/audit-logs', async (req: Request, res: Response) => {
+    try {
+        const result = await query('SELECT * FROM audit_logs ORDER BY created_at DESC');
+        const logs = result.rows.map(row => ({
+            id: row.id,
+            user: row.user_name,
+            action: row.action,
+            target: row.target,
+            time: row.time_str, // Use stored string or format created_at
+            type: row.type
+        }));
+        res.json(logs);
+    } catch (err) { console.error(err); res.status(500).json({ error: 'Failed' }); }
+});
+
+// GET /api/headcount-stats
+app.get('/api/headcount-stats', async (req: Request, res: Response) => {
+    try {
+        const result = await query('SELECT * FROM stats_headcount ORDER BY id ASC');
+        res.json(result.rows);
+    } catch (err) { console.error(err); res.status(500).json({ error: 'Failed' }); }
+});
+
+// GET /api/compliance
+app.get('/api/compliance', async (req: Request, res: Response) => {
+    try {
+        const result = await query('SELECT * FROM compliance_items');
+        res.json(result.rows);
+    } catch (err) { console.error(err); res.status(500).json({ error: 'Failed' }); }
+});
+
+// GET /api/sentiment
+app.get('/api/sentiment', async (req: Request, res: Response) => {
+    try {
+        // Return array of { name, value }
+        const result = await query('SELECT * FROM sentiment_stats');
+        res.json(result.rows);
+    } catch (err) { console.error(err); res.status(500).json({ error: 'Failed' }); }
+});
+
+// GET /api/leave-balances/:employeeId (Existing code continues...)
 
 // GET /api/org-chart
 app.get('/api/org-chart', async (req: Request, res: Response) => {
@@ -45,6 +356,7 @@ app.get('/api/org-chart', async (req: Request, res: Response) => {
 });
 
 // POST /api/employees (Invite/Add)
+// POST /api/employees (Invite/Add)
 app.post('/api/employees', async (req: Request, res: Response) => {
     // Expect body: { name, email, role, department, managerId, joinDate }
     const { name, email, role, department, managerId, joinDate } = req.body;
@@ -55,19 +367,33 @@ app.post('/api/employees', async (req: Request, res: Response) => {
     }
 
     try {
+        // 1. Create User account first (Separation of Concerns)
+        // Default password for invited employees: "Welcome123!"
+        const saltRounds = 10;
+        const passwordHash = await bcrypt.hash('Welcome123!', saltRounds);
+
+        // Check if user already exists
+        const userCheck = await query('SELECT id FROM users WHERE email = $1', [email]);
+        if (userCheck.rows.length > 0) {
+            return res.status(409).json({ error: 'User with this email already exists.' });
+        }
+
+        const userRes = await query(
+            `INSERT INTO users (email, password_hash, role) VALUES ($1, $2, $3) RETURNING id`,
+            [email, passwordHash, 'EMPLOYEE'] // Default role
+        );
+        const userId = userRes.rows[0].id;
+
+        // 2. Create Employee Profile linked to User
         const result = await query(
-            `INSERT INTO employees (name, email, role, department, manager_id, join_date) 
-             VALUES ($1, $2, $3, $4, $5, $6) 
+            `INSERT INTO employees (user_id, name, email, role, department, manager_id, join_date) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7) 
              RETURNING *`,
-            [name, email, role, department, managerId || null, joinDate || new Date()]
+            [userId, name, email, role, department, managerId || null, joinDate || new Date()]
         );
         res.status(201).json(result.rows[0]);
     } catch (err: any) {
         console.error('Error adding employee:', err);
-        // Check for specific DB errors if possible (e.g. duplicate email)
-        if (err.code === '23505') { // unique_violation
-            return res.status(409).json({ error: 'Email already exists.' });
-        }
         res.status(500).json({ error: 'Failed to add employee' });
     }
 });

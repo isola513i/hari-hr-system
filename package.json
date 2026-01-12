@@ -9,6 +9,10 @@
         "dev:web": "npm run dev --workspace=apps/web",
         "build:web": "npm run build --workspace=apps/web",
         "test:e2e": "npm run test:e2e --workspace=apps/web",
-        "dev:api": "npm run dev --workspace=apps/api"
+        "dev:api": "npm run dev --workspace=apps/api",
+        "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\" --kill-others --names \"API,WEB\" --prefix-colors \"blue,green\""
+    },
+    "devDependencies": {
+        "concurrently": "^9.2.1"
     }
 }
