@@ -145,6 +145,75 @@ app.get('/api/employees', async (req: Request, res: Response) => {
     }
 });
 
+// PATCH /api/employees/:id (Update employee details)
+app.patch('/api/employees/:id', async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { name, email, role, department, managerId, status, location, bio, skills } = req.body;
+
+    try {
+        const result = await query(
+            `UPDATE employees 
+             SET name = COALESCE($1, name),
+                 email = COALESCE($2, email),
+                 role = COALESCE($3, role),
+                 department = COALESCE($4, department),
+                 manager_id = COALESCE($5, manager_id),
+                 status = COALESCE($6, status),
+                 location = COALESCE($7, location),
+                 bio = COALESCE($8, bio),
+                 skills = COALESCE($9, skills)
+             WHERE id = $10
+             RETURNING *`,
+            [name, email, role, department, managerId, status, location, bio, skills, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Employee not found' });
+        }
+
+        const row = result.rows[0];
+        res.json({
+            id: row.id,
+            name: row.name,
+            email: row.email,
+            role: row.role,
+            department: row.department,
+            managerId: row.manager_id,
+            status: row.status,
+            location: row.location,
+            bio: row.bio,
+            skills: row.skills
+        });
+    } catch (err) {
+        console.error('Error updating employee:', err);
+        res.status(500).json({ error: 'Failed to update employee' });
+    }
+});
+
+// DELETE /api/employees/:id (Soft delete or hard delete)
+app.delete('/api/employees/:id', async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { cascade } = req.query; // If cascade=true, also delete children
+
+    try {
+        if (cascade === 'true') {
+            // Recursive delete: First nullify children's manager_id or delete them
+            await query('UPDATE employees SET manager_id = NULL WHERE manager_id = $1', [id]);
+        }
+
+        const result = await query('DELETE FROM employees WHERE id = $1 RETURNING id', [id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Employee not found' });
+        }
+
+        res.json({ message: 'Employee deleted successfully', id: result.rows[0].id });
+    } catch (err) {
+        console.error('Error deleting employee:', err);
+        res.status(500).json({ error: 'Failed to delete employee. They may have dependent records.' });
+    }
+});
+
 // ... (Existing Org Chart & POST Employees - Keeping them as is or assuming they are roughly consistent) ...
 
 // ==========================================
@@ -247,12 +316,84 @@ app.get('/api/performance-reviews', async (req: Request, res: Response) => {
             id: row.id,
             employeeId: row.employee_id,
             date: row.date,
-            reviewer: row.reviewer,
             rating: row.rating,
             notes: row.notes
         }));
         res.json(reviews);
     } catch (err) { console.error(err); res.status(500).json({ error: 'Failed' }); }
+});
+
+// GET /api/employee-training/:employeeId
+app.get('/api/employee-training/:employeeId', async (req: Request, res: Response) => {
+    const { employeeId } = req.params;
+    try {
+        const result = await query(
+            `SELECT et.id, et.title, et.duration, et.status, et.completion_date, et.score,
+                    tm.type, tm.thumbnail, tm.progress as module_progress
+             FROM employee_training et
+             LEFT JOIN training_modules tm ON et.module_id = tm.id
+             WHERE et.employee_id = $1
+             ORDER BY et.completion_date DESC NULLS LAST`,
+            [employeeId]
+        );
+        const training = result.rows.map(row => ({
+            id: row.id,
+            title: row.title,
+            duration: row.duration,
+            status: row.status,
+            completedDate: row.completion_date,
+            score: row.score,
+            type: row.type || 'Course',
+            thumbnail: row.thumbnail,
+            progress: row.module_progress || 0
+        }));
+        res.json(training);
+    } catch (err) {
+        console.error('Error fetching employee training:', err);
+        res.status(500).json({ error: 'Failed to fetch training records' });
+    }
+});
+
+// POST /api/employee-training (Admin assigns training to employee)
+app.post('/api/employee-training', async (req: Request, res: Response) => {
+    const { employeeId, moduleId, title, duration } = req.body;
+    if (!employeeId) return res.status(400).json({ error: 'employeeId required' });
+
+    try {
+        const result = await query(
+            `INSERT INTO employee_training (employee_id, module_id, title, duration, status)
+             VALUES ($1, $2, $3, $4, 'Not Started')
+             RETURNING *`,
+            [employeeId, moduleId || null, title || 'Untitled Training', duration || '1h']
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error('Error assigning training:', err);
+        res.status(500).json({ error: 'Failed to assign training' });
+    }
+});
+
+// PATCH /api/employee-training/:id (Update training status/progress)
+app.patch('/api/employee-training/:id', async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { status, score } = req.body;
+    try {
+        const completionDate = status === 'Completed' ? new Date() : null;
+        const result = await query(
+            `UPDATE employee_training 
+             SET status = COALESCE($1, status), 
+                 score = COALESCE($2, score),
+                 completion_date = COALESCE($3, completion_date)
+             WHERE id = $4 
+             RETURNING *`,
+            [status, score, completionDate, id]
+        );
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Training record not found' });
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('Error updating training:', err);
+        res.status(500).json({ error: 'Failed to update training' });
+    }
 });
 
 // GET /api/events
@@ -472,7 +613,7 @@ app.patch('/api/leave-requests/:id', async (req: Request, res: Response) => {
     try {
         const result = await query(
             `UPDATE leave_requests 
-             SET status = $1, updated_at = CURRENT_TIMESTAMP 
+             SET status = $1
              WHERE id = $2 
              RETURNING *`,
             [status, id]

@@ -54,9 +54,22 @@ export const OrgProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
-    const updateNode = (id: string, updates: Partial<OrgNode>) => {
-        // Sync not implemented for update yet
-        setNodes(prev => prev.map(n => n.id === id ? { ...n, ...updates } : n));
+    const updateNode = async (id: string, updates: Partial<OrgNode>) => {
+        try {
+            // Map OrgNode fields to API payload
+            const payload: any = {};
+            if (updates.name) payload.name = updates.name;
+            if (updates.role) payload.role = updates.role;
+            if (updates.department) payload.department = updates.department;
+            // Explicitly check if parentId key exists (can be null or a value)
+            if ('parentId' in updates) payload.managerId = updates.parentId || null;
+
+            console.log('Updating employee:', id, 'with payload:', payload);
+            await api.patch(`/employees/${id}`, payload);
+            fetchNodes(); // Refresh from API
+        } catch (error) {
+            console.error('Error updating node:', error);
+        }
     };
 
     // Helper to get descendants for recursive deletion
@@ -69,10 +82,14 @@ export const OrgProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return descendants;
     };
 
-    const deleteNode = (id: string) => {
-        // Sync not implemented for delete yet
-        const idsToRemove = [id, ...getDescendants(id, nodes)];
-        setNodes(prev => prev.filter(n => !idsToRemove.includes(n.id)));
+    const deleteNode = async (id: string) => {
+        try {
+            // Use cascade=true to handle children
+            await api.delete(`/employees/${id}?cascade=true`);
+            fetchNodes(); // Refresh from API
+        } catch (error) {
+            console.error('Error deleting node:', error);
+        }
     };
 
     return (

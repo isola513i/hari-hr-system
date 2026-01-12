@@ -55,11 +55,14 @@ export interface ChartDataPoint {
 
 export interface LeaveRequest {
   id: string;
-  employeeId: string; // Added for correct linking
+  employeeId: string;
   employeeName: string;
   type: string;
-  dates: string;
-  days: number; // Added for calculation
+  dates: string; // Display string like "Jan 15 - Jan 18"
+  startDate: string; // ISO date string
+  endDate: string; // ISO date string
+  reason?: string;
+  days: number;
   status: 'Pending' | 'Approved' | 'Rejected';
   avatar: string;
 }

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 // Mocks removed
 import { JobHistoryItem, Employee, PerformanceReview, DocumentItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { api } from '../lib/api';
 import {
     MapPin,
     Mail,
@@ -86,47 +87,26 @@ export const EmployeeDetail: React.FC = () => {
     useEffect(() => {
         const fetchEmployeeDetail = async () => {
             try {
-                // Parallel fetch for efficiency
-                const [empRes, historyRes, reviewsRes, trainingRes, docsRes] = await Promise.all([
-                    fetch('http://localhost:3000/api/employees'),
-                    fetch(`http://localhost:3000/api/job-history?employeeId=${id}`),
-                    fetch(`http://localhost:3000/api/performance-reviews?employeeId=${id}`),
-                    fetch('http://localhost:3000/api/training-modules'), // Or employee-training if that endpoint existed.
-                    // Wait, I didn't create /api/employee-training endpoint! I created /api/training-modules.
-                    // Did I create /api/employee-training?
-                    // Let's check my index.ts edit.
-                    // I added /api/tasks, /api/training-modules, /api/documents, /api/job-history, /api/performance-reviews.
-                    // I MISSING /api/employee-training (records)!
-                    // I created the table `employee_training`.
-                    // So I cannot fetch training records yet.
-                    // I will fetch training modules for now or handle this.
-                    fetch('http://localhost:3000/api/documents')
+                // Parallel fetch for efficiency using api client
+                const [employees, history, reviews, training, docs] = await Promise.all([
+                    api.get<Employee[]>('/employees'),
+                    api.get<any[]>(`/job-history?employeeId=${id}`),
+                    api.get<PerformanceReview[]>(`/performance-reviews?employeeId=${id}`),
+                    api.get<any[]>(`/employee-training/${id}`),
+                    api.get<DocumentItem[]>('/documents')
                 ]);
 
-                if (empRes.ok) {
-                    const employees: Employee[] = await empRes.json();
-                    const found = employees.find(e => e.id === id);
-                    if (found) {
-                        setEmployee(found);
-                        setAvatar(found.avatar || `https://ui-avatars.com/api/?name=${found.name}`);
-                        setCurrentSkills(found.skills || []);
+                const found = employees.find(e => e.id === id);
+                if (found) {
+                    setEmployee(found);
+                    setAvatar(found.avatar || `https://ui-avatars.com/api/?name=${found.name}`);
+                    setCurrentSkills(found.skills || []);
 
-                        // Auxiliary Data
-                        if (historyRes.ok) setHistoryList(await historyRes.json());
-                        if (reviewsRes.ok) setReviewsList(await reviewsRes.json());
-                        if (docsRes.ok) {
-                            const allDocs: DocumentItem[] = await docsRes.json();
-                            // Filter by owner name matching employee name (Mock behavior) or ID if we updated API
-                            // I seeded documents with employee_id, but the API /api/documents result returns `owner` (name).
-                            // So I filter by owner name.
-                            setDocumentsList(allDocs.filter(d => d.owner === found.name));
-                        }
-
-                        // Training Records - I forgot the endpoint. I'll mock it empty for now or fix it?
-                        // "Completely eliminate mock data".
-                        // I should fix it.
-                        setTrainingRecords([]);
-                    }
+                    // Auxiliary Data
+                    setHistoryList(history);
+                    setReviewsList(reviews);
+                    setTrainingRecords(training);
+                    setDocumentsList(docs.filter(d => d.owner === found.name));
                 }
             } catch (error) {
                 console.error('Error fetching employee detail:', error);

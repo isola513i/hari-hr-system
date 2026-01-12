@@ -1,10 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { Search, Bell, Moon, Sun, ChevronDown, LogOut, User as UserIcon, Shield, Lock } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Bell, Moon, Sun, ChevronDown, LogOut, User as UserIcon, Shield, Lock, Users, FileText, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ChangePasswordModal } from './ChangePasswordModal';
+import { api } from '../lib/api';
 
-// ...
+interface SearchResult {
+  id: string;
+  type: 'employee' | 'document';
+  title: string;
+  subtitle: string;
+  avatar?: string;
+}
 
 export const Header: React.FC = () => {
   const [darkMode, setDarkMode] = useState(false);
@@ -13,23 +20,144 @@ export const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // ... (useEffect for dark mode)
+  // Search State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Dark mode effect
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  // Close search results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Search debounce effect
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        // Fetch employees
+        const employees = await api.get<any[]>('/employees');
+
+        // Filter by search query
+        const query = searchQuery.toLowerCase();
+        const employeeResults: SearchResult[] = employees
+          .filter(e =>
+            e.name?.toLowerCase().includes(query) ||
+            e.role?.toLowerCase().includes(query) ||
+            e.department?.toLowerCase().includes(query) ||
+            e.email?.toLowerCase().includes(query)
+          )
+          .slice(0, 5)
+          .map(e => ({
+            id: e.id,
+            type: 'employee' as const,
+            title: e.name,
+            subtitle: `${e.role} • ${e.department}`,
+            avatar: e.avatar
+          }));
+
+        setSearchResults(employeeResults);
+        setShowResults(true);
+      } catch (error) {
+        console.error('Search error:', error);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleResultClick = (result: SearchResult) => {
+    if (result.type === 'employee') {
+      navigate(`/employees/${result.id}`);
+    }
+    setSearchQuery('');
+    setShowResults(false);
+  };
 
   return (
     <>
       <ChangePasswordModal isOpen={isChangePasswordOpen} onClose={() => setIsChangePasswordOpen(false)} />
       <header className="h-16 bg-card-light dark:bg-card-dark border-b border-border-light dark:border-border-dark flex items-center justify-between px-8 sticky top-0 z-20 shadow-sm">
 
-        {/* ... (Search and Dark Mode Toggle - keep same) ... */}
-
-        <div className="md:w-96 hidden md:block">
-          <div className="relative group">
+        {/* Search */}
+        <div className="md:w-96 hidden md:block" ref={searchRef}>
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark group-focus-within:text-primary transition-colors" size={18} />
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => searchQuery && setShowResults(true)}
               placeholder="Search employees, documents, policies..."
-              className="w-full pl-10 pr-4 py-2 bg-background-light dark:bg-background-dark border border-transparent focus:border-primary/30 rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full pl-10 pr-10 py-2 bg-background-light dark:bg-background-dark border border-transparent focus:border-primary/30 rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             />
+            {searchQuery && (
+              <button
+                onClick={() => { setSearchQuery(''); setShowResults(false); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted-light hover:text-text-light transition-colors"
+              >
+                <X size={16} />
+              </button>
+            )}
+
+            {/* Search Results Dropdown */}
+            {showResults && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-lg overflow-hidden z-50">
+                {isSearching ? (
+                  <div className="p-4 text-center text-text-muted-light text-sm">Searching...</div>
+                ) : searchResults.length > 0 ? (
+                  <ul>
+                    {searchResults.map(result => (
+                      <li key={`${result.type}-${result.id}`}>
+                        <button
+                          onClick={() => handleResultClick(result)}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-background-light dark:hover:bg-background-dark transition-colors text-left"
+                        >
+                          {result.avatar ? (
+                            <img src={result.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              {result.type === 'employee' ? <Users size={16} className="text-primary" /> : <FileText size={16} className="text-primary" />}
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-text-light dark:text-text-dark">{result.title}</p>
+                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{result.subtitle}</p>
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="p-4 text-center text-text-muted-light text-sm">No results found</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -41,7 +169,6 @@ export const Header: React.FC = () => {
             {darkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
 
-          {/* ... (Bell - keep same) ... */}
           <button className="relative p-2 rounded-full hover:bg-background-light dark:hover:bg-background-dark text-text-muted-light dark:text-text-muted-dark transition-colors">
             <Bell size={20} />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent-red rounded-full ring-2 ring-card-light dark:ring-card-dark"></span>
