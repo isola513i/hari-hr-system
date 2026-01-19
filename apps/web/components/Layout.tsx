@@ -4,9 +4,17 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { Breadcrumbs } from './Breadcrumbs';
 import { Outlet } from 'react-router-dom';
+import { SessionTimeoutWarning } from './SessionTimeoutWarning';
+import { useSessionTimeout } from '../hooks/useSessionTimeout';
 
 export const Layout: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Session timeout management (30 min timeout, warning at 25 min)
+  const { showWarning, timeLeft, extendSession, logout } = useSessionTimeout({
+    warningTime: 25 * 60 * 1000, // 25 minutes
+    logoutTime: 30 * 60 * 1000, // 30 minutes
+  });
 
   return (
     <div className="flex h-screen bg-background-light dark:bg-background-dark overflow-hidden">
@@ -37,6 +45,14 @@ export const Layout: React.FC = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Session Timeout Warning Modal */}
+      <SessionTimeoutWarning
+        isOpen={showWarning}
+        timeLeft={timeLeft}
+        onExtendSession={extendSession}
+        onLogout={logout}
+      />
     </div>
   );
 };

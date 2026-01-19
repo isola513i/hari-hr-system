@@ -18,6 +18,7 @@ import {
     validateLeaveRequest,
     validateFileUpload
 } from './middlewares/security';
+import { auditLogMiddleware, getAuditLogs } from './middlewares/auditLog';
 
 // Extend Express Request
 declare global {
@@ -50,6 +51,9 @@ app.use(generalLimiter);
 // Body parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Audit logging middleware
+app.use(auditLogMiddleware);
 
 // Multer configuration for file uploads
 const storage = multer.diskStorage({
@@ -610,18 +614,38 @@ app.get('/api/contacts', async (req: Request, res: Response) => {
 // GET /api/audit-logs
 app.get('/api/audit-logs', async (req: Request, res: Response) => {
     try {
-        const result = await query('SELECT * FROM audit_logs ORDER BY created_at DESC');
-        const logs = result.rows.map(row => ({
-            id: row.id,
-            user: row.user_name,
-            action: row.action,
-            target: row.target,
-            time: row.time_str, // Use stored string or format created_at
-            type: row.type
+        // Get real-time audit logs from our logging system
+        const auditLogs = getAuditLogs(100);
+
+        // Transform to match expected format for frontend
+        const logs = auditLogs.map((log, index) => ({
+            id: index + 1,
+            user: log.userEmail || 'System',
+            action: log.action,
+            target: log.resource,
+            time: new Date(log.timestamp).toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }),
+            type: getLogType(log.resource)
         }));
+
         res.json(logs);
-    } catch (err) { console.error(err); res.status(500).json({ error: 'Failed' }); }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch audit logs' });
+    }
 });
+
+// Helper function to map resource to log type for UI
+function getLogType(resource: string): string {
+    if (resource === 'Employee') return 'user';
+    if (resource === 'Leave Request') return 'leave';
+    if (resource === 'Document') return 'policy';
+    return 'user';
+}
 
 // GET /api/headcount-stats
 app.get('/api/headcount-stats', async (req: Request, res: Response) => {
