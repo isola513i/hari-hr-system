@@ -5,6 +5,9 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
 import { LeaveProvider } from './contexts/LeaveContext';
 import { OrgProvider } from './contexts/OrgContext';
+import { ToastProvider } from './contexts/ToastContext';
+import { ToastContainer } from './components/ToastContainer';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy load pages for code splitting
 const Login = lazy(() => import('./pages/Login'));
@@ -35,41 +38,46 @@ const PageLoader = () => (
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <HashRouter>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/login" element={<Login />} />
+    <ErrorBoundary>
+      <ToastProvider>
+        <AuthProvider>
+          <HashRouter>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/login" element={<Login />} />
 
-            <Route element={<ProtectedRoute />}>
-              <Route path="/" element={
-                <LeaveProvider>
-                  <OrgProvider>
-                    <Layout />
-                  </OrgProvider>
-                </LeaveProvider>
-              }>
-                <Route index element={<Dashboard />} />
-                <Route path="time-off" element={<TimeOff />} />
-                <Route path="expenses" element={<Expenses />} />
-                <Route path="surveys" element={<Surveys />} />
-                <Route path="wellbeing" element={<Wellbeing />} />
-                <Route path="employees" element={<Employees />} />
-                <Route path="employees/:id" element={<EmployeeDetail />} />
-                <Route path="org-chart" element={<OrgChart />} />
-                <Route path="onboarding" element={<Onboarding />} />
-                <Route path="compliance" element={<Compliance />} />
-                <Route path="analytics" element={<Analytics />} />
-                <Route path="documents" element={<Documents />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="help" element={<HelpSupport />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Route>
-            </Route>
-          </Routes>
-        </Suspense>
-      </HashRouter>
-    </AuthProvider>
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/" element={
+                    <LeaveProvider>
+                      <OrgProvider>
+                        <Layout />
+                      </OrgProvider>
+                    </LeaveProvider>
+                  }>
+                    <Route index element={<Dashboard />} />
+                    <Route path="time-off" element={<TimeOff />} />
+                    <Route path="expenses" element={<Expenses />} />
+                    <Route path="surveys" element={<Surveys />} />
+                    <Route path="wellbeing" element={<Wellbeing />} />
+                    <Route path="employees" element={<Employees />} />
+                    <Route path="employees/:id" element={<EmployeeDetail />} />
+                    <Route path="org-chart" element={<OrgChart />} />
+                    <Route path="onboarding" element={<Onboarding />} />
+                    <Route path="compliance" element={<Compliance />} />
+                    <Route path="analytics" element={<Analytics />} />
+                    <Route path="documents" element={<Documents />} />
+                    <Route path="settings" element={<Settings />} />
+                    <Route path="help" element={<HelpSupport />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Route>
+                </Route>
+              </Routes>
+            </Suspense>
+            <ToastContainer />
+          </HashRouter>
+        </AuthProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 };
 

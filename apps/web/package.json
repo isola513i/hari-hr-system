@@ -10,6 +10,7 @@
     "test:e2e": "npx playwright test"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "lucide-react": "^0.554.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
