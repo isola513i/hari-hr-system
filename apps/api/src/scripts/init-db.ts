@@ -1,13 +1,13 @@
-import * as dotenv from 'dotenv';
-import * as path from 'path';
+import * as dotenv from "dotenv";
+import * as path from "path";
 
 // Load env vars from the correct location
-const envPath = path.resolve(__dirname, '../../.env');
-console.log('Loading .env from:', envPath);
+const envPath = path.resolve(__dirname, "../../.env");
+console.log("Loading .env from:", envPath);
 dotenv.config({ path: envPath });
 
-import pool from '../db';
-import bcrypt from 'bcrypt';
+import pool from "../db";
+import bcrypt from "bcrypt";
 
 const schema = `
 -- Clean up existing tables
@@ -221,17 +221,18 @@ CREATE TABLE sentiment_stats (
 );
 `;
 
-const runMigration = async () => {
+export const runMigration = async () => {
+  try {
+    console.log("Connecting to database...");
+    console.log("Running migration...");
 
-    try {
-        console.log('Connecting to database...');
-        console.log('Running migration...');
+    // Hash passwords for seeds
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash("Welcome123!", saltRounds);
 
-        // Hash passwords for seeds
-        const saltRounds = 10;
-        const passwordHash = await bcrypt.hash('Welcome123!', saltRounds);
-
-        const seededSchema = schema + `
+    const seededSchema =
+      schema +
+      `
 -- SEED DATA
 
 -- USERS
@@ -335,14 +336,22 @@ INSERT INTO sentiment_stats (name, value) VALUES
 ('Negative', 6);
 `;
 
-        await pool.query(seededSchema);
+    await pool.query(seededSchema);
 
-        console.log('Migration completed & Seed data inserted successfully.');
-    } catch (err) {
-        console.error('Error running migration:', err);
-    } finally {
-        await pool.end();
+    console.log("Migration completed & Seed data inserted successfully.");
+  } catch (err) {
+    console.error("Error running migration:", err);
+    throw err;
+  } finally {
+    if (require.main === module) {
+      await pool.end();
     }
+  }
 };
 
-runMigration();
+if (require.main === module) {
+  runMigration().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

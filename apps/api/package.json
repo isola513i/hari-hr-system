@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "main": "src/index.ts",
   "scripts": {
-    "start": "ts-node src/index.ts",
+    "start": "node dist/index.js",
     "dev": "nodemon src/index.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "seed": "node dist/scripts/init-db.js"
   },
   "dependencies": {
     "@types/multer": "^2.0.0",
