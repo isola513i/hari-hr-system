@@ -4,6 +4,9 @@ import dotenv from 'dotenv';
 import { query } from './db';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 // Extend Express Request
 declare global {
@@ -21,6 +24,41 @@ const port = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
+
+// Multer configuration for file uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = path.join(__dirname, '../uploads');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        cb(null, uniqueSuffix + ext);
+    }
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'image/jpeg', 'image/png', 'image/gif'];
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(null, true); // Allow all for demo, but log warning
+            console.warn('File type may not be supported:', file.mimetype);
+        }
+    }
+});
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.get('/ping', (req, res) => res.send('pong'));
 
@@ -264,6 +302,7 @@ app.get('/api/documents', async (req: Request, res: Response) => {
             category: row.category,
             size: row.size,
             owner: row.owner_name,
+            employeeId: row.employee_id,
             lastAccessed: row.last_accessed ? new Date(row.last_accessed).toISOString() : 'Never',
             status: row.status
         }));
@@ -271,6 +310,113 @@ app.get('/api/documents', async (req: Request, res: Response) => {
     } catch (err) {
         console.error('Error fetching documents:', err);
         res.status(500).json({ error: 'Failed' });
+    }
+});
+
+// POST /api/documents (Real file upload with multer)
+app.post('/api/documents', upload.single('file'), async (req: Request, res: Response) => {
+    const file = req.file;
+    const { category, ownerName, employeeId } = req.body;
+
+    if (!file) {
+        return res.status(400).json({ error: 'File is required' });
+    }
+
+    // Determine file type from extension
+    const ext = path.extname(file.originalname).toLowerCase().replace('.', '').toUpperCase();
+    const typeMap: { [key: string]: string } = {
+        'PDF': 'PDF', 'DOC': 'DOCX', 'DOCX': 'DOCX', 'XLS': 'XLSX', 'XLSX': 'XLSX',
+        'JPG': 'JPG', 'JPEG': 'JPG', 'PNG': 'PNG', 'GIF': 'PNG'
+    };
+    const fileType = typeMap[ext] || 'PDF';
+
+    // Format file size
+    const fileSizeKB = Math.round(file.size / 1024);
+    const fileSize = fileSizeKB > 1024 ? `${(fileSizeKB / 1024).toFixed(1)} MB` : `${fileSizeKB} KB`;
+
+    try {
+        const result = await query(
+            `INSERT INTO documents (name, type, category, size, owner_name, employee_id, file_path, last_accessed, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, 'Uploaded')
+             RETURNING *`,
+            [file.originalname, fileType, category || 'HR', fileSize, ownerName, employeeId, file.filename]
+        );
+
+        const row = result.rows[0];
+        res.status(201).json({
+            id: row.id,
+            name: row.name,
+            type: row.type,
+            category: row.category,
+            size: row.size,
+            owner: row.owner_name,
+            filePath: row.file_path,
+            lastAccessed: 'Just now',
+            status: row.status
+        });
+    } catch (err) {
+        console.error('Error uploading document:', err);
+        // Clean up uploaded file on error
+        if (file) fs.unlinkSync(file.path);
+        res.status(500).json({ error: 'Failed to upload document' });
+    }
+});
+
+// GET /api/documents/:id/download (Download file)
+app.get('/api/documents/:id/download', async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    try {
+        const result = await query('SELECT name, file_path FROM documents WHERE id = $1', [id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Document not found' });
+        }
+
+        const doc = result.rows[0];
+        if (!doc.file_path) {
+            return res.status(404).json({ error: 'File not available for download' });
+        }
+
+        const filePath = path.join(__dirname, '../uploads', doc.file_path);
+
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ error: 'File not found on server' });
+        }
+
+        res.download(filePath, doc.name);
+    } catch (err) {
+        console.error('Error downloading document:', err);
+        res.status(500).json({ error: 'Failed to download document' });
+    }
+});
+
+// DELETE /api/documents/:id (Also delete file from disk)
+app.delete('/api/documents/:id', async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    try {
+        // Get file path before deleting record
+        const docResult = await query('SELECT file_path FROM documents WHERE id = $1', [id]);
+
+        const result = await query('DELETE FROM documents WHERE id = $1 RETURNING id', [id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Document not found' });
+        }
+
+        // Delete file from disk if exists
+        if (docResult.rows.length > 0 && docResult.rows[0].file_path) {
+            const filePath = path.join(__dirname, '../uploads', docResult.rows[0].file_path);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+        }
+
+        res.json({ message: 'Document deleted successfully', id: result.rows[0].id });
+    } catch (err) {
+        console.error('Error deleting document:', err);
+        res.status(500).json({ error: 'Failed to delete document' });
     }
 });
 

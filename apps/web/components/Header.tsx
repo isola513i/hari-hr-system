@@ -17,7 +17,29 @@ export const Header: React.FC = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const { user, logout } = useAuth();
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  // Sample notifications (can be fetched from API later)
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Leave Request Approved', message: 'Your vacation request has been approved', time: '5 min ago', read: false },
+    { id: 2, title: 'New Employee Joined', message: 'Sarah Connor joined the Engineering team', time: '1 hour ago', read: false },
+    { id: 3, title: 'Document Shared', message: 'HR Policy 2024 was shared with you', time: '2 hours ago', read: true },
+    { id: 4, title: 'Meeting Reminder', message: 'Team standup in 30 minutes', time: '3 hours ago', read: true },
+  ]);
+
+  // Mark all notifications as read
+  const handleMarkAllRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  // View all notifications (navigate to notifications page or show toast)
+  const handleViewAllNotifications = () => {
+    setIsNotificationOpen(false);
+    // TODO: Replace with navigate('/notifications') when page exists
+    alert('Notifications page coming soon!');
+  };
   const navigate = useNavigate();
 
   // Search State
@@ -36,11 +58,14 @@ export const Header: React.FC = () => {
     }
   }, [darkMode]);
 
-  // Close search results when clicking outside
+  // Close search results and notifications when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowResults(false);
+      }
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setIsNotificationOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -169,10 +194,49 @@ export const Header: React.FC = () => {
             {darkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
 
-          <button className="relative p-2 rounded-full hover:bg-background-light dark:hover:bg-background-dark text-text-muted-light dark:text-text-muted-dark transition-colors">
-            <Bell size={20} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent-red rounded-full ring-2 ring-card-light dark:ring-card-dark"></span>
-          </button>
+          <div className="relative" ref={notificationRef}>
+            <button
+              onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+              className="relative p-2 rounded-full hover:bg-background-light dark:hover:bg-background-dark text-text-muted-light dark:text-text-muted-dark transition-colors"
+            >
+              <Bell size={20} />
+              {notifications.filter(n => !n.read).length > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent-red rounded-full ring-2 ring-card-light dark:ring-card-dark"></span>
+              )}
+            </button>
+
+            {/* Notification Dropdown */}
+            {isNotificationOpen && (
+              <div className="absolute right-0 top-full mt-2 w-80 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-lg overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                <div className="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                  <h3 className="font-semibold text-text-light dark:text-text-dark">Notifications</h3>
+                  <button onClick={handleMarkAllRead} className="text-xs text-primary font-medium cursor-pointer hover:underline">Mark all read</button>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length > 0 ? notifications.map(notif => (
+                    <div
+                      key={notif.id}
+                      className={`px-4 py-3 hover:bg-background-light dark:hover:bg-background-dark cursor-pointer border-b border-border-light dark:border-border-dark last:border-0 ${!notif.read ? 'bg-primary/5' : ''}`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${!notif.read ? 'bg-primary' : 'bg-transparent'}`}></div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-text-light dark:text-text-dark">{notif.title}</p>
+                          <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5 truncate">{notif.message}</p>
+                          <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">{notif.time}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="px-4 py-8 text-center text-text-muted-light text-sm">No notifications</div>
+                  )}
+                </div>
+                <div className="px-4 py-2 border-t border-border-light dark:border-border-dark text-center">
+                  <button onClick={handleViewAllNotifications} className="text-sm text-primary hover:underline">View All Notifications</button>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="h-8 w-px bg-border-light dark:bg-border-dark mx-2"></div>
 

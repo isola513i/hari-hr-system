@@ -21,10 +21,20 @@ import {
 import { OnboardingTask, KeyContact } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrg } from '../contexts/OrgContext';
+import { Toast } from '../components/Toast';
+import { Modal } from '../components/Modal';
 
 export const Onboarding: React.FC = () => {
     const { user } = useAuth();
     const { addNode } = useOrg();
+
+    // Toast state
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
+        show: false, message: '', type: 'success'
+    });
+    const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+        setToast({ show: true, message, type });
+    };
 
     // State
     const [tasks, setTasks] = useState<OnboardingTask[]>([]);
@@ -85,7 +95,7 @@ export const Onboarding: React.FC = () => {
     };
 
     const calculateProgress = () => {
-        const relevantTasks = user.role === 'EMPLOYEE'
+        const relevantTasks = user?.role === 'EMPLOYEE'
             ? tasks.filter(t => t.assignee === 'Employee')
             : tasks;
         const completed = relevantTasks.filter(t => t.completed).length;
@@ -120,7 +130,7 @@ export const Onboarding: React.FC = () => {
 
     // Filtering Logic
     const filteredTasks = tasks.filter(task => {
-        if (user.role === 'EMPLOYEE' && task.assignee !== 'Employee') {
+        if (user?.role === 'EMPLOYEE' && task.assignee !== 'Employee') {
             return false;
         }
 
@@ -169,9 +179,13 @@ export const Onboarding: React.FC = () => {
             avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(inviteForm.name)}&background=random`,
         });
 
-        alert(`Onboarding invitation sent to ${inviteForm.email}`);
+        showToast(`Onboarding invitation sent to ${inviteForm.email}!`, 'success');
         setIsInviteModalOpen(false);
         setInviteForm({ name: '', email: '', role: '', department: '', startDate: '' });
+    };
+
+    const handleSaveTemplate = () => {
+        showToast('Template saved successfully!', 'success');
     };
 
     const getPriorityBadgeClass = (priority: string) => {
@@ -189,18 +203,23 @@ export const Onboarding: React.FC = () => {
             <div className="flex flex-col lg:flex-row gap-6 items-start justify-between">
                 <div className="flex-1">
                     <h1 className="text-3xl font-bold text-text-light dark:text-text-dark tracking-tight mb-1">
-                        {user.role === 'EMPLOYEE' ? 'My Onboarding Checklist' : 'Onboarding Center'}
+                        {user?.role === 'EMPLOYEE' ? 'My Onboarding Checklist' : 'Onboarding Center'}
                     </h1>
                     <p className="text-text-muted-light dark:text-text-muted-dark">
-                        {user.role === 'EMPLOYEE'
-                            ? `Welcome aboard, ${user.name.split(' ')[0]}! Complete these tasks to get started.`
+                        {user?.role === 'EMPLOYEE'
+                            ? `Welcome aboard, ${user?.name?.split(' ')[0] || 'User'}! Complete these tasks to get started.`
                             : <><span className="font-semibold text-text-light dark:text-text-dark">Leo Martinez</span> (Product Designer) - Onboarding Dashboard</>
                         }
                     </p>
                 </div>
-                {user.role === 'HR_ADMIN' && (
+                {user?.role === 'HR_ADMIN' && (
                     <div className="flex items-center gap-3">
-                        <button className="px-4 py-2 bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Save as Template</button>
+                        <button
+                            onClick={handleSaveTemplate}
+                            className="px-4 py-2 bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        >
+                            Save as Template
+                        </button>
                         <button
                             onClick={() => setIsInviteModalOpen(true)}
                             className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
@@ -239,7 +258,7 @@ export const Onboarding: React.FC = () => {
                 <div className="xl:col-span-2 space-y-6">
 
                     {/* Filter Controls - Only show relevant filters for Admin, simpler for Employee */}
-                    {user.role === 'HR_ADMIN' && (
+                    {user?.role === 'HR_ADMIN' && (
                         <div className="flex flex-wrap items-center gap-3 bg-card-light dark:bg-card-dark p-4 rounded-xl border border-border-light dark:border-border-dark shadow-sm">
                             <div className="flex items-center gap-2 text-text-muted-light dark:text-text-muted-dark text-sm font-medium mr-2">
                                 <Filter size={16} />
@@ -275,7 +294,7 @@ export const Onboarding: React.FC = () => {
                     <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
                         <div className="p-5 border-b border-border-light dark:border-border-dark flex justify-between items-center">
                             <h2 className="text-lg font-bold text-text-light dark:text-text-dark">Task Checklist</h2>
-                            {user.role === 'HR_ADMIN' && (
+                            {user?.role === 'HR_ADMIN' && (
                                 <div className="flex gap-2">
                                     <span className="px-2 py-1 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded border border-blue-200 dark:border-blue-800">IT Setup</span>
                                     <span className="px-2 py-1 text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded border border-purple-200 dark:border-purple-800">HR Ops</span>
@@ -341,7 +360,7 @@ export const Onboarding: React.FC = () => {
                                                         </div>
 
                                                         <div className="flex flex-wrap items-center justify-end gap-2 text-xs text-text-muted-light dark:text-text-muted-dark">
-                                                            {user.role === 'HR_ADMIN' && (
+                                                            {user?.role === 'HR_ADMIN' && (
                                                                 <button
                                                                     onClick={() => cyclePriority(task.id)}
                                                                     className={`px-2 py-0.5 rounded border font-medium transition-colors ${getPriorityBadgeClass(task.priority)}`}
@@ -351,7 +370,7 @@ export const Onboarding: React.FC = () => {
                                                                 </button>
                                                             )}
 
-                                                            {user.role === 'HR_ADMIN' && (
+                                                            {user?.role === 'HR_ADMIN' && (
                                                                 <div className="flex items-center gap-1 bg-background-light dark:bg-background-dark px-2 py-0.5 rounded border border-border-light dark:border-border-dark">
                                                                     <Mail size={10} />
                                                                     {task.assignee}
@@ -393,7 +412,13 @@ export const Onboarding: React.FC = () => {
                                         <p className="text-sm font-medium text-text-light dark:text-text-dark">{contact.name}</p>
                                         <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{contact.role} • {contact.relation}</p>
                                     </div>
-                                    <button className="p-2 text-text-muted-light hover:text-primary transition-colors"><Mail size={16} /></button>
+                                    <button
+                                        onClick={() => showToast('Email client opened!', 'info')}
+                                        className="p-2 text-text-muted-light hover:text-primary transition-colors"
+                                        title="Send Email"
+                                    >
+                                        <Mail size={16} />
+                                    </button>
                                 </div>
                             ))}
                         </div>
@@ -415,7 +440,7 @@ export const Onboarding: React.FC = () => {
                                         <p className="text-xs text-accent-green">Uploaded</p>
                                     </div>
                                 </div>
-                                <button className="p-1.5 text-text-muted-light hover:text-primary"><MoreVertical size={16} /></button>
+                                <button onClick={() => showToast('Document options coming soon!', 'info')} className="p-1.5 text-text-muted-light hover:text-primary"><MoreVertical size={16} /></button>
                             </div>
 
                             <div className="flex items-center justify-between p-3 bg-background-light dark:bg-background-dark/50 rounded-lg border border-border-light dark:border-border-dark">
@@ -428,7 +453,7 @@ export const Onboarding: React.FC = () => {
                                         <p className="text-xs text-accent-green">Uploaded</p>
                                     </div>
                                 </div>
-                                <button className="p-1.5 text-text-muted-light hover:text-primary"><MoreVertical size={16} /></button>
+                                <button onClick={() => showToast('Document options coming soon!', 'info')} className="p-1.5 text-text-muted-light hover:text-primary"><MoreVertical size={16} /></button>
                             </div>
 
                             <div className="flex items-center justify-between p-3 border border-dashed border-border-light dark:border-border-dark rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer group">
@@ -448,116 +473,114 @@ export const Onboarding: React.FC = () => {
             </div>
 
             {/* Invite Employee Modal */}
-            {isInviteModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-                            <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
-                                Invite New Employee
-                            </h3>
-                            <button
-                                onClick={() => setIsInviteModalOpen(false)}
-                                className="text-text-muted-light hover:text-text-light"
-                            >
-                                <X size={20} />
-                            </button>
+            <Modal
+                isOpen={isInviteModalOpen}
+                onClose={() => setIsInviteModalOpen(false)}
+                title="Invite New Employee"
+                maxWidth="lg"
+            >
+                <form onSubmit={handleInviteSubmit} className="p-6 space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Full Name</label>
+                        <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
+                            <input
+                                required
+                                type="text"
+                                value={inviteForm.name}
+                                onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })}
+                                placeholder="e.g. Sarah Connor"
+                                className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Email Address</label>
+                        <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
+                            <input
+                                required
+                                type="email"
+                                value={inviteForm.email}
+                                onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                                placeholder="e.g. sarah@example.com"
+                                className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Role</label>
+                            <div className="relative">
+                                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
+                                <input
+                                    required
+                                    type="text"
+                                    value={inviteForm.role}
+                                    onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value })}
+                                    placeholder="e.g. Developer"
+                                    className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                                />
+                            </div>
                         </div>
 
-                        <form onSubmit={handleInviteSubmit} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Full Name</label>
-                                <div className="relative">
-                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-                                    <input
-                                        required
-                                        type="text"
-                                        value={inviteForm.name}
-                                        onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })}
-                                        placeholder="e.g. Sarah Connor"
-                                        className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                                    />
-                                </div>
+                        <div>
+                            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Department</label>
+                            <div className="relative">
+                                <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
+                                <input
+                                    required
+                                    type="text"
+                                    value={inviteForm.department}
+                                    onChange={(e) => setInviteForm({ ...inviteForm, department: e.target.value })}
+                                    placeholder="e.g. Engineering"
+                                    className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                                />
                             </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Email Address</label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-                                    <input
-                                        required
-                                        type="email"
-                                        value={inviteForm.email}
-                                        onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
-                                        placeholder="e.g. sarah@example.com"
-                                        className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Role</label>
-                                    <div className="relative">
-                                        <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-                                        <input
-                                            required
-                                            type="text"
-                                            value={inviteForm.role}
-                                            onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value })}
-                                            placeholder="e.g. Developer"
-                                            className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Department</label>
-                                    <div className="relative">
-                                        <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-                                        <input
-                                            required
-                                            type="text"
-                                            value={inviteForm.department}
-                                            onChange={(e) => setInviteForm({ ...inviteForm, department: e.target.value })}
-                                            placeholder="e.g. Engineering"
-                                            className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Start Date</label>
-                                <div className="relative">
-                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-                                    <input
-                                        required
-                                        type="date"
-                                        value={inviteForm.startDate}
-                                        onChange={(e) => setInviteForm({ ...inviteForm, startDate: e.target.value })}
-                                        className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-3 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsInviteModalOpen(false)}
-                                    className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:text-text-muted-dark dark:hover:text-text-dark"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 flex items-center gap-2"
-                                >
-                                    <Mail size={16} /> Send Invitation
-                                </button>
-                            </div>
-                        </form>
+                        </div>
                     </div>
-                </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Start Date</label>
+                        <div className="relative">
+                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
+                            <input
+                                required
+                                type="date"
+                                value={inviteForm.startDate}
+                                onChange={(e) => setInviteForm({ ...inviteForm, startDate: e.target.value })}
+                                className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4">
+                        <button
+                            type="button"
+                            onClick={() => setIsInviteModalOpen(false)}
+                            className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:text-text-muted-dark dark:hover:text-text-dark"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 flex items-center gap-2"
+                        >
+                            <Mail size={16} /> Send Invitation
+                        </button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Toast Notification */}
+            {toast.show && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(prev => ({ ...prev, show: false }))}
+                />
             )}
         </div>
     );

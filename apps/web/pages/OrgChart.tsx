@@ -3,6 +3,7 @@ import { OrgNode } from '../types';
 import { Plus, Edit2, Trash2, X, ZoomIn, ZoomOut, RotateCcw, Search, Users, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrg } from '../contexts/OrgContext';
+import { Toast } from '../components/Toast';
 
 // Helper to build tree structure
 const buildTree = (nodes: OrgNode[]): OrgNode[] => {
@@ -50,10 +51,20 @@ interface ModalState {
 
 export const OrgChart: React.FC = () => {
   const { user } = useAuth();
-  const isAdmin = user.role === 'HR_ADMIN';
+  const isAdmin = user?.role === 'HR_ADMIN';
   const { nodes, addNode, updateNode, deleteNode } = useOrg();
 
-  // const [nodes, setNodes] = useState<OrgNode[]>(INITIAL_ORG_DATA); // Removed local state
+  // Toast state
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
+    show: false, message: '', type: 'success'
+  });
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+    setToast({ show: true, message, type });
+  };
+
+  // Delete confirmation state
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
   const [zoom, setZoom] = useState(1);
   const [modalState, setModalState] = useState<ModalState>({ isOpen: false, type: 'add', nodeId: null });
 
@@ -144,8 +155,14 @@ export const OrgChart: React.FC = () => {
 
   const handleDelete = (id: string) => {
     if (!isAdmin) return;
-    if (window.confirm("Are you sure you want to remove this person? All their direct reports will be removed from the chart.")) {
-      deleteNode(id);
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirmId) {
+      deleteNode(deleteConfirmId);
+      showToast('Employee removed from org chart.', 'success');
+      setDeleteConfirmId(null);
     }
   };
 
@@ -410,6 +427,48 @@ export const OrgChart: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <Trash2 className="text-red-600 dark:text-red-400" size={24} />
+              </div>
+              <h3 className="font-bold text-lg text-text-light dark:text-text-dark mb-2">
+                Remove from Org Chart?
+              </h3>
+              <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
+                This will remove this person and all their direct reports from the organization chart.
+              </p>
+            </div>
+            <div className="flex justify-center gap-3 p-4 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800/50">
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 flex items-center gap-2"
+              >
+                <Trash2 size={16} /> Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(prev => ({ ...prev, show: false }))}
+        />
       )}
     </div>
   );

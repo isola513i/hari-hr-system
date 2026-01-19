@@ -26,10 +26,13 @@ import {
   DollarSign,
   ClipboardCheck,
   Palmtree,
-  MessageSquare
+  MessageSquare,
+  AlertCircle
 } from 'lucide-react';
 import { ResponsiveContainer, XAxis, YAxis, AreaChart, Area, Tooltip } from 'recharts';
 import { StatCard } from '../components/StatCard';
+import { Toast } from '../components/Toast';
+import { Modal } from '../components/Modal';
 // Removed constant imports - using API data
 import { useAuth } from '../contexts/AuthContext';
 import { useLeave } from '../contexts/LeaveContext';
@@ -44,12 +47,23 @@ export const Dashboard: React.FC = () => {
 
   // Filter requests for Admin (Pending only) and Employee (Own requests)
   const pendingRequests = requests.filter(r => r.status === 'Pending');
-  const myRequests = requests.filter(r => r.employeeName === user.name);
+  const myRequests = requests.filter(r => r.employeeName === user?.name);
 
   // ----- ADMIN STATE -----
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [quickNote, setQuickNote] = useState('');
+
+  // ----- TOAST STATE -----
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
+    show: false,
+    message: '',
+    type: 'success'
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+    setToast({ show: true, message, type });
+  };
 
   // ----- STATS STATE -----
   const [activeEmployeesCount, setActiveEmployeesCount] = useState(0);
@@ -64,61 +78,62 @@ export const Dashboard: React.FC = () => {
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
 
-  // Fetch Data from API (Combined Effect)
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [employees, auditLogs, headcountStats, events, announcements] = await Promise.all([
-          api.get<any[]>('/employees'),
-          api.get<any[]>('/audit-logs'),
-          api.get<any[]>('/headcount-stats'),
-          api.get<any[]>('/events'),
-          api.get<any[]>('/announcements')
-        ]);
+  // Fetch Data from API (Extracted as reusable function)
+  const fetchData = async () => {
+    try {
+      const [employees, auditLogs, headcountStats, events, announcements] = await Promise.all([
+        api.get<any[]>('/employees'),
+        api.get<any[]>('/audit-logs'),
+        api.get<any[]>('/headcount-stats'),
+        api.get<any[]>('/events'),
+        api.get<any[]>('/announcements')
+      ]);
 
-        // Stats
-        setActiveEmployeesCount(employees.filter((e: any) => e.status === 'Active').length);
-        setOnLeaveCount(employees.filter((e: any) => e.status === 'On Leave').length);
+      // Stats
+      setActiveEmployeesCount(employees.filter((e: any) => e.status === 'Active').length);
+      setOnLeaveCount(employees.filter((e: any) => e.status === 'On Leave').length);
 
-        const currentDate = new Date();
-        const currentMonth = currentDate.getMonth();
-        const currentYear = currentDate.getFullYear();
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth();
+      const currentYear = currentDate.getFullYear();
 
-        const newJoiners = employees.filter(e => {
-          const joinDate = new Date(e.joinDate);
-          return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear;
-        }).length;
-        setNewHiresCount(newJoiners);
+      const newJoiners = employees.filter(e => {
+        const joinDate = new Date(e.joinDate);
+        return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear;
+      }).length;
+      setNewHiresCount(newJoiners);
 
-        // My Team (if employee)
-        if (user.role === 'EMPLOYEE') {
-          const me = employees.find((e: any) => e.email === user.email) || { department: 'Product' };
-          const team = employees.filter((e: any) => e.department === me.department && e.id !== user.id).slice(0, 3);
-          setMyTeam(team);
-        }
-
-        // Onboarding Summary (Derived)
-        const onboarding = employees
-          .filter(e => e.onboardingStatus === 'In Progress' || e.onboardingStatus === 'Not Started')
-          .map(e => ({
-            id: e.id,
-            name: e.name,
-            role: e.role,
-            progress: e.onboardingPercentage || 0
-          }));
-        setOnboardingSummary(onboarding.length ? onboarding : []);
-
-        setAuditLogs(auditLogs);
-        setHeadcountData(headcountStats);
-        setUpcomingEvents(events);
-        setAnnouncements(announcements);
-
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
+      // My Team (if employee)
+      if (user?.role === 'EMPLOYEE') {
+        const me = employees.find((e: any) => e.email === user?.email) || { department: 'Product' };
+        const team = employees.filter((e: any) => e.department === me.department && e.id !== user?.id).slice(0, 3);
+        setMyTeam(team);
       }
-    };
+
+      // Onboarding Summary (Derived)
+      const onboarding = employees
+        .filter(e => e.onboardingStatus === 'In Progress' || e.onboardingStatus === 'Not Started')
+        .map(e => ({
+          id: e.id,
+          name: e.name,
+          role: e.role,
+          progress: e.onboardingPercentage || 0
+        }));
+      setOnboardingSummary(onboarding.length ? onboarding : []);
+
+      setAuditLogs(auditLogs);
+      setHeadcountData(headcountStats);
+      setUpcomingEvents(events);
+      setAnnouncements(announcements);
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
-  }, [user.role, user.email, user.id]);
+  }, [user?.role, user?.email, user?.id]);
 
   // ----- FORM STATE -----
   const [newEmployee, setNewEmployee] = useState({
@@ -129,10 +144,13 @@ export const Dashboard: React.FC = () => {
     joinDate: ''
   });
 
+  // ----- VALIDATION STATE -----
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+
   // ----- SHARED HANDLERS -----
   const handleSaveNote = () => {
     if (!quickNote.trim()) return;
-    alert("Note saved to your personal dashboard.");
+    showToast("Note saved to your personal dashboard.", "success");
     setQuickNote('');
   };
 
@@ -147,25 +165,125 @@ export const Dashboard: React.FC = () => {
     updateRequestStatus(id, 'Rejected');
   };
 
-  const handleAddEmployeeSubmit = (e: React.FormEvent) => {
+  const validateForm = (): boolean => {
+    const errors: { [key: string]: string } = {};
+
+    // Name validation
+    if (!newEmployee.name.trim()) {
+      errors.name = 'Full name is required';
+    }
+
+    // Role validation
+    if (!newEmployee.role.trim()) {
+      errors.role = 'Role is required';
+    }
+
+    // Department validation
+    if (!newEmployee.department.trim()) {
+      errors.department = 'Department is required';
+    }
+
+    // Email validation
+    if (!newEmployee.email.trim()) {
+      errors.email = 'Email is required';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(newEmployee.email)) {
+        errors.email = 'Please enter a valid email address';
+      }
+    }
+
+    // Join date validation
+    if (!newEmployee.joinDate) {
+      errors.joinDate = 'Start date is required';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleAddEmployeeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Successfully added ${newEmployee.name} to the system.`);
-    setIsAddEmployeeModalOpen(false);
-    setNewEmployee({ name: '', role: '', department: '', email: '', joinDate: '' });
+
+    // Clear previous errors
+    setValidationErrors({});
+
+    // Validate form
+    if (!validateForm()) {
+      showToast('Please fix the errors in the form.', 'warning');
+      return;
+    }
+
+    try {
+      // Prepare payload matching API expectations
+      const payload = {
+        name: newEmployee.name,
+        role: newEmployee.role,
+        department: newEmployee.department,
+        email: newEmployee.email,
+        joinDate: newEmployee.joinDate,
+        managerId: null
+      };
+
+      // Call API to add employee
+      await api.post('/employees', payload);
+
+      // Success: Close modal and reset form
+      setIsAddEmployeeModalOpen(false);
+      setNewEmployee({ name: '', role: '', department: '', email: '', joinDate: '' });
+
+      // Refetch dashboard data to show new employee
+      fetchData();
+
+      // Show success message
+      showToast(`Successfully added ${newEmployee.name} to the system!`, 'success');
+
+    } catch (error: any) {
+      console.error('Error adding employee:', error);
+
+      // Parse error message from API
+      let errorMessage = 'Failed to add employee. Please try again.';
+
+      if (error.message) {
+        // Backend returns clear error messages
+        errorMessage = error.message;
+
+        // Make some messages more user-friendly
+        if (error.message.includes('already exists')) {
+          errorMessage = `This email (${newEmployee.email}) is already registered. Please use a different email.`;
+        } else if (error.message.includes('required')) {
+          errorMessage = 'Name and Email are required fields.';
+        } else if (error.message.includes('Failed to add employee')) {
+          errorMessage = 'Unable to add employee. Please check your connection and try again.';
+        }
+      }
+
+      showToast(errorMessage, 'error');
+    }
   };
 
   // =========================================================================
   // EMPLOYEE DASHBOARD RENDER
   // =========================================================================
-  if (user.role === 'EMPLOYEE') {
+  if (user?.role === 'EMPLOYEE') {
     // myTeam state is populated by effect
 
     return (
-      <div className="space-y-6 animate-fade-in pb-8">
-        {/* Header */}
+      <>
+        {/* Toast Notification */}
+        {toast.show && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast({ ...toast, show: false })}
+          />
+        )}
+
+        <div className="space-y-6 animate-fade-in pb-8">
+          {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">Good Morning, {user.name.split(' ')[0]}</h1>
+            <h1 className="text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">Good Morning, {user?.name?.split(' ')[0]}</h1>
             <p className="text-text-muted-light dark:text-text-muted-dark mt-1">You have {myRequests.filter(r => r.status === 'Pending').length} pending leave requests.</p>
           </div>
           <div className="flex gap-3">
@@ -325,7 +443,8 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -336,12 +455,22 @@ export const Dashboard: React.FC = () => {
   // State calculated in top-level effect
 
   return (
-    <div className="space-y-6 animate-fade-in pb-8">
-      {/* Top Header Section */}
+    <>
+      {/* Toast Notification */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
+        />
+      )}
+
+      <div className="space-y-6 animate-fade-in pb-8">
+        {/* Top Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">HR Overview</h1>
-          <p className="text-text-muted-light dark:text-text-muted-dark mt-1">Welcome back, {user.name.split(' ')[0]}. Here's what's happening today.</p>
+          <p className="text-text-muted-light dark:text-text-muted-dark mt-1">Welcome back, {user?.name?.split(' ')[0]}. Here's what's happening today.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <button
@@ -614,35 +743,45 @@ export const Dashboard: React.FC = () => {
       {/* MODALS */}
 
       {/* Add Employee Modal */}
-      {isAddEmployeeModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-              <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
-                Add New Employee
-              </h3>
-              <button
-                onClick={() => setIsAddEmployeeModalOpen(false)}
-                className="text-text-muted-light hover:text-text-light"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleAddEmployeeSubmit} className="p-6 space-y-4">
+      <Modal
+        isOpen={isAddEmployeeModalOpen}
+        onClose={() => {
+          setIsAddEmployeeModalOpen(false);
+          setValidationErrors({});
+        }}
+        title="Add New Employee"
+        maxWidth="lg"
+      >
+        <form onSubmit={handleAddEmployeeSubmit} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Full Name</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                   <input
-                    required
                     type="text"
                     value={newEmployee.name}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
+                    onChange={(e) => {
+                      setNewEmployee({ ...newEmployee, name: e.target.value });
+                      if (validationErrors.name) {
+                        setValidationErrors({ ...validationErrors, name: '' });
+                      }
+                    }}
                     placeholder="e.g. Alex Morgan"
-                    className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                    className={`w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
+                      validationErrors.name
+                        ? 'border-red-500 focus:ring-red-500'
+                        : 'border-border-light dark:border-border-dark focus:ring-primary'
+                    }`}
                   />
+                  {validationErrors.name && (
+                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" size={16} />
+                  )}
                 </div>
+                {validationErrors.name && (
+                  <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                    {validationErrors.name}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -651,14 +790,28 @@ export const Dashboard: React.FC = () => {
                   <div className="relative">
                     <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                     <input
-                      required
                       type="text"
                       value={newEmployee.role}
-                      onChange={(e) => setNewEmployee({ ...newEmployee, role: e.target.value })}
+                      onChange={(e) => {
+                        setNewEmployee({ ...newEmployee, role: e.target.value });
+                        if (validationErrors.role) {
+                          setValidationErrors({ ...validationErrors, role: '' });
+                        }
+                      }}
                       placeholder="e.g. Designer"
-                      className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                      className={`w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
+                        validationErrors.role
+                          ? 'border-red-500 focus:ring-red-500'
+                          : 'border-border-light dark:border-border-dark focus:ring-primary'
+                      }`}
                     />
+                    {validationErrors.role && (
+                      <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" size={16} />
+                    )}
                   </div>
+                  {validationErrors.role && (
+                    <p className="mt-1 text-xs text-red-500">{validationErrors.role}</p>
+                  )}
                 </div>
 
                 <div>
@@ -666,14 +819,28 @@ export const Dashboard: React.FC = () => {
                   <div className="relative">
                     <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                     <input
-                      required
                       type="text"
                       value={newEmployee.department}
-                      onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
+                      onChange={(e) => {
+                        setNewEmployee({ ...newEmployee, department: e.target.value });
+                        if (validationErrors.department) {
+                          setValidationErrors({ ...validationErrors, department: '' });
+                        }
+                      }}
                       placeholder="e.g. Product"
-                      className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                      className={`w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
+                        validationErrors.department
+                          ? 'border-red-500 focus:ring-red-500'
+                          : 'border-border-light dark:border-border-dark focus:ring-primary'
+                      }`}
                     />
+                    {validationErrors.department && (
+                      <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" size={16} />
+                    )}
                   </div>
+                  {validationErrors.department && (
+                    <p className="mt-1 text-xs text-red-500">{validationErrors.department}</p>
+                  )}
                 </div>
               </div>
 
@@ -682,14 +849,28 @@ export const Dashboard: React.FC = () => {
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                   <input
-                    required
                     type="email"
                     value={newEmployee.email}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
+                    onChange={(e) => {
+                      setNewEmployee({ ...newEmployee, email: e.target.value });
+                      if (validationErrors.email) {
+                        setValidationErrors({ ...validationErrors, email: '' });
+                      }
+                    }}
                     placeholder="e.g. alex@nexus.hr"
-                    className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                    className={`w-full pl-10 pr-10 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
+                      validationErrors.email
+                        ? 'border-red-500 focus:ring-red-500'
+                        : 'border-border-light dark:border-border-dark focus:ring-primary'
+                    }`}
                   />
+                  {validationErrors.email && (
+                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" size={16} />
+                  )}
                 </div>
+                {validationErrors.email && (
+                  <p className="mt-1 text-xs text-red-500">{validationErrors.email}</p>
+                )}
               </div>
 
               <div>
@@ -697,19 +878,36 @@ export const Dashboard: React.FC = () => {
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                   <input
-                    required
                     type="date"
                     value={newEmployee.joinDate}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, joinDate: e.target.value })}
-                    className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                    onChange={(e) => {
+                      setNewEmployee({ ...newEmployee, joinDate: e.target.value });
+                      if (validationErrors.joinDate) {
+                        setValidationErrors({ ...validationErrors, joinDate: '' });
+                      }
+                    }}
+                    className={`w-full pl-10 pr-10 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
+                      validationErrors.joinDate
+                        ? 'border-red-500 focus:ring-red-500'
+                        : 'border-border-light dark:border-border-dark focus:ring-primary'
+                    }`}
                   />
+                  {validationErrors.joinDate && (
+                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" size={16} />
+                  )}
                 </div>
+                {validationErrors.joinDate && (
+                  <p className="mt-1 text-xs text-red-500">{validationErrors.joinDate}</p>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setIsAddEmployeeModalOpen(false)}
+                  onClick={() => {
+                    setIsAddEmployeeModalOpen(false);
+                    setValidationErrors({});
+                  }}
                   className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:text-text-muted-dark dark:hover:text-text-dark"
                 >
                   Cancel
@@ -722,26 +920,16 @@ export const Dashboard: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {/* Leave Management Modal (Admin View of Requests) */}
-      {isLeaveModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-              <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
-                Manage Leave Requests
-              </h3>
-              <button
-                onClick={() => setIsLeaveModalOpen(false)}
-                className="text-text-muted-light hover:text-text-light"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-0 overflow-y-auto max-h-[60vh]">
+      <Modal
+        isOpen={isLeaveModalOpen}
+        onClose={() => setIsLeaveModalOpen(false)}
+        title="Manage Leave Requests"
+        maxWidth="xl"
+      >
+        <div className="p-0 overflow-y-auto max-h-[60vh]">
               {pendingRequests.length > 0 ? (
                 <table className="w-full text-left text-sm">
                   <thead className="bg-background-light dark:bg-background-dark text-xs uppercase text-text-muted-light font-semibold">
@@ -801,10 +989,9 @@ export const Dashboard: React.FC = () => {
                 Close
               </button>
             </div>
-          </div>
-        </div>
-      )}
+      </Modal>
 
-    </div>
+      </div>
+    </>
   );
 };

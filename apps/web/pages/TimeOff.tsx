@@ -3,24 +3,35 @@ import { Calendar, Clock, CheckCircle2, XCircle, AlertCircle, Plus } from 'lucid
 import { useLeave } from '../contexts/LeaveContext';
 import { useAuth } from '../contexts/AuthContext';
 import { LeaveRequest } from '../types';
+import { Toast } from '../components/Toast';
 
 export const TimeOff: React.FC = () => {
   const { user } = useAuth();
   const { requests, addRequest, getLeaveBalance } = useLeave();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Toast state
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
+    show: false, message: '', type: 'success'
+  });
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+    setToast({ show: true, message, type });
+  };
+
   /* eslint-disable react-hooks/exhaustive-deps */
-  // Disabling exhaustive-deps because getLeaveBalance dependency might cause loops if not memoized, 
+  // Disabling exhaustive-deps because getLeaveBalance dependency might cause loops if not memoized,
   // but usually it's stable in context. Safer to include it or suppress.
 
   const [balances, setBalances] = useState<any[]>([]);
 
   useEffect(() => {
-    getLeaveBalance(user.id).then(setBalances);
-  }, [user.id]);
+    if (user?.id) {
+      getLeaveBalance(user.id).then(setBalances);
+    }
+  }, [user?.id]);
 
   // Filter requests for the current user
-  const myRequests = requests.filter(r => r.employeeName === user.name);
+  const myRequests = requests.filter(r => r.employeeName === user?.name);
 
   const [leaveForm, setLeaveForm] = useState({
     type: 'Vacation',
@@ -31,12 +42,18 @@ export const TimeOff: React.FC = () => {
 
   const handleSubmit = () => {
     if (!leaveForm.startDate || !leaveForm.endDate) {
-      alert("Please select dates.");
+      showToast("Please select both start and end dates.", "warning");
       return;
     }
 
     const start = new Date(leaveForm.startDate);
     const end = new Date(leaveForm.endDate);
+
+    if (end < start) {
+      showToast("End date must be after start date.", "warning");
+      return;
+    }
+
     const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
     const dateString = `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
 
@@ -46,13 +63,13 @@ export const TimeOff: React.FC = () => {
 
     const newRequest: LeaveRequest = {
       id: Date.now().toString(),
-      employeeId: user.id,
-      employeeName: user.name,
+      employeeId: user?.id || '',
+      employeeName: user?.name || 'Unknown',
       type: leaveForm.type,
       dates: dateString,
       days: diffDays,
       status: 'Pending',
-      avatar: user.avatar,
+      avatar: user?.avatar || '',
       // Pass extra fields for API
       // @ts-ignore
       startDate: leaveForm.startDate,
@@ -65,6 +82,7 @@ export const TimeOff: React.FC = () => {
     addRequest(newRequest);
     setIsModalOpen(false);
     setLeaveForm({ type: 'Vacation', startDate: '', endDate: '', reason: '' });
+    showToast(`Leave request submitted for ${diffDays} day(s)!`, 'success');
   };
 
   return (
@@ -204,6 +222,15 @@ export const TimeOff: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(prev => ({ ...prev, show: false }))}
+        />
       )}
     </div>
   );

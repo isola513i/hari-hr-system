@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react';
-// Mocks removed
 import { Search, MoreHorizontal, Mail, MapPin, Eye, ChevronDown, X, User, Briefcase, Users, Calendar, Check, Circle, CheckCircle2, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Employee } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
+import { Toast } from '../components/Toast';
+import { Modal } from '../components/Modal';
 
 export const Employees: React.FC = () => {
   const { user } = useAuth();
-  const isAdmin = user.role === 'HR_ADMIN';
+  const isAdmin = user?.role === 'HR_ADMIN';
+
+  // Toast state
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
+    show: false, message: '', type: 'success'
+  });
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+    setToast({ show: true, message, type });
+  };
 
   // Initialize state with mock data
   const [employeesList, setEmployeesList] = useState<Employee[]>([]);
@@ -63,6 +72,7 @@ export const Employees: React.FC = () => {
   const handleAddEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmployee.name || !newEmployee.role || !newEmployee.department || !newEmployee.email || !newEmployee.joinDate) {
+      showToast('Please fill in all required fields.', 'warning');
       return;
     }
 
@@ -81,10 +91,15 @@ export const Employees: React.FC = () => {
       fetchEmployees(); // Re-fetch
       setIsAddModalOpen(false);
       setNewEmployee({ name: '', role: '', department: '', email: '', joinDate: '' });
+      showToast(`${newEmployee.name} has been added successfully!`, 'success');
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding employee:', error);
-      alert('Failed to add employee. Please try again.');
+      let errorMessage = 'Failed to add employee. Please try again.';
+      if (error.message?.includes('already exists')) {
+        errorMessage = `This email (${newEmployee.email}) is already registered.`;
+      }
+      showToast(errorMessage, 'error');
     }
   };
 
@@ -220,7 +235,11 @@ export const Employees: React.FC = () => {
                         <Eye size={18} />
                       </button>
                       {isAdmin && (
-                        <button className="p-2 text-text-muted-light dark:text-text-muted-dark hover:text-primary hover:bg-primary/10 rounded-lg transition-all">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); showToast('Quick actions menu coming soon!', 'info'); }}
+                          className="p-2 text-text-muted-light dark:text-text-muted-dark hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
+                          title="More Actions"
+                        >
                           <MoreHorizontal size={18} />
                         </button>
                       )}
@@ -254,116 +273,114 @@ export const Employees: React.FC = () => {
       </div>
 
       {/* Add Employee Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-              <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
-                Onboard New Employee
-              </h3>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-text-muted-light hover:text-text-light"
-              >
-                <X size={20} />
-              </button>
+      <Modal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title="Onboard New Employee"
+        maxWidth="lg"
+      >
+        <form onSubmit={handleAddEmployee} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Full Name</label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
+              <input
+                required
+                type="text"
+                value={newEmployee.name}
+                onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
+                placeholder="e.g. Alex Morgan"
+                className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Role / Job Title</label>
+              <div className="relative">
+                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
+                <input
+                  required
+                  type="text"
+                  value={newEmployee.role}
+                  onChange={(e) => setNewEmployee({ ...newEmployee, role: e.target.value })}
+                  placeholder="e.g. UX Researcher"
+                  className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                />
+              </div>
             </div>
 
-            <form onSubmit={handleAddEmployee} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Full Name</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-                  <input
-                    required
-                    type="text"
-                    value={newEmployee.name}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
-                    placeholder="e.g. Alex Morgan"
-                    className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                  />
-                </div>
+            <div>
+              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Department</label>
+              <div className="relative">
+                <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
+                <input
+                  required
+                  type="text"
+                  value={newEmployee.department}
+                  onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
+                  placeholder="e.g. Product"
+                  className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                />
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Role / Job Title</label>
-                  <div className="relative">
-                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-                    <input
-                      required
-                      type="text"
-                      value={newEmployee.role}
-                      onChange={(e) => setNewEmployee({ ...newEmployee, role: e.target.value })}
-                      placeholder="e.g. UX Researcher"
-                      className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Department</label>
-                  <div className="relative">
-                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-                    <input
-                      required
-                      type="text"
-                      value={newEmployee.department}
-                      onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
-                      placeholder="e.g. Product"
-                      className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-                  <input
-                    required
-                    type="email"
-                    value={newEmployee.email}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
-                    placeholder="e.g. alex.m@nexus.hr"
-                    className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Starting Date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-                  <input
-                    required
-                    type="date"
-                    value={newEmployee.joinDate}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, joinDate: e.target.value })}
-                    className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:text-text-muted-dark dark:hover:text-text-dark"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 flex items-center gap-2"
-                >
-                  <Check size={16} /> Add Employee
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
-        </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Email Address</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
+              <input
+                required
+                type="email"
+                value={newEmployee.email}
+                onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
+                placeholder="e.g. alex.m@nexus.hr"
+                className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Starting Date</label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
+              <input
+                required
+                type="date"
+                value={newEmployee.joinDate}
+                onChange={(e) => setNewEmployee({ ...newEmployee, joinDate: e.target.value })}
+                className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={() => setIsAddModalOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:text-text-muted-dark dark:hover:text-text-dark"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 flex items-center gap-2"
+            >
+              <Check size={16} /> Add Employee
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(prev => ({ ...prev, show: false }))}
+        />
       )}
     </div>
   );

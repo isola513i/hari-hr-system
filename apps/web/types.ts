@@ -4,6 +4,8 @@ export type UserRole = 'HR_ADMIN' | 'EMPLOYEE';
 
 export interface User {
   id: string;
+  employeeId?: string;
+  email?: string;
   name: string;
   role: UserRole;
   avatar: string;
@@ -170,6 +172,7 @@ export interface OrgNode {
   name: string;
   role: string;
   avatar: string;
+  department?: string;
   children?: OrgNode[]; // Helper for recursive rendering
 }
 

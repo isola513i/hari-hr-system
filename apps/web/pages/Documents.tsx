@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-// Mocks removed
+import { api } from '../lib/api';
 import {
     FileText,
     Download,
@@ -18,13 +18,27 @@ import {
     Share2,
     Filter,
     X,
+    Trash2,
+    Plus,
 } from 'lucide-react';
 import { DocumentItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { Toast } from '../components/Toast';
 
 export const Documents: React.FC = () => {
     const { user } = useAuth();
-    const isAdmin = user.role === 'HR_ADMIN';
+    const isAdmin = user?.role === 'HR_ADMIN';
+
+    // Toast state
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
+        show: false, message: '', type: 'success'
+    });
+    const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+        setToast({ show: true, message, type });
+    };
+
+    // Delete confirmation state
+    const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
     const [documents, setDocuments] = useState<DocumentItem[]>([]);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -33,17 +47,24 @@ export const Documents: React.FC = () => {
     const [selectedFileType, setSelectedFileType] = useState<string>('All');
     const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null);
 
+    // Upload State
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [uploadForm, setUploadForm] = useState({
+        name: '',
+        type: 'PDF' as 'PDF' | 'DOCX' | 'XLSX' | 'JPG' | 'PNG',
+        category: 'HR' as 'Contracts' | 'Policies' | 'Finance' | 'HR' | 'Personal',
+    });
+
+    const fetchDocuments = async () => {
+        try {
+            const data = await api.get<DocumentItem[]>('/documents');
+            setDocuments(data);
+        } catch (error) {
+            console.error('Error fetching documents:', error);
+        }
+    };
+
     useEffect(() => {
-        const fetchDocuments = async () => {
-            try {
-                const response = await fetch('http://localhost:3000/api/documents');
-                if (response.ok) {
-                    setDocuments(await response.json());
-                }
-            } catch (error) {
-                console.error('Error fetching documents:', error);
-            }
-        };
         fetchDocuments();
     }, []);
 
@@ -63,7 +84,7 @@ export const Documents: React.FC = () => {
     const filteredDocuments = documents.filter(doc => {
         // 1. Filter by User Role Permission
         // Admins see all. Employees see their own docs OR public policies.
-        const hasPermission = isAdmin || doc.owner === user.name || doc.category === 'Policies';
+        const hasPermission = isAdmin || doc.owner === user?.name || doc.category === 'Policies';
         if (!hasPermission) return false;
 
         // 2. Filter by Search
@@ -93,9 +114,113 @@ export const Documents: React.FC = () => {
         }
     };
 
-    const handleDownload = (e: React.MouseEvent) => {
+    const handleDownload = async (e: React.MouseEvent, docId: string) => {
         e.stopPropagation();
-        alert('Downloading file...');
+        try {
+            // Use fetch directly for file download since api client returns JSON
+            const token = localStorage.getItem('token');
+            const response = await fetch(`/api/documents/${docId}/download`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                showToast(error.error || 'Download failed', 'error');
+                return;
+            }
+
+            // Get filename from Content-Disposition header or use default
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'document'; // Browser will use actual filename from header
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+            showToast('Download started!', 'success');
+        } catch (error) {
+            console.error('Error downloading:', error);
+            showToast('Download failed. Please try again.', 'error');
+        }
+    };
+
+    const handleShare = async (e: React.MouseEvent, doc: DocumentItem) => {
+        e.stopPropagation();
+        const shareUrl = `${window.location.origin}/api/documents/${doc.id}/download`;
+
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            showToast('Link copied to clipboard!', 'success');
+        } catch {
+            // Fallback - still show toast
+            showToast('Could not copy link automatically. URL: ' + shareUrl, 'info');
+        }
+    };
+
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+    const [uploadCategory, setUploadCategory] = React.useState('HR');
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setSelectedFile(e.target.files[0]);
+        }
+    };
+
+    const handleUpload = async () => {
+        if (!selectedFile) return;
+
+        try {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('category', uploadCategory);
+            formData.append('ownerName', user?.name || 'Unknown');
+            formData.append('employeeId', user?.id || '');
+
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/documents', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error);
+            }
+
+            fetchDocuments();
+            setIsUploadModalOpen(false);
+            setSelectedFile(null);
+            setUploadCategory('HR');
+            showToast(`"${selectedFile.name}" uploaded successfully!`, 'success');
+        } catch (error: any) {
+            console.error('Error uploading document:', error);
+            showToast(error.message || 'Upload failed. Please try again.', 'error');
+        }
+    };
+
+    const handleDelete = (e: React.MouseEvent, docId: string) => {
+        e.stopPropagation();
+        setDeleteConfirmId(docId);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteConfirmId) return;
+
+        try {
+            await api.delete(`/documents/${deleteConfirmId}`);
+            fetchDocuments();
+            if (previewDoc?.id === deleteConfirmId) setPreviewDoc(null);
+            showToast('Document deleted successfully.', 'success');
+        } catch (error) {
+            console.error('Error deleting document:', error);
+            showToast('Failed to delete document.', 'error');
+        } finally {
+            setDeleteConfirmId(null);
+        }
     };
 
     return (
@@ -104,10 +229,14 @@ export const Documents: React.FC = () => {
             {/* Left Sidebar */}
             <aside className="w-full lg:w-64 flex-shrink-0 flex flex-col gap-6">
                 <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 shadow-sm">
-                    <button className="w-full py-2.5 bg-primary text-white font-medium rounded-lg text-sm shadow-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 mb-6">
+                    <button
+                        onClick={() => setIsUploadModalOpen(true)}
+                        className="w-full py-2.5 bg-primary text-white font-medium rounded-lg text-sm shadow-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 mb-6"
+                    >
                         <UploadCloud size={18} />
                         Upload New
                     </button>
+
 
                     <nav className="space-y-1">
                         {categories.map((cat) => (
@@ -257,16 +386,22 @@ export const Documents: React.FC = () => {
                                             <td className="px-6 py-3 text-right">
                                                 <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button
-                                                        onClick={handleDownload}
+                                                        onClick={(e) => handleDownload(e, doc.id)}
                                                         className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-text-muted-light hover:text-primary transition-colors" title="Download"
                                                     >
                                                         <Download size={16} />
                                                     </button>
-                                                    <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-text-muted-light hover:text-primary transition-colors" title="Share">
+                                                    <button
+                                                        onClick={(e) => handleShare(e, doc)}
+                                                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-text-muted-light hover:text-primary transition-colors" title="Share"
+                                                    >
                                                         <Share2 size={16} />
                                                     </button>
-                                                    <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-text-muted-light hover:text-primary transition-colors" title="More">
-                                                        <MoreVertical size={16} />
+                                                    <button
+                                                        onClick={(e) => handleDelete(e, doc.id)}
+                                                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-text-muted-light hover:text-red-500 transition-colors" title="Delete"
+                                                    >
+                                                        <Trash2 size={16} />
                                                     </button>
                                                 </div>
                                             </td>
@@ -339,6 +474,124 @@ export const Documents: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Upload Modal */}
+            {isUploadModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-card-dark rounded-xl shadow-2xl border border-border-light dark:border-border-dark w-full max-w-md overflow-hidden">
+                        <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
+                            <h3 className="font-bold text-lg text-text-light dark:text-text-dark">Upload Document</h3>
+                            <button
+                                onClick={() => { setIsUploadModalOpen(false); setSelectedFile(null); }}
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            {/* File Input Zone */}
+                            <div
+                                onClick={() => fileInputRef.current?.click()}
+                                className="border-2 border-dashed border-border-light dark:border-border-dark rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                            >
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    onChange={handleFileSelect}
+                                    className="hidden"
+                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif"
+                                />
+                                {selectedFile ? (
+                                    <div className="flex flex-col items-center gap-2">
+                                        <FileText size={48} className="text-primary" />
+                                        <p className="text-sm font-medium text-text-light dark:text-text-dark">{selectedFile.name}</p>
+                                        <p className="text-xs text-text-muted-light">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center gap-2">
+                                        <UploadCloud size={48} className="text-text-muted-light" />
+                                        <p className="text-sm text-text-light dark:text-text-dark">Click to select a file</p>
+                                        <p className="text-xs text-text-muted-light">PDF, DOCX, XLSX, JPG, PNG (max 50MB)</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Category Selector */}
+                            <div>
+                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Category</label>
+                                <select
+                                    value={uploadCategory}
+                                    onChange={(e) => setUploadCategory(e.target.value)}
+                                    className="w-full px-4 py-2 border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark"
+                                >
+                                    <option value="HR">HR</option>
+                                    <option value="Contracts">Contracts</option>
+                                    <option value="Policies">Policies</option>
+                                    <option value="Finance">Finance</option>
+                                    <option value="Personal">Personal</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3 p-4 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800/50">
+                            <button
+                                onClick={() => { setIsUploadModalOpen(false); setSelectedFile(null); }}
+                                className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleUpload}
+                                disabled={!selectedFile}
+                                className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Upload
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirmId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-card-dark rounded-xl shadow-2xl border border-border-light dark:border-border-dark w-full max-w-sm overflow-hidden">
+                        <div className="p-6 text-center">
+                            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                <Trash2 className="text-red-600 dark:text-red-400" size={24} />
+                            </div>
+                            <h3 className="font-bold text-lg text-text-light dark:text-text-dark mb-2">
+                                Delete Document?
+                            </h3>
+                            <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
+                                This action cannot be undone. The document will be permanently deleted.
+                            </p>
+                        </div>
+                        <div className="flex justify-center gap-3 p-4 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800/50">
+                            <button
+                                onClick={() => setDeleteConfirmId(null)}
+                                className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 flex items-center gap-2"
+                            >
+                                <Trash2 size={16} /> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Toast Notification */}
+            {toast.show && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(prev => ({ ...prev, show: false }))}
+                />
             )}
         </div>
     );

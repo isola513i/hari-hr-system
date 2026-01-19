@@ -1,10 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, AlertCircle, Clock, UserPlus, CheckSquare, FileEdit, Download } from 'lucide-react';
-// Mocks removed
+import { Toast } from '../components/Toast';
 
 export const Compliance: React.FC = () => {
   const [items, setItems] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
+
+  // Toast state
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
+    show: false, message: '', type: 'success'
+  });
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+    setToast({ show: true, message, type });
+  };
+
+  // Report form state
+  const [reportName, setReportName] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -22,6 +34,28 @@ export const Compliance: React.FC = () => {
     fetchData();
   }, []);
 
+  const handleExportData = () => {
+    showToast('Exporting compliance data...', 'info');
+    // Simulate export
+    setTimeout(() => {
+      showToast('Data exported successfully!', 'success');
+    }, 1500);
+  };
+
+  const handleGenerateReport = () => {
+    if (!reportName.trim()) {
+      showToast('Please enter a report name.', 'warning');
+      return;
+    }
+    setIsGenerating(true);
+    // Simulate report generation
+    setTimeout(() => {
+      setIsGenerating(false);
+      showToast(`Report "${reportName}" generated successfully!`, 'success');
+      setReportName('');
+    }, 2000);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <header className="flex flex-wrap justify-between items-center gap-4 mb-8">
@@ -30,7 +64,10 @@ export const Compliance: React.FC = () => {
           <p className="text-text-muted-light dark:text-text-muted-dark text-base">Monitor regulatory adherence and generate custom reports.</p>
         </div>
         <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark font-medium rounded-lg text-sm border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <button
+            onClick={handleExportData}
+            className="flex items-center gap-2 px-5 py-2.5 bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark font-medium rounded-lg text-sm border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
             <Download size={18} />
             Export Data
           </button>
@@ -110,6 +147,8 @@ export const Compliance: React.FC = () => {
                     id="report-name"
                     placeholder="e.g., Q3 Headcount Analysis"
                     type="text"
+                    value={reportName}
+                    onChange={(e) => setReportName(e.target.value)}
                   />
                 </div>
                 <div>
@@ -134,15 +173,28 @@ export const Compliance: React.FC = () => {
                 </div>
               </div>
               <div className="mt-8">
-                <button className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-primary text-white font-medium rounded-lg text-sm shadow-sm hover:bg-primary/90 transition-colors">
+                <button
+                  onClick={handleGenerateReport}
+                  disabled={isGenerating}
+                  className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-primary text-white font-medium rounded-lg text-sm shadow-sm hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <FileEdit size={18} />
-                  Generate Report
+                  {isGenerating ? 'Generating...' : 'Generate Report'}
                 </button>
               </div>
             </div>
           </section>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(prev => ({ ...prev, show: false }))}
+        />
+      )}
     </div>
   );
 };

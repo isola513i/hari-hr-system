@@ -40,6 +40,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // We define a fallback Job Title since it is missing from current backend response.
       const userObj: User = {
         id: data.user.employeeId || data.user.userId,
+        employeeId: data.user.employeeId,
+        email: data.user.email,
         name: data.user.name || 'User',
         role: data.user.role as UserRole,
         avatar: data.user.avatar || 'https://ui-avatars.com/api/?name=User',

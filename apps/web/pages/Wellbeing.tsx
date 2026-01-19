@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Megaphone, ScrollText, PartyPopper, ChevronLeft, ChevronRight, Plus, X, Check, Calendar, Type, AlignLeft } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Announcement } from '../types';
-// Mocks removed
+import { Toast } from '../components/Toast';
 
 export const Wellbeing: React.FC = () => {
   const SENTIMENT_COLORS = ['#2ecc71', '#f39c12', '#e74c3c'];
@@ -13,6 +13,17 @@ export const Wellbeing: React.FC = () => {
   const [newAnnouncement, setNewAnnouncement] = useState<Partial<Announcement>>({
     type: 'announcement'
   });
+
+  // Toast state
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
+    show: false, message: '', type: 'success'
+  });
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+    setToast({ show: true, message, type });
+  };
+
+  // Calendar state
+  const [calendarMonth, setCalendarMonth] = useState('July 2024');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,7 +43,10 @@ export const Wellbeing: React.FC = () => {
 
   const handleSaveAnnouncement = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAnnouncement.title || !newAnnouncement.description) return;
+    if (!newAnnouncement.title || !newAnnouncement.description) {
+      showToast('Please fill in title and description.', 'warning');
+      return;
+    }
 
     const newItem: Announcement = {
       id: Date.now().toString(),
@@ -45,6 +59,15 @@ export const Wellbeing: React.FC = () => {
     setAnnouncementsList([newItem, ...announcementsList]);
     setIsModalOpen(false);
     setNewAnnouncement({ type: 'announcement', title: '', description: '', date: '' });
+    showToast('Announcement posted successfully!', 'success');
+  };
+
+  const handlePrevMonth = () => {
+    showToast('Calendar navigation coming soon!', 'info');
+  };
+
+  const handleNextMonth = () => {
+    showToast('Calendar navigation coming soon!', 'info');
   };
 
   return (
@@ -152,8 +175,8 @@ export const Wellbeing: React.FC = () => {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-text-light dark:text-text-dark text-xl font-bold tracking-tight">Team Calendar</h2>
               <div className="flex items-center gap-2">
-                <button className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark rounded-md"><ChevronLeft size={18} /></button>
-                <button className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark rounded-md"><ChevronRight size={18} /></button>
+                <button onClick={handlePrevMonth} className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark rounded-md"><ChevronLeft size={18} /></button>
+                <button onClick={handleNextMonth} className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark rounded-md"><ChevronRight size={18} /></button>
               </div>
             </div>
 
@@ -310,6 +333,15 @@ export const Wellbeing: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(prev => ({ ...prev, show: false }))}
+        />
       )}
     </div>
   );

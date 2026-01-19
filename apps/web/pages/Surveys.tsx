@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MessageSquare, CheckCircle2, ArrowRight, Clock } from 'lucide-react';
+import { Toast } from '../components/Toast';
 
 export const Surveys: React.FC = () => {
   const activeSurveys = [
@@ -11,6 +12,22 @@ export const Surveys: React.FC = () => {
       { id: 101, title: 'Q2 Satisfaction Survey', date: 'Submitted Jun 15', status: 'Completed' },
       { id: 102, title: 'Manager Feedback 360', date: 'Submitted May 20', status: 'Completed' }
   ];
+
+  // Toast state
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
+    show: false, message: '', type: 'success'
+  });
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+    setToast({ show: true, message, type });
+  };
+
+  const handleStartSurvey = (title: string) => {
+    showToast(`Opening "${title}"...`, 'info');
+  };
+
+  const handleViewHistory = () => {
+    showToast('Full history page coming soon!', 'info');
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -38,7 +55,10 @@ export const Surveys: React.FC = () => {
                                     <span>{survey.time} read</span>
                                 </div>
                             </div>
-                            <button className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 flex items-center gap-1 transition-colors">
+                            <button
+                                onClick={() => handleStartSurvey(survey.title)}
+                                className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 flex items-center gap-1 transition-colors"
+                            >
                                 Start <ArrowRight size={16} />
                             </button>
                         </div>
@@ -69,10 +89,19 @@ export const Surveys: React.FC = () => {
                     ))}
                 </div>
                 <div className="p-4 text-center border-t border-border-light dark:border-border-dark">
-                    <button className="text-sm text-primary hover:underline">View All History</button>
+                    <button onClick={handleViewHistory} className="text-sm text-primary hover:underline">View All History</button>
                 </div>
             </div>
         </div>
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(prev => ({ ...prev, show: false }))}
+        />
+      )}
     </div>
   );
 };

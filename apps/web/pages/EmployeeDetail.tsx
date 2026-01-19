@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// Mocks removed
 import { JobHistoryItem, Employee, PerformanceReview, DocumentItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
+import { Toast } from '../components/Toast';
 import {
     MapPin,
     Mail,
@@ -41,13 +41,24 @@ export const EmployeeDetail: React.FC = () => {
     const { user } = useAuth();
 
     // Permissions Logic
-    const isOwnProfile = user.id === id;
-    const isAdmin = user.role === 'HR_ADMIN';
+    const isOwnProfile = user?.id === id;
+    const isAdmin = user?.role === 'HR_ADMIN';
     const canEditBasicInfo = isAdmin || isOwnProfile; // Admin or Self can edit basic contact info/bio
     const canEditSensitiveInfo = isAdmin; // Only Admin can edit Role, Dept, Status, Dates
     const canViewSensitiveTabs = isAdmin || isOwnProfile; // Peer cannot see Documents, Reviews, etc.
 
     const [activeTab, setActiveTab] = useState<'overview' | 'history' | 'documents' | 'training' | 'performance'>('overview');
+
+    // Toast State
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
+        show: false, message: '', type: 'success'
+    });
+    const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+        setToast({ show: true, message, type });
+    };
+
+    // Loading states
+    const [isSaving, setIsSaving] = useState(false);
 
     // Employee State (initialized from Mock)
     const [employee, setEmployee] = useState<Employee | null>(null);
@@ -123,10 +134,27 @@ export const EmployeeDetail: React.FC = () => {
         }
     };
 
-    const handleProfileSave = () => {
-        if (employee && editForm) {
+    const handleProfileSave = async () => {
+        if (!employee || !editForm) return;
+
+        setIsSaving(true);
+        try {
+            await api.patch(`/employees/${employee.id}`, {
+                name: editForm.name,
+                email: editForm.email,
+                role: editForm.role,
+                department: editForm.department,
+                status: editForm.status,
+                location: editForm.location,
+                bio: editForm.bio
+            });
             setEmployee({ ...employee, ...editForm } as Employee);
             setIsEditProfileOpen(false);
+            showToast('Profile updated successfully!', 'success');
+        } catch (error: any) {
+            showToast(error.message || 'Failed to update profile.', 'error');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -155,9 +183,19 @@ export const EmployeeDetail: React.FC = () => {
         setCurrentSkills(currentSkills.filter(skill => skill !== skillToRemove));
     };
 
-    const handleSaveSkills = () => {
-        setIsEditingSkills(false);
-        // In a real application, you would make an API call here to persist the changes.
+    const handleSaveSkills = async () => {
+        if (!employee) return;
+
+        try {
+            await api.patch(`/employees/${employee.id}`, {
+                skills: currentSkills
+            });
+            setEmployee({ ...employee, skills: currentSkills });
+            setIsEditingSkills(false);
+            showToast('Skills updated successfully!', 'success');
+        } catch (error: any) {
+            showToast(error.message || 'Failed to update skills.', 'error');
+        }
     };
 
     const handleCancelSkills = () => {
@@ -238,7 +276,7 @@ export const EmployeeDetail: React.FC = () => {
         setReviewForm({
             employeeId: id,
             date: new Date().toISOString().split('T')[0],
-            reviewer: user.name,
+            reviewer: user?.name || 'Admin',
             rating: 0,
             notes: ''
         });
@@ -250,9 +288,18 @@ export const EmployeeDetail: React.FC = () => {
         setIsReviewModalOpen(true);
     };
 
+    // Delete confirmation state
+    const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
     const handleDeleteReview = (reviewId: string) => {
-        if (window.confirm('Are you sure you want to delete this review?')) {
-            setReviewsList(reviewsList.filter(r => r.id !== reviewId));
+        setDeleteConfirmId(reviewId);
+    };
+
+    const confirmDeleteReview = () => {
+        if (deleteConfirmId) {
+            setReviewsList(reviewsList.filter(r => r.id !== deleteConfirmId));
+            showToast('Review deleted successfully.', 'success');
+            setDeleteConfirmId(null);
         }
     };
 
@@ -340,9 +387,24 @@ export const EmployeeDetail: React.FC = () => {
                                     </button>
                                     {/* Dropdown for Admin Actions */}
                                     <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-card-dark rounded-lg shadow-lg border border-border-light dark:border-border-dark hidden group-hover:block z-20">
-                                        <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-text-light dark:text-text-dark">Promote</button>
-                                        <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-text-light dark:text-text-dark">Transfer</button>
-                                        <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-red-600 dark:text-red-400">Terminate</button>
+                                        <button
+                                            onClick={() => showToast('Promotion workflow coming soon!', 'info')}
+                                            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-text-light dark:text-text-dark"
+                                        >
+                                            Promote
+                                        </button>
+                                        <button
+                                            onClick={() => showToast('Transfer workflow coming soon!', 'info')}
+                                            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-text-light dark:text-text-dark"
+                                        >
+                                            Transfer
+                                        </button>
+                                        <button
+                                            onClick={() => showToast('Termination workflow coming soon!', 'warning')}
+                                            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-red-600 dark:text-red-400"
+                                        >
+                                            Terminate
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -724,7 +786,10 @@ export const EmployeeDetail: React.FC = () => {
                                                 Upload
                                                 <input type="file" className="hidden" onChange={handleUploadDocument} />
                                             </label>
-                                            <button className="flex items-center gap-2 px-3 py-1.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                                            <button
+                                                onClick={() => showToast('Bulk download feature coming soon!', 'info')}
+                                                className="flex items-center gap-2 px-3 py-1.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                            >
                                                 <Download size={16} />
                                                 Download All
                                             </button>
@@ -767,7 +832,10 @@ export const EmployeeDetail: React.FC = () => {
                                     <div className="flex justify-between items-center mb-4">
                                         <h3 className="text-lg font-bold text-text-light dark:text-text-dark">Training Records</h3>
                                         {isAdmin && (
-                                            <button className="flex items-center gap-2 px-3 py-1.5 bg-primary text-white rounded-md text-sm font-medium hover:bg-primary/90 transition-colors">
+                                            <button
+                                                onClick={() => showToast('Training assignment feature coming soon!', 'info')}
+                                                className="flex items-center gap-2 px-3 py-1.5 bg-primary text-white rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
+                                            >
                                                 Assign Module
                                             </button>
                                         )}
@@ -1251,6 +1319,48 @@ export const EmployeeDetail: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirmId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-6 text-center">
+                            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                <Trash2 className="text-red-600 dark:text-red-400" size={24} />
+                            </div>
+                            <h3 className="font-bold text-lg text-text-light dark:text-text-dark mb-2">
+                                Delete Review?
+                            </h3>
+                            <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
+                                This action cannot be undone. Are you sure you want to delete this performance review?
+                            </p>
+                        </div>
+                        <div className="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-center gap-3 bg-gray-50 dark:bg-gray-800/50">
+                            <button
+                                onClick={() => setDeleteConfirmId(null)}
+                                className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:text-text-muted-dark dark:hover:text-text-dark"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmDeleteReview}
+                                className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 flex items-center gap-2"
+                            >
+                                <Trash2 size={16} /> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Toast Notification */}
+            {toast.show && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(prev => ({ ...prev, show: false }))}
+                />
             )}
         </div>
     );
