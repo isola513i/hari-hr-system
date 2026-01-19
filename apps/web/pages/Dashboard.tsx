@@ -538,20 +538,20 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Main Layout Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-        {/* Headcount Chart - Spans 2 columns */}
-        <div className="lg:col-span-2 bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-3">
+        {/* Headcount Chart - Spans 2 columns on desktop, full width on mobile */}
+        <div className="md:col-span-2 bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 md:p-6 shadow-sm flex flex-col">
+          <div className="flex justify-between items-center mb-4 md:mb-6">
+            <div className="flex items-center gap-2 md:gap-3">
               <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                <Users size={20} />
+                <Users size={18} className="md:w-5 md:h-5" />
               </div>
-              <h2 className="text-lg font-bold text-text-light dark:text-text-dark">Headcount Trends</h2>
+              <h2 className="text-base md:text-lg font-bold text-text-light dark:text-text-dark">Headcount Trends</h2>
             </div>
-            <button className="text-text-muted-light hover:text-primary"><MoreHorizontal size={20} /></button>
+            <button className="text-text-muted-light hover:text-primary hidden md:block"><MoreHorizontal size={20} /></button>
           </div>
-          <div className="h-[250px] w-full flex-grow min-h-[250px]">
+          <div className="h-[200px] md:h-[250px] w-full flex-grow">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={headcountData}>
                 <defs>
@@ -573,14 +573,14 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Upcoming Birthdays / Events */}
-        <div className="lg:col-span-1 bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
+        <div className="md:col-span-1 bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
           <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
-            <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Events</h2>
+            <div className="flex items-center gap-2 md:gap-3">
+              <h2 className="text-base md:text-lg font-semibold text-text-light dark:text-text-dark">Events</h2>
             </div>
             <button onClick={() => navigate('/wellbeing')} className="text-xs text-primary font-medium hover:underline">View All</button>
           </div>
-          <div className="p-4 flex-grow">
+          <div className="p-3 md:p-4 flex-grow">
             <ul className="space-y-4">
               {upcomingEvents.slice(0, 3).map(event => (
                 <li key={event.id} className="flex items-center gap-4">
@@ -606,14 +606,14 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Onboarding Progress Widget */}
-        <div className="lg:col-span-1 bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
+        <div className="md:col-span-1 bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
           <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
-            <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Onboarding</h2>
+            <div className="flex items-center gap-2 md:gap-3">
+              <h2 className="text-base md:text-lg font-semibold text-text-light dark:text-text-dark">Onboarding</h2>
             </div>
             <button onClick={() => navigate('/onboarding')} className="text-xs text-primary font-medium hover:underline">View All</button>
           </div>
-          <div className="p-4 flex-grow">
+          <div className="p-3 md:p-4 flex-grow">
             <ul className="space-y-5">
               {onboardingSummary.map(item => (
                 <li key={item.id}>

@@ -326,7 +326,7 @@ export const Documents: React.FC = () => {
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1 overflow-y-auto p-6 bg-background-light/50 dark:bg-background-dark/50">
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-background-light/50 dark:bg-background-dark/50">
                     {viewMode === 'grid' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                             {filteredDocuments.map(doc => (
@@ -352,64 +352,126 @@ export const Documents: React.FC = () => {
                             ))}
                         </div>
                     ) : (
-                        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden">
-                            <table className="w-full text-left text-sm">
-                                <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-text-muted-light dark:text-text-muted-dark font-semibold">
-                                    <tr>
-                                        <th className="px-6 py-4">Name</th>
-                                        <th className="px-6 py-4">Category</th>
-                                        <th className="px-6 py-4">Size</th>
-                                        <th className="px-6 py-4">Owner</th>
-                                        <th className="px-6 py-4">Last Modified</th>
-                                        <th className="px-6 py-4 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border-light dark:divide-border-dark">
-                                    {filteredDocuments.map(doc => (
-                                        <tr
-                                            key={doc.id}
-                                            onClick={() => setPreviewDoc(doc)}
-                                            className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group cursor-pointer"
-                                        >
-                                            <td className="px-6 py-3 font-medium text-text-light dark:text-text-dark flex items-center gap-3">
-                                                {getFileIcon(doc.type)}
-                                                {doc.name}
-                                            </td>
-                                            <td className="px-6 py-3 text-text-muted-light dark:text-text-muted-dark">
+                        <>
+                            {/* Desktop Table View */}
+                            <div className="hidden md:block bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-text-muted-light dark:text-text-muted-dark font-semibold">
+                                        <tr>
+                                            <th className="px-6 py-4">Name</th>
+                                            <th className="px-6 py-4">Category</th>
+                                            <th className="px-6 py-4">Size</th>
+                                            <th className="px-6 py-4">Owner</th>
+                                            <th className="px-6 py-4">Last Modified</th>
+                                            <th className="px-6 py-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border-light dark:divide-border-dark">
+                                        {filteredDocuments.map(doc => (
+                                            <tr
+                                                key={doc.id}
+                                                onClick={() => setPreviewDoc(doc)}
+                                                className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group cursor-pointer"
+                                            >
+                                                <td className="px-6 py-3 font-medium text-text-light dark:text-text-dark flex items-center gap-3">
+                                                    {getFileIcon(doc.type)}
+                                                    {doc.name}
+                                                </td>
+                                                <td className="px-6 py-3 text-text-muted-light dark:text-text-muted-dark">
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                                                        {doc.category}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-3 text-text-muted-light dark:text-text-muted-dark font-mono text-xs">{doc.size}</td>
+                                                <td className="px-6 py-3 text-text-muted-light dark:text-text-muted-dark">{doc.owner}</td>
+                                                <td className="px-6 py-3 text-text-muted-light dark:text-text-muted-dark">{doc.lastAccessed}</td>
+                                                <td className="px-6 py-3 text-right">
+                                                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={(e) => handleDownload(e, doc.id)}
+                                                            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-text-muted-light hover:text-primary transition-colors" title="Download"
+                                                        >
+                                                            <Download size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => handleShare(e, doc)}
+                                                            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-text-muted-light hover:text-primary transition-colors" title="Share"
+                                                        >
+                                                            <Share2 size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => handleDelete(e, doc.id)}
+                                                            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-text-muted-light hover:text-red-500 transition-colors" title="Delete"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Mobile Card View */}
+                            <div className="md:hidden space-y-3">
+                                {filteredDocuments.map(doc => (
+                                    <div
+                                        key={doc.id}
+                                        onClick={() => setPreviewDoc(doc)}
+                                        className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 hover:shadow-md hover:border-primary/50 transition-all cursor-pointer"
+                                    >
+                                        <div className="flex items-start gap-3 mb-3">
+                                            <div className="flex-shrink-0">
+                                                {getFileIcon(doc.type, 32)}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-medium text-text-light dark:text-text-dark text-sm mb-1 truncate" title={doc.name}>
+                                                    {doc.name}
+                                                </h4>
                                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
                                                     {doc.category}
                                                 </span>
-                                            </td>
-                                            <td className="px-6 py-3 text-text-muted-light dark:text-text-muted-dark font-mono text-xs">{doc.size}</td>
-                                            <td className="px-6 py-3 text-text-muted-light dark:text-text-muted-dark">{doc.owner}</td>
-                                            <td className="px-6 py-3 text-text-muted-light dark:text-text-muted-dark">{doc.lastAccessed}</td>
-                                            <td className="px-6 py-3 text-right">
-                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                        onClick={(e) => handleDownload(e, doc.id)}
-                                                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-text-muted-light hover:text-primary transition-colors" title="Download"
-                                                    >
-                                                        <Download size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => handleShare(e, doc)}
-                                                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-text-muted-light hover:text-primary transition-colors" title="Share"
-                                                    >
-                                                        <Share2 size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => handleDelete(e, doc.id)}
-                                                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-text-muted-light hover:text-red-500 transition-colors" title="Delete"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-2 text-xs text-text-muted-light dark:text-text-muted-dark mb-3">
+                                            <div>
+                                                <span className="font-medium">Size:</span> {doc.size}
+                                            </div>
+                                            <div>
+                                                <span className="font-medium">Owner:</span> {doc.owner}
+                                            </div>
+                                            <div className="col-span-2">
+                                                <span className="font-medium">Modified:</span> {doc.lastAccessed}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 pt-3 border-t border-border-light dark:border-border-dark">
+                                            <button
+                                                onClick={(e) => handleDownload(e, doc.id)}
+                                                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-lg text-xs font-medium hover:bg-primary/20 transition-colors"
+                                            >
+                                                <Download size={14} /> Download
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleShare(e, doc)}
+                                                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-text-light dark:text-text-dark rounded-lg text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                            >
+                                                <Share2 size={14} /> Share
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleDelete(e, doc.id)}
+                                                className="p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                                                title="Delete"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
                     )}
 
                     {filteredDocuments.length === 0 && (

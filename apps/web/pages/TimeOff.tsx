@@ -127,10 +127,12 @@ export const TimeOff: React.FC = () => {
 
       {/* History Table */}
       <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-border-light dark:border-border-dark">
+        <div className="p-4 md:p-6 border-b border-border-light dark:border-border-dark">
           <h2 className="text-lg font-bold text-text-light dark:text-text-dark">Request History</h2>
         </div>
-        <div className="overflow-x-auto">
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-text-muted-light font-semibold">
               <tr>
@@ -165,6 +167,38 @@ export const TimeOff: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden p-4 space-y-3">
+          {myRequests.length > 0 ? (
+            myRequests.map((req) => (
+              <div key={req.id} className="bg-background-light dark:bg-background-dark rounded-lg border border-border-light dark:border-border-dark p-4 hover:shadow-sm transition-shadow">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    {req.type === 'Vacation' ? <Calendar size={20} className="text-blue-600" /> :
+                      req.type === 'Sick Leave' ? <AlertCircle size={20} className="text-orange-600" /> :
+                        <Clock size={20} className="text-purple-600" />}
+                    <h3 className="font-medium text-text-light dark:text-text-dark">{req.type}</h3>
+                  </div>
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${req.status === 'Approved' ? 'bg-green-50 text-green-700 border-green-200' :
+                    req.status === 'Rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                      'bg-yellow-50 text-yellow-700 border-yellow-200'
+                    }`}>
+                    {req.status === 'Approved' && <CheckCircle2 size={12} />}
+                    {req.status === 'Rejected' && <XCircle size={12} />}
+                    {req.status === 'Pending' && <Clock size={12} />}
+                    {req.status}
+                  </span>
+                </div>
+                <div className="text-sm text-text-muted-light dark:text-text-muted-dark">
+                  <span className="font-medium">Dates:</span> {req.dates}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="px-6 py-8 text-center text-text-muted-light">No leave history found.</div>
+          )}
         </div>
       </div>
 
