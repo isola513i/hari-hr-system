@@ -7,6 +7,17 @@ import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import {
+    generalLimiter,
+    authLimiter,
+    apiLimiter,
+    helmetConfig,
+    validateRequest,
+    validateEmployeeCreation,
+    validateLogin,
+    validateLeaveRequest,
+    validateFileUpload
+} from './middlewares/security';
 
 // Extend Express Request
 declare global {
@@ -22,8 +33,23 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3001;
 
-app.use(cors());
-app.use(express.json());
+// Security: Helmet - Security headers
+app.use(helmetConfig);
+
+// Security: CORS configuration
+const corsOptions = {
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true,
+    optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
+
+// Security: Rate limiting for all requests
+app.use(generalLimiter);
+
+// Body parser
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Multer configuration for file uploads
 const storage = multer.diskStorage({
@@ -83,8 +109,8 @@ const authenticateToken = (req: Request, res: Response, next: any) => {
 // ==========================================
 
 // POST /api/auth/login
-// ... (Login Endpoint)
-app.post('/api/auth/login', async (req: Request, res: Response) => {
+// Security: Auth rate limiter + validation
+app.post('/api/auth/login', authLimiter, validateLogin, validateRequest, async (req: Request, res: Response) => {
     // ... (existing code)
     const { email, password } = req.body;
 
@@ -643,8 +669,8 @@ app.get('/api/org-chart', async (req: Request, res: Response) => {
 });
 
 // POST /api/employees (Invite/Add)
-// POST /api/employees (Invite/Add)
-app.post('/api/employees', async (req: Request, res: Response) => {
+// Security: API limiter + validation
+app.post('/api/employees', apiLimiter, validateEmployeeCreation, validateRequest, async (req: Request, res: Response) => {
     // Expect body: { name, email, role, department, managerId, joinDate }
     const { name, email, role, department, managerId, joinDate } = req.body;
 
@@ -725,7 +751,8 @@ app.get('/api/leave-requests', async (req: Request, res: Response) => {
 });
 
 // POST /api/leave-requests
-app.post('/api/leave-requests', async (req: Request, res: Response) => {
+// Security: API limiter + validation
+app.post('/api/leave-requests', apiLimiter, validateLeaveRequest, validateRequest, async (req: Request, res: Response) => {
     // Body: { employeeId, type, startDate, endDate, reason }
     const { employeeId, type, startDate, endDate, reason } = req.body;
 

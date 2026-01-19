@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Bell, Moon, Sun, ChevronDown, LogOut, User as UserIcon, Shield, Lock, Users, FileText, X } from 'lucide-react';
+import { Search, Bell, Moon, Sun, ChevronDown, LogOut, User as UserIcon, Shield, Lock, Users, FileText, X, Menu } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ChangePasswordModal } from './ChangePasswordModal';
@@ -13,7 +13,11 @@ interface SearchResult {
   avatar?: string;
 }
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [darkMode, setDarkMode] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
@@ -127,7 +131,15 @@ export const Header: React.FC = () => {
   return (
     <>
       <ChangePasswordModal isOpen={isChangePasswordOpen} onClose={() => setIsChangePasswordOpen(false)} />
-      <header className="h-16 bg-card-light dark:bg-card-dark border-b border-border-light dark:border-border-dark flex items-center justify-between px-8 sticky top-0 z-20 shadow-sm">
+      <header className="h-16 bg-card-light dark:bg-card-dark border-b border-border-light dark:border-border-dark flex items-center justify-between px-4 md:px-8 sticky top-0 z-20 shadow-sm">
+
+        {/* Mobile Menu Button */}
+        <button
+          onClick={onMenuClick}
+          className="md:hidden p-2 rounded-lg hover:bg-background-light dark:hover:bg-background-dark text-text-light dark:text-text-dark transition-colors"
+        >
+          <Menu size={24} />
+        </button>
 
         {/* Search */}
         <div className="md:w-96 hidden md:block" ref={searchRef}>

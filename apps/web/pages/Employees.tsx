@@ -167,7 +167,8 @@ export const Employees: React.FC = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-text-muted-light dark:text-text-muted-dark font-semibold tracking-wide">
               <tr>
@@ -249,18 +250,94 @@ export const Employees: React.FC = () => {
               ))}
             </tbody>
           </table>
-          {filteredEmployees.length === 0 && (
-            <div className="p-12 text-center text-text-muted-light dark:text-text-muted-dark">
-              <p>No employees found matching your filters.</p>
-              <button
-                onClick={() => { setSearchTerm(''); setDepartmentFilter('All'); setStatusFilter('All'); }}
-                className="mt-2 text-primary hover:underline text-sm"
-              >
-                Clear all filters
-              </button>
-            </div>
-          )}
         </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-4 p-4">
+          {filteredEmployees.map((emp) => (
+            <div
+              key={emp.id}
+              onClick={() => navigate(`/employees/${emp.id}`)}
+              className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 hover:shadow-md transition-shadow cursor-pointer"
+            >
+              {/* Employee Info */}
+              <div className="flex items-center gap-3 mb-3">
+                <img src={emp.avatar} alt={emp.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-primary/20" />
+                <div className="flex-1">
+                  <p className="font-semibold text-text-light dark:text-text-dark">{emp.name}</p>
+                  <p className="text-xs text-text-muted-light dark:text-text-muted-dark flex items-center gap-1">
+                    <Mail size={10} /> {emp.email}
+                  </p>
+                </div>
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${emp.status === 'Active'
+                  ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900'
+                  : emp.status === 'Terminated'
+                    ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900'
+                    : 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-900'
+                  }`}>
+                  {emp.status}
+                </span>
+              </div>
+
+              {/* Details Grid */}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-text-muted-light dark:text-text-muted-dark text-xs">Role</p>
+                  <p className="text-text-light dark:text-text-dark font-medium">{emp.role}</p>
+                </div>
+                <div>
+                  <p className="text-text-muted-light dark:text-text-muted-dark text-xs">Department</p>
+                  <p className="text-text-light dark:text-text-dark font-medium">{emp.department}</p>
+                </div>
+                <div>
+                  <p className="text-text-muted-light dark:text-text-muted-dark text-xs">Onboarding</p>
+                  <div className="flex items-center gap-1">
+                    {getOnboardingIcon(emp.onboardingStatus)}
+                    <span className="text-text-light dark:text-text-dark text-sm">{emp.onboardingStatus}</span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-text-muted-light dark:text-text-muted-dark text-xs">Location</p>
+                  <div className="flex items-center gap-1">
+                    <MapPin size={12} />
+                    <span className="text-text-light dark:text-text-dark text-sm">{emp.location}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 mt-3 pt-3 border-t border-border-light dark:border-border-dark">
+                <button
+                  onClick={(e) => { e.stopPropagation(); navigate(`/employees/${emp.id}`); }}
+                  className="flex-1 px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Eye size={16} /> View Profile
+                </button>
+                {isAdmin && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); showToast('Quick actions menu coming soon!', 'info'); }}
+                    className="px-3 py-2 border border-border-light dark:border-border-dark rounded-lg hover:bg-background-light dark:hover:bg-background-dark transition-colors"
+                  >
+                    <MoreHorizontal size={18} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Empty State */}
+        {filteredEmployees.length === 0 && (
+          <div className="p-12 text-center text-text-muted-light dark:text-text-muted-dark">
+            <p>No employees found matching your filters.</p>
+            <button
+              onClick={() => { setSearchTerm(''); setDepartmentFilter('All'); setStatusFilter('All'); }}
+              className="mt-2 text-primary hover:underline text-sm"
+            >
+              Clear all filters
+            </button>
+          </div>
+        )}
 
         {/* Pagination Placeholder */}
         <div className="p-4 border-t border-border-light dark:border-border-dark flex items-center justify-between text-sm text-text-muted-light dark:text-text-muted-dark">
