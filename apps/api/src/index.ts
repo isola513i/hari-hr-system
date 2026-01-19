@@ -14,6 +14,7 @@ import authRoutes from './routes/authRoutes';
 import employeeRoutes from './routes/employeeRoutes';
 import documentRoutes from './routes/documentRoutes';
 import leaveRequestRoutes from './routes/leaveRequestRoutes';
+import systemConfigRoutes from './routes/systemConfigRoutes';
 
 dotenv.config();
 
@@ -57,6 +58,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/leave-requests', leaveRequestRoutes);
+app.use('/api/configs', systemConfigRoutes);
 
 // Backward compatibility for leave balances endpoint
 // Old: GET /api/leave-balances/:employeeId

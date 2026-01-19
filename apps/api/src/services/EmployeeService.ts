@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import { query } from '../db';
 import { Employee, CreateEmployeeDTO, UpdateEmployeeDTO } from '../models/Employee';
+import SystemConfigService from './SystemConfigService';
 
 export class EmployeeService {
     async getAllEmployees(): Promise<Employee[]> {
@@ -29,10 +30,11 @@ export class EmployeeService {
             throw new Error('Email already exists');
         }
 
-        // Hash password
+        // Hash password - use default from config if not provided
+        const defaultPassword = await SystemConfigService.getDefaultPassword();
         const hashedPassword = password
             ? await bcrypt.hash(password, 10)
-            : await bcrypt.hash('employee123', 10); // Default password
+            : await bcrypt.hash(defaultPassword, 10);
 
         // Generate avatar
         const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;

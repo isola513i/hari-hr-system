@@ -1,5 +1,6 @@
 import { query } from '../db';
 import { LeaveRequest, CreateLeaveRequestDTO, UpdateLeaveRequestDTO } from '../models/LeaveRequest';
+import SystemConfigService from './SystemConfigService';
 
 export class LeaveRequestService {
     async getAllLeaveRequests(): Promise<LeaveRequest[]> {
@@ -80,31 +81,29 @@ export class LeaveRequestService {
 
     async getLeaveBalances(employeeId: string): Promise<any[]> {
         // Get all leave requests for this employee
+        // Calculate days from start_date and end_date since 'days' column doesn't exist
         const result = await query(
-            `SELECT type, SUM(days) as used_days
+            `SELECT leave_type,
+                    SUM((end_date::date - start_date::date) + 1) as used_days
              FROM leave_requests
              WHERE employee_id = $1 AND status = 'Approved'
-             GROUP BY type`,
+             GROUP BY leave_type`,
             [employeeId]
         );
 
         const usedDays = result.rows.reduce((acc: any, row: any) => {
-            acc[row.type] = parseInt(row.used_days);
+            acc[row.leave_type] = parseInt(row.used_days);
             return acc;
         }, {});
 
-        // Define leave types and totals
-        const leaveTypes = [
-            { type: 'Vacation', total: 15 },
-            { type: 'Sick Leave', total: 10 },
-            { type: 'Personal Day', total: Infinity },
-        ];
+        // Get leave quotas from database configuration
+        const leaveQuotas = await SystemConfigService.getLeaveQuotas();
 
-        return leaveTypes.map(({ type, total }) => ({
+        return leaveQuotas.map(({ type, total }) => ({
             type,
-            total,
+            total: total === -1 ? Infinity : total, // -1 in DB means unlimited
             used: usedDays[type] || 0,
-            remaining: total === Infinity ? Infinity : total - (usedDays[type] || 0),
+            remaining: total === -1 ? Infinity : total - (usedDays[type] || 0),
         }));
     }
 
