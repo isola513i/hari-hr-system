@@ -403,6 +403,50 @@ app.get("/api/org-chart", async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/system/setup (Initial setup - only works when database is empty)
+// This allows setting up the database without authentication for first-time deployment
+app.post(
+  "/api/system/setup",
+  async (req: Request, res: Response) => {
+    try {
+      // Check if any users exist
+      const usersResult = await query("SELECT COUNT(*) as count FROM users");
+      const userCount = parseInt(usersResult.rows[0].count, 10);
+
+      if (userCount > 0) {
+        return res.status(403).json({
+          error: "Setup already completed",
+          message: "Database already has users. Use /api/system/seed with admin authentication to reseed."
+        });
+      }
+
+      // Database is empty, safe to seed
+      await runMigration();
+      res.json({
+        message: "Database setup completed successfully",
+        hint: "You can now login with admin@company.com / Admin123!@#"
+      });
+    } catch (err: any) {
+      console.error("Setup error:", err);
+      // If tables don't exist, try running migration anyway
+      if (err.code === '42P01') { // Table doesn't exist error
+        try {
+          await runMigration();
+          res.json({
+            message: "Database setup completed successfully",
+            hint: "You can now login with admin@company.com / Admin123!@#"
+          });
+        } catch (migrationErr) {
+          console.error("Migration error:", migrationErr);
+          res.status(500).json({ error: "Failed to setup database" });
+        }
+      } else {
+        res.status(500).json({ error: "Failed to setup database" });
+      }
+    }
+  }
+);
+
 // POST /api/system/seed (Manually trigger database seed - ADMIN ONLY)
 // Security: This endpoint requires authentication and HR_ADMIN role
 app.post(
