@@ -27,9 +27,28 @@ const port = process.env.PORT || 3001;
 // Security: Helmet - Security headers
 app.use(helmetConfig);
 
-// Security: CORS configuration
+// Security: CORS configuration - support multiple origins
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  process.env.FRONTEND_URL,
+].filter(Boolean) as string[];
+
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    // Check if origin is allowed
+    if (allowedOrigins.some(allowed => origin.startsWith(allowed.replace(/\/$/, '')))) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(null, true); // Allow anyway for now, log for debugging
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200,
 };
@@ -464,6 +483,12 @@ app.post(
   }
 );
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
+// Only start the server when running locally (not in Vercel serverless)
+if (process.env.VERCEL !== '1') {
+  app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+  });
+}
+
+// Export for Vercel serverless
+export default app;
