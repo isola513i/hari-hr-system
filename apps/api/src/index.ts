@@ -3,8 +3,11 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { query } from "./db";
 import path from "path";
+import swaggerUi from "swagger-ui-express";
 import { generalLimiter, helmetConfig } from "./middlewares/security";
 import { auditLogMiddleware, getAuditLogs } from "./middlewares/auditLog";
+import { authenticateToken, requireAdmin } from "./middlewares/auth";
+import { swaggerSpec } from "./config/swagger";
 
 // Import Clean Architecture routes
 import authRoutes from "./routes/authRoutes";
@@ -12,6 +15,8 @@ import employeeRoutes from "./routes/employeeRoutes";
 import documentRoutes from "./routes/documentRoutes";
 import leaveRequestRoutes from "./routes/leaveRequestRoutes";
 import systemConfigRoutes from "./routes/systemConfigRoutes";
+import attendanceRoutes from "./routes/attendanceRoutes";
+import payrollRoutes from "./routes/payrollRoutes";
 import { runMigration } from "./scripts/init-db";
 
 dotenv.config();
@@ -43,7 +48,19 @@ app.use(auditLogMiddleware);
 // Serve uploaded files statically
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
-app.get("/ping", (req, res) => res.send("pong"));
+app.get("/ping", (_req, res) => res.send("pong"));
+
+// API Documentation
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: "HARI HR API Documentation",
+}));
+
+// Serve OpenAPI spec as JSON
+app.get("/api-docs.json", (_req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(swaggerSpec);
+});
 
 // ==========================================
 // CLEAN ARCHITECTURE ROUTES
@@ -57,6 +74,8 @@ app.use("/api/employees", employeeRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/leave-requests", leaveRequestRoutes);
 app.use("/api/configs", systemConfigRoutes);
+app.use("/api/attendance", attendanceRoutes);
+app.use("/api/payroll", payrollRoutes);
 
 // Backward compatibility for leave balances endpoint
 // Old: GET /api/leave-balances/:employeeId
@@ -384,16 +403,22 @@ app.get("/api/org-chart", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/system/seed (Manually trigger database seed)
-app.post("/api/system/seed", async (req: Request, res: Response) => {
-  try {
-    await runMigration();
-    res.json({ message: "Database seeded successfully" });
-  } catch (err) {
-    console.error("Seeding error:", err);
-    res.status(500).json({ error: "Failed to seed database" });
+// POST /api/system/seed (Manually trigger database seed - ADMIN ONLY)
+// Security: This endpoint requires authentication and HR_ADMIN role
+app.post(
+  "/api/system/seed",
+  authenticateToken,
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    try {
+      await runMigration();
+      res.json({ message: "Database seeded successfully" });
+    } catch (err) {
+      console.error("Seeding error:", err);
+      res.status(500).json({ error: "Failed to seed database" });
+    }
   }
-});
+);
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);

@@ -1,12 +1,46 @@
 import { Request, Response } from 'express';
 import EmployeeService from '../services/EmployeeService';
+import { getPaginationParams, getSortParams } from '../utils/pagination';
 
 export class EmployeeController {
+    /**
+     * Get all employees with optional pagination
+     * Query params: page, limit, department, status, search, sortBy, sortOrder
+     */
     async getAllEmployees(req: Request, res: Response): Promise<void> {
         try {
-            const employees = await EmployeeService.getAllEmployees();
-            res.json(employees);
-        } catch (error: any) {
+            // Check if pagination is requested
+            const usePagination = req.query.page !== undefined || req.query.limit !== undefined;
+
+            if (usePagination) {
+                const paginationParams = getPaginationParams(req);
+                const sortParams = getSortParams(
+                    req,
+                    ['name', 'email', 'department', 'role', 'status', 'join_date', 'created_at'],
+                    'name',
+                    'ASC'
+                );
+
+                const filters = {
+                    department: req.query.department as string | undefined,
+                    status: req.query.status as string | undefined,
+                    search: req.query.search as string | undefined,
+                };
+
+                const result = await EmployeeService.getEmployeesPaginated(
+                    paginationParams,
+                    filters,
+                    sortParams.field,
+                    sortParams.order
+                );
+
+                res.json(result);
+            } else {
+                // Backward compatibility: return all employees without pagination
+                const employees = await EmployeeService.getAllEmployees();
+                res.json(employees);
+            }
+        } catch (error: unknown) {
             console.error('Get employees error:', error);
             res.status(500).json({ error: 'Failed to fetch employees' });
         }

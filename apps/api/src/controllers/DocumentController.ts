@@ -2,6 +2,16 @@ import { Request, Response } from 'express';
 import DocumentService from '../services/DocumentService';
 import path from 'path';
 
+// Fix UTF-8 filename encoding from multipart form
+const fixFilename = (filename: string): string => {
+    try {
+        // Try to decode from latin1 to UTF-8 (common browser encoding issue)
+        return Buffer.from(filename, 'latin1').toString('utf8');
+    } catch {
+        return filename;
+    }
+};
+
 export class DocumentController {
     async getAllDocuments(req: Request, res: Response): Promise<void> {
         try {
@@ -28,9 +38,10 @@ export class DocumentController {
                 return;
             }
 
+            const originalName = fixFilename(file.originalname);
             const documentData = {
-                name: file.originalname,
-                type: path.extname(file.originalname).substring(1).toUpperCase(),
+                name: originalName,
+                type: path.extname(originalName).substring(1).toUpperCase(),
                 size: file.size,
                 category,
                 ownerName,
@@ -71,7 +82,7 @@ export class DocumentController {
         try {
             const { id } = req.params;
             await DocumentService.deleteDocument(id);
-            res.json({ message: 'Document deleted successfully' });
+            res.json({ message: 'Document moved to trash' });
         } catch (error: any) {
             console.error('Delete document error:', error);
             if (error.message === 'Document not found') {
@@ -79,6 +90,60 @@ export class DocumentController {
             } else {
                 res.status(500).json({ error: 'Failed to delete document' });
             }
+        }
+    }
+
+    // Get deleted documents (Trash)
+    async getDeletedDocuments(req: Request, res: Response): Promise<void> {
+        try {
+            const documents = await DocumentService.getDeletedDocuments();
+            res.json(documents);
+        } catch (error: any) {
+            console.error('Get deleted documents error:', error);
+            res.status(500).json({ error: 'Failed to fetch deleted documents' });
+        }
+    }
+
+    // Restore from trash
+    async restoreDocument(req: Request, res: Response): Promise<void> {
+        try {
+            const { id } = req.params;
+            const document = await DocumentService.restoreDocument(id);
+            res.json({ message: 'Document restored successfully', document });
+        } catch (error: any) {
+            console.error('Restore document error:', error);
+            if (error.message === 'Document not found') {
+                res.status(404).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: 'Failed to restore document' });
+            }
+        }
+    }
+
+    // Permanent delete
+    async permanentDeleteDocument(req: Request, res: Response): Promise<void> {
+        try {
+            const { id } = req.params;
+            await DocumentService.permanentDeleteDocument(id);
+            res.json({ message: 'Document permanently deleted' });
+        } catch (error: any) {
+            console.error('Permanent delete error:', error);
+            if (error.message === 'Document not found') {
+                res.status(404).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: 'Failed to permanently delete document' });
+            }
+        }
+    }
+
+    // Get storage statistics
+    async getStorageStats(req: Request, res: Response): Promise<void> {
+        try {
+            const stats = await DocumentService.getStorageStats();
+            res.json(stats);
+        } catch (error: any) {
+            console.error('Get storage stats error:', error);
+            res.status(500).json({ error: 'Failed to fetch storage statistics' });
         }
     }
 }

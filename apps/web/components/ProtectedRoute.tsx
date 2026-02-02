@@ -1,13 +1,14 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { UserRole } from '../types';
 
 interface ProtectedRouteProps {
-    requiredRole?: string; // Optional: for future role-based access
+    requiredRole?: UserRole | UserRole[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = () => {
-    const { isAuthenticated, loading } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRole }) => {
+    const { isAuthenticated, loading, user } = useAuth();
 
     if (loading) {
         return (
@@ -19,6 +20,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = () => {
 
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;
+    }
+
+    // Check role-based access if requiredRole is specified
+    if (requiredRole && user) {
+        const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+        if (!allowedRoles.includes(user.role)) {
+            // Redirect to dashboard if user doesn't have required role
+            return <Navigate to="/" replace />;
+        }
     }
 
     return <Outlet />;

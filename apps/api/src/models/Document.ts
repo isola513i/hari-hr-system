@@ -9,6 +9,8 @@ export interface Document {
     lastAccessed: string;
     uploadedAt: string;
     filePath: string;
+    status: string;
+    deletedAt?: string;
 }
 
 export interface CreateDocumentDTO {

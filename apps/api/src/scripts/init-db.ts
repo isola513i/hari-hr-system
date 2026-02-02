@@ -132,10 +132,13 @@ CREATE TABLE documents (
     type VARCHAR(20),
     category VARCHAR(50),
     size VARCHAR(20),
-    owner_name VARCHAR(100), -- Just name for display or link? "owner" in Mock is name
-    employee_id UUID REFERENCES employees(id), -- Link to owner if employee
-    last_accessed TIMESTAMP,
-    status VARCHAR(50)
+    owner_name VARCHAR(100),
+    employee_id UUID REFERENCES employees(id),
+    file_path TEXT,
+    uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_accessed TIMESTAMP WITH TIME ZONE,
+    status VARCHAR(50) DEFAULT 'Active',
+    deleted_at TIMESTAMP WITH TIME ZONE
 );
 
 -- 8. Job History
@@ -188,16 +191,40 @@ CREATE TABLE contacts (
     avatar TEXT
 );
 
--- 13. Audit Logs
+-- 13. Audit Logs (Legacy - for backward compatibility)
 CREATE TABLE audit_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_name VARCHAR(100),
     action VARCHAR(255),
     target VARCHAR(100),
-    time_str VARCHAR(100), -- Keeping string for simplicity to match mock "2 hours ago" for now, or use timestamp
+    time_str VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     type VARCHAR(50)
 );
+
+-- 13b. Audit Logs Persistent (New - comprehensive audit trail)
+CREATE TABLE audit_logs_persistent (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID,
+    user_email VARCHAR(255),
+    action VARCHAR(255) NOT NULL,
+    resource VARCHAR(100) NOT NULL,
+    method VARCHAR(10) NOT NULL,
+    path VARCHAR(500) NOT NULL,
+    ip VARCHAR(45),
+    user_agent TEXT,
+    status_code INT,
+    duration INT,
+    success BOOLEAN DEFAULT TRUE,
+    details JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for audit_logs_persistent
+CREATE INDEX idx_audit_logs_user_id ON audit_logs_persistent(user_id);
+CREATE INDEX idx_audit_logs_action ON audit_logs_persistent(action);
+CREATE INDEX idx_audit_logs_resource ON audit_logs_persistent(resource);
+CREATE INDEX idx_audit_logs_created_at ON audit_logs_persistent(created_at DESC);
 
 -- 14. Headcount Stats
 CREATE TABLE stats_headcount (
@@ -219,6 +246,119 @@ CREATE TABLE sentiment_stats (
     name VARCHAR(50) NOT NULL,
     value INTEGER NOT NULL
 );
+
+-- ==========================================
+-- PERFORMANCE INDEXES
+-- ==========================================
+
+-- Users indexes
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_role ON users(role);
+
+-- Employees indexes
+CREATE INDEX idx_employees_email ON employees(email);
+CREATE INDEX idx_employees_department ON employees(department);
+CREATE INDEX idx_employees_status ON employees(status);
+CREATE INDEX idx_employees_manager_id ON employees(manager_id);
+CREATE INDEX idx_employees_user_id ON employees(user_id);
+CREATE INDEX idx_employees_name ON employees(name);
+
+-- Leave requests indexes
+CREATE INDEX idx_leave_requests_employee_id ON leave_requests(employee_id);
+CREATE INDEX idx_leave_requests_status ON leave_requests(status);
+CREATE INDEX idx_leave_requests_start_date ON leave_requests(start_date);
+CREATE INDEX idx_leave_requests_created_at ON leave_requests(created_at DESC);
+
+-- Leave balances indexes
+CREATE INDEX idx_leave_balances_employee_id ON leave_balances(employee_id);
+CREATE INDEX idx_leave_balances_year ON leave_balances(year);
+
+-- Documents indexes
+CREATE INDEX idx_documents_employee_id ON documents(employee_id);
+CREATE INDEX idx_documents_category ON documents(category);
+
+-- Job history indexes
+CREATE INDEX idx_job_history_employee_id ON job_history(employee_id);
+
+-- Performance reviews indexes
+CREATE INDEX idx_performance_reviews_employee_id ON performance_reviews(employee_id);
+CREATE INDEX idx_performance_reviews_date ON performance_reviews(date DESC);
+
+-- Tasks indexes
+CREATE INDEX idx_tasks_employee_id ON tasks(employee_id);
+CREATE INDEX idx_tasks_due_date ON tasks(due_date);
+CREATE INDEX idx_tasks_completed ON tasks(completed);
+
+-- Employee training indexes
+CREATE INDEX idx_employee_training_employee_id ON employee_training(employee_id);
+CREATE INDEX idx_employee_training_status ON employee_training(status);
+
+-- ==========================================
+-- PAYROLL & ATTENDANCE TABLES
+-- ==========================================
+
+-- 17. Attendance Records
+CREATE TABLE attendance_records (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    clock_in TIMESTAMP WITH TIME ZONE,
+    clock_out TIMESTAMP WITH TIME ZONE,
+    break_duration INT DEFAULT 0, -- in minutes
+    total_hours DECIMAL(5,2),
+    status VARCHAR(20) DEFAULT 'Present', -- Present, Absent, Late, Half-day, Remote
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_attendance UNIQUE (employee_id, date)
+);
+
+-- 18. Payroll Records
+CREATE TABLE payroll_records (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    pay_period_start DATE NOT NULL,
+    pay_period_end DATE NOT NULL,
+    base_salary DECIMAL(12,2) NOT NULL,
+    overtime_hours DECIMAL(5,2) DEFAULT 0,
+    overtime_pay DECIMAL(12,2) DEFAULT 0,
+    bonus DECIMAL(12,2) DEFAULT 0,
+    deductions DECIMAL(12,2) DEFAULT 0,
+    tax_amount DECIMAL(12,2) DEFAULT 0,
+    net_pay DECIMAL(12,2) NOT NULL,
+    status VARCHAR(20) DEFAULT 'Pending', -- Pending, Processed, Paid
+    payment_date DATE,
+    payment_method VARCHAR(50), -- Bank Transfer, Check, Cash
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 19. Salary History
+CREATE TABLE salary_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    effective_date DATE NOT NULL,
+    base_salary DECIMAL(12,2) NOT NULL,
+    previous_salary DECIMAL(12,2),
+    change_reason VARCHAR(100), -- Promotion, Annual Increase, Market Adjustment
+    approved_by UUID REFERENCES employees(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Attendance indexes
+CREATE INDEX idx_attendance_employee_id ON attendance_records(employee_id);
+CREATE INDEX idx_attendance_date ON attendance_records(date DESC);
+CREATE INDEX idx_attendance_status ON attendance_records(status);
+
+-- Payroll indexes
+CREATE INDEX idx_payroll_employee_id ON payroll_records(employee_id);
+CREATE INDEX idx_payroll_period ON payroll_records(pay_period_start, pay_period_end);
+CREATE INDEX idx_payroll_status ON payroll_records(status);
+
+-- Salary history indexes
+CREATE INDEX idx_salary_history_employee_id ON salary_history(employee_id);
+CREATE INDEX idx_salary_history_effective_date ON salary_history(effective_date DESC);
 `;
 
 export const runMigration = async () => {

@@ -10,9 +10,21 @@
         "build:web": "npm run build --workspace=apps/web",
         "test:e2e": "npm run test:e2e --workspace=apps/web",
         "dev:api": "npm run dev --workspace=apps/api",
-        "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\" --kill-others --names \"API,WEB\" --prefix-colors \"blue,green\""
+        "test:api": "npm run test --workspace=apps/api",
+        "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\" --kill-others --names \"API,WEB\" --prefix-colors \"blue,green\"",
+        "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+        "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+        "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+        "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\""
     },
     "devDependencies": {
-        "concurrently": "^9.2.1"
+        "@typescript-eslint/eslint-plugin": "^7.0.0",
+        "@typescript-eslint/parser": "^7.0.0",
+        "concurrently": "^9.2.1",
+        "eslint": "^8.57.0",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-react": "^7.34.0",
+        "eslint-plugin-react-hooks": "^4.6.0",
+        "prettier": "^3.2.5"
     }
 }

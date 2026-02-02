@@ -41,12 +41,13 @@ export interface StatCardProps {
 export interface DocumentItem {
   id: string;
   name: string;
-  type: 'PDF' | 'DOCX' | 'XLSX' | 'JPG' | 'PNG';
-  category: 'Contracts' | 'Policies' | 'Finance' | 'HR' | 'Personal';
+  type: string;
+  category: string;
   size: string;
   owner: string;
   lastAccessed: string;
-  status: 'Viewed' | 'Downloaded' | 'Uploaded';
+  status: 'Active' | 'Deleted';
+  deletedAt?: string;
 }
 
 export interface ChartDataPoint {

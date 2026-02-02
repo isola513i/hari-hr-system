@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import AuditLogService from '../services/AuditLogService';
 
 export interface AuditLog {
     timestamp: string;
@@ -11,11 +12,12 @@ export interface AuditLog {
     ip: string;
     userAgent: string;
     statusCode?: number;
-    details?: any;
+    details?: Record<string, unknown>;
 }
 
-// In-memory audit log store (in production, this should be stored in database)
-const auditLogs: AuditLog[] = [];
+// In-memory cache for recent logs (for quick access, with DB persistence)
+const recentLogs: AuditLog[] = [];
+const MAX_RECENT_LOGS = 100;
 
 // Actions that should be audited
 const auditableActions = [
@@ -29,7 +31,9 @@ const auditableActions = [
     'DELETE /api/documents',
     'POST /api/leave-requests',
     'PUT /api/leave-requests',
+    'PATCH /api/leave-requests',
     'DELETE /api/leave-requests',
+    'POST /api/system/seed',
 ];
 
 export const auditLogMiddleware = (req: Request, res: Response, next: NextFunction) => {
@@ -37,9 +41,7 @@ export const auditLogMiddleware = (req: Request, res: Response, next: NextFuncti
     const originalSend = res.json;
 
     // Override res.json to capture response
-    res.json = function (data: any) {
-        const routeKey = `${req.method} ${req.path}`;
-
+    res.json = function (data: unknown) {
         // Check if this route should be audited
         const shouldAudit = auditableActions.some(route => {
             const [method, path] = route.split(' ');
@@ -47,10 +49,11 @@ export const auditLogMiddleware = (req: Request, res: Response, next: NextFuncti
         });
 
         if (shouldAudit) {
+            const duration = Date.now() - startTime;
             const log: AuditLog = {
                 timestamp: new Date().toISOString(),
-                userId: (req as any).user?.userId || null,
-                userEmail: (req as any).user?.email || null,
+                userId: req.user?.userId || null,
+                userEmail: req.user?.email || null,
                 action: getActionDescription(req.method, req.path),
                 resource: getResourceName(req.path),
                 method: req.method,
@@ -59,27 +62,47 @@ export const auditLogMiddleware = (req: Request, res: Response, next: NextFuncti
                 userAgent: req.get('user-agent') || 'unknown',
                 statusCode: res.statusCode,
                 details: {
-                    duration: Date.now() - startTime,
+                    duration,
                     body: sanitizeBody(req.body),
                     success: res.statusCode < 400,
                 }
             };
 
-            auditLogs.push(log);
-
-            // Keep only last 1000 logs in memory (or configure based on needs)
-            if (auditLogs.length > 1000) {
-                auditLogs.shift();
+            // Add to in-memory cache for quick access
+            recentLogs.push(log);
+            if (recentLogs.length > MAX_RECENT_LOGS) {
+                recentLogs.shift();
             }
 
-            // Log to console for development
-            console.log('[AUDIT]', {
+            // Persist to database (async, non-blocking)
+            AuditLogService.create({
+                userId: log.userId,
+                userEmail: log.userEmail,
                 action: log.action,
-                user: log.userEmail || 'Anonymous',
                 resource: log.resource,
-                status: log.statusCode,
-                ip: log.ip
+                method: log.method,
+                path: log.path,
+                ip: log.ip,
+                userAgent: log.userAgent,
+                statusCode: log.statusCode,
+                duration,
+                success: res.statusCode < 400,
+                details: log.details,
+            }).catch(err => {
+                console.error('[AUDIT] Failed to persist log:', err);
             });
+
+            // Log to console for development
+            if (process.env.NODE_ENV !== 'production') {
+                console.log('[AUDIT]', {
+                    action: log.action,
+                    user: log.userEmail || 'Anonymous',
+                    resource: log.resource,
+                    status: log.statusCode,
+                    duration: `${duration}ms`,
+                    ip: log.ip
+                });
+            }
         }
 
         return originalSend.call(this, data);
@@ -93,6 +116,7 @@ function getActionDescription(method: string, path: string): string {
     if (path.includes('/login')) return 'User Login';
     if (path.includes('/logout')) return 'User Logout';
     if (path.includes('/change-password')) return 'Password Change';
+    if (path.includes('/system/seed')) return 'Database Seed';
 
     if (path.includes('/employees')) {
         if (method === 'POST') return 'Employee Created';
@@ -107,7 +131,7 @@ function getActionDescription(method: string, path: string): string {
 
     if (path.includes('/leave-requests')) {
         if (method === 'POST') return 'Leave Request Created';
-        if (method === 'PUT') return 'Leave Request Updated';
+        if (method === 'PUT' || method === 'PATCH') return 'Leave Request Updated';
         if (method === 'DELETE') return 'Leave Request Deleted';
     }
 
@@ -120,17 +144,18 @@ function getResourceName(path: string): string {
     if (path.includes('/documents')) return 'Document';
     if (path.includes('/leave-requests')) return 'Leave Request';
     if (path.includes('/auth')) return 'Authentication';
+    if (path.includes('/system')) return 'System';
     return 'Unknown';
 }
 
 // Helper to sanitize sensitive data from body
-function sanitizeBody(body: any): any {
+function sanitizeBody(body: Record<string, unknown>): Record<string, unknown> {
     if (!body) return {};
 
     const sanitized = { ...body };
 
     // Remove sensitive fields
-    const sensitiveFields = ['password', 'currentPassword', 'newPassword', 'token'];
+    const sensitiveFields = ['password', 'currentPassword', 'newPassword', 'token', 'password_hash'];
     sensitiveFields.forEach(field => {
         if (sanitized[field]) {
             sanitized[field] = '***REDACTED***';
@@ -140,15 +165,26 @@ function sanitizeBody(body: any): any {
     return sanitized;
 }
 
-// Export function to get audit logs (for API endpoint)
+// Export function to get recent audit logs from memory cache (for quick access)
 export function getAuditLogs(limit: number = 100): AuditLog[] {
-    return auditLogs.slice(-limit).reverse();
+    return recentLogs.slice(-limit).reverse();
 }
 
-// Export function to get audit logs for specific user
+// Export function to get audit logs for specific user from memory cache
 export function getUserAuditLogs(userId: string, limit: number = 50): AuditLog[] {
-    return auditLogs
+    return recentLogs
         .filter(log => log.userId === userId)
         .slice(-limit)
         .reverse();
+}
+
+// Export function to get audit logs from database (for comprehensive history)
+export async function getAuditLogsFromDb(options: {
+    limit?: number;
+    offset?: number;
+    userId?: string;
+    action?: string;
+    resource?: string;
+} = {}) {
+    return AuditLogService.getAll(options);
 }

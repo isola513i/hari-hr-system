@@ -2,11 +2,78 @@ import bcrypt from 'bcrypt';
 import { query } from '../db';
 import { Employee, CreateEmployeeDTO, UpdateEmployeeDTO } from '../models/Employee';
 import SystemConfigService from './SystemConfigService';
+import { PaginationParams, PaginatedResult, createPaginatedResult } from '../utils/pagination';
+
+export interface EmployeeFilters {
+    department?: string;
+    status?: string;
+    search?: string;
+}
 
 export class EmployeeService {
+    /**
+     * Get all employees (no pagination - for backward compatibility)
+     */
     async getAllEmployees(): Promise<Employee[]> {
         const result = await query('SELECT * FROM employees ORDER BY name ASC');
         return result.rows.map(this.mapRowToEmployee);
+    }
+
+    /**
+     * Get employees with pagination and filtering
+     */
+    async getEmployeesPaginated(
+        params: PaginationParams,
+        filters: EmployeeFilters = {},
+        sortField: string = 'name',
+        sortOrder: 'ASC' | 'DESC' = 'ASC'
+    ): Promise<PaginatedResult<Employee>> {
+        const { limit, offset } = params;
+        const { department, status, search } = filters;
+
+        // Build WHERE clause
+        const conditions: string[] = [];
+        const values: unknown[] = [];
+        let paramIndex = 1;
+
+        if (department) {
+            conditions.push(`department = $${paramIndex++}`);
+            values.push(department);
+        }
+        if (status) {
+            conditions.push(`status = $${paramIndex++}`);
+            values.push(status);
+        }
+        if (search) {
+            conditions.push(`(name ILIKE $${paramIndex} OR email ILIKE $${paramIndex} OR role ILIKE $${paramIndex})`);
+            values.push(`%${search}%`);
+            paramIndex++;
+        }
+
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+        // Validate sort field to prevent SQL injection
+        const allowedSortFields = ['name', 'email', 'department', 'role', 'status', 'join_date', 'created_at'];
+        const safeSortField = allowedSortFields.includes(sortField) ? sortField : 'name';
+        const safeSortOrder = sortOrder === 'DESC' ? 'DESC' : 'ASC';
+
+        // Get total count
+        const countResult = await query(
+            `SELECT COUNT(*) as total FROM employees ${whereClause}`,
+            values
+        );
+        const total = parseInt(countResult.rows[0].total, 10);
+
+        // Get paginated data
+        const dataResult = await query(
+            `SELECT * FROM employees ${whereClause}
+             ORDER BY ${safeSortField} ${safeSortOrder}
+             LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
+            [...values, limit, offset]
+        );
+
+        const employees = dataResult.rows.map(this.mapRowToEmployee);
+        return createPaginatedResult(employees, total, params);
     }
 
     async getEmployeeById(id: string): Promise<Employee | null> {

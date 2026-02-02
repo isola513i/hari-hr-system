@@ -20,6 +20,7 @@ import {
     X,
     Trash2,
     Plus,
+    RotateCcw,
 } from 'lucide-react';
 import { DocumentItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -40,12 +41,16 @@ export const Documents: React.FC = () => {
     // Delete confirmation state
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
+    // Dropdown menu state
+    const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
     const [documents, setDocuments] = useState<DocumentItem[]>([]);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [selectedCategory, setSelectedCategory] = useState<string>('All Files');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedFileType, setSelectedFileType] = useState<string>('All');
     const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null);
+    const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
     // Upload State
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -54,6 +59,17 @@ export const Documents: React.FC = () => {
         type: 'PDF' as 'PDF' | 'DOCX' | 'XLSX' | 'JPG' | 'PNG',
         category: 'HR' as 'Contracts' | 'Policies' | 'Finance' | 'HR' | 'Personal',
     });
+
+    const [trashDocuments, setTrashDocuments] = useState<DocumentItem[]>([]);
+
+    // Storage stats
+    const [storageStats, setStorageStats] = useState<{
+        used: number;
+        total: number;
+        usedFormatted: string;
+        totalFormatted: string;
+        percentage: number;
+    } | null>(null);
 
     const fetchDocuments = async () => {
         try {
@@ -64,9 +80,84 @@ export const Documents: React.FC = () => {
         }
     };
 
+    const fetchTrashDocuments = async () => {
+        try {
+            const data = await api.get<DocumentItem[]>('/documents/trash');
+            setTrashDocuments(data);
+        } catch (error) {
+            console.error('Error fetching trash documents:', error);
+        }
+    };
+
+    const fetchStorageStats = async () => {
+        try {
+            const data = await api.get<{
+                used: number;
+                total: number;
+                usedFormatted: string;
+                totalFormatted: string;
+                percentage: number;
+            }>('/documents/storage');
+            setStorageStats(data);
+        } catch (error) {
+            console.error('Error fetching storage stats:', error);
+        }
+    };
+
     useEffect(() => {
         fetchDocuments();
+        fetchTrashDocuments();
+        fetchStorageStats();
     }, []);
+
+    // Fetch image preview with auth token
+    useEffect(() => {
+        if (!previewDoc) {
+            setPreviewImageUrl(null);
+            return;
+        }
+
+        const imageTypes = ['JPG', 'PNG', 'JPEG', 'GIF'];
+        if (!imageTypes.includes(previewDoc.type)) {
+            setPreviewImageUrl(null);
+            return;
+        }
+
+        const fetchImage = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/documents/${previewDoc.id}/download`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    setPreviewImageUrl(url);
+                }
+            } catch (error) {
+                console.error('Error fetching image preview:', error);
+            }
+        };
+
+        fetchImage();
+
+        // Cleanup blob URL on unmount
+        return () => {
+            if (previewImageUrl) {
+                URL.revokeObjectURL(previewImageUrl);
+            }
+        };
+    }, [previewDoc]);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = () => setOpenMenuId(null);
+        if (openMenuId) {
+            document.addEventListener('click', handleClickOutside);
+            return () => document.removeEventListener('click', handleClickOutside);
+        }
+    }, [openMenuId]);
 
     const categories = [
         { name: 'All Files', icon: <FolderOpen size={18} /> },
@@ -81,7 +172,10 @@ export const Documents: React.FC = () => {
 
     const fileTypes = ['All', 'PDF', 'DOCX', 'XLSX', 'JPG', 'PNG'];
 
-    const filteredDocuments = documents.filter(doc => {
+    // Use trashDocuments when viewing Trash, otherwise use active documents
+    const sourceDocuments = selectedCategory === 'Trash' ? trashDocuments : documents;
+
+    const filteredDocuments = sourceDocuments.filter(doc => {
         // 1. Filter by User Role Permission
         // Admins see all. Employees see their own docs OR public policies.
         const hasPermission = isAdmin || doc.owner === user?.name || doc.category === 'Policies';
@@ -90,11 +184,11 @@ export const Documents: React.FC = () => {
         // 2. Filter by Search
         const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase());
 
-        // 3. Filter by Category
+        // 3. Filter by Category (skip for Trash since we already filtered by source)
         const matchesCategory =
             selectedCategory === 'All Files' ? true :
                 selectedCategory === 'Recent' ? true :
-                    selectedCategory === 'Trash' ? false : // Demo logic
+                    selectedCategory === 'Trash' ? true :
                         doc.category === selectedCategory;
 
         // 4. Filter by Type
@@ -192,6 +286,7 @@ export const Documents: React.FC = () => {
             }
 
             fetchDocuments();
+            fetchStorageStats();
             setIsUploadModalOpen(false);
             setSelectedFile(null);
             setUploadCategory('HR');
@@ -213,13 +308,40 @@ export const Documents: React.FC = () => {
         try {
             await api.delete(`/documents/${deleteConfirmId}`);
             fetchDocuments();
+            fetchTrashDocuments();
             if (previewDoc?.id === deleteConfirmId) setPreviewDoc(null);
-            showToast('Document deleted successfully.', 'success');
+            showToast('Document moved to trash.', 'success');
         } catch (error) {
             console.error('Error deleting document:', error);
             showToast('Failed to delete document.', 'error');
         } finally {
             setDeleteConfirmId(null);
+        }
+    };
+
+    const handleRestore = async (e: React.MouseEvent, docId: string) => {
+        e.stopPropagation();
+        try {
+            await api.post(`/documents/${docId}/restore`);
+            fetchDocuments();
+            fetchTrashDocuments();
+            showToast('Document restored successfully.', 'success');
+        } catch (error) {
+            console.error('Error restoring document:', error);
+            showToast('Failed to restore document.', 'error');
+        }
+    };
+
+    const handlePermanentDelete = async (e: React.MouseEvent, docId: string) => {
+        e.stopPropagation();
+        try {
+            await api.delete(`/documents/${docId}/permanent`);
+            fetchTrashDocuments();
+            fetchStorageStats();
+            showToast('Document permanently deleted.', 'success');
+        } catch (error) {
+            console.error('Error permanently deleting document:', error);
+            showToast('Failed to permanently delete document.', 'error');
         }
     };
 
@@ -261,11 +383,17 @@ export const Documents: React.FC = () => {
                         <h3>Storage</h3>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden mb-2">
-                        <div className="bg-accent-orange h-full rounded-full w-[45%]"></div>
+                        <div
+                            className={`h-full rounded-full transition-all ${
+                                (storageStats?.percentage ?? 0) > 90 ? 'bg-red-500' :
+                                (storageStats?.percentage ?? 0) > 70 ? 'bg-accent-orange' : 'bg-green-500'
+                            }`}
+                            style={{ width: `${storageStats?.percentage ?? 0}%` }}
+                        ></div>
                     </div>
                     <div className="flex justify-between text-xs text-text-muted-light dark:text-text-muted-dark">
-                        <span>45 GB used</span>
-                        <span>100 GB total</span>
+                        <span>{storageStats?.usedFormatted ?? '0 B'} used</span>
+                        <span>{storageStats?.totalFormatted ?? '100 GB'} total</span>
                     </div>
                 </div>
             </aside>
@@ -335,18 +463,68 @@ export const Documents: React.FC = () => {
                                     onClick={() => setPreviewDoc(doc)}
                                     className="group bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 hover:shadow-md hover:border-primary/50 transition-all cursor-pointer relative"
                                 >
-                                    <button className="absolute top-2 right-2 p-1 text-text-muted-light hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <MoreVertical size={16} />
-                                    </button>
+                                    {/* Menu Button */}
+                                    <div className="absolute top-2 right-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpenMenuId(openMenuId === doc.id ? null : doc.id);
+                                            }}
+                                            className="p-1.5 text-text-muted-light hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                        >
+                                            <MoreVertical size={16} />
+                                        </button>
+
+                                        {/* Dropdown Menu */}
+                                        {openMenuId === doc.id && (
+                                            <div className="absolute right-0 top-8 w-44 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-border-light dark:border-border-dark py-1 z-10">
+                                                {selectedCategory === 'Trash' ? (
+                                                    <>
+                                                        <button
+                                                            onClick={(e) => { handleRestore(e, doc.id); setOpenMenuId(null); }}
+                                                            className="w-full px-3 py-2 text-left text-sm text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center gap-2"
+                                                        >
+                                                            <RotateCcw size={14} /> Restore
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { handlePermanentDelete(e, doc.id); setOpenMenuId(null); }}
+                                                            className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                                        >
+                                                            <Trash2 size={14} /> Delete Permanently
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            onClick={(e) => { handleDownload(e, doc.id); setOpenMenuId(null); }}
+                                                            className="w-full px-3 py-2 text-left text-sm text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                                        >
+                                                            <Download size={14} /> Download
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { handleShare(e, doc); setOpenMenuId(null); }}
+                                                            className="w-full px-3 py-2 text-left text-sm text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                                        >
+                                                            <Share2 size={14} /> Share
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { handleDelete(e, doc.id); setOpenMenuId(null); }}
+                                                            className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                                        >
+                                                            <Trash2 size={14} /> Move to Trash
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
                                     <div className="h-24 flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 rounded-lg mb-3">
                                         {getFileIcon(doc.type)}
                                     </div>
-                                    <div>
+                                    <div className="min-w-0">
                                         <h4 className="font-medium text-text-light dark:text-text-dark text-sm truncate mb-1" title={doc.name}>{doc.name}</h4>
-                                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark flex justify-between">
-                                            <span>{doc.size}</span>
-                                            <span>{doc.lastAccessed}</span>
-                                        </p>
+                                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark truncate">{doc.size}</p>
                                     </div>
                                 </div>
                             ))}
@@ -498,7 +676,7 @@ export const Documents: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
-                                    onClick={handleDownload}
+                                    onClick={(e) => handleDownload(e, previewDoc.id)}
                                     className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
                                 >
                                     <Download size={16} /> Download
@@ -513,10 +691,16 @@ export const Documents: React.FC = () => {
                         </div>
 
                         <div className="flex-1 bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-8 overflow-auto">
-                            {/* Mock Preview Content */}
-                            {['JPG', 'PNG'].includes(previewDoc.type) ? (
+                            {/* Preview Content */}
+                            {['JPG', 'PNG', 'JPEG', 'GIF'].includes(previewDoc.type) ? (
                                 <div className="relative shadow-lg">
-                                    <img src={`https://picsum.photos/800/600?random=${previewDoc.id}`} alt="Preview" className="max-w-full max-h-full rounded-lg" />
+                                    {previewImageUrl ? (
+                                        <img src={previewImageUrl} alt="Preview" className="max-w-full max-h-full rounded-lg" />
+                                    ) : (
+                                        <div className="flex items-center justify-center h-64 w-64 bg-gray-200 dark:bg-gray-700 rounded-lg">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="text-center p-12 bg-white dark:bg-gray-800 rounded-xl shadow-sm max-w-lg w-full border border-border-light dark:border-border-dark">
@@ -526,7 +710,7 @@ export const Documents: React.FC = () => {
                                     <h4 className="text-xl font-semibold text-text-light dark:text-text-dark mb-2">Preview not available</h4>
                                     <p className="text-text-muted-light mb-6">This file type cannot be previewed directly in the browser. Please download the file to view its contents.</p>
                                     <button
-                                        onClick={handleDownload}
+                                        onClick={(e) => handleDownload(e, previewDoc.id)}
                                         className="px-6 py-2.5 border border-border-light dark:border-border-dark rounded-lg font-medium text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                     >
                                         Download File

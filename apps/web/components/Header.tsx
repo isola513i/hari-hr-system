@@ -1,13 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, Bell, Moon, Sun, ChevronDown, LogOut, User as UserIcon, Shield, Lock, Users, FileText, X, Menu } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { ChangePasswordModal } from './ChangePasswordModal';
-import { api } from '../lib/api';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  Search,
+  Bell,
+  Moon,
+  Sun,
+  ChevronDown,
+  LogOut,
+  User as UserIcon,
+  Shield,
+  Lock,
+  Users,
+  FileText,
+  X,
+  Menu,
+} from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { ChangePasswordModal } from "./ChangePasswordModal";
+import { api } from "../lib/api";
 
 interface SearchResult {
   id: string;
-  type: 'employee' | 'document';
+  type: "employee" | "document";
   title: string;
   subtitle: string;
   avatar?: string;
@@ -27,27 +41,51 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
   // Sample notifications (can be fetched from API later)
   const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Leave Request Approved', message: 'Your vacation request has been approved', time: '5 min ago', read: false },
-    { id: 2, title: 'New Employee Joined', message: 'Sarah Connor joined the Engineering team', time: '1 hour ago', read: false },
-    { id: 3, title: 'Document Shared', message: 'HR Policy 2024 was shared with you', time: '2 hours ago', read: true },
-    { id: 4, title: 'Meeting Reminder', message: 'Team standup in 30 minutes', time: '3 hours ago', read: true },
+    {
+      id: 1,
+      title: "Leave Request Approved",
+      message: "Your vacation request has been approved",
+      time: "5 min ago",
+      read: false,
+    },
+    {
+      id: 2,
+      title: "New Employee Joined",
+      message: "Sarah Connor joined the Engineering team",
+      time: "1 hour ago",
+      read: false,
+    },
+    {
+      id: 3,
+      title: "Document Shared",
+      message: "HR Policy 2024 was shared with you",
+      time: "2 hours ago",
+      read: true,
+    },
+    {
+      id: 4,
+      title: "Meeting Reminder",
+      message: "Team standup in 30 minutes",
+      time: "3 hours ago",
+      read: true,
+    },
   ]);
 
   // Mark all notifications as read
   const handleMarkAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
   // View all notifications (navigate to notifications page or show toast)
   const handleViewAllNotifications = () => {
     setIsNotificationOpen(false);
     // TODO: Replace with navigate('/notifications') when page exists
-    alert('Notifications page coming soon!');
+    alert("Notifications page coming soon!");
   };
   const navigate = useNavigate();
 
   // Search State
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -56,24 +94,30 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   // Dark mode effect
   useEffect(() => {
     if (darkMode) {
-      document.documentElement.classList.add('dark');
+      document.documentElement.classList.add("dark");
     } else {
-      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove("dark");
     }
   }, [darkMode]);
 
   // Close search results and notifications when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
         setShowResults(false);
       }
-      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target as Node)
+      ) {
         setIsNotificationOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Search debounce effect
@@ -88,30 +132,31 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
       setIsSearching(true);
       try {
         // Fetch employees
-        const employees = await api.get<any[]>('/employees');
+        const employees = await api.get<any[]>("/employees");
 
         // Filter by search query
         const query = searchQuery.toLowerCase();
         const employeeResults: SearchResult[] = employees
-          .filter(e =>
-            e.name?.toLowerCase().includes(query) ||
-            e.role?.toLowerCase().includes(query) ||
-            e.department?.toLowerCase().includes(query) ||
-            e.email?.toLowerCase().includes(query)
+          .filter(
+            (e) =>
+              e.name?.toLowerCase().includes(query) ||
+              e.role?.toLowerCase().includes(query) ||
+              e.department?.toLowerCase().includes(query) ||
+              e.email?.toLowerCase().includes(query),
           )
           .slice(0, 5)
-          .map(e => ({
+          .map((e) => ({
             id: e.id,
-            type: 'employee' as const,
+            type: "employee" as const,
             title: e.name,
             subtitle: `${e.role} • ${e.department}`,
-            avatar: e.avatar
+            avatar: e.avatar,
           }));
 
         setSearchResults(employeeResults);
         setShowResults(true);
       } catch (error) {
-        console.error('Search error:', error);
+        console.error("Search error:", error);
       } finally {
         setIsSearching(false);
       }
@@ -121,18 +166,20 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   }, [searchQuery]);
 
   const handleResultClick = (result: SearchResult) => {
-    if (result.type === 'employee') {
+    if (result.type === "employee") {
       navigate(`/employees/${result.id}`);
     }
-    setSearchQuery('');
+    setSearchQuery("");
     setShowResults(false);
   };
 
   return (
     <>
-      <ChangePasswordModal isOpen={isChangePasswordOpen} onClose={() => setIsChangePasswordOpen(false)} />
+      <ChangePasswordModal
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+      />
       <header className="h-16 bg-card-light dark:bg-card-dark border-b border-border-light dark:border-border-dark flex items-center justify-between px-4 md:px-8 sticky top-0 z-20 shadow-sm">
-
         {/* Mobile Menu Button */}
         <button
           onClick={onMenuClick}
@@ -144,7 +191,10 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         {/* Search */}
         <div className="md:w-96 hidden md:block" ref={searchRef}>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark group-focus-within:text-primary transition-colors" size={18} />
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark group-focus-within:text-primary transition-colors"
+              size={18}
+            />
             <input
               type="text"
               value={searchQuery}
@@ -155,7 +205,10 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             />
             {searchQuery && (
               <button
-                onClick={() => { setSearchQuery(''); setShowResults(false); }}
+                onClick={() => {
+                  setSearchQuery("");
+                  setShowResults(false);
+                }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted-light hover:text-text-light transition-colors"
               >
                 <X size={16} />
@@ -166,32 +219,48 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             {showResults && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-lg overflow-hidden z-50">
                 {isSearching ? (
-                  <div className="p-4 text-center text-text-muted-light text-sm">Searching...</div>
+                  <div className="p-4 text-center text-text-muted-light text-sm">
+                    Searching...
+                  </div>
                 ) : searchResults.length > 0 ? (
                   <ul>
-                    {searchResults.map(result => (
+                    {searchResults.map((result) => (
                       <li key={`${result.type}-${result.id}`}>
                         <button
                           onClick={() => handleResultClick(result)}
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-background-light dark:hover:bg-background-dark transition-colors text-left"
                         >
                           {result.avatar ? (
-                            <img src={result.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+                            <img
+                              src={result.avatar}
+                              alt=""
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                              {result.type === 'employee' ? <Users size={16} className="text-primary" /> : <FileText size={16} className="text-primary" />}
+                              {result.type === "employee" ? (
+                                <Users size={16} className="text-primary" />
+                              ) : (
+                                <FileText size={16} className="text-primary" />
+                              )}
                             </div>
                           )}
                           <div>
-                            <p className="text-sm font-medium text-text-light dark:text-text-dark">{result.title}</p>
-                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{result.subtitle}</p>
+                            <p className="text-sm font-medium text-text-light dark:text-text-dark">
+                              {result.title}
+                            </p>
+                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
+                              {result.subtitle}
+                            </p>
                           </div>
                         </button>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <div className="p-4 text-center text-text-muted-light text-sm">No results found</div>
+                  <div className="p-4 text-center text-text-muted-light text-sm">
+                    No results found
+                  </div>
                 )}
               </div>
             )}
@@ -212,7 +281,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               className="relative p-2 rounded-full hover:bg-background-light dark:hover:bg-background-dark text-text-muted-light dark:text-text-muted-dark transition-colors"
             >
               <Bell size={20} />
-              {notifications.filter(n => !n.read).length > 0 && (
+              {notifications.filter((n) => !n.read).length > 0 && (
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent-red rounded-full ring-2 ring-card-light dark:ring-card-dark"></span>
               )}
             </button>
@@ -221,30 +290,54 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             {isNotificationOpen && (
               <div className="absolute right-0 top-full mt-2 w-80 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-lg overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                 <div className="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
-                  <h3 className="font-semibold text-text-light dark:text-text-dark">Notifications</h3>
-                  <button onClick={handleMarkAllRead} className="text-xs text-primary font-medium cursor-pointer hover:underline">Mark all read</button>
+                  <h3 className="font-semibold text-text-light dark:text-text-dark">
+                    Notifications
+                  </h3>
+                  <button
+                    onClick={handleMarkAllRead}
+                    className="text-xs text-primary font-medium cursor-pointer hover:underline"
+                  >
+                    Mark all read
+                  </button>
                 </div>
                 <div className="max-h-80 overflow-y-auto">
-                  {notifications.length > 0 ? notifications.map(notif => (
-                    <div
-                      key={notif.id}
-                      className={`px-4 py-3 hover:bg-background-light dark:hover:bg-background-dark cursor-pointer border-b border-border-light dark:border-border-dark last:border-0 ${!notif.read ? 'bg-primary/5' : ''}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${!notif.read ? 'bg-primary' : 'bg-transparent'}`}></div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-text-light dark:text-text-dark">{notif.title}</p>
-                          <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5 truncate">{notif.message}</p>
-                          <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">{notif.time}</p>
+                  {notifications.length > 0 ? (
+                    notifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        className={`px-4 py-3 hover:bg-background-light dark:hover:bg-background-dark cursor-pointer border-b border-border-light dark:border-border-dark last:border-0 ${!notif.read ? "bg-primary/5" : ""}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${!notif.read ? "bg-primary" : "bg-transparent"}`}
+                          ></div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-text-light dark:text-text-dark">
+                              {notif.title}
+                            </p>
+                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5 truncate">
+                              {notif.message}
+                            </p>
+                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">
+                              {notif.time}
+                            </p>
+                          </div>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="px-4 py-8 text-center text-text-muted-light text-sm">
+                      No notifications
                     </div>
-                  )) : (
-                    <div className="px-4 py-8 text-center text-text-muted-light text-sm">No notifications</div>
                   )}
                 </div>
                 <div className="px-4 py-2 border-t border-border-light dark:border-border-dark text-center">
-                  <button onClick={handleViewAllNotifications} className="text-sm text-primary hover:underline">View All Notifications</button>
+                  <button
+                    onClick={handleViewAllNotifications}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    View All Notifications
+                  </button>
                 </div>
               </div>
             )}
@@ -258,14 +351,18 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               className="flex items-center gap-3 hover:bg-background-light dark:hover:bg-background-dark p-1.5 rounded-lg transition-colors"
             >
               <img
-                src={user?.avatar || 'https://ui-avatars.com/api/?name=User'}
+                src={user?.avatar || "https://ui-avatars.com/api/?name=User"}
                 alt="User"
                 className="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20"
               />
               <div className="text-left hidden sm:block">
-                <p className="text-sm font-semibold text-text-light dark:text-text-dark leading-none">{user?.name}</p>
+                <p className="text-sm font-semibold text-text-light dark:text-text-dark leading-none">
+                  {user?.name}
+                </p>
                 <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1 flex items-center gap-1">
-                  {user?.role === 'HR_ADMIN' && <Shield size={10} className="text-primary" />}
+                  {user?.role === "HR_ADMIN" && (
+                    <Shield size={10} className="text-primary" />
+                  )}
                   {user?.jobTitle}
                 </p>
               </div>

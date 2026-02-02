@@ -61,10 +61,22 @@ router.post(
     DocumentController.createDocument.bind(DocumentController)
 );
 
+// GET /api/documents/trash - Get deleted documents (must be before :id route)
+router.get('/trash', DocumentController.getDeletedDocuments.bind(DocumentController));
+
+// GET /api/documents/storage - Get storage statistics
+router.get('/storage', DocumentController.getStorageStats.bind(DocumentController));
+
 // GET /api/documents/:id/download - Download document
 router.get('/:id/download', DocumentController.downloadDocument.bind(DocumentController));
 
-// DELETE /api/documents/:id - Delete document
+// POST /api/documents/:id/restore - Restore from trash
+router.post('/:id/restore', apiLimiter, DocumentController.restoreDocument.bind(DocumentController));
+
+// DELETE /api/documents/:id - Soft delete (move to trash)
 router.delete('/:id', apiLimiter, DocumentController.deleteDocument.bind(DocumentController));
+
+// DELETE /api/documents/:id/permanent - Permanent delete
+router.delete('/:id/permanent', apiLimiter, DocumentController.permanentDeleteDocument.bind(DocumentController));
 
 export default router;
