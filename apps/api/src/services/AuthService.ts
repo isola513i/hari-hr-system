@@ -6,6 +6,7 @@ import {
   LoginCredentials,
   AuthResponse,
   ChangePasswordRequest,
+  RegisterRequest,
 } from "../models/User";
 
 // Security: Fail fast if JWT_SECRET is not set
@@ -147,6 +148,129 @@ export class AuthService {
     } catch (error) {
       throw new Error("Invalid token");
     }
+  }
+
+  /**
+   * Self-registration for employees added by HR Admin
+   * Employee must exist in employees table but NOT in users table
+   */
+  async register(registerData: RegisterRequest): Promise<AuthResponse> {
+    const { email, password, confirmPassword } = registerData;
+
+    // 1. Validate passwords match
+    if (password !== confirmPassword) {
+      throw new Error("Passwords do not match");
+    }
+
+    // 2. Validate password complexity
+    const passwordValidation = validatePasswordComplexity(password);
+    if (!passwordValidation.valid) {
+      throw new Error(passwordValidation.message);
+    }
+
+    // 3. Check if employee exists (added by HR Admin)
+    const employeeResult = await query(
+      "SELECT * FROM employees WHERE email = $1",
+      [email]
+    );
+
+    if (employeeResult.rows.length === 0) {
+      throw new Error("Email not found. Please contact HR to be added to the system.");
+    }
+
+    const employee = employeeResult.rows[0];
+
+    // 4. Check if user account already exists
+    const existingUser = await query(
+      "SELECT id FROM users WHERE email = $1",
+      [email]
+    );
+
+    if (existingUser.rows.length > 0) {
+      throw new Error("Account already registered. Please login instead.");
+    }
+
+    // 5. Create user account
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userResult = await query(
+      `INSERT INTO users (email, password_hash, role)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [email, hashedPassword, "EMPLOYEE"]
+    );
+
+    const newUser = userResult.rows[0];
+
+    // 6. Link employee to user
+    await query(
+      "UPDATE employees SET user_id = $1 WHERE id = $2",
+      [newUser.id, employee.id]
+    );
+
+    // 7. Generate JWT token and return
+    const token = jwt.sign(
+      {
+        userId: newUser.id,
+        email: newUser.email,
+        role: newUser.role,
+        employeeId: employee.id,
+      },
+      JWT_SECRET,
+      { expiresIn: "8h" }
+    );
+
+    const userResponse: User = {
+      userId: newUser.id,
+      employeeId: employee.id,
+      email: newUser.email,
+      name: employee.name,
+      role: newUser.role,
+      avatar: employee.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.name)}&background=random`,
+      jobTitle: employee.role,
+      department: employee.department,
+    };
+
+    return {
+      token,
+      user: userResponse,
+    };
+  }
+
+  /**
+   * Check if email can register (exists in employees but not in users)
+   */
+  async checkEmailEligibility(email: string): Promise<{ eligible: boolean; message: string; employeeName?: string }> {
+    // Check if employee exists
+    const employeeResult = await query(
+      "SELECT name FROM employees WHERE email = $1",
+      [email]
+    );
+
+    if (employeeResult.rows.length === 0) {
+      return {
+        eligible: false,
+        message: "Email not found in the system. Please contact HR."
+      };
+    }
+
+    // Check if already registered
+    const userResult = await query(
+      "SELECT id FROM users WHERE email = $1",
+      [email]
+    );
+
+    if (userResult.rows.length > 0) {
+      return {
+        eligible: false,
+        message: "Account already registered. Please login."
+      };
+    }
+
+    return {
+      eligible: true,
+      message: "Email eligible for registration",
+      employeeName: employeeResult.rows[0].name
+    };
   }
 }
 

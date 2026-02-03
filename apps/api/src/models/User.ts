@@ -23,3 +23,9 @@ export interface AuthResponse {
     token: string;
     user: User;
 }
+
+export interface RegisterRequest {
+    email: string;
+    password: string;
+    confirmPassword: string;
+}

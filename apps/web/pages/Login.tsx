@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Lock, Mail } from "lucide-react";
 
 const Login: React.FC = () => {
@@ -98,6 +98,15 @@ const Login: React.FC = () => {
             <p>Demo Employee: emma.w@nexus.hr / Welcome123!</p>
           </div>
         </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">
+            New employee?{" "}
+            <Link to="/register" className="text-primary font-medium hover:underline">
+              Create account
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

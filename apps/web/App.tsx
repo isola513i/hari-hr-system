@@ -11,6 +11,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 
 // Lazy load pages for code splitting
 const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
 const Dashboard = lazy(() =>
   import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })),
 );
@@ -75,6 +76,7 @@ const App: React.FC = () => {
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
 
                 <Route element={<ProtectedRoute />}>
                   <Route
