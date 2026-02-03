@@ -26,6 +26,9 @@ router.post(
     EmployeeController.createEmployee.bind(EmployeeController)
 );
 
+// PATCH /api/employees/:id - Update own profile (any authenticated user) or any employee (HR_ADMIN)
+router.patch('/:id', apiLimiter, invalidateCache('/api/employees'), EmployeeController.updateEmployee.bind(EmployeeController));
+
 // PUT /api/employees/:id - Update employee (HR_ADMIN only)
 router.put('/:id', requireAdmin, apiLimiter, invalidateCache('/api/employees'), EmployeeController.updateEmployee.bind(EmployeeController));
 

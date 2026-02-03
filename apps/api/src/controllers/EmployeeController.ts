@@ -84,7 +84,30 @@ export class EmployeeController {
     async updateEmployee(req: Request, res: Response): Promise<void> {
         try {
             const { id } = req.params;
-            const updateData = { id, ...req.body };
+            const user = (req as any).user;
+
+            // Check if user is updating their own profile
+            const isOwnProfile = user?.employeeId === id;
+            const isAdmin = user?.role === 'HR_ADMIN';
+
+            // If not admin and not own profile, deny access
+            if (!isAdmin && !isOwnProfile) {
+                res.status(403).json({ error: 'You can only update your own profile' });
+                return;
+            }
+
+            // If employee updating own profile, restrict fields they can update
+            let updateData = { id, ...req.body };
+            if (!isAdmin && isOwnProfile) {
+                // Employees can only update: name, email, avatar, bio
+                const allowedFields = ['name', 'email', 'avatar', 'bio'];
+                updateData = {
+                    id,
+                    ...Object.fromEntries(
+                        Object.entries(req.body).filter(([key]) => allowedFields.includes(key))
+                    )
+                };
+            }
 
             const employee = await EmployeeService.updateEmployee(updateData);
             res.json(employee);

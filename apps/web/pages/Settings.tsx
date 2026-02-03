@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
 
 export const Settings: React.FC = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = useState<'general' | 'notifications' | 'security' | 'appearance'>('general');
@@ -79,11 +79,20 @@ export const Settings: React.FC = () => {
     setIsSaving(true);
     try {
       const fullName = `${profile.firstName} ${profile.lastName}`.trim();
-      await api.patch(`/employees/${user.employeeId}`, {
+      const updatedEmployee = await api.patch(`/employees/${user.employeeId}`, {
         name: fullName,
         email: profile.email,
-        bio: profile.bio
+        bio: profile.bio,
+        avatar: avatarPreview
       });
+
+      // Update AuthContext with new user data
+      updateUser({
+        name: fullName,
+        email: profile.email,
+        avatar: avatarPreview
+      });
+
       showToast('Profile saved successfully!', 'success');
     } catch (error: any) {
       let errorMessage = 'Failed to save profile. Please try again.';

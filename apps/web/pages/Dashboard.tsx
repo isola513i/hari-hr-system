@@ -135,6 +135,8 @@ export const Dashboard: React.FC = () => {
       setAttendanceStatus(status);
     } catch (error) {
       console.error('Error fetching attendance:', error);
+      // If no attendance record for today, set status to null (not checked in yet)
+      setAttendanceStatus(null);
     }
   };
 
@@ -158,7 +160,14 @@ export const Dashboard: React.FC = () => {
       await fetchAttendanceStatus();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'An error occurred';
-      showToast(message, 'error');
+
+      // If already clocked in, refresh status to sync with server
+      if (message.includes('Already clocked in') || message.includes('already checked in')) {
+        showToast('You have already checked in today', 'info');
+        await fetchAttendanceStatus(); // Refresh to show correct status
+      } else {
+        showToast(message, 'error');
+      }
     } finally {
       setIsClockingIn(false);
     }
@@ -369,22 +378,43 @@ export const Dashboard: React.FC = () => {
             <h1 className="text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">Good Morning, {user?.name?.split(' ')[0]}</h1>
             <p className="text-text-muted-light dark:text-text-muted-dark mt-1">You have {myRequests.filter(r => r.status === 'Pending').length} pending leave requests.</p>
           </div>
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex flex-col items-end gap-2">
+            {/* Attendance Status Badge */}
+            {attendanceStatus?.clock_in && (
+              <div className="flex items-center gap-2">
+                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                  attendanceStatus.clock_out
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                    : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                }`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${
+                    attendanceStatus.clock_out ? 'bg-green-500' : 'bg-blue-500 animate-pulse'
+                  }`}></div>
+                  <span>
+                    {attendanceStatus.clock_out ? 'Completed' : 'Working'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Time Display */}
             {attendanceStatus?.clock_in && (
               <span className="text-xs text-text-muted-light dark:text-text-muted-dark">
                 In: {new Date(attendanceStatus.clock_in).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                 {attendanceStatus.clock_out && ` • Out: ${new Date(attendanceStatus.clock_out).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`}
               </span>
             )}
+
+            {/* Check In/Out Button */}
             <button
               onClick={handleClockAction}
               disabled={isClockingIn || (attendanceStatus?.clock_in && attendanceStatus?.clock_out)}
-              className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg text-sm shadow-sm transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg text-sm shadow-sm transition-all ${
                 attendanceStatus?.clock_in && !attendanceStatus?.clock_out
-                  ? 'bg-accent-orange text-white hover:bg-accent-orange/90'
+                  ? 'bg-accent-orange text-white hover:bg-accent-orange/90 hover:shadow-md'
                   : attendanceStatus?.clock_out
                   ? 'bg-gray-400 text-white cursor-not-allowed'
-                  : 'bg-primary text-white hover:bg-primary/90'
+                  : 'bg-primary text-white hover:bg-primary/90 hover:shadow-md'
               } ${isClockingIn ? 'opacity-70 cursor-wait' : ''}`}
             >
               <Clock size={18} />
