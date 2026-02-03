@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Bell, Lock, Eye, Moon, Sun, Monitor, Globe, Check, Save, AlertCircle, Camera } from 'lucide-react';
+import { User, Bell, Lock, Eye, Moon, Sun, Monitor, Globe, Save, AlertCircle, Camera } from 'lucide-react';
 import { Toast } from '../components/Toast';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';

@@ -57,9 +57,6 @@ export const EmployeeDetail: React.FC = () => {
         setToast({ show: true, message, type });
     };
 
-    // Loading states
-    const [isSaving, setIsSaving] = useState(false);
-
     // Employee State (initialized from Mock)
     const [employee, setEmployee] = useState<Employee | null>(null);
 
@@ -137,7 +134,6 @@ export const EmployeeDetail: React.FC = () => {
     const handleProfileSave = async () => {
         if (!employee || !editForm) return;
 
-        setIsSaving(true);
         try {
             await api.patch(`/employees/${employee.id}`, {
                 name: editForm.name,
@@ -151,10 +147,9 @@ export const EmployeeDetail: React.FC = () => {
             setEmployee({ ...employee, ...editForm } as Employee);
             setIsEditProfileOpen(false);
             showToast('Profile updated successfully!', 'success');
-        } catch (error: any) {
-            showToast(error.message || 'Failed to update profile.', 'error');
-        } finally {
-            setIsSaving(false);
+        } catch (error) {
+            const apiError = error as Error;
+            showToast(apiError.message || 'Failed to update profile.', 'error');
         }
     };
 
@@ -193,8 +188,9 @@ export const EmployeeDetail: React.FC = () => {
             setEmployee({ ...employee, skills: currentSkills });
             setIsEditingSkills(false);
             showToast('Skills updated successfully!', 'success');
-        } catch (error: any) {
-            showToast(error.message || 'Failed to update skills.', 'error');
+        } catch (error) {
+            const apiError = error as Error;
+            showToast(apiError.message || 'Failed to update skills.', 'error');
         }
     };
 
@@ -265,7 +261,7 @@ export const EmployeeDetail: React.FC = () => {
                 size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
                 owner: employee.name,
                 lastAccessed: 'Just now',
-                status: 'Uploaded'
+                status: 'Active'
             };
             setDocumentsList([newDoc, ...documentsList]);
         }

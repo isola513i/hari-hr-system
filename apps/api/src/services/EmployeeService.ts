@@ -108,10 +108,10 @@ export class EmployeeService {
 
         // Insert employee
         const result = await query(
-            `INSERT INTO employees (name, email, role, department, start_date, salary, password, avatar, status, user_role)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            `INSERT INTO employees (name, email, role, department, join_date, avatar, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
              RETURNING *`,
-            [name, email, role, department, startDate, salary || 50000, hashedPassword, avatar, 'Active', 'EMPLOYEE']
+            [name, email, role, department, startDate, avatar, 'Active']
         );
 
         return this.mapRowToEmployee(result.rows[0]);
@@ -152,7 +152,7 @@ export class EmployeeService {
             values.push(data.salary);
         }
         if (data.startDate) {
-            updates.push(`start_date = $${paramIndex++}`);
+            updates.push(`join_date = $${paramIndex++}`);
             values.push(data.startDate);
         }
 
@@ -181,7 +181,7 @@ export class EmployeeService {
             email: row.email,
             role: row.role,
             department: row.department,
-            startDate: row.start_date,
+            startDate: row.join_date,
             salary: row.salary,
             avatar: row.avatar,
             status: row.status,

@@ -16,8 +16,8 @@ export const HeadcountChart: React.FC<HeadcountChartProps> = ({
   data,
   title = 'Headcount Trend',
 }) => {
-  const latestValue = data.length > 0 ? data[data.length - 1].value : 0;
-  const previousValue = data.length > 1 ? data[data.length - 2].value : latestValue;
+  const latestValue = data[data.length - 1]?.value ?? 0;
+  const previousValue = data[data.length - 2]?.value ?? latestValue;
   const growthPercent = previousValue > 0
     ? ((latestValue - previousValue) / previousValue * 100).toFixed(1)
     : '0';

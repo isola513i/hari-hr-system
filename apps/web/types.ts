@@ -185,3 +185,184 @@ export interface PerformanceReview {
   rating: number; // 1 to 5
   notes: string;
 }
+
+// ============================================================================
+// API & Network Types
+// ============================================================================
+
+/**
+ * Authentication credentials for login
+ */
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+/**
+ * Backend user structure (as returned by API)
+ * Different from frontend User type - needs mapping
+ */
+export interface BackendUser {
+  userId: string;
+  employeeId: string;
+  email: string;
+  name: string;
+  role: 'HR_ADMIN' | 'EMPLOYEE';
+  avatar?: string;
+  jobTitle?: string;
+  department?: string;
+}
+
+/**
+ * Authentication response from login endpoint
+ */
+export interface AuthResponse {
+  token: string;
+  user: BackendUser;
+}
+
+/**
+ * Generic API response wrapper
+ */
+export interface ApiResponse<T = unknown> {
+  data?: T;
+  message?: string;
+  error?: string;
+  success?: boolean;
+}
+
+/**
+ * API error response structure
+ */
+export interface ApiErrorResponse {
+  error: string;
+  message?: string;
+  statusCode?: number;
+  details?: Record<string, unknown>;
+}
+
+/**
+ * Error object with optional response
+ */
+export interface NetworkError extends Error {
+  response?: {
+    status: number;
+    data: ApiErrorResponse | Record<string, unknown>;
+  };
+}
+
+// ============================================================================
+// Form Data Types
+// ============================================================================
+
+/**
+ * Employee creation/update form data
+ */
+export interface EmployeeFormData {
+  name: string;
+  email: string;
+  role: string;
+  department: string;
+  jobTitle?: string;
+  location?: string;
+  joinDate?: string;
+  bio?: string;
+  slack?: string;
+  emergencyContact?: string;
+  skills?: string[];
+}
+
+/**
+ * Password change form data
+ */
+export interface PasswordChangeData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+/**
+ * Leave request form data
+ */
+export interface LeaveRequestFormData {
+  type: string;
+  startDate: string;
+  endDate: string;
+  reason?: string;
+}
+
+/**
+ * Document upload form data
+ */
+export interface DocumentUploadData {
+  file: File;
+  category: string;
+  name?: string;
+}
+
+/**
+ * Invitation form data
+ */
+export interface InvitationFormData {
+  email: string;
+  name: string;
+  role: UserRole;
+  department?: string;
+}
+
+// ============================================================================
+// Validation Types
+// ============================================================================
+
+/**
+ * Validation rule configuration
+ */
+export interface ValidationRules {
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: RegExp;
+  custom?: (value: string | number) => string | null;
+}
+
+/**
+ * Form field validation result
+ */
+export interface ValidationResult {
+  isValid: boolean;
+  error?: string;
+}
+
+// ============================================================================
+// Utility Types
+// ============================================================================
+
+/**
+ * Generic pagination parameters
+ */
+export interface PaginationParams {
+  page: number;
+  limit: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+/**
+ * Paginated response wrapper
+ */
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+/**
+ * Filter parameters for employee list
+ */
+export interface EmployeeFilterParams {
+  department?: string;
+  status?: Employee['status'];
+  search?: string;
+}

@@ -36,8 +36,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const data = await api.auth.login({ email, password });
 
-      // Backend returns: { token, user: { userId, email, role, employeeId, name, avatar } }
-      // We define a fallback Job Title since it is missing from current backend response.
+      // Backend returns: { token, user: BackendUser }
+      // Map BackendUser to frontend User type
       const userObj: User = {
         id: data.user.employeeId || data.user.userId,
         employeeId: data.user.employeeId,
@@ -45,7 +45,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         name: data.user.name || 'User',
         role: data.user.role as UserRole,
         avatar: data.user.avatar || 'https://ui-avatars.com/api/?name=User',
-        jobTitle: 'Employee'
+        jobTitle: data.user.jobTitle || 'Employee'
       };
 
       localStorage.setItem('token', data.token);

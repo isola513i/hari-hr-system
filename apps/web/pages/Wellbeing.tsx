@@ -22,9 +22,6 @@ export const Wellbeing: React.FC = () => {
     setToast({ show: true, message, type });
   };
 
-  // Calendar state
-  const [calendarMonth, setCalendarMonth] = useState('July 2024');
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -106,7 +103,7 @@ export const Wellbeing: React.FC = () => {
                       startAngle={90}
                       endAngle={-270}
                     >
-                      {sentimentData.map((entry, index) => (
+                      {sentimentData.map((_, index) => (
                         <Cell key={`cell-${index}`} fill={SENTIMENT_COLORS[index]} />
                       ))}
                     </Pie>

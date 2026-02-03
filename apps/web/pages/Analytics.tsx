@@ -94,7 +94,7 @@ export const Analytics: React.FC = () => {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {deptData.map((entry, index) => (
+                  {deptData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

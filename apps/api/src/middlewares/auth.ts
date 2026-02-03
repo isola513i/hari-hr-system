@@ -37,11 +37,18 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
         return res.status(401).json({ error: 'Authentication required' });
     }
 
-    jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+    jwt.verify(token, JWT_SECRET, (err: jwt.VerifyErrors | null, decoded: unknown) => {
         if (err) {
             return res.status(403).json({ error: 'Invalid or expired token' });
         }
-        req.user = user;
+
+        // Type assertion: we know the structure of our JWT payload
+        req.user = decoded as {
+            userId: string;
+            email: string;
+            role: UserRole;
+            employeeId: string | null;
+        };
         next();
     });
 };

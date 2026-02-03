@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MoreHorizontal, Mail, MapPin, Eye, ChevronDown, X, User, Briefcase, Users, Calendar, Check, Circle, CheckCircle2, Clock } from 'lucide-react';
+import { Search, MoreHorizontal, Mail, MapPin, Eye, ChevronDown, User, Briefcase, Users, Calendar, Check, Circle, CheckCircle2, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Employee } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -93,10 +93,11 @@ export const Employees: React.FC = () => {
       setNewEmployee({ name: '', role: '', department: '', email: '', joinDate: '' });
       showToast(`${newEmployee.name} has been added successfully!`, 'success');
 
-    } catch (error: any) {
-      console.error('Error adding employee:', error);
+    } catch (error) {
+      const apiError = error as Error;
+      console.error('Error adding employee:', apiError);
       let errorMessage = 'Failed to add employee. Please try again.';
-      if (error.message?.includes('already exists')) {
+      if (apiError.message?.includes('already exists')) {
         errorMessage = `This email (${newEmployee.email}) is already registered.`;
       }
       showToast(errorMessage, 'error');

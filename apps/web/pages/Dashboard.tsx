@@ -11,11 +11,6 @@ import {
   Utensils,
   UserMinus,
   Briefcase,
-  X,
-  User,
-  Mail,
-  Calendar,
-  Check,
   Activity,
   StickyNote,
   Cake,
@@ -24,19 +19,25 @@ import {
   Plane,
   FileText,
   DollarSign,
-  ClipboardCheck,
   Palmtree,
-  MessageSquare,
-  AlertCircle
+  MessageSquare
 } from 'lucide-react';
 import { ResponsiveContainer, XAxis, YAxis, AreaChart, Area, Tooltip } from 'recharts';
 import { StatCard } from '../components/StatCard';
 import { Toast } from '../components/Toast';
-import { Modal } from '../components/Modal';
+import { AddEmployeeModal } from '../components/AddEmployeeModal';
+import { LeaveManagementModal } from '../components/LeaveManagementModal';
 // Removed constant imports - using API data
 import { useAuth } from '../contexts/AuthContext';
 import { useLeave } from '../contexts/LeaveContext';
-import { LeaveRequest } from '../types';
+import {
+  Employee,
+  ChartDataPoint,
+  OnboardingProgressSummary,
+  UpcomingEvent,
+  AuditLogItem,
+  Announcement
+} from '../types';
 import { api } from '../lib/api';
 
 export const Dashboard: React.FC = () => {
@@ -69,29 +70,29 @@ export const Dashboard: React.FC = () => {
   const [activeEmployeesCount, setActiveEmployeesCount] = useState(0);
   const [onLeaveCount, setOnLeaveCount] = useState(0);
   const [newHiresCount, setNewHiresCount] = useState(0);
-  const [myTeam, setMyTeam] = useState<any[]>([]);
+  const [myTeam, setMyTeam] = useState<Employee[]>([]);
 
   // ----- WIDGET STATE (Replacing Constants) -----
-  const [headcountData, setHeadcountData] = useState<any[]>([]);
-  const [onboardingSummary, setOnboardingSummary] = useState<any[]>([]);
-  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
-  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [headcountData, setHeadcountData] = useState<ChartDataPoint[]>([]);
+  const [onboardingSummary, setOnboardingSummary] = useState<OnboardingProgressSummary[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
   // Fetch Data from API (Extracted as reusable function)
   const fetchData = async () => {
     try {
       const [employees, auditLogs, headcountStats, events, announcements] = await Promise.all([
-        api.get<any[]>('/employees'),
-        api.get<any[]>('/audit-logs'),
-        api.get<any[]>('/headcount-stats'),
-        api.get<any[]>('/events'),
-        api.get<any[]>('/announcements')
+        api.get<Employee[]>('/employees'),
+        api.get<AuditLogItem[]>('/audit-logs'),
+        api.get<ChartDataPoint[]>('/headcount-stats'),
+        api.get<UpcomingEvent[]>('/events'),
+        api.get<Announcement[]>('/announcements')
       ]);
 
       // Stats
-      setActiveEmployeesCount(employees.filter((e: any) => e.status === 'Active').length);
-      setOnLeaveCount(employees.filter((e: any) => e.status === 'On Leave').length);
+      setActiveEmployeesCount(employees.filter((employee) => employee.status === 'Active').length);
+      setOnLeaveCount(employees.filter((employee) => employee.status === 'On Leave').length);
 
       const currentDate = new Date();
       const currentMonth = currentDate.getMonth();
@@ -105,9 +106,10 @@ export const Dashboard: React.FC = () => {
 
       // My Team (if employee)
       if (user?.role === 'EMPLOYEE') {
-        const me = employees.find((e: any) => e.email === user?.email) || { department: 'Product' };
-        const team = employees.filter((e: any) => e.department === me.department && e.id !== user?.id).slice(0, 3);
-        setMyTeam(team);
+        const currentEmployee = employees.find((employee) => employee.email === user?.email);
+        const department = currentEmployee?.department || 'Product';
+        const teamMembers = employees.filter((employee) => employee.department === department && employee.id !== user?.id).slice(0, 3);
+        setMyTeam(teamMembers);
       }
 
       // Onboarding Summary (Derived)
@@ -117,7 +119,8 @@ export const Dashboard: React.FC = () => {
           id: e.id,
           name: e.name,
           role: e.role,
-          progress: e.onboardingPercentage || 0
+          progress: e.onboardingStatus === 'In Progress' ? 50 : 0, // Simplified: In Progress = 50%, Not Started = 0%
+          avatar: e.avatar
         }));
       setOnboardingSummary(onboarding.length ? onboarding : []);
 
@@ -135,17 +138,6 @@ export const Dashboard: React.FC = () => {
     fetchData();
   }, [user?.role, user?.email, user?.id]);
 
-  // ----- FORM STATE -----
-  const [newEmployee, setNewEmployee] = useState({
-    name: '',
-    role: '',
-    department: '',
-    email: '',
-    joinDate: ''
-  });
-
-  // ----- VALIDATION STATE -----
-  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
   // ----- SHARED HANDLERS -----
   const handleSaveNote = () => {
@@ -165,95 +157,54 @@ export const Dashboard: React.FC = () => {
     updateRequestStatus(id, 'Rejected');
   };
 
-  const validateForm = (): boolean => {
-    const errors: { [key: string]: string } = {};
 
-    // Name validation
-    if (!newEmployee.name.trim()) {
-      errors.name = 'Full name is required';
-    }
-
-    // Role validation
-    if (!newEmployee.role.trim()) {
-      errors.role = 'Role is required';
-    }
-
-    // Department validation
-    if (!newEmployee.department.trim()) {
-      errors.department = 'Department is required';
-    }
-
-    // Email validation
-    if (!newEmployee.email.trim()) {
-      errors.email = 'Email is required';
-    } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(newEmployee.email)) {
-        errors.email = 'Please enter a valid email address';
-      }
-    }
-
-    // Join date validation
-    if (!newEmployee.joinDate) {
-      errors.joinDate = 'Start date is required';
-    }
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleAddEmployeeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Clear previous errors
-    setValidationErrors({});
-
-    // Validate form
-    if (!validateForm()) {
-      showToast('Please fix the errors in the form.', 'warning');
-      return;
-    }
-
+  /**
+   * Handles adding a new employee
+   * Called from AddEmployeeModal component
+   */
+  const handleAddEmployee = async (employeeData: {
+    name: string;
+    role: string;
+    department: string;
+    email: string;
+    joinDate: string;
+  }) => {
     try {
       // Prepare payload matching API expectations
       const payload = {
-        name: newEmployee.name,
-        role: newEmployee.role,
-        department: newEmployee.department,
-        email: newEmployee.email,
-        joinDate: newEmployee.joinDate,
+        ...employeeData,
         managerId: null
       };
 
       // Call API to add employee
       await api.post('/employees', payload);
 
-      // Success: Close modal and reset form
+      // Success: Close modal
       setIsAddEmployeeModalOpen(false);
-      setNewEmployee({ name: '', role: '', department: '', email: '', joinDate: '' });
 
       // Refetch dashboard data to show new employee
       fetchData();
 
       // Show success message
-      showToast(`Successfully added ${newEmployee.name} to the system!`, 'success');
+      showToast(`Successfully added ${employeeData.name} to the system!`, 'success');
 
-    } catch (error: any) {
-      console.error('Error adding employee:', error);
+    } catch (error) {
+      const apiError = error as Error;
+      console.error('Error adding employee:', apiError);
 
       // Parse error message from API
       let errorMessage = 'Failed to add employee. Please try again.';
 
-      if (error.message) {
+      if (apiError.message) {
         // Backend returns clear error messages
-        errorMessage = error.message;
+        errorMessage = apiError.message;
 
         // Make some messages more user-friendly
-        if (error.message.includes('already exists')) {
-          errorMessage = `This email (${newEmployee.email}) is already registered. Please use a different email.`;
-        } else if (error.message.includes('required')) {
+        if (apiError.message.includes('already exists')) {
+          errorMessage = `This email (${employeeData.email}) is already registered. Please use a different email.`;
+        } else if (apiError.message.includes('required')) {
           errorMessage = 'Name and Email are required fields.';
-        } else if (error.message.includes('Failed to add employee')) {
+        } else if (apiError.message.includes('Failed to add employee')) {
           errorMessage = 'Unable to add employee. Please check your connection and try again.';
         }
       }
@@ -743,253 +694,20 @@ export const Dashboard: React.FC = () => {
       {/* MODALS */}
 
       {/* Add Employee Modal */}
-      <Modal
+      <AddEmployeeModal
         isOpen={isAddEmployeeModalOpen}
-        onClose={() => {
-          setIsAddEmployeeModalOpen(false);
-          setValidationErrors({});
-        }}
-        title="Add New Employee"
-        maxWidth="lg"
-      >
-        <form onSubmit={handleAddEmployeeSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Full Name</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-                  <input
-                    type="text"
-                    value={newEmployee.name}
-                    onChange={(e) => {
-                      setNewEmployee({ ...newEmployee, name: e.target.value });
-                      if (validationErrors.name) {
-                        setValidationErrors({ ...validationErrors, name: '' });
-                      }
-                    }}
-                    placeholder="e.g. Alex Morgan"
-                    className={`w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
-                      validationErrors.name
-                        ? 'border-red-500 focus:ring-red-500'
-                        : 'border-border-light dark:border-border-dark focus:ring-primary'
-                    }`}
-                  />
-                  {validationErrors.name && (
-                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" size={16} />
-                  )}
-                </div>
-                {validationErrors.name && (
-                  <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                    {validationErrors.name}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Role</label>
-                  <div className="relative">
-                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-                    <input
-                      type="text"
-                      value={newEmployee.role}
-                      onChange={(e) => {
-                        setNewEmployee({ ...newEmployee, role: e.target.value });
-                        if (validationErrors.role) {
-                          setValidationErrors({ ...validationErrors, role: '' });
-                        }
-                      }}
-                      placeholder="e.g. Designer"
-                      className={`w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
-                        validationErrors.role
-                          ? 'border-red-500 focus:ring-red-500'
-                          : 'border-border-light dark:border-border-dark focus:ring-primary'
-                      }`}
-                    />
-                    {validationErrors.role && (
-                      <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" size={16} />
-                    )}
-                  </div>
-                  {validationErrors.role && (
-                    <p className="mt-1 text-xs text-red-500">{validationErrors.role}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Department</label>
-                  <div className="relative">
-                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-                    <input
-                      type="text"
-                      value={newEmployee.department}
-                      onChange={(e) => {
-                        setNewEmployee({ ...newEmployee, department: e.target.value });
-                        if (validationErrors.department) {
-                          setValidationErrors({ ...validationErrors, department: '' });
-                        }
-                      }}
-                      placeholder="e.g. Product"
-                      className={`w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
-                        validationErrors.department
-                          ? 'border-red-500 focus:ring-red-500'
-                          : 'border-border-light dark:border-border-dark focus:ring-primary'
-                      }`}
-                    />
-                    {validationErrors.department && (
-                      <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" size={16} />
-                    )}
-                  </div>
-                  {validationErrors.department && (
-                    <p className="mt-1 text-xs text-red-500">{validationErrors.department}</p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-                  <input
-                    type="email"
-                    value={newEmployee.email}
-                    onChange={(e) => {
-                      setNewEmployee({ ...newEmployee, email: e.target.value });
-                      if (validationErrors.email) {
-                        setValidationErrors({ ...validationErrors, email: '' });
-                      }
-                    }}
-                    placeholder="e.g. alex@nexus.hr"
-                    className={`w-full pl-10 pr-10 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
-                      validationErrors.email
-                        ? 'border-red-500 focus:ring-red-500'
-                        : 'border-border-light dark:border-border-dark focus:ring-primary'
-                    }`}
-                  />
-                  {validationErrors.email && (
-                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" size={16} />
-                  )}
-                </div>
-                {validationErrors.email && (
-                  <p className="mt-1 text-xs text-red-500">{validationErrors.email}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Start Date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-                  <input
-                    type="date"
-                    value={newEmployee.joinDate}
-                    onChange={(e) => {
-                      setNewEmployee({ ...newEmployee, joinDate: e.target.value });
-                      if (validationErrors.joinDate) {
-                        setValidationErrors({ ...validationErrors, joinDate: '' });
-                      }
-                    }}
-                    className={`w-full pl-10 pr-10 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
-                      validationErrors.joinDate
-                        ? 'border-red-500 focus:ring-red-500'
-                        : 'border-border-light dark:border-border-dark focus:ring-primary'
-                    }`}
-                  />
-                  {validationErrors.joinDate && (
-                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" size={16} />
-                  )}
-                </div>
-                {validationErrors.joinDate && (
-                  <p className="mt-1 text-xs text-red-500">{validationErrors.joinDate}</p>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsAddEmployeeModalOpen(false);
-                    setValidationErrors({});
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:text-text-muted-dark dark:hover:text-text-dark"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 flex items-center gap-2"
-                >
-                  <Check size={16} /> Add Employee
-                </button>
-              </div>
-            </form>
-      </Modal>
+        onClose={() => setIsAddEmployeeModalOpen(false)}
+        onSubmit={handleAddEmployee}
+      />
 
       {/* Leave Management Modal (Admin View of Requests) */}
-      <Modal
+      <LeaveManagementModal
         isOpen={isLeaveModalOpen}
         onClose={() => setIsLeaveModalOpen(false)}
-        title="Manage Leave Requests"
-        maxWidth="xl"
-      >
-        <div className="p-0 overflow-y-auto max-h-[60vh]">
-              {pendingRequests.length > 0 ? (
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-background-light dark:bg-background-dark text-xs uppercase text-text-muted-light font-semibold">
-                    <tr>
-                      <th className="px-6 py-3">Employee</th>
-                      <th className="px-6 py-3">Type</th>
-                      <th className="px-6 py-3">Dates</th>
-                      <th className="px-6 py-3 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border-light dark:divide-border-dark">
-                    {pendingRequests.map(req => (
-                      <tr key={req.id}>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-3">
-                            <img src={req.avatar} alt={req.employeeName} className="w-8 h-8 rounded-full object-cover" />
-                            <span className="font-medium text-text-light dark:text-text-dark">{req.employeeName}</span>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6 text-text-muted-light dark:text-text-muted-dark">{req.type}</td>
-                        <td className="py-4 px-6 text-text-muted-light dark:text-text-muted-dark">{req.dates}</td>
-                        <td className="py-4 px-6 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => handleApproveLeave(req.id)}
-                              className="p-2 text-accent-green bg-accent-green/10 rounded-full hover:bg-accent-green/20 transition-colors"
-                              title="Approve"
-                            >
-                              <Check size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleDeclineLeave(req.id)}
-                              className="p-2 text-accent-red bg-accent-red/10 rounded-full hover:bg-accent-red/20 transition-colors"
-                              title="Decline"
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="p-12 text-center text-text-muted-light dark:text-text-muted-dark">
-                  <CheckCircle2 size={48} className="mx-auto mb-4 text-accent-green opacity-50" />
-                  <p className="text-lg font-medium">No pending requests</p>
-                  <p className="text-sm">You've cleared the queue!</p>
-                </div>
-              )}
-            </div>
-            <div className="px-6 py-4 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800/50 flex justify-end">
-              <button
-                onClick={() => setIsLeaveModalOpen(false)}
-                className="px-4 py-2 bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                Close
-              </button>
-            </div>
-      </Modal>
+        pendingRequests={pendingRequests}
+        onApprove={handleApproveLeave}
+        onDecline={handleDeclineLeave}
+      />
 
       </div>
     </>

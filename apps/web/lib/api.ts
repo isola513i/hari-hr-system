@@ -1,8 +1,12 @@
+import { LoginCredentials, AuthResponse } from '../types';
+
 const BASE_URL = '/api';
 
-interface RequestOptions extends RequestInit {
-    token?: string;
-}
+/**
+ * Type for request body data
+ * Constrains data to be a valid JSON-serializable object
+ */
+type RequestBody = Record<string, unknown> | Array<unknown>;
 
 const getHeaders = () => {
     const headers: HeadersInit = {
@@ -39,7 +43,7 @@ export const api = {
         return handleResponse(response);
     },
 
-    post: async <T>(endpoint: string, data: any): Promise<T> => {
+    post: async <T>(endpoint: string, data: RequestBody): Promise<T> => {
         const response = await fetch(`${BASE_URL}${endpoint}`, {
             method: 'POST',
             headers: getHeaders(),
@@ -48,7 +52,7 @@ export const api = {
         return handleResponse(response);
     },
 
-    patch: async <T>(endpoint: string, data: any): Promise<T> => {
+    patch: async <T>(endpoint: string, data: RequestBody): Promise<T> => {
         const response = await fetch(`${BASE_URL}${endpoint}`, {
             method: 'PATCH',
             headers: getHeaders(),
@@ -67,7 +71,7 @@ export const api = {
 
     // Specifically for login which might not need token header or needs custom handling
     auth: {
-        login: async (credentials: any) => {
+        login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
             const response = await fetch(`${BASE_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

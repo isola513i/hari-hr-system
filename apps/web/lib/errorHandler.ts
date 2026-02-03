@@ -1,18 +1,19 @@
 import { ToastType } from '../contexts/ToastContext';
+import { NetworkError, ApiErrorResponse } from '../types';
 
 export interface ApiError {
   message: string;
   status?: number;
   code?: string;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 /**
  * Parse error from API response
  */
-export const parseApiError = (error: any): ApiError => {
+export const parseApiError = (error: NetworkError | Error): ApiError => {
   // Network error (no response)
-  if (!error.response) {
+  if (!('response' in error) || !error.response) {
     if (error.message === 'Network Error') {
       return {
         message: 'Unable to connect to the server. Please check your internet connection.',
@@ -29,14 +30,22 @@ export const parseApiError = (error: any): ApiError => {
   // HTTP error with response
   const { status, data } = error.response;
 
+  // Helper to safely extract error message
+  const getErrorMessage = (data: ApiErrorResponse | Record<string, unknown>): string | undefined => {
+    if ('error' in data && typeof data.error === 'string') {
+      return data.error;
+    }
+    return undefined;
+  };
+
   // Handle different status codes
   switch (status) {
     case 400:
       return {
-        message: data?.error || 'Invalid request. Please check your input.',
+        message: getErrorMessage(data) || 'Invalid request. Please check your input.',
         status,
         code: 'BAD_REQUEST',
-        details: data,
+        details: data as Record<string, unknown>,
       };
 
     case 401:
@@ -55,24 +64,24 @@ export const parseApiError = (error: any): ApiError => {
 
     case 404:
       return {
-        message: data?.error || 'The requested resource was not found.',
+        message: getErrorMessage(data) || 'The requested resource was not found.',
         status,
         code: 'NOT_FOUND',
       };
 
     case 409:
       return {
-        message: data?.error || 'This resource already exists.',
+        message: getErrorMessage(data) || 'This resource already exists.',
         status,
         code: 'CONFLICT',
       };
 
     case 422:
       return {
-        message: data?.error || 'Validation failed. Please check your input.',
+        message: getErrorMessage(data) || 'Validation failed. Please check your input.',
         status,
         code: 'VALIDATION_ERROR',
-        details: data,
+        details: data as Record<string, unknown>,
       };
 
     case 429:
@@ -98,10 +107,10 @@ export const parseApiError = (error: any): ApiError => {
 
     default:
       return {
-        message: data?.error || `An error occurred (${status})`,
+        message: getErrorMessage(data) || `An error occurred (${status})`,
         status,
         code: 'HTTP_ERROR',
-        details: data,
+        details: data as Record<string, unknown>,
       };
   }
 };
@@ -123,10 +132,10 @@ export const getErrorToastType = (error: ApiError): ToastType => {
  * Handle API error and show appropriate toast
  */
 export const handleApiError = (
-  error: any,
+  error: NetworkError | Error,
   showToast: (message: string, type: ToastType) => void,
   customMessage?: string
-) => {
+): ApiError => {
   const apiError = parseApiError(error);
   const message = customMessage || apiError.message;
   const toastType = getErrorToastType(apiError);
@@ -158,22 +167,26 @@ export const retryRequest = async <T>(
   delay: number = 1000,
   onRetry?: (attempt: number) => void
 ): Promise<T> => {
-  let lastError: any;
+  let lastError: NetworkError | Error | undefined;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
-    } catch (error: any) {
-      lastError = error;
+    } catch (error) {
+      const typedError = error as NetworkError | Error;
+      lastError = typedError;
 
       // Don't retry on client errors (4xx)
-      if (error.response?.status >= 400 && error.response?.status < 500) {
-        throw error;
+      if ('response' in typedError && typedError.response) {
+        const responseStatus = typedError.response.status;
+        if (responseStatus >= 400 && responseStatus < 500) {
+          throw typedError;
+        }
       }
 
       // Don't retry on last attempt
       if (attempt === maxRetries) {
-        throw error;
+        throw typedError;
       }
 
       // Notify about retry
@@ -195,17 +208,20 @@ export const retryRequest = async <T>(
  */
 export const validateField = (
   fieldName: string,
-  value: any,
+  value: unknown,
   rules: {
     required?: boolean;
     minLength?: number;
     maxLength?: number;
     pattern?: RegExp;
-    custom?: (value: any) => string | null;
+    custom?: (value: string | number) => string | null;
   }
 ): string | null => {
+  // Convert value to string for validation
+  const stringValue = value != null ? String(value) : '';
+
   // Required check
-  if (rules.required && (!value || value.toString().trim() === '')) {
+  if (rules.required && (!value || stringValue.trim() === '')) {
     return `${fieldName} is required`;
   }
 
@@ -213,22 +229,22 @@ export const validateField = (
   if (!value) return null;
 
   // Min length check
-  if (rules.minLength && value.toString().length < rules.minLength) {
+  if (rules.minLength && stringValue.length < rules.minLength) {
     return `${fieldName} must be at least ${rules.minLength} characters`;
   }
 
   // Max length check
-  if (rules.maxLength && value.toString().length > rules.maxLength) {
+  if (rules.maxLength && stringValue.length > rules.maxLength) {
     return `${fieldName} must be at most ${rules.maxLength} characters`;
   }
 
   // Pattern check
-  if (rules.pattern && !rules.pattern.test(value.toString())) {
+  if (rules.pattern && !rules.pattern.test(stringValue)) {
     return `${fieldName} format is invalid`;
   }
 
   // Custom validation
-  if (rules.custom) {
+  if (rules.custom && (typeof value === 'string' || typeof value === 'number')) {
     return rules.custom(value);
   }
 

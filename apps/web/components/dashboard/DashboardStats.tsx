@@ -21,33 +21,27 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
         title="Active Employees"
         value={activeEmployeesCount}
         icon={<Users size={24} />}
-        change={`+${Math.round(activeEmployeesCount * 0.03)}`}
-        trend="up"
-        iconBgColor="bg-accent-blue/10"
-        iconColor="text-accent-blue"
+        trend={3}
+        color="primary"
       />
       <StatCard
         title="On Leave Today"
         value={onLeaveCount}
         icon={<UserMinus size={24} />}
-        iconBgColor="bg-accent-orange/10"
-        iconColor="text-accent-orange"
+        color="orange"
       />
       <StatCard
         title="New Joiners (Monthly)"
         value={newHiresCount}
         icon={<UserPlus size={24} />}
-        change="+3"
-        trend="up"
-        iconBgColor="bg-accent-green/10"
-        iconColor="text-accent-green"
+        trend={5}
+        color="green"
       />
       <StatCard
         title="Pending Approvals"
         value={pendingRequestsCount}
         icon={<TrendingUp size={24} />}
-        iconBgColor="bg-accent-red/10"
-        iconColor="text-accent-red"
+        color="red"
       />
     </div>
   );

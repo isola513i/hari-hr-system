@@ -149,10 +149,10 @@ app.get("/api/job-history", async (req: Request, res: Response) => {
   const { employeeId } = req.query;
   try {
     let queryText = "SELECT * FROM job_history";
-    const params: any[] = [];
+    const params: (string | number | boolean | null)[] = [];
     if (employeeId) {
       queryText += " WHERE employee_id = $1";
-      params.push(employeeId);
+      params.push(employeeId as string);
     }
     queryText += " ORDER BY start_date DESC";
 
@@ -177,10 +177,10 @@ app.get("/api/performance-reviews", async (req: Request, res: Response) => {
   const { employeeId } = req.query;
   try {
     let queryText = "SELECT * FROM performance_reviews";
-    const params: any[] = [];
+    const params: (string | number | boolean | null)[] = [];
     if (employeeId) {
       queryText += " WHERE employee_id = $1";
-      params.push(employeeId);
+      params.push(employeeId as string);
     }
     queryText += " ORDER BY date DESC";
 
@@ -445,10 +445,11 @@ app.post(
         message: "Database setup completed successfully",
         hint: "You can now login with admin@company.com / Admin123!@#"
       });
-    } catch (err: any) {
-      console.error("Setup error:", err);
+    } catch (err) {
+      const error = err as { code?: string; message?: string };
+      console.error("Setup error:", error);
       // If tables don't exist, try running migration anyway
-      if (err.code === '42P01') { // Table doesn't exist error
+      if (error.code === '42P01') { // Table doesn't exist error
         try {
           await runMigration();
           res.json({

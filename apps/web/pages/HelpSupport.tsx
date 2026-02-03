@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, HelpCircle, MessageSquare, FileText, ExternalLink, ChevronDown, ChevronUp, Mail, BookOpen, Video } from 'lucide-react';
+import { Search, HelpCircle, ExternalLink, ChevronDown, ChevronUp, Mail, BookOpen, Video } from 'lucide-react';
 
 export const HelpSupport: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');

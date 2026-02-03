@@ -19,7 +19,6 @@ import {
     Filter,
     X,
     Trash2,
-    Plus,
     RotateCcw,
 } from 'lucide-react';
 import { DocumentItem } from '../types';
@@ -54,11 +53,6 @@ export const Documents: React.FC = () => {
 
     // Upload State
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-    const [uploadForm, setUploadForm] = useState({
-        name: '',
-        type: 'PDF' as 'PDF' | 'DOCX' | 'XLSX' | 'JPG' | 'PNG',
-        category: 'HR' as 'Contracts' | 'Policies' | 'Finance' | 'HR' | 'Personal',
-    });
 
     const [trashDocuments, setTrashDocuments] = useState<DocumentItem[]>([]);
 
@@ -157,6 +151,7 @@ export const Documents: React.FC = () => {
             document.addEventListener('click', handleClickOutside);
             return () => document.removeEventListener('click', handleClickOutside);
         }
+        return;
     }, [openMenuId]);
 
     const categories = [
@@ -291,9 +286,10 @@ export const Documents: React.FC = () => {
             setSelectedFile(null);
             setUploadCategory('HR');
             showToast(`"${selectedFile.name}" uploaded successfully!`, 'success');
-        } catch (error: any) {
-            console.error('Error uploading document:', error);
-            showToast(error.message || 'Upload failed. Please try again.', 'error');
+        } catch (error) {
+            const apiError = error as Error;
+            console.error('Error uploading document:', apiError);
+            showToast(apiError.message || 'Upload failed. Please try again.', 'error');
         }
     };
 
@@ -322,7 +318,7 @@ export const Documents: React.FC = () => {
     const handleRestore = async (e: React.MouseEvent, docId: string) => {
         e.stopPropagation();
         try {
-            await api.post(`/documents/${docId}/restore`);
+            await api.post(`/documents/${docId}/restore`, {});
             fetchDocuments();
             fetchTrashDocuments();
             showToast('Document restored successfully.', 'success');

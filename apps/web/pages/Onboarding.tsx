@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
     CheckCircle2,
-    Circle,
     Clock,
     FileText,
-    PlayCircle,
     Upload,
     MoreVertical,
     Mail,
@@ -12,8 +10,6 @@ import {
     Users,
     AlertCircle,
     Filter,
-    X,
-    Check,
     User,
     Briefcase,
     ExternalLink
@@ -39,7 +35,6 @@ export const Onboarding: React.FC = () => {
     // State
     const [tasks, setTasks] = useState<OnboardingTask[]>([]);
     const [keyContacts, setKeyContacts] = useState<KeyContact[]>([]);
-    const [loading, setLoading] = useState(true);
 
     // Filters State
     const [assigneeFilter, setAssigneeFilter] = useState<string>('All');
@@ -65,12 +60,18 @@ export const Onboarding: React.FC = () => {
                     fetch('http://localhost:3000/api/contacts')
                 ]);
 
-                if (tasksRes.ok) setTasks(await tasksRes.json());
+                if (tasksRes.ok) {
+                    const tasksData = await tasksRes.json();
+                    // Normalize tasks to ensure priority is always defined
+                    const normalizedTasks: OnboardingTask[] = tasksData.map((task: any) => ({
+                        ...task,
+                        priority: task.priority || 'Medium'
+                    }));
+                    setTasks(normalizedTasks);
+                }
                 if (contactsRes.ok) setKeyContacts(await contactsRes.json());
             } catch (error) {
                 console.error('Error fetching onboarding data:', error);
-            } finally {
-                setLoading(false);
             }
         };
         fetchData();
@@ -83,15 +84,17 @@ export const Onboarding: React.FC = () => {
     };
 
     const cyclePriority = (id: string) => {
-        setTasks(tasks.map(task => {
+        const updatedTasks: OnboardingTask[] = tasks.map(task => {
             if (task.id === id) {
                 const priorities: ('High' | 'Medium' | 'Low')[] = ['High', 'Medium', 'Low'];
-                const currentIndex = priorities.indexOf(task.priority);
+                const currentPriority: 'High' | 'Medium' | 'Low' = task.priority || 'Medium';
+                const currentIndex = priorities.indexOf(currentPriority);
                 const nextPriority = priorities[(currentIndex + 1) % priorities.length];
-                return { ...task, priority: nextPriority };
+                return { ...task, priority: nextPriority } as OnboardingTask;
             }
-            return task;
-        }));
+            return { ...task, priority: task.priority || 'Medium' } as OnboardingTask;
+        });
+        setTasks(updatedTasks);
     };
 
     const calculateProgress = () => {
@@ -152,7 +155,7 @@ export const Onboarding: React.FC = () => {
 
     const groupedTasks = filteredTasks.reduce((acc, task) => {
         if (!acc[task.stage]) acc[task.stage] = [];
-        acc[task.stage].push(task);
+        acc[task.stage]!.push(task);
         return acc;
     }, {} as Record<string, OnboardingTask[]>);
 
