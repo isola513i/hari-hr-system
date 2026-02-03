@@ -29,7 +29,7 @@ export class LeaveRequestService {
     }
 
     async createLeaveRequest(requestData: CreateLeaveRequestDTO): Promise<LeaveRequest> {
-        const { employeeId, employeeName, type, startDate, endDate, reason } = requestData;
+        const { employeeId, type, startDate, endDate, reason } = requestData;
 
         // Calculate days
         const start = new Date(startDate);
@@ -42,15 +42,16 @@ export class LeaveRequestService {
         const dates = `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
 
         const result = await query(
-            `INSERT INTO leave_requests (employee_id, employee_name, type, start_date, end_date, dates, days, reason, status)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            `INSERT INTO leave_requests (employee_id, type, start_date, end_date, dates, days, reason, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
              RETURNING *`,
-            [employeeId, employeeName, type, startDate, endDate, dates, days, reason || '', 'Pending']
+            [employeeId, type, startDate, endDate, dates, days, reason || '', 'Pending']
         );
 
-        // Get avatar
-        const employeeResult = await query('SELECT avatar FROM employees WHERE id = $1', [employeeId]);
+        // Get employee info (avatar and name)
+        const employeeResult = await query('SELECT avatar, name FROM employees WHERE id = $1', [employeeId]);
         const avatar = employeeResult.rows[0]?.avatar;
+        const employeeName = employeeResult.rows[0]?.name;
 
         // Notify HR admins about new leave request
         try {
@@ -67,6 +68,7 @@ export class LeaveRequestService {
         return {
             ...this.mapRowToLeaveRequest(result.rows[0]),
             avatar,
+            employeeName,
         };
     }
 

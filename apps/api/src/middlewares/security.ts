@@ -3,10 +3,13 @@ import helmet from 'helmet';
 import { body, validationResult } from 'express-validator';
 import { Request, Response, NextFunction } from 'express';
 
+// Check if running in development mode
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 // Rate limiting configuration
 export const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
+    max: isDevelopment ? 1000 : 100, // More lenient in development
     message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
@@ -14,9 +17,11 @@ export const generalLimiter = rateLimit({
 
 // Stricter rate limit for authentication endpoints
 export const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // Limit each IP to 5 login attempts per windowMs
-    message: 'Too many login attempts, please try again after 15 minutes.',
+    windowMs: isDevelopment ? 1 * 60 * 1000 : 15 * 60 * 1000, // 1 min (dev) / 15 min (prod)
+    max: isDevelopment ? 100 : 5, // 100 attempts (dev) / 5 attempts (prod)
+    message: isDevelopment
+        ? 'Too many login attempts, please wait a moment.'
+        : 'Too many login attempts, please try again after 15 minutes.',
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: true, // Don't count successful requests
@@ -25,7 +30,7 @@ export const authLimiter = rateLimit({
 // API rate limiter
 export const apiLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
-    max: 30, // Limit each IP to 30 requests per minute
+    max: isDevelopment ? 500 : 30, // More lenient in development
     message: 'Too many API requests, please slow down.',
 });
 
