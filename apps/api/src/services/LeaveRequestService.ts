@@ -1,6 +1,7 @@
 import { query } from '../db';
 import { LeaveRequest, CreateLeaveRequestDTO, UpdateLeaveRequestDTO } from '../models/LeaveRequest';
 import SystemConfigService from './SystemConfigService';
+import NotificationService from './NotificationService';
 
 export class LeaveRequestService {
     async getAllLeaveRequests(): Promise<LeaveRequest[]> {
@@ -51,6 +52,18 @@ export class LeaveRequestService {
         const employeeResult = await query('SELECT avatar FROM employees WHERE id = $1', [employeeId]);
         const avatar = employeeResult.rows[0]?.avatar;
 
+        // Notify HR admins about new leave request
+        try {
+            await NotificationService.notifyAdmins({
+                title: 'New Leave Request',
+                message: `${employeeName} has submitted a ${type} leave request (${dates}).`,
+                type: 'leave',
+                link: '/time-off',
+            });
+        } catch (notifError) {
+            console.error('Failed to notify admins about leave request:', notifError);
+        }
+
         return {
             ...this.mapRowToLeaveRequest(result.rows[0]),
             avatar,
@@ -69,7 +82,35 @@ export class LeaveRequestService {
             throw new Error('Leave request not found');
         }
 
-        return this.mapRowToLeaveRequest(result.rows[0]);
+        const leaveRequest = this.mapRowToLeaveRequest(result.rows[0]);
+
+        // Send notification to employee about status change
+        try {
+            // Get employee's user_id
+            const employeeResult = await query(
+                'SELECT user_id, name FROM employees WHERE id = $1',
+                [leaveRequest.employeeId]
+            );
+
+            if (employeeResult.rows[0]?.user_id) {
+                const employee = employeeResult.rows[0];
+                const isApproved = status === 'Approved';
+
+                await NotificationService.create({
+                    user_id: employee.user_id,
+                    title: `Leave Request ${status}`,
+                    message: isApproved
+                        ? `Your ${leaveRequest.type} leave request has been approved.`
+                        : `Your ${leaveRequest.type} leave request has been ${status.toLowerCase()}.`,
+                    type: isApproved ? 'success' : 'warning',
+                    link: '/time-off',
+                });
+            }
+        } catch (notifError) {
+            console.error('Failed to send leave status notification:', notifError);
+        }
+
+        return leaveRequest;
     }
 
     async deleteLeaveRequest(id: string): Promise<void> {

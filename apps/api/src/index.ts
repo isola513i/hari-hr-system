@@ -18,6 +18,9 @@ import leaveRequestRoutes from "./routes/leaveRequestRoutes";
 import systemConfigRoutes from "./routes/systemConfigRoutes";
 import attendanceRoutes from "./routes/attendanceRoutes";
 import payrollRoutes from "./routes/payrollRoutes";
+import notificationRoutes from "./routes/notificationRoutes";
+import dashboardRoutes from "./routes/dashboardRoutes";
+import notesRoutes from "./routes/notesRoutes";
 import { runMigration } from "./scripts/init-db";
 
 dotenv.config();
@@ -108,6 +111,9 @@ app.use("/api/leave-requests", leaveRequestRoutes);
 app.use("/api/configs", systemConfigRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/payroll", payrollRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/notes", notesRoutes);
 
 // Backward compatibility for leave balances endpoint
 // Old: GET /api/leave-balances/:employeeId

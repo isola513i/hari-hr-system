@@ -55,6 +55,18 @@ export const Dashboard: React.FC = () => {
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [quickNote, setQuickNote] = useState('');
 
+  // ----- NOTES STATE -----
+  interface Note {
+    id: string;
+    content: string;
+    color: string;
+    pinned: boolean;
+    createdAt: string;
+    updatedAt: string;
+  }
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [isSavingNote, setIsSavingNote] = useState(false);
+
   // ----- TOAST STATE -----
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
     show: false,
@@ -71,6 +83,86 @@ export const Dashboard: React.FC = () => {
   const [onLeaveCount, setOnLeaveCount] = useState(0);
   const [newHiresCount, setNewHiresCount] = useState(0);
   const [myTeam, setMyTeam] = useState<Employee[]>([]);
+
+  // ----- ATTENDANCE STATE -----
+  interface AttendanceStatus {
+    id?: string;
+    clock_in?: string;
+    clock_out?: string;
+    status?: string;
+  }
+  const [attendanceStatus, setAttendanceStatus] = useState<AttendanceStatus | null>(null);
+  const [isClockingIn, setIsClockingIn] = useState(false);
+
+  // ----- EMPLOYEE STATS STATE -----
+  interface EmployeeStats {
+    leaveBalance: number;
+    nextPayday: string | null;
+    pendingReviews: number;
+    pendingSurveys: number;
+  }
+  const [employeeStats, setEmployeeStats] = useState<EmployeeStats>({
+    leaveBalance: 0,
+    nextPayday: null,
+    pendingReviews: 0,
+    pendingSurveys: 0,
+  });
+
+  // Fetch employee stats from API
+  const fetchEmployeeStats = async () => {
+    try {
+      const stats = await api.get<EmployeeStats>('/dashboard/employee-stats');
+      setEmployeeStats(stats);
+    } catch (error) {
+      console.error('Error fetching employee stats:', error);
+    }
+  };
+
+  // Fetch my team from API
+  const fetchMyTeamFromAPI = async () => {
+    try {
+      const team = await api.get<Employee[]>('/dashboard/my-team');
+      setMyTeam(team);
+    } catch (error) {
+      console.error('Error fetching my team:', error);
+    }
+  };
+
+  // Fetch today's attendance status
+  const fetchAttendanceStatus = async () => {
+    try {
+      const status = await api.get<AttendanceStatus>('/attendance/today');
+      setAttendanceStatus(status);
+    } catch (error) {
+      console.error('Error fetching attendance:', error);
+    }
+  };
+
+  // Handle clock in/out
+  const handleClockAction = async () => {
+    setIsClockingIn(true);
+    try {
+      const isClockedIn = attendanceStatus?.clock_in && !attendanceStatus?.clock_out;
+
+      if (isClockedIn) {
+        // Clock out
+        await api.post('/attendance/clock-out', {});
+        showToast('Checked out successfully!', 'success');
+      } else {
+        // Clock in
+        await api.post('/attendance/clock-in', {});
+        showToast('Checked in successfully!', 'success');
+      }
+
+      // Refresh status
+      await fetchAttendanceStatus();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      showToast(message, 'error');
+    } finally {
+      setIsClockingIn(false);
+    }
+  };
 
   // ----- WIDGET STATE (Replacing Constants) -----
   const [headcountData, setHeadcountData] = useState<ChartDataPoint[]>([]);
@@ -138,12 +230,52 @@ export const Dashboard: React.FC = () => {
     fetchData();
   }, [user?.role, user?.email, user?.id]);
 
+  // Fetch attendance status and employee stats on mount (for employees)
+  useEffect(() => {
+    if (user?.role === 'EMPLOYEE') {
+      fetchAttendanceStatus();
+      fetchEmployeeStats();
+      fetchMyTeamFromAPI();
+    }
+  }, [user?.role]);
 
-  // ----- SHARED HANDLERS -----
-  const handleSaveNote = () => {
+  // Fetch notes on mount (for all users)
+  useEffect(() => {
+    fetchNotes();
+  }, []);
+
+
+  // ----- NOTES HANDLERS -----
+  const fetchNotes = async () => {
+    try {
+      const fetchedNotes = await api.get<Note[]>('/notes');
+      setNotes(fetchedNotes);
+      // If there are notes, show the most recent one in the textarea
+      if (fetchedNotes.length > 0) {
+        // Show pinned note first, or most recent
+        const pinnedNote = fetchedNotes.find(n => n.pinned);
+        setQuickNote(pinnedNote?.content || fetchedNotes[0].content);
+      }
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    }
+  };
+
+  const handleSaveNote = async () => {
     if (!quickNote.trim()) return;
-    showToast("Note saved to your personal dashboard.", "success");
-    setQuickNote('');
+    setIsSavingNote(true);
+    try {
+      await api.post('/notes', { content: quickNote.trim() });
+      showToast("Note saved successfully!", "success");
+      setQuickNote('');
+      // Refresh notes list
+      fetchNotes();
+    } catch (error) {
+      console.error('Error saving note:', error);
+      showToast("Failed to save note", "error");
+    } finally {
+      setIsSavingNote(false);
+    }
   };
 
   // ----- ADMIN HANDLERS -----
@@ -237,10 +369,32 @@ export const Dashboard: React.FC = () => {
             <h1 className="text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">Good Morning, {user?.name?.split(' ')[0]}</h1>
             <p className="text-text-muted-light dark:text-text-muted-dark mt-1">You have {myRequests.filter(r => r.status === 'Pending').length} pending leave requests.</p>
           </div>
-          <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-medium rounded-lg text-sm shadow-sm hover:bg-primary/90 transition-colors">
+          <div className="flex flex-col items-end gap-1">
+            {attendanceStatus?.clock_in && (
+              <span className="text-xs text-text-muted-light dark:text-text-muted-dark">
+                In: {new Date(attendanceStatus.clock_in).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                {attendanceStatus.clock_out && ` • Out: ${new Date(attendanceStatus.clock_out).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`}
+              </span>
+            )}
+            <button
+              onClick={handleClockAction}
+              disabled={isClockingIn || (attendanceStatus?.clock_in && attendanceStatus?.clock_out)}
+              className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg text-sm shadow-sm transition-colors ${
+                attendanceStatus?.clock_in && !attendanceStatus?.clock_out
+                  ? 'bg-accent-orange text-white hover:bg-accent-orange/90'
+                  : attendanceStatus?.clock_out
+                  ? 'bg-gray-400 text-white cursor-not-allowed'
+                  : 'bg-primary text-white hover:bg-primary/90'
+              } ${isClockingIn ? 'opacity-70 cursor-wait' : ''}`}
+            >
               <Clock size={18} />
-              Clock In
+              {isClockingIn
+                ? 'Loading...'
+                : attendanceStatus?.clock_in && !attendanceStatus?.clock_out
+                ? 'Check Out'
+                : attendanceStatus?.clock_out
+                ? 'Done for today'
+                : 'Check In'}
             </button>
           </div>
         </div>
@@ -281,7 +435,7 @@ export const Dashboard: React.FC = () => {
           <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm flex items-center justify-between cursor-pointer hover:border-primary/50 transition-colors" onClick={() => navigate('/time-off')}>
             <div>
               <p className="text-text-muted-light dark:text-text-muted-dark text-sm font-medium mb-1">Leave Balance</p>
-              <h3 className="text-3xl font-bold text-text-light dark:text-text-dark">14 <span className="text-sm font-normal text-text-muted-light">Days</span></h3>
+              <h3 className="text-3xl font-bold text-text-light dark:text-text-dark">{employeeStats.leaveBalance} <span className="text-sm font-normal text-text-muted-light">Days</span></h3>
             </div>
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-lg">
               <Plane size={24} />
@@ -290,7 +444,7 @@ export const Dashboard: React.FC = () => {
           <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-text-muted-light dark:text-text-muted-dark text-sm font-medium mb-1">Next Payday</p>
-              <h3 className="text-3xl font-bold text-text-light dark:text-text-dark">Aug 30</h3>
+              <h3 className="text-3xl font-bold text-text-light dark:text-text-dark">{employeeStats.nextPayday || '—'}</h3>
             </div>
             <div className="p-3 bg-green-50 dark:bg-green-900/20 text-green-500 rounded-lg">
               <Wallet size={24} />
@@ -299,7 +453,7 @@ export const Dashboard: React.FC = () => {
           <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-text-muted-light dark:text-text-muted-dark text-sm font-medium mb-1">Pending Reviews</p>
-              <h3 className="text-3xl font-bold text-text-light dark:text-text-dark">1</h3>
+              <h3 className="text-3xl font-bold text-text-light dark:text-text-dark">{employeeStats.pendingReviews}</h3>
             </div>
             <div className="p-3 bg-orange-50 dark:bg-orange-900/20 text-orange-500 rounded-lg">
               <FileText size={24} />
@@ -382,7 +536,13 @@ export const Dashboard: React.FC = () => {
           <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
             <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
               <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Personal Notes</h2>
-              <button onClick={handleSaveNote} className="text-xs bg-primary text-white px-2 py-1 rounded hover:bg-primary-hover">Save</button>
+              <button
+                onClick={handleSaveNote}
+                disabled={isSavingNote || !quickNote.trim()}
+                className={`text-xs bg-primary text-white px-2 py-1 rounded hover:bg-primary-hover ${isSavingNote || !quickNote.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {isSavingNote ? 'Saving...' : 'Save'}
+              </button>
             </div>
             <div className="p-4 flex-grow flex flex-col">
               <textarea
@@ -391,6 +551,23 @@ export const Dashboard: React.FC = () => {
                 placeholder="Jot down a quick idea..."
                 className="w-full h-24 bg-transparent resize-none focus:outline-none text-sm text-text-light dark:text-text-dark placeholder:text-text-muted-light"
               />
+              {notes.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-border-light dark:border-border-dark">
+                  <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-1">Recent notes ({notes.length})</p>
+                  <div className="space-y-1 max-h-16 overflow-y-auto">
+                    {notes.slice(0, 3).map(note => (
+                      <p
+                        key={note.id}
+                        className="text-xs text-text-muted-light dark:text-text-muted-dark truncate cursor-pointer hover:text-primary"
+                        onClick={() => setQuickNote(note.content)}
+                        title={note.content}
+                      >
+                        {note.pinned && '📌 '}{note.content.substring(0, 50)}{note.content.length > 50 ? '...' : ''}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -672,19 +849,42 @@ export const Dashboard: React.FC = () => {
               <div className="flex items-center gap-3">
                 <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Quick Note</h2>
               </div>
-              <button onClick={handleSaveNote} className="text-xs bg-primary text-white px-2 py-1 rounded hover:bg-primary-hover">Save</button>
+              <button
+                onClick={handleSaveNote}
+                disabled={isSavingNote || !quickNote.trim()}
+                className={`text-xs bg-primary text-white px-2 py-1 rounded hover:bg-primary-hover ${isSavingNote || !quickNote.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {isSavingNote ? 'Saving...' : 'Save'}
+              </button>
             </div>
             <div className="p-4 flex-grow flex flex-col">
               <textarea
                 value={quickNote}
                 onChange={(e) => setQuickNote(e.target.value)}
                 placeholder="Type a quick note or task here..."
-                className="w-full h-full min-h-[120px] bg-transparent resize-none focus:outline-none text-sm text-text-light dark:text-text-dark placeholder:text-text-muted-light"
+                className="w-full h-full min-h-[80px] bg-transparent resize-none focus:outline-none text-sm text-text-light dark:text-text-dark placeholder:text-text-muted-light"
               />
-              <div className="mt-auto flex justify-between items-center text-xs text-text-muted-light dark:text-text-muted-dark">
+              <div className="mt-2 flex justify-between items-center text-xs text-text-muted-light dark:text-text-muted-dark">
                 <span className="flex items-center gap-1"><StickyNote size={12} /> Personal</span>
                 <span>{quickNote.length} chars</span>
               </div>
+              {notes.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-border-light dark:border-border-dark">
+                  <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-1">Recent ({notes.length})</p>
+                  <div className="space-y-1 max-h-12 overflow-y-auto">
+                    {notes.slice(0, 2).map(note => (
+                      <p
+                        key={note.id}
+                        className="text-xs text-text-muted-light dark:text-text-muted-dark truncate cursor-pointer hover:text-primary"
+                        onClick={() => setQuickNote(note.content)}
+                        title={note.content}
+                      >
+                        {note.pinned && '📌 '}{note.content.substring(0, 40)}{note.content.length > 40 ? '...' : ''}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

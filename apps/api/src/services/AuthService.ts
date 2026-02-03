@@ -8,6 +8,7 @@ import {
   ChangePasswordRequest,
   RegisterRequest,
 } from "../models/User";
+import NotificationService from "./NotificationService";
 
 // Security: Fail fast if JWT_SECRET is not set
 if (!process.env.JWT_SECRET) {
@@ -207,7 +208,29 @@ export class AuthService {
       [newUser.id, employee.id]
     );
 
-    // 7. Generate JWT token and return
+    // 7. Create welcome notification for new user
+    try {
+      await NotificationService.create({
+        user_id: newUser.id,
+        title: "Welcome to the team!",
+        message: `Hi ${employee.name}, your account has been set up successfully. Explore the HR portal to get started.`,
+        type: "success",
+        link: "/",
+      });
+
+      // 8. Notify HR admins about the new registration
+      await NotificationService.notifyAdmins({
+        title: "New Employee Registered",
+        message: `${employee.name} (${email}) has completed their account registration.`,
+        type: "employee",
+        link: `/employees/${employee.id}`,
+      });
+    } catch (notifError) {
+      // Don't fail registration if notification fails
+      console.error("Failed to create notifications:", notifError);
+    }
+
+    // 9. Generate JWT token and return
     const token = jwt.sign(
       {
         userId: newUser.id,

@@ -11,6 +11,8 @@ import bcrypt from "bcrypt";
 
 const schema = `
 -- Clean up existing tables
+DROP TABLE IF EXISTS personal_notes CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS audit_logs CASCADE;
 DROP TABLE IF EXISTS compliance_items CASCADE;
 DROP TABLE IF EXISTS sentiment_stats CASCADE;
@@ -359,6 +361,47 @@ CREATE INDEX idx_payroll_status ON payroll_records(status);
 -- Salary history indexes
 CREATE INDEX idx_salary_history_employee_id ON salary_history(employee_id);
 CREATE INDEX idx_salary_history_effective_date ON salary_history(effective_date DESC);
+
+-- ==========================================
+-- NOTIFICATIONS TABLE
+-- ==========================================
+
+-- 20. Notifications
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    type VARCHAR(50) DEFAULT 'info', -- info, success, warning, leave, employee, document, system
+    read BOOLEAN DEFAULT FALSE,
+    link VARCHAR(255), -- Optional link to related resource
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Notifications indexes
+CREATE INDEX idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX idx_notifications_read ON notifications(read);
+CREATE INDEX idx_notifications_created_at ON notifications(created_at DESC);
+
+-- ==========================================
+-- PERSONAL NOTES TABLE
+-- ==========================================
+
+-- 21. Personal Notes
+CREATE TABLE personal_notes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    color VARCHAR(20) DEFAULT 'default', -- default, yellow, green, blue, pink
+    pinned BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Personal notes indexes
+CREATE INDEX idx_personal_notes_user_id ON personal_notes(user_id);
+CREATE INDEX idx_personal_notes_pinned ON personal_notes(pinned DESC);
+CREATE INDEX idx_personal_notes_updated_at ON personal_notes(updated_at DESC);
 `;
 
 export const runMigration = async () => {

@@ -39,41 +39,48 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
   const notificationRef = useRef<HTMLDivElement>(null);
 
-  // Sample notifications (can be fetched from API later)
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "Leave Request Approved",
-      message: "Your vacation request has been approved",
-      time: "5 min ago",
-      read: false,
-    },
-    {
-      id: 2,
-      title: "New Employee Joined",
-      message: "Sarah Connor joined the Engineering team",
-      time: "1 hour ago",
-      read: false,
-    },
-    {
-      id: 3,
-      title: "Document Shared",
-      message: "HR Policy 2024 was shared with you",
-      time: "2 hours ago",
-      read: true,
-    },
-    {
-      id: 4,
-      title: "Meeting Reminder",
-      message: "Team standup in 30 minutes",
-      time: "3 hours ago",
-      read: true,
-    },
-  ]);
+  // Real notifications from API
+  interface NotificationItem {
+    id: string;
+    title: string;
+    message: string;
+    type: string;
+    read: boolean;
+    link?: string;
+    time: string;
+  }
+
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+
+  // Fetch notifications from API
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      setIsLoadingNotifications(true);
+      try {
+        const data = await api.get<NotificationItem[]>("/notifications");
+        setNotifications(data);
+      } catch (error) {
+        console.error("Failed to fetch notifications:", error);
+      } finally {
+        setIsLoadingNotifications(false);
+      }
+    };
+
+    fetchNotifications();
+    // Refresh notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Mark all notifications as read
-  const handleMarkAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  const handleMarkAllRead = async () => {
+    try {
+      await api.put("/notifications/mark-all-read", {});
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch (error) {
+      console.error("Failed to mark notifications as read:", error);
+    }
   };
 
   // View all notifications (navigate to notifications page or show toast)
