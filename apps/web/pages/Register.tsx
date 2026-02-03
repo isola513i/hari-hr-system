@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { UserPlus, Mail, Lock, CheckCircle, AlertCircle } from "lucide-react";
+import { UserPlus, Mail, Lock, CheckCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 interface PasswordStrength {
   score: number;
@@ -34,6 +34,8 @@ const Register: React.FC = () => {
   const [employeeName, setEmployeeName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showEmailVerified, setShowEmailVerified] = useState(true);
@@ -111,9 +113,11 @@ const Register: React.FC = () => {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem("authToken", data.token);
         navigate("/login", {
-          state: { message: "Registration successful! Please login with your new password." }
+          state: {
+            registrationSuccess: true,
+            message: "Registration successful! Please login with your new password."
+          }
         });
       } else {
         setError(data.error || "Registration failed");
@@ -203,13 +207,20 @@ const Register: React.FC = () => {
                   size={20}
                 />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                  className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
 
               {/* Password Strength Meter */}
@@ -258,11 +269,11 @@ const Register: React.FC = () => {
                   size={20}
                 />
                 <input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all ${
+                  className={`w-full pl-10 pr-12 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all ${
                     confirmPassword && password !== confirmPassword
                       ? "border-red-300 bg-red-50"
                       : confirmPassword && password === confirmPassword
@@ -271,6 +282,13 @@ const Register: React.FC = () => {
                   }`}
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
               {confirmPassword && password !== confirmPassword && (
                 <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
