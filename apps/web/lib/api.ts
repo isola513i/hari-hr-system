@@ -1,6 +1,7 @@
 import { LoginCredentials, AuthResponse } from '../types';
 
-const BASE_URL = '/api';
+// Use environment variable for API URL, fallback to /api for local development with proxy
+const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 /**
  * Type for request body data
