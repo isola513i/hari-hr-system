@@ -2,7 +2,7 @@ import React from 'react';
 import { StatCardProps } from '../types';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
-export const StatCard: React.FC<StatCardProps> = ({ title, value, trend, icon, color }) => {
+export const StatCard: React.FC<StatCardProps> = React.memo(({ title, value, trend, icon, color }) => {
   const colorClasses = {
     primary: 'bg-primary/10 text-primary',
     green: 'bg-accent-green/10 text-accent-green',
@@ -30,4 +30,6 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, trend, icon, c
       </div>
     </div>
   );
-};
+});
+
+StatCard.displayName = 'StatCard';

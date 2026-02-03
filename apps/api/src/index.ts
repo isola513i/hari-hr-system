@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
+import compression from "compression";
 import dotenv from "dotenv";
 import { query } from "./db";
 import path from "path";
@@ -26,6 +27,18 @@ const port = process.env.PORT || 3001;
 
 // Security: Helmet - Security headers
 app.use(helmetConfig);
+
+// Performance: Gzip/Brotli compression for responses
+app.use(compression({
+  level: 6,
+  threshold: 1024, // Only compress responses > 1KB
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  }
+}));
 
 // Security: CORS configuration - support multiple origins
 const allowedOrigins = [

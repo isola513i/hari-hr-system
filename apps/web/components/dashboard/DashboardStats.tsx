@@ -9,7 +9,7 @@ interface DashboardStatsProps {
   pendingRequestsCount: number;
 }
 
-export const DashboardStats: React.FC<DashboardStatsProps> = ({
+export const DashboardStats: React.FC<DashboardStatsProps> = React.memo(({
   activeEmployeesCount,
   onLeaveCount,
   newHiresCount,
@@ -45,4 +45,6 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
       />
     </div>
   );
-};
+});
+
+DashboardStats.displayName = 'DashboardStats';

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ResponsiveContainer, XAxis, YAxis, AreaChart, Area, Tooltip } from 'recharts';
 import { TrendingUp, MoreHorizontal } from 'lucide-react';
 
@@ -12,15 +12,18 @@ interface HeadcountChartProps {
   title?: string;
 }
 
-export const HeadcountChart: React.FC<HeadcountChartProps> = ({
+export const HeadcountChart: React.FC<HeadcountChartProps> = React.memo(({
   data,
   title = 'Headcount Trend',
 }) => {
-  const latestValue = data[data.length - 1]?.value ?? 0;
-  const previousValue = data[data.length - 2]?.value ?? latestValue;
-  const growthPercent = previousValue > 0
-    ? ((latestValue - previousValue) / previousValue * 100).toFixed(1)
-    : '0';
+  const { latestValue, growthPercent } = useMemo(() => {
+    const latest = data[data.length - 1]?.value ?? 0;
+    const previous = data[data.length - 2]?.value ?? latest;
+    const growth = previous > 0
+      ? ((latest - previous) / previous * 100).toFixed(1)
+      : '0';
+    return { latestValue: latest, growthPercent: growth };
+  }, [data]);
 
   return (
     <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-5 shadow-sm">
@@ -84,4 +87,6 @@ export const HeadcountChart: React.FC<HeadcountChartProps> = ({
       </div>
     </div>
   );
-};
+});
+
+HeadcountChart.displayName = 'HeadcountChart';
