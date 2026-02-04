@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { LeaveRequest } from '../types';
 import { Toast } from '../components/Toast';
 import { DatePicker } from '../components/DatePicker';
+import { Dropdown } from '../components/Dropdown';
 
 export const TimeOff: React.FC = () => {
   const { user } = useAuth();
@@ -212,15 +213,16 @@ export const TimeOff: React.FC = () => {
               <h3 className="font-bold text-lg text-text-light dark:text-text-dark mb-4">Request Time Off</h3>
               <div>
                 <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Type</label>
-                <select
+                <Dropdown
                   value={leaveForm.type}
-                  onChange={(e) => setLeaveForm({ ...leaveForm, type: e.target.value })}
-                  className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark"
-                >
-                  <option value="Vacation">Vacation</option>
-                  <option value="Sick Leave">Sick Leave</option>
-                  <option value="Personal Day">Personal Day</option>
-                </select>
+                  onChange={(value) => setLeaveForm({ ...leaveForm, type: value })}
+                  options={[
+                    { value: 'Vacation', label: 'Vacation' },
+                    { value: 'Sick Leave', label: 'Sick Leave' },
+                    { value: 'Personal Day', label: 'Personal Day' }
+                  ]}
+                  placeholder="Select leave type"
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <DatePicker
