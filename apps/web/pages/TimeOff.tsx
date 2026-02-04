@@ -5,6 +5,7 @@ import { useLeave } from '../contexts/LeaveContext';
 import { useAuth } from '../contexts/AuthContext';
 import { LeaveRequest } from '../types';
 import { Toast } from '../components/Toast';
+import { DatePicker } from '../components/DatePicker';
 
 export const TimeOff: React.FC = () => {
   const { user } = useAuth();
@@ -222,24 +223,19 @@ export const TimeOff: React.FC = () => {
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Start</label>
-                  <input
-                    type="date"
-                    value={leaveForm.startDate}
-                    onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
-                    className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">End</label>
-                  <input
-                    type="date"
-                    value={leaveForm.endDate}
-                    onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
-                    className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark"
-                  />
-                </div>
+                <DatePicker
+                  label="Start Date"
+                  value={leaveForm.startDate}
+                  onChange={(date) => setLeaveForm({ ...leaveForm, startDate: date })}
+                  placeholder="Select start date"
+                />
+                <DatePicker
+                  label="End Date"
+                  value={leaveForm.endDate}
+                  onChange={(date) => setLeaveForm({ ...leaveForm, endDate: date })}
+                  placeholder="Select end date"
+                  minDate={leaveForm.startDate}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Reason</label>
