@@ -25,4 +25,10 @@ router.get(
   DashboardController.getDirectReports.bind(DashboardController)
 );
 
+// GET /api/dashboard/my-team-hierarchy - Get full team hierarchy (manager, peers, direct reports, stats)
+router.get(
+  "/my-team-hierarchy",
+  DashboardController.getMyTeamHierarchy.bind(DashboardController)
+);
+
 export default router;

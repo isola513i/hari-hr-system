@@ -36,7 +36,8 @@ import {
   OnboardingProgressSummary,
   UpcomingEvent,
   AuditLogItem,
-  Announcement
+  Announcement,
+  MyTeamHierarchy
 } from '../types';
 import { api } from '../lib/api';
 
@@ -86,6 +87,7 @@ export const Dashboard: React.FC = () => {
   const [onLeaveCount, setOnLeaveCount] = useState(0);
   const [newHiresCount, setNewHiresCount] = useState(0);
   const [myTeam, setMyTeam] = useState<Employee[]>([]);
+  const [teamHierarchy, setTeamHierarchy] = useState<MyTeamHierarchy | null>(null);
 
   // ----- ATTENDANCE STATE -----
   interface AttendanceStatus {
@@ -121,11 +123,29 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  // Fetch my team from API
+  // Fetch my team hierarchy from API
   const fetchMyTeamFromAPI = async () => {
     try {
-      const team = await api.get<Employee[]>('/dashboard/my-team');
-      setMyTeam(team);
+      const hierarchy = await api.get<MyTeamHierarchy>('/dashboard/my-team-hierarchy');
+      setTeamHierarchy(hierarchy);
+      // Use direct reports if available (manager view), otherwise peers
+      const teamMembers = hierarchy.directReports.length > 0
+        ? hierarchy.directReports
+        : hierarchy.peers;
+      // Map TeamMember to Employee-compatible shape for rendering
+      setMyTeam(teamMembers.map(m => ({
+        id: m.id,
+        name: m.name,
+        role: m.role,
+        email: m.email,
+        avatar: m.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=random`,
+        status: m.status as Employee['status'],
+        department: m.department,
+        onboardingStatus: 'Completed' as const,
+        joinDate: '',
+        location: '',
+        skills: [],
+      })));
     } catch (error) {
       console.error('Error fetching my team:', error);
     }
@@ -554,8 +574,34 @@ export const Dashboard: React.FC = () => {
           <div className="lg:col-span-1 bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
             <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
               <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">My Team</h2>
+              {teamHierarchy?.stats && (
+                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                  {teamHierarchy.stats.totalDirectReports > 0
+                    ? `${teamHierarchy.stats.totalDirectReports} reports`
+                    : `${teamHierarchy.stats.peersCount} peers`}
+                </span>
+              )}
             </div>
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-3">
+              {/* Manager info */}
+              {teamHierarchy?.manager && (
+                <div className="flex items-center gap-3 pb-3 border-b border-border-light dark:border-border-dark">
+                  <img
+                    src={
+                      teamHierarchy.manager.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(teamHierarchy.manager.name)}&background=random`
+                    }
+                    alt={teamHierarchy.manager.name}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-text-light dark:text-text-dark">{teamHierarchy.manager.name}</p>
+                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{teamHierarchy.manager.role}</p>
+                  </div>
+                  <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded font-medium">Manager</span>
+                </div>
+              )}
+
+              {/* Team members */}
               {myTeam.map(teammate => (
                 <div key={teammate.id} className="flex items-center gap-3">
                   <img src={teammate.avatar} alt={teammate.name} className="w-10 h-10 rounded-full object-cover" />
@@ -566,6 +612,9 @@ export const Dashboard: React.FC = () => {
                   <span className={`ml-auto w-2.5 h-2.5 rounded-full ${teammate.status === 'Active' ? 'bg-green-500' : 'bg-yellow-500'}`} title={teammate.status}></span>
                 </div>
               ))}
+              {myTeam.length === 0 && !teamHierarchy?.manager && (
+                <p className="text-sm text-text-muted-light dark:text-text-muted-dark text-center py-2">No team members found</p>
+              )}
             </div>
           </div>
         </div>

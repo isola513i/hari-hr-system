@@ -62,6 +62,25 @@ export class DashboardController {
       res.status(500).json({ error: "Failed to fetch direct reports" });
     }
   }
+  /**
+   * GET /api/dashboard/my-team-hierarchy
+   * Get full team hierarchy (manager, peers, direct reports, stats)
+   */
+  async getMyTeamHierarchy(req: Request, res: Response): Promise<void> {
+    try {
+      const employeeId = (req as any).user?.employeeId;
+      if (!employeeId) {
+        res.status(400).json({ error: "Employee ID not found" });
+        return;
+      }
+
+      const hierarchy = await DashboardService.getMyTeamHierarchy(employeeId);
+      res.json(hierarchy);
+    } catch (error: any) {
+      console.error("Error fetching team hierarchy:", error);
+      res.status(500).json({ error: "Failed to fetch team hierarchy" });
+    }
+  }
 }
 
 export default new DashboardController();

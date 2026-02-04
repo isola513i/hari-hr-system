@@ -20,6 +20,7 @@ import attendanceRoutes from "./routes/attendanceRoutes";
 import payrollRoutes from "./routes/payrollRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
 import dashboardRoutes from "./routes/dashboardRoutes";
+import orgChartRoutes from "./routes/orgChartRoutes";
 import notesRoutes from "./routes/notesRoutes";
 import { runMigration } from "./scripts/init-db";
 
@@ -113,6 +114,7 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/payroll", payrollRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/org-chart", orgChartRoutes);
 app.use("/api/notes", notesRoutes);
 
 // Backward compatibility for leave balances endpoint
@@ -534,26 +536,6 @@ app.get("/api/sentiment", async (req: Request, res: Response) => {
 });
 
 // GET /api/leave-balances/:employeeId (Existing code continues...)
-
-// GET /api/org-chart
-app.get("/api/org-chart", async (req: Request, res: Response) => {
-  try {
-    const result = await query(
-      'SELECT id, manager_id as "parentId", name, role, email FROM employees',
-    );
-    const nodes = result.rows.map((row) => ({
-      id: row.id,
-      parentId: row.parentId || null,
-      name: row.name,
-      role: row.role,
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(row.name)}&background=random`,
-    }));
-    res.json(nodes);
-  } catch (err) {
-    console.error("Error fetching org chart:", err);
-    res.status(500).json({ error: "Failed to fetch org chart" });
-  }
-});
 
 // POST /api/system/setup (Initial setup - only works when database is empty)
 // This allows setting up the database without authentication for first-time deployment

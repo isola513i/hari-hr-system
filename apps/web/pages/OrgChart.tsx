@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { OrgNode } from '../types';
-import { Plus, Edit2, Trash2, X, ZoomIn, ZoomOut, RotateCcw, Search, Users, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, ZoomIn, ZoomOut, RotateCcw, Search, Users, ChevronDown, ChevronUp, Check, Filter, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrg } from '../contexts/OrgContext';
 import { Toast } from '../components/Toast';
@@ -52,7 +52,16 @@ interface ModalState {
 export const OrgChart: React.FC = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'HR_ADMIN';
-  const { nodes, addNode, updateNode, deleteNode } = useOrg();
+  const { nodes, addNode, updateNode, deleteNode, fetchSubTree, fetchAllNodes, isSubTreeView } = useOrg();
+
+  // Department filter
+  const [departmentFilter, setDepartmentFilter] = useState<string>('');
+
+  // Extract unique departments from nodes
+  const departments = useMemo(() => {
+    const depts = new Set(nodes.map(n => n.department).filter(Boolean) as string[]);
+    return Array.from(depts).sort();
+  }, [nodes]);
 
   // Toast state
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
@@ -78,10 +87,31 @@ export const OrgChart: React.FC = () => {
   // Modal Inputs
   const [inputName, setInputName] = useState('');
   const [inputRole, setInputRole] = useState('');
+  const [inputEmail, setInputEmail] = useState('');
+  const [inputDepartment, setInputDepartment] = useState('');
   const [inputAvatar, setInputAvatar] = useState('https://picsum.photos/200');
   const [inputParentId, setInputParentId] = useState<string>('');
 
-  const tree = useMemo(() => buildTree(nodes), [nodes]);
+  // Filter nodes by department (keep all nodes if no filter, to preserve tree structure)
+  const filteredNodes = useMemo(() => {
+    if (!departmentFilter) return nodes;
+    // When filtering, include matched nodes and their ancestors to preserve tree structure
+    const matchedIds = new Set(nodes.filter(n => n.department === departmentFilter).map(n => n.id));
+    // Add all ancestors of matched nodes
+    const withAncestors = new Set(matchedIds);
+    matchedIds.forEach(id => {
+      let current = nodes.find(n => n.id === id);
+      const visited = new Set<string>();
+      while (current?.parentId && !visited.has(current.parentId)) {
+        visited.add(current.parentId);
+        withAncestors.add(current.parentId);
+        current = nodes.find(n => n.id === current!.parentId);
+      }
+    });
+    return nodes.filter(n => withAncestors.has(n.id));
+  }, [nodes, departmentFilter]);
+
+  const tree = useMemo(() => buildTree(filteredNodes), [filteredNodes]);
 
   const handleZoomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setZoom(parseFloat(e.target.value));
@@ -140,6 +170,8 @@ export const OrgChart: React.FC = () => {
     setModalState({ isOpen: true, type: 'add', nodeId: parentId });
     setInputName('');
     setInputRole('');
+    setInputEmail('');
+    setInputDepartment('');
     setInputAvatar('https://picsum.photos/200?random=' + Math.floor(Math.random() * 1000));
     setInputParentId(parentId);
   };
@@ -149,6 +181,8 @@ export const OrgChart: React.FC = () => {
     setModalState({ isOpen: true, type: 'edit', nodeId: node.id });
     setInputName(node.name);
     setInputRole(node.role);
+    setInputEmail(node.email || '');
+    setInputDepartment(node.department || '');
     setInputAvatar(node.avatar);
     setInputParentId(node.parentId || '');
   };
@@ -170,11 +204,14 @@ export const OrgChart: React.FC = () => {
     if (!inputName || !inputRole) return;
 
     if (modalState.type === 'add') {
-      const newNode: OrgNode = {
+      if (!inputEmail) return; // Email is required for new employees
+      const newNode = {
         id: Date.now().toString(),
-        parentId: inputParentId || modalState.nodeId, // Use input if available, else modal context
+        parentId: inputParentId || modalState.nodeId,
         name: inputName,
         role: inputRole,
+        email: inputEmail,
+        department: inputDepartment,
         avatar: inputAvatar,
       };
       addNode(newNode);
@@ -182,6 +219,7 @@ export const OrgChart: React.FC = () => {
       updateNode(modalState.nodeId, {
         name: inputName,
         role: inputRole,
+        department: inputDepartment,
         avatar: inputAvatar,
         parentId: inputParentId || null // Allow null for root
       });
@@ -210,14 +248,44 @@ export const OrgChart: React.FC = () => {
         <div className="group relative z-10">
           {/* Card */}
           <div
-            className={`flex flex-col items-center bg-card-light dark:bg-card-dark border transition-all rounded-xl p-4 w-48 shadow-sm ${isHighlighted
+            className={`flex flex-col items-center bg-card-light dark:bg-card-dark border transition-all rounded-xl p-4 w-52 shadow-sm ${isHighlighted
               ? 'ring-4 ring-primary border-primary scale-105'
               : 'border-border-light dark:border-border-dark'
               } ${isAdmin ? 'hover:shadow-lg hover:border-primary/50' : ''}`}
           >
-            <img src={node.avatar} alt={node.name} className="w-12 h-12 rounded-full object-cover mb-3 ring-2 ring-gray-100 dark:ring-gray-700" />
+            {/* Avatar with status indicator */}
+            <div className="relative mb-3">
+              <img src={node.avatar} alt={node.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100 dark:ring-gray-700" />
+              {node.status && (
+                <span
+                  className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 ${
+                    node.status === 'Active' ? 'bg-green-500' : node.status === 'On Leave' ? 'bg-yellow-500' : 'bg-gray-400'
+                  }`}
+                  title={node.status}
+                ></span>
+              )}
+            </div>
             <h3 className="font-bold text-sm text-text-light dark:text-text-dark text-center">{node.name}</h3>
-            <p className="text-xs text-text-muted-light dark:text-text-muted-dark text-center mb-1">{node.role}</p>
+            <p className="text-xs text-text-muted-light dark:text-text-muted-dark text-center">{node.role}</p>
+
+            {/* Department badge */}
+            {node.department && (
+              <span className="mt-1.5 text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                {node.department}
+              </span>
+            )}
+
+            {/* Direct report count */}
+            {(node.directReportCount !== undefined && node.directReportCount > 0) && (
+              <div
+                className="mt-1.5 flex items-center gap-1 text-[10px] text-text-muted-light dark:text-text-muted-dark cursor-pointer hover:text-primary transition-colors"
+                onClick={(e) => { e.stopPropagation(); fetchSubTree(node.id); }}
+                title={`View ${node.directReportCount} direct report${node.directReportCount > 1 ? 's' : ''}`}
+              >
+                <Users size={10} />
+                <span>{node.directReportCount} report{node.directReportCount > 1 ? 's' : ''}</span>
+              </div>
+            )}
 
             {hasChildren && (
               <button
@@ -293,7 +361,33 @@ export const OrgChart: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Back to full view button (when in subtree view) */}
+          {isSubTreeView && (
+            <button
+              onClick={fetchAllNodes}
+              className="flex items-center gap-1.5 px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              <ArrowLeft size={14} />
+              Full Org Chart
+            </button>
+          )}
+
+          {/* Department Filter */}
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={14} />
+            <select
+              value={departmentFilter}
+              onChange={(e) => setDepartmentFilter(e.target.value)}
+              className="pl-8 pr-8 py-2 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark appearance-none"
+            >
+              <option value="">All Departments</option>
+              {departments.map(dept => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
@@ -302,7 +396,7 @@ export const OrgChart: React.FC = () => {
               placeholder="Find employee..."
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary w-64"
+              className="pl-9 pr-4 py-2 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary w-56"
             />
           </div>
 
@@ -373,6 +467,35 @@ export const OrgChart: React.FC = () => {
                   className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
                   placeholder="e.g. Senior Developer"
                 />
+              </div>
+
+              {/* Email - required for adding */}
+              {modalState.type === 'add' && (
+                <div>
+                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Email <span className="text-red-500">*</span></label>
+                  <input
+                    type="email"
+                    value={inputEmail}
+                    onChange={(e) => setInputEmail(e.target.value)}
+                    className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                    placeholder="employee@aiya.ai"
+                  />
+                </div>
+              )}
+
+              {/* Department */}
+              <div>
+                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Department</label>
+                <select
+                  value={inputDepartment}
+                  onChange={(e) => setInputDepartment(e.target.value)}
+                  className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark appearance-none"
+                >
+                  <option value="">Select Department</option>
+                  {departments.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
               </div>
 
               {modalState.type === 'edit' && (

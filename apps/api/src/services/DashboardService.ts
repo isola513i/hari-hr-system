@@ -1,5 +1,13 @@
 import { query } from '../db';
 
+const BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001';
+
+function resolveAvatar(avatar: string | null, name: string): string {
+  if (!avatar) return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=128`;
+  if (avatar.startsWith('/')) return `${BASE_URL}${avatar}`;
+  return avatar;
+}
+
 export interface EmployeeStats {
   leaveBalance: number;
   nextPayday: string | null;
@@ -11,9 +19,21 @@ export interface TeamMember {
   id: string;
   name: string;
   role: string;
+  email: string;
   avatar: string | null;
   status: string;
   department: string;
+}
+
+export interface MyTeamHierarchy {
+  manager: TeamMember | null;
+  peers: TeamMember[];
+  directReports: TeamMember[];
+  stats: {
+    totalDirectReports: number;
+    peersCount: number;
+    departmentsInTeam: number;
+  };
 }
 
 export class DashboardService {
@@ -164,7 +184,7 @@ export class DashboardService {
 
     // Get team members in same department (excluding self)
     const result = await query(
-      `SELECT id, name, role, avatar, status, department
+      `SELECT id, name, role, email, avatar, status, department
        FROM employees
        WHERE department = $1
        AND id != $2
@@ -178,7 +198,8 @@ export class DashboardService {
       id: row.id,
       name: row.name,
       role: row.role,
-      avatar: row.avatar,
+      email: row.email,
+      avatar: resolveAvatar(row.avatar, row.name),
       status: row.status,
       department: row.department,
     }));
@@ -189,7 +210,7 @@ export class DashboardService {
    */
   async getDirectReports(managerId: string): Promise<TeamMember[]> {
     const result = await query(
-      `SELECT id, name, role, avatar, status, department
+      `SELECT id, name, role, email, avatar, status, department
        FROM employees
        WHERE manager_id = $1
        AND status != 'Terminated'
@@ -201,10 +222,100 @@ export class DashboardService {
       id: row.id,
       name: row.name,
       role: row.role,
-      avatar: row.avatar,
+      email: row.email,
+      avatar: resolveAvatar(row.avatar, row.name),
       status: row.status,
       department: row.department,
     }));
+  }
+
+  /**
+   * Get full team hierarchy for an employee
+   * Returns: manager, peers (same manager), direct reports, and stats
+   */
+  async getMyTeamHierarchy(employeeId: string): Promise<MyTeamHierarchy> {
+    // Step 1: Get the employee's manager_id
+    const empResult = await query(
+      'SELECT manager_id FROM employees WHERE id = $1',
+      [employeeId]
+    );
+
+    if (empResult.rows.length === 0) {
+      return {
+        manager: null,
+        peers: [],
+        directReports: [],
+        stats: { totalDirectReports: 0, peersCount: 0, departmentsInTeam: 0 },
+      };
+    }
+
+    const managerId = empResult.rows[0].manager_id;
+
+    // Step 2: Run queries in parallel for performance
+    const [managerResult, peersResult, directReportsResult] = await Promise.all([
+      // Get manager info
+      managerId
+        ? query(
+            `SELECT id, name, role, email, avatar, status, department
+             FROM employees WHERE id = $1`,
+            [managerId]
+          )
+        : Promise.resolve({ rows: [] }),
+
+      // Get peers (same manager, excluding self)
+      managerId
+        ? query(
+            `SELECT id, name, role, email, avatar, status, department
+             FROM employees
+             WHERE manager_id = $1
+             AND id != $2
+             AND status != 'Terminated'
+             ORDER BY name`,
+            [managerId, employeeId]
+          )
+        : Promise.resolve({ rows: [] }),
+
+      // Get direct reports
+      query(
+        `SELECT id, name, role, email, avatar, status, department
+         FROM employees
+         WHERE manager_id = $1
+         AND status != 'Terminated'
+         ORDER BY name`,
+        [employeeId]
+      ),
+    ]);
+
+    const mapRow = (row: any): TeamMember => ({
+      id: row.id,
+      name: row.name,
+      role: row.role,
+      email: row.email,
+      avatar: resolveAvatar(row.avatar, row.name),
+      status: row.status,
+      department: row.department,
+    });
+
+    const manager = managerResult.rows.length > 0
+      ? mapRow(managerResult.rows[0])
+      : null;
+
+    const peers = peersResult.rows.map(mapRow);
+    const directReports = directReportsResult.rows.map(mapRow);
+
+    // Calculate stats
+    const departmentsSet = new Set(directReports.map(dr => dr.department).filter(Boolean));
+
+    return {
+      manager,
+      peers,
+      directReports,
+      stats: {
+        totalDirectReports: directReports.length,
+        peersCount: peers.length,
+        departmentsInTeam: departmentsSet.size,
+      },
+    };
   }
 }
 
