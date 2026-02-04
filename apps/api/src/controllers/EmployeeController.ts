@@ -99,8 +99,8 @@ export class EmployeeController {
             // If employee updating own profile, restrict fields they can update
             let updateData = { id, ...req.body };
             if (!isAdmin && isOwnProfile) {
-                // Employees can only update: name, email, avatar, bio
-                const allowedFields = ['name', 'email', 'avatar', 'bio'];
+                // Employees can only update: name, email, avatar, bio, phone, location, slack, emergencyContact, skills
+                const allowedFields = ['name', 'email', 'avatar', 'bio', 'phone', 'location', 'slack', 'emergencyContact', 'skills'];
                 updateData = {
                     id,
                     ...Object.fromEntries(
@@ -133,6 +133,34 @@ export class EmployeeController {
             } else {
                 res.status(500).json({ error: 'Failed to delete employee' });
             }
+        }
+    }
+
+    async getEmployeeManager(req: Request, res: Response): Promise<void> {
+        try {
+            const { id } = req.params;
+            const manager = await EmployeeService.getManager(id);
+
+            if (!manager) {
+                res.status(404).json({ error: 'Manager not found' });
+                return;
+            }
+
+            res.json(manager);
+        } catch (error: any) {
+            console.error('Get manager error:', error);
+            res.status(500).json({ error: 'Failed to fetch manager' });
+        }
+    }
+
+    async getEmployeeDirectReports(req: Request, res: Response): Promise<void> {
+        try {
+            const { id } = req.params;
+            const directReports = await EmployeeService.getDirectReports(id);
+            res.json(directReports);
+        } catch (error: any) {
+            console.error('Get direct reports error:', error);
+            res.status(500).json({ error: 'Failed to fetch direct reports' });
         }
     }
 }

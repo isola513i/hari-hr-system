@@ -8,8 +8,15 @@ export interface Employee {
     salary?: number;
     avatar?: string;
     status?: string;
+    bio?: string;
+    phone?: string;
     phoneNumber?: string;
     address?: string;
+    location?: string;
+    slack?: string;
+    emergencyContact?: string;
+    skills?: string[];
+    managerId?: string;
 }
 
 export interface CreateEmployeeDTO {
@@ -24,4 +31,11 @@ export interface CreateEmployeeDTO {
 
 export interface UpdateEmployeeDTO extends Partial<CreateEmployeeDTO> {
     id: string;
+    bio?: string;
+    phone?: string;
+    avatar?: string;
+    location?: string;
+    slack?: string;
+    emergencyContact?: string;
+    skills?: string[];
 }

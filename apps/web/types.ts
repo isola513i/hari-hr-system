@@ -10,6 +10,8 @@ export interface User {
   role: UserRole;
   avatar: string;
   jobTitle: string;
+  bio?: string;
+  phone?: string;
 }
 
 export interface Employee {
@@ -26,8 +28,10 @@ export interface Employee {
   skills: string[];
   // New fields for ESS
   bio?: string;
+  phone?: string;
   slack?: string;
   emergencyContact?: string;
+  managerId?: string;
 }
 
 export interface StatCardProps {
@@ -45,6 +49,7 @@ export interface DocumentItem {
   category: string;
   size: string;
   owner: string;
+  employeeId?: string;
   lastAccessed: string;
   status: 'Active' | 'Deleted';
   deletedAt?: string;
@@ -211,6 +216,8 @@ export interface BackendUser {
   avatar?: string;
   jobTitle?: string;
   department?: string;
+  bio?: string;
+  phone?: string;
 }
 
 /**

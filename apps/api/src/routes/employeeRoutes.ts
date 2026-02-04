@@ -12,6 +12,12 @@ router.use(authenticateToken);
 // GET /api/employees - Get all employees (any authenticated user) - cached for 30s
 router.get('/', cacheMiddleware(), EmployeeController.getAllEmployees.bind(EmployeeController));
 
+// GET /api/employees/:id/manager - Get employee's manager (any authenticated user) - cached for 30s
+router.get('/:id/manager', cacheMiddleware(), EmployeeController.getEmployeeManager.bind(EmployeeController));
+
+// GET /api/employees/:id/direct-reports - Get employee's direct reports (any authenticated user) - cached for 30s
+router.get('/:id/direct-reports', cacheMiddleware(), EmployeeController.getEmployeeDirectReports.bind(EmployeeController));
+
 // GET /api/employees/:id - Get employee by ID (any authenticated user) - cached for 30s
 router.get('/:id', cacheMiddleware(), EmployeeController.getEmployeeById.bind(EmployeeController));
 

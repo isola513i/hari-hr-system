@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
 import { Toast } from '../components/Toast';
 import { Modal } from '../components/Modal';
+import { Dropdown, DropdownOption } from '../components/Dropdown';
 
 export const Employees: React.FC = () => {
   const { user } = useAuth();
@@ -38,8 +39,19 @@ export const Employees: React.FC = () => {
   });
 
   // Extract unique departments for filter dropdown
-  const departments = ['All', ...Array.from(new Set(employeesList.map(e => e.department)))];
-  const statuses = ['All', 'Active', 'On Leave', 'Terminated'];
+  const departments: DropdownOption[] = [
+    { value: 'All', label: 'All Departments' },
+    ...Array.from(new Set(employeesList.map(e => e.department))).map(dept => ({
+      value: dept,
+      label: dept
+    }))
+  ];
+  const statuses: DropdownOption[] = [
+    { value: 'All', label: 'All Statuses' },
+    { value: 'Active', label: 'Active' },
+    { value: 'On Leave', label: 'On Leave' },
+    { value: 'Terminated', label: 'Terminated' }
+  ];
 
   const filteredEmployees = employeesList.filter(emp => {
     const matchesSearch =
@@ -144,27 +156,19 @@ export const Employees: React.FC = () => {
 
           {/* Desktop Filters */}
           <div className="flex gap-3 w-full md:w-auto">
-            <div className="relative group w-full md:w-48">
-              <select
-                value={departmentFilter}
-                onChange={(e) => setDepartmentFilter(e.target.value)}
-                className="w-full appearance-none pl-4 pr-10 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer text-text-light dark:text-text-dark"
-              >
-                {departments.map(dept => <option key={dept} value={dept}>{dept === 'All' ? 'All Departments' : dept}</option>)}
-              </select>
-              <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted-light pointer-events-none" />
-            </div>
+            <Dropdown
+              options={departments}
+              value={departmentFilter}
+              onChange={setDepartmentFilter}
+              width="w-full md:w-48"
+            />
 
-            <div className="relative group w-full md:w-40">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full appearance-none pl-4 pr-10 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer text-text-light dark:text-text-dark"
-              >
-                {statuses.map(status => <option key={status} value={status}>{status === 'All' ? 'All Statuses' : status}</option>)}
-              </select>
-              <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted-light pointer-events-none" />
-            </div>
+            <Dropdown
+              options={statuses}
+              value={statusFilter}
+              onChange={setStatusFilter}
+              width="w-full md:w-40"
+            />
           </div>
         </div>
 

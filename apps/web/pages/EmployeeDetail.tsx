@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { JobHistoryItem, Employee, PerformanceReview, DocumentItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -38,7 +39,7 @@ import {
 export const EmployeeDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
 
     // Permissions Logic
     const isOwnProfile = user?.id === id;
@@ -92,29 +93,41 @@ export const EmployeeDetail: React.FC = () => {
     const [isAddHistoryModalOpen, setIsAddHistoryModalOpen] = useState(false);
     const [newHistoryForm, setNewHistoryForm] = useState<Partial<JobHistoryItem>>({});
 
+    // Team Hierarchy State
+    const [manager, setManager] = useState<Employee | null>(null);
+    const [directReports, setDirectReports] = useState<Employee[]>([]);
+
     useEffect(() => {
         const fetchEmployeeDetail = async () => {
             try {
-                // Parallel fetch for efficiency using api client
-                const [employees, history, reviews, training, docs] = await Promise.all([
-                    api.get<Employee[]>('/employees'),
+                // Fetch employee by ID directly (more efficient and includes all fields)
+                const [employeeData, history, reviews, training, docs, managerData, directReportsData] = await Promise.all([
+                    api.get<Employee>(`/employees/${id}`),
                     api.get<any[]>(`/job-history?employeeId=${id}`),
                     api.get<PerformanceReview[]>(`/performance-reviews?employeeId=${id}`),
                     api.get<any[]>(`/employee-training/${id}`),
-                    api.get<DocumentItem[]>('/documents')
+                    api.get<DocumentItem[]>('/documents'),
+                    api.get<Employee>(`/employees/${id}/manager`).catch(() => null),
+                    api.get<Employee[]>(`/employees/${id}/direct-reports`).catch(() => [])
                 ]);
 
-                const found = employees.find(e => e.id === id);
-                if (found) {
-                    setEmployee(found);
-                    setAvatar(found.avatar || `https://ui-avatars.com/api/?name=${found.name}`);
-                    setCurrentSkills(found.skills || []);
+                if (employeeData) {
+                    setEmployee(employeeData);
+                    setAvatar(employeeData.avatar || `https://ui-avatars.com/api/?name=${employeeData.name}`);
+                    setCurrentSkills(employeeData.skills || []);
 
                     // Auxiliary Data
                     setHistoryList(history);
                     setReviewsList(reviews);
                     setTrainingRecords(training);
-                    setDocumentsList(docs.filter(d => d.owner === found.name));
+                    // Filter documents by employee_id or owner name (for backwards compatibility)
+                    setDocumentsList(docs.filter((d: any) =>
+                        d.employeeId === employeeData.id || d.owner === employeeData.name
+                    ));
+
+                    // Team Hierarchy Data
+                    setManager(managerData);
+                    setDirectReports(directReportsData || []);
                 }
             } catch (error) {
                 console.error('Error fetching employee detail:', error);
@@ -135,16 +148,35 @@ export const EmployeeDetail: React.FC = () => {
         if (!employee || !editForm) return;
 
         try {
-            await api.patch(`/employees/${employee.id}`, {
+            const updatedEmployee = await api.patch<Employee>(`/employees/${employee.id}`, {
                 name: editForm.name,
                 email: editForm.email,
                 role: editForm.role,
                 department: editForm.department,
                 status: editForm.status,
                 location: editForm.location,
-                bio: editForm.bio
+                bio: editForm.bio,
+                phone: editForm.phone,
+                slack: editForm.slack,
+                emergencyContact: editForm.emergencyContact,
+                avatar: avatar
             });
-            setEmployee({ ...employee, ...editForm } as Employee);
+
+            // Update local state with the response from server (ensures data is in sync)
+            setEmployee(updatedEmployee);
+            setAvatar(updatedEmployee.avatar || avatar);
+
+            // If user is editing their own profile, update AuthContext to keep Settings page in sync
+            if (isOwnProfile && updateUser) {
+                updateUser({
+                    name: updatedEmployee.name,
+                    email: updatedEmployee.email,
+                    bio: updatedEmployee.bio,
+                    phone: updatedEmployee.phone,
+                    avatar: updatedEmployee.avatar
+                });
+            }
+
             setIsEditProfileOpen(false);
             showToast('Profile updated successfully!', 'success');
         } catch (error) {
@@ -250,20 +282,44 @@ export const EmployeeDetail: React.FC = () => {
     };
 
     // Documents Handler
-    const handleUploadDocument = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleUploadDocument = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0] && employee) {
             const file = e.target.files[0];
-            const newDoc: DocumentItem = {
-                id: Date.now().toString(),
-                name: file.name,
-                type: file.name.split('.').pop()?.toUpperCase() as any || 'PDF',
-                category: 'HR', // Default
-                size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-                owner: employee.name,
-                lastAccessed: 'Just now',
-                status: 'Active'
-            };
-            setDocumentsList([newDoc, ...documentsList]);
+
+            try {
+                // Create FormData for file upload
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('employeeId', employee.id);
+                formData.append('ownerName', employee.name);
+                formData.append('category', 'Employee Documents');
+
+                // Upload to API
+                const response = await fetch('http://localhost:3001/api/documents', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Upload failed');
+                }
+
+                const uploadedDoc = await response.json();
+
+                // Add to documents list
+                setDocumentsList([uploadedDoc, ...documentsList]);
+                showToast('Document uploaded successfully!', 'success');
+
+                // Clear file input
+                e.target.value = '';
+            } catch (error: any) {
+                console.error('Upload error:', error);
+                showToast(error.message || 'Failed to upload document', 'error');
+            }
         }
     };
 
@@ -333,10 +389,10 @@ export const EmployeeDetail: React.FC = () => {
     return (
         <div className="space-y-6 animate-fade-in relative">
             {/* Hero Section */}
-            <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden shadow-sm">
-                <div className="h-32 bg-gradient-to-r from-primary/80 to-accent-teal/80"></div>
-                <div className="px-6 pb-6">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end -mt-12 mb-4">
+            <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div className="h-32 bg-gradient-to-r from-primary/80 to-accent-teal/80 rounded-t-xl"></div>
+                <div className="px-6 pb-6 pt-2">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end -mt-14 mb-4">
                         <div className="flex items-end gap-4">
                             <div className="relative group cursor-pointer">
                                 <img
@@ -361,9 +417,9 @@ export const EmployeeDetail: React.FC = () => {
                                     </div>
                                 )}
                             </div>
-                            <div className="mb-1">
-                                <h1 className="text-2xl font-bold text-text-light dark:text-text-dark">{employee.name}</h1>
-                                <p className="text-text-muted-light dark:text-text-muted-dark font-medium">{employee.role}</p>
+                            <div className="mb-1 flex flex-col">
+                                <h1 className="text-2xl font-bold text-text-light dark:text-text-dark leading-[1.2]">{employee.name}</h1>
+                                <p className="text-text-muted-light dark:text-text-muted-dark font-medium mt-1 leading-normal">{employee.role}</p>
                             </div>
                         </div>
 
@@ -449,13 +505,15 @@ export const EmployeeDetail: React.FC = () => {
                     <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
                         <h2 className="text-lg font-bold text-text-light dark:text-text-dark mb-4">Contact Information</h2>
                         <div className="space-y-4 text-sm">
-                            <div>
-                                <p className="text-text-muted-light dark:text-text-muted-dark text-xs mb-1">Phone</p>
-                                <div className="flex items-center gap-2 text-text-light dark:text-text-dark font-medium">
-                                    <Phone size={16} />
-                                    +1 (555) 123-4567
+                            {employee.phone && (
+                                <div>
+                                    <p className="text-text-muted-light dark:text-text-muted-dark text-xs mb-1">Phone</p>
+                                    <div className="flex items-center gap-2 text-text-light dark:text-text-dark font-medium">
+                                        <Phone size={16} />
+                                        {employee.phone}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                             <div>
                                 <p className="text-text-muted-light dark:text-text-muted-dark text-xs mb-1">Work Email</p>
                                 <div className="flex items-center gap-2 text-text-light dark:text-text-dark font-medium">
@@ -483,30 +541,55 @@ export const EmployeeDetail: React.FC = () => {
                     </div>
 
                     {/* Team Hierarchy */}
-                    <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
-                        <h2 className="text-lg font-bold text-text-light dark:text-text-dark mb-4">Team</h2>
-                        <div className="space-y-4">
-                            <div>
-                                <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-2 uppercase font-semibold">Reports To</p>
-                                <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-background-light dark:hover:bg-background-dark/50 transition-colors cursor-pointer">
-                                    <img src="https://picsum.photos/id/204/200/200" alt="Manager" className="w-10 h-10 rounded-full object-cover" />
+                    {(manager || directReports.length > 0) && (
+                        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+                            <h2 className="text-lg font-bold text-text-light dark:text-text-dark mb-4">Team</h2>
+                            <div className="space-y-4">
+                                {manager && (
                                     <div>
-                                        <p className="font-medium text-text-light dark:text-text-dark text-sm">Sarah Jones</p>
-                                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark">VP of {employee.department}</p>
+                                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-2 uppercase font-semibold">Reports To</p>
+                                        <div
+                                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-background-light dark:hover:bg-background-dark/50 transition-colors cursor-pointer"
+                                            onClick={() => navigate(`/employees/${manager.id}`)}
+                                        >
+                                            <img
+                                                src={manager.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(manager.name)}&background=random`}
+                                                alt={manager.name}
+                                                className="w-10 h-10 rounded-full object-cover"
+                                            />
+                                            <div>
+                                                <p className="font-medium text-text-light dark:text-text-dark text-sm">{manager.name}</p>
+                                                <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{manager.role}</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
+                                )}
 
-                            <div>
-                                <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-2 uppercase font-semibold">Direct Reports</p>
-                                <div className="flex -space-x-2 overflow-hidden py-1">
-                                    <img className="inline-block h-8 w-8 rounded-full ring-2 ring-card-light dark:ring-card-dark" src="https://picsum.photos/id/1012/200/200" alt="" />
-                                    <img className="inline-block h-8 w-8 rounded-full ring-2 ring-card-light dark:ring-card-dark" src="https://picsum.photos/id/1027/200/200" alt="" />
-                                    <div className="h-8 w-8 rounded-full ring-2 ring-card-light dark:ring-card-dark bg-background-light dark:bg-background-dark flex items-center justify-center text-xs text-text-muted-light font-medium">+3</div>
-                                </div>
+                                {directReports.length > 0 && (
+                                    <div>
+                                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-2 uppercase font-semibold">Direct Reports</p>
+                                        <div className="flex -space-x-2 overflow-hidden py-1">
+                                            {directReports.slice(0, 3).map((report) => (
+                                                <img
+                                                    key={report.id}
+                                                    className="inline-block h-8 w-8 rounded-full ring-2 ring-card-light dark:ring-card-dark cursor-pointer hover:z-10 transition-transform hover:scale-110"
+                                                    src={report.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(report.name)}&background=random`}
+                                                    alt={report.name}
+                                                    title={report.name}
+                                                    onClick={() => navigate(`/employees/${report.id}`)}
+                                                />
+                                            ))}
+                                            {directReports.length > 3 && (
+                                                <div className="h-8 w-8 rounded-full ring-2 ring-card-light dark:ring-card-dark bg-background-light dark:bg-background-dark flex items-center justify-center text-xs text-text-muted-light font-medium">
+                                                    +{directReports.length - 3}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Main Content Tabs */}
@@ -950,8 +1033,8 @@ export const EmployeeDetail: React.FC = () => {
             </div>
 
             {/* Edit Profile Modal */}
-            {isEditProfileOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            {isEditProfileOpen && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
                     <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                         <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
                             <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
@@ -1107,6 +1190,23 @@ export const EmployeeDetail: React.FC = () => {
                             </div>
 
                             <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Phone Number</label>
+                                <div className="relative">
+                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
+                                    <input
+                                        type="tel"
+                                        value={editForm.phone || ''}
+                                        onChange={(e) => handleProfileChange('phone', e.target.value)}
+                                        className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                                        placeholder="+66812345678"
+                                    />
+                                </div>
+                                <p className="mt-1 text-xs text-text-muted-light dark:text-text-muted-dark">
+                                    Include country code (e.g., +66812345678)
+                                </p>
+                            </div>
+
+                            <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Bio</label>
                                 <div className="relative">
                                     <AlignLeft className="absolute left-3 top-3 text-text-muted-light" size={16} />
@@ -1136,12 +1236,13 @@ export const EmployeeDetail: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Add History Modal (Admin Only) */}
-            {isAddHistoryModalOpen && isAdmin && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            {isAddHistoryModalOpen && isAdmin && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
                     <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
                         <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
                             <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
@@ -1227,12 +1328,13 @@ export const EmployeeDetail: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Performance Review Modal (Admin Only) */}
-            {isReviewModalOpen && isAdmin && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            {isReviewModalOpen && isAdmin && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
                     <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
                         <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
                             <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
@@ -1314,12 +1416,13 @@ export const EmployeeDetail: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Delete Confirmation Modal */}
-            {deleteConfirmId && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            {deleteConfirmId && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
                     <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
                         <div className="p-6 text-center">
                             <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
@@ -1347,7 +1450,8 @@ export const EmployeeDetail: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Toast Notification */}

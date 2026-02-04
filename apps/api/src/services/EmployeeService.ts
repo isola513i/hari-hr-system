@@ -155,6 +155,34 @@ export class EmployeeService {
             updates.push(`join_date = $${paramIndex++}`);
             values.push(data.startDate);
         }
+        if (data.bio !== undefined) {
+            updates.push(`bio = $${paramIndex++}`);
+            values.push(data.bio);
+        }
+        if (data.phone !== undefined) {
+            updates.push(`phone = $${paramIndex++}`);
+            values.push(data.phone);
+        }
+        if (data.avatar) {
+            updates.push(`avatar = $${paramIndex++}`);
+            values.push(data.avatar);
+        }
+        if (data.location !== undefined) {
+            updates.push(`location = $${paramIndex++}`);
+            values.push(data.location);
+        }
+        if (data.slack !== undefined) {
+            updates.push(`slack = $${paramIndex++}`);
+            values.push(data.slack);
+        }
+        if (data.emergencyContact !== undefined) {
+            updates.push(`emergency_contact = $${paramIndex++}`);
+            values.push(data.emergencyContact);
+        }
+        if (data.skills !== undefined) {
+            updates.push(`skills = $${paramIndex++}`);
+            values.push(data.skills);
+        }
 
         if (updates.length === 0) {
             return existing;
@@ -185,9 +213,43 @@ export class EmployeeService {
             salary: row.salary,
             avatar: row.avatar,
             status: row.status,
+            bio: row.bio,
+            phone: row.phone,
             phoneNumber: row.phone_number,
             address: row.address,
+            location: row.location,
+            slack: row.slack,
+            emergencyContact: row.emergency_contact,
+            managerId: row.manager_id,
+            skills: row.skills,
         };
+    }
+
+    /**
+     * Get employee's manager
+     */
+    async getManager(employeeId: string): Promise<Employee | null> {
+        const result = await query(
+            `SELECT m.* FROM employees e
+             JOIN employees m ON e.manager_id = m.id
+             WHERE e.id = $1`,
+            [employeeId]
+        );
+        if (result.rows.length === 0) {
+            return null;
+        }
+        return this.mapRowToEmployee(result.rows[0]);
+    }
+
+    /**
+     * Get employee's direct reports
+     */
+    async getDirectReports(employeeId: string): Promise<Employee[]> {
+        const result = await query(
+            `SELECT * FROM employees WHERE manager_id = $1 ORDER BY name ASC`,
+            [employeeId]
+        );
+        return result.rows.map(this.mapRowToEmployee);
     }
 }
 
