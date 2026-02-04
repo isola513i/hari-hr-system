@@ -6,7 +6,9 @@ import NotificationService from './NotificationService';
 export class LeaveRequestService {
     async getAllLeaveRequests(): Promise<LeaveRequest[]> {
         const result = await query(`
-            SELECT lr.*, e.avatar, e.name as employee_name
+            SELECT lr.*, e.avatar, e.name as employee_name,
+                   (lr.end_date::date - lr.start_date::date) + 1 as days,
+                   TO_CHAR(lr.start_date, 'Mon DD') || ' - ' || TO_CHAR(lr.end_date, 'Mon DD') as dates
             FROM leave_requests lr
             LEFT JOIN employees e ON lr.employee_id = e.id
             ORDER BY lr.created_at DESC
@@ -16,7 +18,9 @@ export class LeaveRequestService {
 
     async getLeaveRequestById(id: string): Promise<LeaveRequest | null> {
         const result = await query(
-            `SELECT lr.*, e.avatar, e.name as employee_name
+            `SELECT lr.*, e.avatar, e.name as employee_name,
+                    (lr.end_date::date - lr.start_date::date) + 1 as days,
+                    TO_CHAR(lr.start_date, 'Mon DD') || ' - ' || TO_CHAR(lr.end_date, 'Mon DD') as dates
              FROM leave_requests lr
              LEFT JOIN employees e ON lr.employee_id = e.id
              WHERE lr.id = $1`,
@@ -31,21 +35,21 @@ export class LeaveRequestService {
     async createLeaveRequest(requestData: CreateLeaveRequestDTO): Promise<LeaveRequest> {
         const { employeeId, type, startDate, endDate, reason } = requestData;
 
-        // Calculate days
+        // Calculate days (for notification only)
         const start = new Date(startDate);
         const end = new Date(endDate);
         const diffTime = Math.abs(end.getTime() - start.getTime());
         const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
-        // Format dates string
+        // Format dates string (for notification only)
         const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
         const dates = `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
 
         const result = await query(
-            `INSERT INTO leave_requests (employee_id, type, start_date, end_date, dates, days, reason, status)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `INSERT INTO leave_requests (employee_id, leave_type, start_date, end_date, reason, status)
+             VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING *`,
-            [employeeId, type, startDate, endDate, dates, days, reason || '', 'Pending']
+            [employeeId, type, startDate, endDate, reason || '', 'Pending']
         );
 
         // Get employee info (avatar and name)
@@ -69,6 +73,9 @@ export class LeaveRequestService {
             ...this.mapRowToLeaveRequest(result.rows[0]),
             avatar,
             employeeName,
+            // Add computed fields
+            dates,
+            days,
         };
     }
 
@@ -155,7 +162,7 @@ export class LeaveRequestService {
             id: row.id,
             employeeId: row.employee_id,
             employeeName: row.employee_name,
-            type: row.type,
+            type: row.leave_type,
             startDate: row.start_date,
             endDate: row.end_date,
             dates: row.dates,
