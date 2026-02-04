@@ -14,7 +14,8 @@ import {
   ClipboardList,
   Calendar,
   DollarSign,
-  MessageSquare
+  MessageSquare,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -27,6 +28,7 @@ export const Sidebar: React.FC = () => {
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/', allowed: true },
 
     // Employee Focused Tools
+    { icon: <Clock size={20} />, label: 'Attendance', path: '/attendance', allowed: !isAdmin },
     { icon: <Calendar size={20} />, label: 'Time Off', path: '/time-off', allowed: !isAdmin },
     { icon: <DollarSign size={20} />, label: 'Expenses', path: '/expenses', allowed: !isAdmin },
     { icon: <MessageSquare size={20} />, label: 'Surveys', path: '/surveys', allowed: !isAdmin },

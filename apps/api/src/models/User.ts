@@ -7,6 +7,8 @@ export interface User {
     avatar?: string;
     jobTitle?: string;
     department?: string;
+    bio?: string;
+    phone?: string;
 }
 
 export interface LoginCredentials {

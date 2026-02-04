@@ -29,8 +29,11 @@ export class AttendanceService {
    */
   async clockIn(data: ClockInData): Promise<AttendanceRecord> {
     const { employeeId, notes } = data;
-    const today = new Date().toISOString().split('T')[0];
-    const now = new Date();
+
+    // Use Thailand timezone (UTC+7)
+    const bangkokTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' });
+    const now = new Date(bangkokTime);
+    const today = now.toISOString().split('T')[0];
 
     // Check if already clocked in today
     const existing = await query(
@@ -42,8 +45,8 @@ export class AttendanceService {
       throw new Error('Already clocked in for today');
     }
 
-    // Determine if late (after 9:00 AM)
-    const lateThreshold = new Date();
+    // Determine if late (after 9:00 AM Thailand time)
+    const lateThreshold = new Date(now);
     lateThreshold.setHours(9, 0, 0, 0);
     const status = now > lateThreshold ? 'Late' : 'Present';
 
@@ -75,8 +78,11 @@ export class AttendanceService {
    */
   async clockOut(data: ClockOutData): Promise<AttendanceRecord> {
     const { employeeId, notes } = data;
-    const today = new Date().toISOString().split('T')[0];
-    const now = new Date();
+
+    // Use Thailand timezone (UTC+7)
+    const bangkokTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' });
+    const now = new Date(bangkokTime);
+    const today = now.toISOString().split('T')[0];
 
     // Find today's attendance record
     const existing = await query(
@@ -142,7 +148,10 @@ export class AttendanceService {
    * Get today's attendance status for an employee
    */
   async getTodayStatus(employeeId: string): Promise<AttendanceRecord | null> {
-    const today = new Date().toISOString().split('T')[0];
+    // Use Thailand timezone (UTC+7)
+    const bangkokTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' });
+    const today = new Date(bangkokTime).toISOString().split('T')[0];
+
     const result = await query(
       'SELECT * FROM attendance_records WHERE employee_id = $1 AND date = $2',
       [employeeId, today]

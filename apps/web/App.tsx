@@ -54,6 +54,7 @@ const Expenses = lazy(() =>
 const Surveys = lazy(() =>
   import("./pages/Surveys").then((m) => ({ default: m.Surveys })),
 );
+const Attendance = lazy(() => import("./pages/Attendance"));
 
 // Loading component
 const PageLoader = () => (
@@ -90,6 +91,7 @@ const App: React.FC = () => {
                     }
                   >
                     <Route index element={<Dashboard />} />
+                    <Route path="attendance" element={<Attendance />} />
                     <Route path="time-off" element={<TimeOff />} />
                     <Route path="expenses" element={<Expenses />} />
                     <Route path="surveys" element={<Surveys />} />

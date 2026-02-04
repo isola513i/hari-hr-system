@@ -46,7 +46,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         name: data.user.name || 'User',
         role: data.user.role as UserRole,
         avatar: data.user.avatar || 'https://ui-avatars.com/api/?name=User',
-        jobTitle: data.user.jobTitle || 'Employee'
+        jobTitle: data.user.jobTitle || 'Employee',
+        bio: data.user.bio,
+        phone: data.user.phone
       };
 
       localStorage.setItem('token', data.token);

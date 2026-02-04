@@ -63,6 +63,7 @@ CREATE TABLE employees (
     location VARCHAR(100),
     skills TEXT[],
     bio TEXT,
+    phone VARCHAR(20), -- Phone number with country code
     slack VARCHAR(100),
     emergency_contact VARCHAR(255),
     onboarding_percentage INT DEFAULT 0,

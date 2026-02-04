@@ -16,8 +16,8 @@ export const Settings: React.FC = () => {
     news: true
   });
 
-  const [theme, setTheme] = useState('system');
-  const [language, setLanguage] = useState('English (United States)');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
+  const [language, setLanguage] = useState<'en' | 'th'>('en');
 
   // Profile state
   const [profile, setProfile] = useState({
@@ -27,6 +27,7 @@ export const Settings: React.FC = () => {
     phone: '',
     bio: ''
   });
+  const [countryCode, setCountryCode] = useState('+66'); // Default to Thailand
   const [avatarPreview, setAvatarPreview] = useState('https://picsum.photos/id/338/200/200');
 
   // Password state
@@ -48,17 +49,103 @@ export const Settings: React.FC = () => {
     setToast({ show: true, message, type });
   };
 
+  // Apply theme to document
+  const applyTheme = (themeMode: 'light' | 'dark' | 'system') => {
+    const root = document.documentElement;
+
+    if (themeMode === 'system') {
+      // Detect system preference
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (systemPrefersDark) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    } else if (themeMode === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+
+    // Save to localStorage
+    localStorage.setItem('theme', themeMode);
+  };
+
+  // Handle theme change
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+    setTheme(newTheme);
+    applyTheme(newTheme);
+    const themeNames = { light: 'Light', dark: 'Dark', system: 'System' };
+    showToast(`Theme changed to ${themeNames[newTheme]}`, 'success');
+  };
+
+  // Handle language change
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newLanguage = e.target.value as 'en' | 'th';
+    setLanguage(newLanguage);
+    localStorage.setItem('language', newLanguage);
+    const languageNames = { en: 'English', th: 'ไทย' };
+    showToast(`Language changed to ${languageNames[newLanguage]}`, 'success');
+  };
+
+  // Load theme and language from localStorage on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
+    const savedLanguage = localStorage.getItem('language') as 'en' | 'th' | null;
+
+    if (savedTheme) {
+      setTheme(savedTheme);
+      applyTheme(savedTheme);
+    } else {
+      applyTheme('system'); // Default to system
+    }
+
+    if (savedLanguage) {
+      setLanguage(savedLanguage);
+    }
+
+    // Listen for system theme changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemThemeChange = () => {
+      if (theme === 'system') {
+        applyTheme('system');
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+    return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
+  }, []);
+
   // Load user profile on mount
   useEffect(() => {
     if (user) {
       const names = (user.name || '').split(' ');
+
+      // Parse phone number to extract country code if it exists
+      let phoneNumber = '';
+      let extractedCountryCode = '+66'; // Default
+
+      // If user has a phone number, try to extract country code
+      // Assuming phone is stored as "+66812345678"
+      if (user.phone && user.phone.startsWith('+')) {
+        const match = user.phone.match(/^(\+\d{1,4})(.*)/);
+        if (match) {
+          extractedCountryCode = match[1];
+          phoneNumber = match[2].trim();
+        }
+      } else {
+        phoneNumber = user.phone || '';
+      }
+
       setProfile({
         firstName: names[0] || '',
         lastName: names.slice(1).join(' ') || '',
         email: user.email || '',
-        phone: '+1 (555) 000-1234', // Default placeholder
-        bio: 'HR professional with over 10 years of experience in talent acquisition and employee relations.'
+        phone: phoneNumber, // Just the number without country code
+        bio: user.bio || '' // Load bio from user if exists
       });
+      setCountryCode(extractedCountryCode);
+
       if (user.avatar) {
         setAvatarPreview(user.avatar);
       }
@@ -79,9 +166,14 @@ export const Settings: React.FC = () => {
     setIsSaving(true);
     try {
       const fullName = `${profile.firstName} ${profile.lastName}`.trim();
+
+      // Combine country code and phone number
+      const fullPhoneNumber = profile.phone ? `${countryCode}${profile.phone}` : '';
+
       const updatedEmployee = await api.patch(`/employees/${user.employeeId}`, {
         name: fullName,
         email: profile.email,
+        phone: fullPhoneNumber,
         bio: profile.bio,
         avatar: avatarPreview
       });
@@ -90,6 +182,8 @@ export const Settings: React.FC = () => {
       updateUser({
         name: fullName,
         email: profile.email,
+        phone: fullPhoneNumber,
+        bio: profile.bio,
         avatar: avatarPreview
       });
 
@@ -191,12 +285,6 @@ export const Settings: React.FC = () => {
   // Handle 2FA Enable
   const handleEnable2FA = () => {
     showToast('Two-Factor Authentication setup is coming soon!', 'info');
-  };
-
-  // Handle Language Change
-  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setLanguage(e.target.value);
-    showToast(`Language changed to ${e.target.value}`, 'success');
   };
 
   return (
@@ -338,12 +426,35 @@ export const Settings: React.FC = () => {
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Phone Number</label>
-                        <input
-                            type="text"
-                            value={profile.phone}
-                            onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
-                            className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                        />
+                        <div className="flex gap-2">
+                            <select
+                                value={countryCode}
+                                onChange={(e) => setCountryCode(e.target.value)}
+                                className="w-32 px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark cursor-pointer"
+                            >
+                                <option value="+66">🇹🇭 +66</option>
+                                <option value="+1">🇺🇸 +1</option>
+                                <option value="+44">🇬🇧 +44</option>
+                                <option value="+65">🇸🇬 +65</option>
+                                <option value="+81">🇯🇵 +81</option>
+                                <option value="+86">🇨🇳 +86</option>
+                                <option value="+91">🇮🇳 +91</option>
+                                <option value="+61">🇦🇺 +61</option>
+                                <option value="+82">🇰🇷 +82</option>
+                                <option value="+33">🇫🇷 +33</option>
+                                <option value="+49">🇩🇪 +49</option>
+                            </select>
+                            <input
+                                type="tel"
+                                value={profile.phone}
+                                onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '') }))}
+                                placeholder="812345678"
+                                className="flex-1 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                            />
+                        </div>
+                        <p className="mt-1 text-xs text-text-muted-light dark:text-text-muted-dark">
+                            Enter phone number without country code or special characters
+                        </p>
                     </div>
                 </div>
 
@@ -353,6 +464,7 @@ export const Settings: React.FC = () => {
                         rows={4}
                         value={profile.bio}
                         onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
+                        placeholder="Tell us about yourself, your role, and experience..."
                         className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark resize-none"
                     />
                 </div>
@@ -415,22 +527,22 @@ export const Settings: React.FC = () => {
                     <div>
                         <h3 className="font-medium text-text-light dark:text-text-dark mb-4">Theme Preference</h3>
                         <div className="grid grid-cols-3 gap-4">
-                            <button 
-                                onClick={() => setTheme('light')}
+                            <button
+                                onClick={() => handleThemeChange('light')}
                                 className={`p-4 border rounded-xl flex flex-col items-center gap-3 transition-all ${theme === 'light' ? 'border-primary bg-primary/5 text-primary' : 'border-border-light dark:border-border-dark hover:border-primary/50'}`}
                             >
                                 <Sun size={24} />
                                 <span className="text-sm font-medium">Light</span>
                             </button>
-                             <button 
-                                onClick={() => setTheme('dark')}
+                             <button
+                                onClick={() => handleThemeChange('dark')}
                                 className={`p-4 border rounded-xl flex flex-col items-center gap-3 transition-all ${theme === 'dark' ? 'border-primary bg-primary/5 text-primary' : 'border-border-light dark:border-border-dark hover:border-primary/50'}`}
                             >
                                 <Moon size={24} />
                                 <span className="text-sm font-medium">Dark</span>
                             </button>
-                             <button 
-                                onClick={() => setTheme('system')}
+                             <button
+                                onClick={() => handleThemeChange('system')}
                                 className={`p-4 border rounded-xl flex flex-col items-center gap-3 transition-all ${theme === 'system' ? 'border-primary bg-primary/5 text-primary' : 'border-border-light dark:border-border-dark hover:border-primary/50'}`}
                             >
                                 <Monitor size={24} />
@@ -448,11 +560,8 @@ export const Settings: React.FC = () => {
                               onChange={handleLanguageChange}
                               className="w-full pl-10 pr-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark cursor-pointer"
                             >
-                                <option value="English (United States)">English (United States)</option>
-                                <option value="Spanish">Spanish</option>
-                                <option value="French">French</option>
-                                <option value="German">German</option>
-                                <option value="Thai">Thai (ไทย)</option>
+                                <option value="en">English</option>
+                                <option value="th">ไทย (Thai)</option>
                             </select>
                          </div>
                     </div>

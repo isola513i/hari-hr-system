@@ -131,11 +131,6 @@ const Login: React.FC = () => {
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
-
-          <div className="text-center mt-4 text-xs text-gray-400">
-            <p>Demo Admin: liam.j@nexus.hr / Welcome123!</p>
-            <p>Demo Employee: emma.w@nexus.hr / Welcome123!</p>
-          </div>
         </form>
 
         <div className="mt-6 text-center">

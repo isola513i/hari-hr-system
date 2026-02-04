@@ -87,8 +87,8 @@ export const Dashboard: React.FC = () => {
   // ----- ATTENDANCE STATE -----
   interface AttendanceStatus {
     id?: string;
-    clock_in?: string;
-    clock_out?: string;
+    clockIn?: string;
+    clockOut?: string;
     status?: string;
   }
   const [attendanceStatus, setAttendanceStatus] = useState<AttendanceStatus | null>(null);
@@ -144,7 +144,7 @@ export const Dashboard: React.FC = () => {
   const handleClockAction = async () => {
     setIsClockingIn(true);
     try {
-      const isClockedIn = attendanceStatus?.clock_in && !attendanceStatus?.clock_out;
+      const isClockedIn = attendanceStatus?.clockIn && !attendanceStatus?.clockOut;
 
       if (isClockedIn) {
         // Clock out
@@ -380,39 +380,41 @@ export const Dashboard: React.FC = () => {
           </div>
           <div className="flex flex-col items-end gap-2">
             {/* Attendance Status Badge */}
-            {attendanceStatus?.clock_in && (
+            {attendanceStatus?.clockIn && (
               <div className="flex items-center gap-2">
                 <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                  attendanceStatus.clock_out
+                  attendanceStatus.clockOut
                     ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                    : attendanceStatus.status === 'Late'
+                    ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
                     : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                 }`}>
                   <div className={`w-1.5 h-1.5 rounded-full ${
-                    attendanceStatus.clock_out ? 'bg-green-500' : 'bg-blue-500 animate-pulse'
+                    attendanceStatus.clockOut
+                      ? 'bg-green-500'
+                      : attendanceStatus.status === 'Late'
+                      ? 'bg-orange-500 animate-pulse'
+                      : 'bg-blue-500 animate-pulse'
                   }`}></div>
                   <span>
-                    {attendanceStatus.clock_out ? 'Completed' : 'Working'}
+                    {attendanceStatus.clockOut
+                      ? 'Completed'
+                      : attendanceStatus.status === 'Late'
+                      ? 'Working (Late)'
+                      : 'Working'}
                   </span>
                 </div>
               </div>
             )}
 
-            {/* Time Display */}
-            {attendanceStatus?.clock_in && (
-              <span className="text-xs text-text-muted-light dark:text-text-muted-dark">
-                In: {new Date(attendanceStatus.clock_in).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                {attendanceStatus.clock_out && ` • Out: ${new Date(attendanceStatus.clock_out).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`}
-              </span>
-            )}
-
             {/* Check In/Out Button */}
             <button
               onClick={handleClockAction}
-              disabled={isClockingIn || (attendanceStatus?.clock_in && attendanceStatus?.clock_out)}
+              disabled={isClockingIn || (attendanceStatus?.clockIn && attendanceStatus?.clockOut)}
               className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg text-sm shadow-sm transition-all ${
-                attendanceStatus?.clock_in && !attendanceStatus?.clock_out
+                attendanceStatus?.clockIn && !attendanceStatus?.clockOut
                   ? 'bg-accent-orange text-white hover:bg-accent-orange/90 hover:shadow-md'
-                  : attendanceStatus?.clock_out
+                  : attendanceStatus?.clockOut
                   ? 'bg-gray-400 text-white cursor-not-allowed'
                   : 'bg-primary text-white hover:bg-primary/90 hover:shadow-md'
               } ${isClockingIn ? 'opacity-70 cursor-wait' : ''}`}
@@ -420,9 +422,9 @@ export const Dashboard: React.FC = () => {
               <Clock size={18} />
               {isClockingIn
                 ? 'Loading...'
-                : attendanceStatus?.clock_in && !attendanceStatus?.clock_out
+                : attendanceStatus?.clockIn && !attendanceStatus?.clockOut
                 ? 'Check Out'
-                : attendanceStatus?.clock_out
+                : attendanceStatus?.clockOut
                 ? 'Done for today'
                 : 'Check In'}
             </button>

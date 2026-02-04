@@ -60,7 +60,7 @@ export class AuthService {
 
     // 3. Get Employee Info (for frontend convenience)
     const empResult = await query(
-      "SELECT id, name, role, department, avatar FROM employees WHERE user_id = $1",
+      "SELECT id, name, role, department, avatar, bio, phone FROM employees WHERE user_id = $1",
       [user.id],
     );
     const employee = empResult.rows[0] || {};
@@ -89,6 +89,8 @@ export class AuthService {
         `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.name || email)}&background=random`,
       jobTitle: employee.role,
       department: employee.department,
+      bio: employee.bio,
+      phone: employee.phone,
     };
 
     return {
@@ -152,34 +154,27 @@ export class AuthService {
   }
 
   /**
-   * Self-registration for employees added by HR Admin
-   * Employee must exist in employees table but NOT in users table
+   * Self-registration for @aiya.ai employees
+   * Creates employee record if not exists
    */
   async register(registerData: RegisterRequest): Promise<AuthResponse> {
     const { email, password, confirmPassword } = registerData;
 
-    // 1. Validate passwords match
+    // 1. Validate email domain
+    if (!email.endsWith("@aiya.ai")) {
+      throw new Error("Only @aiya.ai email addresses are allowed.");
+    }
+
+    // 2. Validate passwords match
     if (password !== confirmPassword) {
       throw new Error("Passwords do not match");
     }
 
-    // 2. Validate password complexity
+    // 3. Validate password complexity
     const passwordValidation = validatePasswordComplexity(password);
     if (!passwordValidation.valid) {
       throw new Error(passwordValidation.message);
     }
-
-    // 3. Check if employee exists (added by HR Admin)
-    const employeeResult = await query(
-      "SELECT * FROM employees WHERE email = $1",
-      [email]
-    );
-
-    if (employeeResult.rows.length === 0) {
-      throw new Error("Email not found. Please contact HR to be added to the system.");
-    }
-
-    const employee = employeeResult.rows[0];
 
     // 4. Check if user account already exists
     const existingUser = await query(
@@ -191,7 +186,31 @@ export class AuthService {
       throw new Error("Account already registered. Please login instead.");
     }
 
-    // 5. Create user account
+    // 5. Check if employee exists, if not create one
+    let employeeResult = await query(
+      "SELECT * FROM employees WHERE email = $1",
+      [email]
+    );
+
+    let employee;
+    if (employeeResult.rows.length === 0) {
+      // Create new employee record
+      const name = email.split("@")[0].replace(/[._]/g, " ").split(" ")
+        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+
+      employeeResult = await query(
+        `INSERT INTO employees (name, email, status, join_date)
+         VALUES ($1, $2, 'Active', CURRENT_DATE)
+         RETURNING *`,
+        [name, email]
+      );
+      employee = employeeResult.rows[0];
+    } else {
+      employee = employeeResult.rows[0];
+    }
+
+    // 6. Create user account
     const hashedPassword = await bcrypt.hash(password, 10);
     const userResult = await query(
       `INSERT INTO users (email, password_hash, role)
@@ -202,13 +221,13 @@ export class AuthService {
 
     const newUser = userResult.rows[0];
 
-    // 6. Link employee to user
+    // 7. Link employee to user
     await query(
       "UPDATE employees SET user_id = $1 WHERE id = $2",
       [newUser.id, employee.id]
     );
 
-    // 7. Create welcome notification for new user
+    // 8. Create welcome notification for new user
     try {
       await NotificationService.create({
         user_id: newUser.id,
@@ -218,7 +237,7 @@ export class AuthService {
         link: "/",
       });
 
-      // 8. Notify HR admins about the new registration
+      // 9. Notify HR admins about the new registration
       await NotificationService.notifyAdmins({
         title: "New Employee Registered",
         message: `${employee.name} (${email}) has completed their account registration.`,
@@ -230,7 +249,7 @@ export class AuthService {
       console.error("Failed to create notifications:", notifError);
     }
 
-    // 9. Generate JWT token and return
+    // 10. Generate JWT token and return
     const token = jwt.sign(
       {
         userId: newUser.id,
@@ -251,6 +270,8 @@ export class AuthService {
       avatar: employee.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.name)}&background=random`,
       jobTitle: employee.role,
       department: employee.department,
+      bio: employee.bio,
+      phone: employee.phone,
     };
 
     return {
@@ -260,19 +281,14 @@ export class AuthService {
   }
 
   /**
-   * Check if email can register (exists in employees but not in users)
+   * Check if email can register (must be @aiya.ai domain)
    */
   async checkEmailEligibility(email: string): Promise<{ eligible: boolean; message: string; employeeName?: string }> {
-    // Check if employee exists
-    const employeeResult = await query(
-      "SELECT name FROM employees WHERE email = $1",
-      [email]
-    );
-
-    if (employeeResult.rows.length === 0) {
+    // Check if email is from @aiya.ai domain
+    if (!email.endsWith("@aiya.ai")) {
       return {
         eligible: false,
-        message: "Email not found in the system. Please contact HR."
+        message: "Only @aiya.ai email addresses are allowed."
       };
     }
 
@@ -289,10 +305,16 @@ export class AuthService {
       };
     }
 
+    // Check if employee exists (optional, for name display)
+    const employeeResult = await query(
+      "SELECT name FROM employees WHERE email = $1",
+      [email]
+    );
+
     return {
       eligible: true,
       message: "Email eligible for registration",
-      employeeName: employeeResult.rows[0].name
+      employeeName: employeeResult.rows.length > 0 ? employeeResult.rows[0].name : undefined
     };
   }
 }
