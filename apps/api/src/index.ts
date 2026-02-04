@@ -325,13 +325,21 @@ app.get("/api/events", async (req: Request, res: Response) => {
 // GET /api/announcements
 app.get("/api/announcements", async (req: Request, res: Response) => {
   try {
-    const result = await query("SELECT * FROM announcements ORDER BY id DESC");
+    const result = await query(`
+      SELECT a.*, e.name AS author_name
+      FROM announcements a
+      LEFT JOIN users u ON a.created_by = u.id
+      LEFT JOIN employees e ON e.user_id = u.id
+      ORDER BY a.created_at DESC NULLS LAST, a.id DESC
+    `);
     const items = result.rows.map((row) => ({
       id: row.id,
       title: row.title,
       description: row.description,
       type: row.type,
       date: row.date_str,
+      author: row.author_name || null,
+      createdAt: row.created_at || null,
     }));
     res.json(items);
   } catch (err) {
@@ -354,12 +362,20 @@ app.post("/api/announcements", authenticateToken, apiLimiter, async (req: Reques
   }
 
   try {
+    const userId = (req as any).user?.userId || null;
     const result = await query(
-      `INSERT INTO announcements (title, description, type, date_str)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO announcements (title, description, type, date_str, created_by)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [title, description, type || 'announcement', date || null]
+      [title, description, type || 'announcement', date || null, userId]
     );
+
+    // Fetch author name
+    let authorName = null;
+    if (userId) {
+      const authorResult = await query(`SELECT e.name FROM employees e JOIN users u ON e.user_id = u.id WHERE u.id = $1`, [userId]);
+      authorName = authorResult.rows[0]?.name || null;
+    }
 
     const newAnnouncement = result.rows[0];
     res.status(201).json({
@@ -368,6 +384,8 @@ app.post("/api/announcements", authenticateToken, apiLimiter, async (req: Reques
       description: newAnnouncement.description,
       type: newAnnouncement.type,
       date: newAnnouncement.date_str,
+      author: authorName,
+      createdAt: newAnnouncement.created_at,
     });
   } catch (err) {
     console.error("Error creating announcement:", err);
@@ -423,12 +441,20 @@ app.patch("/api/announcements/:id", authenticateToken, requireAdmin, apiLimiter,
     }
 
     const updatedAnnouncement = result.rows[0];
+    // Fetch author name if created_by exists
+    let authorName = null;
+    if (updatedAnnouncement.created_by) {
+      const authorResult = await query(`SELECT e.name FROM employees e JOIN users u ON e.user_id = u.id WHERE u.id = $1`, [updatedAnnouncement.created_by]);
+      authorName = authorResult.rows[0]?.name || null;
+    }
     res.json({
       id: updatedAnnouncement.id,
       title: updatedAnnouncement.title,
       description: updatedAnnouncement.description,
       type: updatedAnnouncement.type,
       date: updatedAnnouncement.date_str,
+      author: authorName,
+      createdAt: updatedAnnouncement.created_at,
     });
   } catch (err) {
     console.error("Error updating announcement:", err);
@@ -599,10 +625,22 @@ app.post(
   }
 );
 
+// Lightweight migrations (safe to run multiple times)
+const runLightMigrations = async () => {
+  try {
+    await query(`ALTER TABLE announcements ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id) ON DELETE SET NULL`);
+    await query(`ALTER TABLE announcements ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()`);
+  } catch (err) {
+    // Table may not exist yet — ignore
+  }
+};
+
 // Only start the server when running locally (not in Vercel serverless)
 if (process.env.VERCEL !== '1') {
-  app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+  runLightMigrations().then(() => {
+    app.listen(port, () => {
+      console.log(`Server running at http://localhost:${port}`);
+    });
   });
 }
 

@@ -20,7 +20,11 @@ import {
   FileText,
   DollarSign,
   Palmtree,
-  MessageSquare
+  MessageSquare,
+  Trash2,
+  Megaphone,
+  Pin,
+  Send
 } from 'lucide-react';
 import { ResponsiveContainer, XAxis, YAxis, AreaChart, Area, Tooltip } from 'recharts';
 import { StatCard } from '../components/StatCard';
@@ -67,6 +71,7 @@ export const Dashboard: React.FC = () => {
   }
   const [notes, setNotes] = useState<Note[]>([]);
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
 
   // ----- LOADING STATE -----
   const [isLoading, setIsLoading] = useState(true);
@@ -325,6 +330,30 @@ export const Dashboard: React.FC = () => {
       showToast("Failed to save note", "error");
     } finally {
       setIsSavingNote(false);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    setDeletingNoteId(noteId);
+    try {
+      await api.delete(`/notes/${noteId}`);
+      fetchNotes();
+      showToast("Note deleted", "success");
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      showToast("Failed to delete note", "error");
+    } finally {
+      setDeletingNoteId(null);
+    }
+  };
+
+  const handleTogglePin = async (noteId: string) => {
+    try {
+      await api.post(`/notes/${noteId}/toggle-pin`, {});
+      fetchNotes();
+    } catch (error) {
+      console.error('Error toggling pin:', error);
+      showToast("Failed to pin note", "error");
     }
   };
 
@@ -619,56 +648,154 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Announcements (Shared with Admin but read only context) */}
+        {/* Announcements & Personal Notes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Latest Announcements */}
           <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
             <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
-              <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Latest Announcements</h2>
-            </div>
-            <div className="p-4 space-y-4">
-              {announcements.slice(0, 2).map(ann => (
-                <div key={ann.id} className="pb-3 border-b border-border-light dark:border-border-dark last:border-0 last:pb-0">
-                  <p className="text-sm font-medium text-primary mb-1">{ann.title}</p>
-                  <p className="text-xs text-text-muted-light dark:text-text-muted-dark line-clamp-2">{ann.description}</p>
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-lg">
+                  <Megaphone size={16} />
                 </div>
-              ))}
+                <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Announcements</h2>
+              </div>
+              <button onClick={() => navigate('/wellbeing')} className="text-xs text-primary font-medium hover:underline">View All</button>
+            </div>
+            <div className="p-4 space-y-3 flex-grow">
+              {announcements.length > 0 ? (
+                announcements.slice(0, 3).map(ann => (
+                  <div key={ann.id} className="p-3 bg-background-light dark:bg-background-dark rounded-lg border border-border-light dark:border-border-dark hover:border-primary/30 transition-colors">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wide ${
+                        ann.type === 'announcement' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                        ann.type === 'policy' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                        'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400'
+                      }`}>
+                        {ann.type}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-text-light dark:text-text-dark mb-0.5">{ann.title}</p>
+                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark line-clamp-2 leading-relaxed">{ann.description}</p>
+                    <div className="flex items-center gap-2 mt-2 text-[10px] text-text-muted-light dark:text-text-muted-dark">
+                      {ann.author && (
+                        <span className="flex items-center gap-1">
+                          <Users size={10} />
+                          {ann.author}
+                        </span>
+                      )}
+                      {ann.author && ann.createdAt && <span>·</span>}
+                      {ann.createdAt && (
+                        <span>{new Date(ann.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-text-muted-light dark:text-text-muted-dark">
+                  <Megaphone size={28} className="mb-2 opacity-20" />
+                  <p className="text-sm">No announcements yet</p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Personal Quick Note */}
+          {/* Personal Notes */}
           <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
             <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
-              <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Personal Notes</h2>
-              <button
-                onClick={handleSaveNote}
-                disabled={isSavingNote || !quickNote.trim()}
-                className={`text-xs bg-primary text-white px-2 py-1 rounded hover:bg-primary-hover ${isSavingNote || !quickNote.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {isSavingNote ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-            <div className="p-4 flex-grow flex flex-col">
-              <textarea
-                value={quickNote}
-                onChange={(e) => setQuickNote(e.target.value)}
-                placeholder="Jot down a quick idea..."
-                className="w-full h-24 bg-transparent resize-none focus:outline-none text-sm text-text-light dark:text-text-dark placeholder:text-text-muted-light"
-              />
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-lg">
+                  <StickyNote size={16} />
+                </div>
+                <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Personal Notes</h2>
+              </div>
               {notes.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-border-light dark:border-border-dark">
-                  <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-1">Recent notes ({notes.length})</p>
-                  <div className="space-y-1 max-h-16 overflow-y-auto">
-                    {notes.slice(0, 3).map(note => (
-                      <p
+                <span className="text-xs text-text-muted-light dark:text-text-muted-dark">{notes.length} saved</span>
+              )}
+            </div>
+            <div className="p-4 flex-grow flex flex-col gap-3">
+              {/* Note input */}
+              <div className="relative">
+                <textarea
+                  value={quickNote}
+                  onChange={(e) => setQuickNote(e.target.value)}
+                  placeholder="Write a note..."
+                  className="w-full h-20 px-3 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-sm text-text-light dark:text-text-dark placeholder:text-text-muted-light transition-colors"
+                />
+                <div className="flex items-center justify-between mt-1.5">
+                  <span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">{quickNote.length} chars</span>
+                  <button
+                    onClick={handleSaveNote}
+                    disabled={isSavingNote || !quickNote.trim()}
+                    className={`flex items-center gap-1.5 text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-hover transition-colors font-medium ${isSavingNote || !quickNote.trim() ? 'opacity-40 cursor-not-allowed' : 'shadow-sm'}`}
+                  >
+                    <Send size={12} />
+                    {isSavingNote ? 'Saving...' : 'Save Note'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Recent notes list */}
+              {notes.length > 0 && (
+                <div className="flex-grow">
+                  <p className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-2 uppercase tracking-wide">Recent</p>
+                  <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                    {notes.slice(0, 5).map(note => (
+                      <div
                         key={note.id}
-                        className="text-xs text-text-muted-light dark:text-text-muted-dark truncate cursor-pointer hover:text-primary"
+                        className={`group flex items-start gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                          note.pinned
+                            ? 'bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30'
+                            : 'hover:bg-background-light dark:hover:bg-background-dark'
+                        }`}
                         onClick={() => setQuickNote(note.content)}
-                        title={note.content}
                       >
-                        {note.pinned && '📌 '}{note.content.substring(0, 50)}{note.content.length > 50 ? '...' : ''}
-                      </p>
+                        <div className="flex-shrink-0 mt-0.5">
+                          {note.pinned ? (
+                            <Pin size={12} className="text-amber-500 fill-amber-500" />
+                          ) : (
+                            <div className="w-1.5 h-1.5 rounded-full bg-border-light dark:bg-border-dark mt-1"></div>
+                          )}
+                        </div>
+                        <div className="flex-grow min-w-0">
+                          <p className="text-xs text-text-light dark:text-text-dark truncate group-hover:text-primary transition-colors">
+                            {note.content.substring(0, 60)}{note.content.length > 60 ? '...' : ''}
+                          </p>
+                          {note.createdAt && (
+                            <p className="text-[10px] text-text-muted-light dark:text-text-muted-dark mt-0.5">
+                              {new Date(note.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex-shrink-0 flex items-center gap-0.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleTogglePin(note.id); }}
+                            className={`p-1 rounded transition-all ${
+                              note.pinned
+                                ? 'text-amber-500 opacity-100'
+                                : 'text-text-muted-light hover:text-amber-500 opacity-0 group-hover:opacity-100'
+                            }`}
+                            title={note.pinned ? 'Unpin note' : 'Pin note'}
+                          >
+                            <Pin size={12} className={note.pinned ? 'fill-amber-500' : ''} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteNote(note.id); }}
+                            disabled={deletingNoteId === note.id}
+                            className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-1 text-text-muted-light hover:text-red-500 transition-all rounded"
+                            title="Delete note"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </div>
+                </div>
+              )}
+              {notes.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-4 text-text-muted-light dark:text-text-muted-dark">
+                  <StickyNote size={24} className="mb-1.5 opacity-20" />
+                  <p className="text-xs">No notes yet. Start writing!</p>
                 </div>
               )}
             </div>
@@ -992,30 +1119,47 @@ export const Dashboard: React.FC = () => {
           {/* Latest Announcements */}
           <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
             <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
-              <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Latest Announcements</h2>
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-lg">
+                  <Megaphone size={16} />
+                </div>
+                <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Announcements</h2>
+              </div>
               <button onClick={() => navigate('/wellbeing')} className="text-xs text-primary font-medium hover:underline">View All</button>
             </div>
-            <div className="p-4 space-y-4 max-h-[250px] overflow-y-auto">
+            <div className="p-4 space-y-3 max-h-[280px] overflow-y-auto">
               {announcements.length > 0 ? (
                 announcements.slice(0, 3).map(ann => (
-                  <div key={ann.id} className="pb-3 border-b border-border-light dark:border-border-dark last:border-0 last:pb-0">
-                    <div className="flex items-start gap-2 mb-1">
-                      <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                  <div key={ann.id} className="p-3 bg-background-light dark:bg-background-dark rounded-lg border border-border-light dark:border-border-dark hover:border-primary/30 transition-colors">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wide ${
                         ann.type === 'announcement' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
                         ann.type === 'policy' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
                         'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400'
                       }`}>
                         {ann.type}
                       </span>
-                      {ann.date && <span className="text-xs text-text-muted-light dark:text-text-muted-dark">{ann.date}</span>}
                     </div>
-                    <p className="text-sm font-medium text-text-light dark:text-text-dark mb-1">{ann.title}</p>
-                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark line-clamp-2">{ann.description}</p>
+                    <p className="text-sm font-medium text-text-light dark:text-text-dark mb-0.5">{ann.title}</p>
+                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark line-clamp-2 leading-relaxed">{ann.description}</p>
+                    <div className="flex items-center gap-2 mt-2 text-[10px] text-text-muted-light dark:text-text-muted-dark">
+                      {ann.author && (
+                        <span className="flex items-center gap-1">
+                          <Users size={10} />
+                          {ann.author}
+                        </span>
+                      )}
+                      {ann.author && ann.createdAt && <span>·</span>}
+                      {ann.createdAt && (
+                        <span>{new Date(ann.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      )}
+                    </div>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-4 text-text-muted-light dark:text-text-muted-dark text-sm">
-                  No announcements yet.
+                <div className="flex flex-col items-center justify-center py-6 text-text-muted-light dark:text-text-muted-dark">
+                  <Megaphone size={28} className="mb-2 opacity-20" />
+                  <p className="text-sm">No announcements yet</p>
                 </div>
               )}
             </div>
@@ -1024,41 +1168,78 @@ export const Dashboard: React.FC = () => {
           {/* Quick Notes */}
           <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
             <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
-              <div className="flex items-center gap-3">
-                <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Quick Note</h2>
-              </div>
-              <button
-                onClick={handleSaveNote}
-                disabled={isSavingNote || !quickNote.trim()}
-                className={`text-xs bg-primary text-white px-2 py-1 rounded hover:bg-primary-hover ${isSavingNote || !quickNote.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {isSavingNote ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-            <div className="p-4 flex-grow flex flex-col">
-              <textarea
-                value={quickNote}
-                onChange={(e) => setQuickNote(e.target.value)}
-                placeholder="Type a quick note or task here..."
-                className="w-full h-full min-h-[80px] bg-transparent resize-none focus:outline-none text-sm text-text-light dark:text-text-dark placeholder:text-text-muted-light"
-              />
-              <div className="mt-2 flex justify-between items-center text-xs text-text-muted-light dark:text-text-muted-dark">
-                <span className="flex items-center gap-1"><StickyNote size={12} /> Personal</span>
-                <span>{quickNote.length} chars</span>
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-lg">
+                  <StickyNote size={16} />
+                </div>
+                <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Notes</h2>
               </div>
               {notes.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-border-light dark:border-border-dark">
-                  <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-1">Recent ({notes.length})</p>
-                  <div className="space-y-1 max-h-12 overflow-y-auto">
-                    {notes.slice(0, 2).map(note => (
-                      <p
+                <span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">{notes.length} saved</span>
+              )}
+            </div>
+            <div className="p-4 flex-grow flex flex-col">
+              <div className="relative">
+                <textarea
+                  value={quickNote}
+                  onChange={(e) => setQuickNote(e.target.value)}
+                  placeholder="Write a quick note..."
+                  className="w-full min-h-[70px] px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-sm text-text-light dark:text-text-dark placeholder:text-text-muted-light transition-colors"
+                />
+                <div className="flex items-center justify-between mt-1.5">
+                  <span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">{quickNote.length} chars</span>
+                  <button
+                    onClick={handleSaveNote}
+                    disabled={isSavingNote || !quickNote.trim()}
+                    className={`flex items-center gap-1.5 text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-hover transition-colors font-medium ${isSavingNote || !quickNote.trim() ? 'opacity-40 cursor-not-allowed' : 'shadow-sm'}`}
+                  >
+                    <Send size={12} />
+                    {isSavingNote ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              </div>
+              {notes.length > 0 && (
+                <div className="mt-3 pt-2 border-t border-border-light dark:border-border-dark">
+                  <p className="text-[10px] font-medium text-text-muted-light dark:text-text-muted-dark mb-1.5 uppercase tracking-wide">Recent</p>
+                  <div className="space-y-1 max-h-20 overflow-y-auto">
+                    {notes.slice(0, 3).map(note => (
+                      <div
                         key={note.id}
-                        className="text-xs text-text-muted-light dark:text-text-muted-dark truncate cursor-pointer hover:text-primary"
+                        className={`group flex items-center gap-2 py-1 px-1 rounded cursor-pointer transition-colors ${
+                          note.pinned ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''
+                        }`}
                         onClick={() => setQuickNote(note.content)}
-                        title={note.content}
                       >
-                        {note.pinned && '📌 '}{note.content.substring(0, 40)}{note.content.length > 40 ? '...' : ''}
-                      </p>
+                        {note.pinned ? (
+                          <Pin size={10} className="flex-shrink-0 text-amber-500 fill-amber-500" />
+                        ) : (
+                          <div className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-border-light dark:bg-border-dark"></div>
+                        )}
+                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark truncate group-hover:text-primary transition-colors">
+                          {note.content.substring(0, 40)}{note.content.length > 40 ? '...' : ''}
+                        </p>
+                        <div className="flex-shrink-0 ml-auto flex items-center gap-0.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleTogglePin(note.id); }}
+                            className={`p-0.5 rounded transition-all ${
+                              note.pinned
+                                ? 'text-amber-500 opacity-100'
+                                : 'text-text-muted-light hover:text-amber-500 opacity-0 group-hover:opacity-100'
+                            }`}
+                            title={note.pinned ? 'Unpin note' : 'Pin note'}
+                          >
+                            <Pin size={10} className={note.pinned ? 'fill-amber-500' : ''} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteNote(note.id); }}
+                            disabled={deletingNoteId === note.id}
+                            className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-0.5 text-text-muted-light hover:text-red-500 transition-all"
+                            title="Delete note"
+                          >
+                            <Trash2 size={10} />
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>

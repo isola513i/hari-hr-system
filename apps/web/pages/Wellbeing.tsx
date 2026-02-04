@@ -170,7 +170,7 @@ export const Wellbeing: React.FC = () => {
                     {item.type === 'policy' && <ScrollText size={20} />}
                     {item.type === 'event' && <PartyPopper size={20} />}
                   </div>
-                  <div>
+                  <div className="flex-grow">
                     <div className="flex items-center gap-2">
                       <p className="text-text-light dark:text-text-dark font-medium">{item.title}</p>
                       {item.date && (
@@ -180,6 +180,15 @@ export const Wellbeing: React.FC = () => {
                       )}
                     </div>
                     <p className="text-text-muted-light dark:text-text-muted-dark text-sm mt-0.5">{item.description}</p>
+                    {(item.author || item.createdAt) && (
+                      <div className="flex items-center gap-2 mt-1.5 text-xs text-text-muted-light dark:text-text-muted-dark">
+                        {item.author && <span className="font-medium">{item.author}</span>}
+                        {item.author && item.createdAt && <span>·</span>}
+                        {item.createdAt && (
+                          <span>{new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

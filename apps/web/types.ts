@@ -103,6 +103,8 @@ export interface Announcement {
   description: string;
   type: 'announcement' | 'policy' | 'event';
   date?: string;
+  author?: string;
+  createdAt?: string;
 }
 
 export interface OnboardingTask {

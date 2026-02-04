@@ -175,7 +175,9 @@ CREATE TABLE announcements (
     title VARCHAR(255) NOT NULL,
     description TEXT,
     type VARCHAR(50),
-    date_str VARCHAR(50) -- "July 25" format from mock, or use real DATE
+    date_str VARCHAR(50), -- "July 25" format from mock, or use real DATE
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- 11. Events
