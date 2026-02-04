@@ -58,6 +58,9 @@ export const EmployeeDetail: React.FC = () => {
         setToast({ show: true, message, type });
     };
 
+    // Loading State
+    const [isLoading, setIsLoading] = useState(true);
+
     // Employee State (initialized from Mock)
     const [employee, setEmployee] = useState<Employee | null>(null);
 
@@ -99,6 +102,7 @@ export const EmployeeDetail: React.FC = () => {
 
     useEffect(() => {
         const fetchEmployeeDetail = async () => {
+            setIsLoading(true);
             try {
                 // Fetch employee by ID directly (more efficient and includes all fields)
                 const [employeeData, history, reviews, training, docs, managerData, directReportsData] = await Promise.all([
@@ -131,6 +135,8 @@ export const EmployeeDetail: React.FC = () => {
                 }
             } catch (error) {
                 console.error('Error fetching employee detail:', error);
+            } finally {
+                setIsLoading(false);
             }
         };
         fetchEmployeeDetail();
@@ -376,6 +382,59 @@ export const EmployeeDetail: React.FC = () => {
         setIsReviewModalOpen(false);
     };
 
+    // Show loading skeleton while fetching data
+    if (isLoading) {
+        return (
+            <div className="space-y-6 animate-fade-in">
+                {/* Hero Section Skeleton */}
+                <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                    <div className="h-32 bg-gradient-to-r from-gray-300 dark:from-gray-700 to-gray-200 dark:to-gray-600 rounded-t-xl animate-pulse"></div>
+                    <div className="px-6 pb-6 pt-2">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-end -mt-14 mb-4">
+                            <div className="flex items-end gap-4">
+                                <div className="w-24 h-24 rounded-xl bg-gray-300 dark:bg-gray-700 animate-pulse"></div>
+                                <div className="space-y-2 mb-2">
+                                    <div className="h-6 w-48 bg-gray-300 dark:bg-gray-700 rounded animate-pulse"></div>
+                                    <div className="h-4 w-32 bg-gray-300 dark:bg-gray-700 rounded animate-pulse"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Content Skeleton */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6">
+                            <div className="h-6 w-32 bg-gray-300 dark:bg-gray-700 rounded animate-pulse mb-4"></div>
+                            <div className="space-y-3">
+                                {[1, 2, 3, 4].map((i) => (
+                                    <div key={i} className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="space-y-6">
+                        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6">
+                            <div className="h-6 w-32 bg-gray-300 dark:bg-gray-700 rounded animate-pulse mb-4"></div>
+                            <div className="space-y-3">
+                                {[1, 2, 3].map((i) => (
+                                    <div key={i} className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Show error state if employee not found after loading
     if (!employee) {
         return (
             <div className="flex flex-col items-center justify-center h-[50vh] text-text-muted-light dark:text-text-muted-dark animate-fade-in">
