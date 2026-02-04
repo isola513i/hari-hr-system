@@ -11,6 +11,7 @@ export class OrgChartController {
     try {
       const department = req.query.department as string | undefined;
       const nodes = await OrgChartService.getOrgChart(department);
+      res.setHeader('Cache-Control', 'no-store');
       res.json(nodes);
     } catch (error: any) {
       console.error("Error fetching org chart:", error);
@@ -36,6 +37,7 @@ export class OrgChartController {
         return;
       }
 
+      res.setHeader('Cache-Control', 'no-store');
       res.json(nodes);
     } catch (error: any) {
       console.error("Error fetching org chart subtree:", error);
