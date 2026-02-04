@@ -67,6 +67,9 @@ export const Dashboard: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [isSavingNote, setIsSavingNote] = useState(false);
 
+  // ----- LOADING STATE -----
+  const [isLoading, setIsLoading] = useState(true);
+
   // ----- TOAST STATE -----
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
     show: false,
@@ -182,6 +185,7 @@ export const Dashboard: React.FC = () => {
 
   // Fetch Data from API (Extracted as reusable function)
   const fetchData = async () => {
+    setIsLoading(true);
     try {
       const [employees, auditLogs, headcountStats, events, announcements] = await Promise.all([
         api.get<Employee[]>('/employees'),
@@ -232,6 +236,8 @@ export const Dashboard: React.FC = () => {
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -432,7 +438,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Quick Actions for Employee */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button
             onClick={() => navigate('/time-off')}
             className="flex items-center justify-center gap-3 p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group"
@@ -442,7 +448,8 @@ export const Dashboard: React.FC = () => {
             </div>
             <span className="font-medium text-text-light dark:text-text-dark">Time Off</span>
           </button>
-          <button
+          {/* Expenses - Hidden until implemented */}
+          {/* <button
             onClick={() => navigate('/expenses')}
             className="flex items-center justify-center gap-3 p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group"
           >
@@ -450,7 +457,7 @@ export const Dashboard: React.FC = () => {
               <DollarSign size={20} />
             </div>
             <span className="font-medium text-text-light dark:text-text-dark">Expenses</span>
-          </button>
+          </button> */}
           <button
             onClick={() => navigate('/surveys')}
             className="flex items-center justify-center gap-3 p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group"
@@ -613,6 +620,49 @@ export const Dashboard: React.FC = () => {
   // =========================================================================
 
   // State calculated in top-level effect
+
+  // Show loading skeleton while fetching data
+  if (isLoading) {
+    return (
+      <div className="space-y-6 pb-8">
+        {/* Header Skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <div className="h-8 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            <div className="h-4 w-96 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          </div>
+          <div className="flex gap-3">
+            <div className="h-10 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            <div className="h-10 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Stats Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-border-light dark:border-border-dark">
+              <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-4"></div>
+              <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            </div>
+          ))}
+        </div>
+
+        {/* Content Cards Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-border-light dark:border-border-dark">
+              <div className="h-6 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-4"></div>
+              <div className="space-y-3">
+                <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                <div className="h-4 w-3/4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                <div className="h-4 w-5/6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

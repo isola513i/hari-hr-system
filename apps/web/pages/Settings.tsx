@@ -75,8 +75,6 @@ export const Settings: React.FC = () => {
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
     setTheme(newTheme);
     applyTheme(newTheme);
-    const themeNames = { light: 'Light', dark: 'Dark', system: 'System' };
-    showToast(`Theme changed to ${themeNames[newTheme]}`, 'success');
   };
 
   // Handle language change
@@ -294,14 +292,6 @@ export const Settings: React.FC = () => {
            <h1 className="text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">Settings</h1>
            <p className="text-text-muted-light dark:text-text-muted-dark">Manage your account preferences and application settings.</p>
         </div>
-        <button
-          onClick={handleSaveChanges}
-          disabled={isSaving}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-medium rounded-lg text-sm shadow-sm hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-            <Save size={18} />
-            {isSaving ? 'Saving...' : 'Save Changes'}
-        </button>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8 mt-6">
@@ -467,6 +457,18 @@ export const Settings: React.FC = () => {
                         placeholder="Tell us about yourself, your role, and experience..."
                         className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark resize-none"
                     />
+                </div>
+
+                {/* Save Changes Button - Only in General Tab */}
+                <div className="flex justify-end pt-4 border-t border-border-light dark:border-border-dark">
+                  <button
+                    onClick={handleSaveChanges}
+                    disabled={isSaving}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-medium rounded-lg text-sm shadow-sm hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Save size={18} />
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
                 </div>
               </div>
             )}

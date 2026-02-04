@@ -30,7 +30,7 @@ export const Sidebar: React.FC = () => {
     // Employee Focused Tools
     { icon: <Clock size={20} />, label: 'Attendance', path: '/attendance', allowed: !isAdmin },
     { icon: <Calendar size={20} />, label: 'Time Off', path: '/time-off', allowed: !isAdmin },
-    { icon: <DollarSign size={20} />, label: 'Expenses', path: '/expenses', allowed: !isAdmin },
+    { icon: <DollarSign size={20} />, label: 'Expenses', path: '/expenses', allowed: false }, // Hidden - not yet implemented
     { icon: <MessageSquare size={20} />, label: 'Surveys', path: '/surveys', allowed: !isAdmin },
 
     { icon: <Smile size={20} />, label: 'Well-being', path: '/wellbeing', allowed: true },
@@ -50,11 +50,11 @@ export const Sidebar: React.FC = () => {
       <div className="p-6 pb-8 border-b border-white/10">
         <div className="flex items-center gap-3">
           <div className={`aspect-square w-10 h-10 rounded-lg flex items-center justify-center shadow-lg transition-colors ${isAdmin ? 'bg-gradient-to-tr from-primary to-accent-teal' : 'bg-gradient-to-tr from-accent-teal to-green-500'}`}>
-            <span className="font-bold text-xl text-white">N</span>
+            <span className="font-bold text-xl text-white">A</span>
           </div>
           <div className="flex flex-col">
-            <h1 className="text-white text-base font-bold leading-tight">NexusHR</h1>
-            <p className="text-gray-400 text-xs font-medium">{isAdmin ? 'Admin Workspace' : 'Employee Portal'}</p>
+            <h1 className="text-white text-base font-bold leading-tight">HARI</h1>
+            <p className="text-gray-400 text-xs font-medium">by AIYA • {isAdmin ? 'Admin' : 'Employee'}</p>
           </div>
         </div>
       </div>

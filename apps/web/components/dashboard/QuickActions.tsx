@@ -52,7 +52,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
 
   // Employee quick actions
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <button
         onClick={() => navigate('/time-off')}
         className="flex items-center justify-center gap-3 p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group"
@@ -62,7 +62,8 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
         </div>
         <span className="font-medium text-text-light dark:text-text-dark">Time Off</span>
       </button>
-      <button
+      {/* Expenses - Hidden until implemented */}
+      {/* <button
         onClick={() => navigate('/expenses')}
         className="flex items-center justify-center gap-3 p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group"
       >
@@ -70,7 +71,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
           <DollarSign size={20} />
         </div>
         <span className="font-medium text-text-light dark:text-text-dark">Expenses</span>
-      </button>
+      </button> */}
       <button
         onClick={() => navigate('/surveys')}
         className="flex items-center justify-center gap-3 p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group"

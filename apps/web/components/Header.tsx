@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   Search,
   Bell,
-  Moon,
-  Sun,
   ChevronDown,
   LogOut,
   User as UserIcon,
@@ -32,7 +30,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
-  const [darkMode, setDarkMode] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -98,14 +96,48 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Dark mode effect
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
+  // Apply theme to document
+  const applyTheme = (themeMode: 'light' | 'dark' | 'system') => {
+    const root = document.documentElement;
+
+    if (themeMode === 'system') {
+      // Detect system preference
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (systemPrefersDark) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    } else if (themeMode === 'dark') {
+      root.classList.add('dark');
     } else {
-      document.documentElement.classList.remove("dark");
+      root.classList.remove('dark');
     }
-  }, [darkMode]);
+  };
+
+  // Load theme from localStorage on mount and listen for system changes
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
+
+    if (savedTheme) {
+      setTheme(savedTheme);
+      applyTheme(savedTheme);
+    } else {
+      applyTheme('system'); // Default to system
+    }
+
+    // Listen for system theme changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemThemeChange = () => {
+      const currentTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
+      if (currentTheme === 'system' || !currentTheme) {
+        applyTheme('system');
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+    return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
+  }, []);
 
   // Close search results and notifications when clicking outside
   useEffect(() => {
@@ -275,13 +307,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         </div>
 
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="p-2 rounded-full hover:bg-background-light dark:hover:bg-background-dark text-text-muted-light dark:text-text-muted-dark transition-colors"
-          >
-            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
-
           <div className="relative" ref={notificationRef}>
             <button
               onClick={() => setIsNotificationOpen(!isNotificationOpen)}

@@ -32,7 +32,7 @@ export default {
                 "accent-red": "#e74c3c"
             },
             fontFamily: {
-                "sans": ["Inter", "sans-serif"]
+                "sans": ["LINE Seed Sans TH", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"]
             }
         },
     },
