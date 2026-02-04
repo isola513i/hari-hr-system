@@ -5,6 +5,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Announcement } from '../types';
 import { Toast } from '../components/Toast';
 import { Dropdown } from '../components/Dropdown';
+import { api } from '../lib/api';
 
 export const Wellbeing: React.FC = () => {
   const SENTIMENT_COLORS = ['#2ecc71', '#f39c12', '#e74c3c'];
@@ -27,12 +28,12 @@ export const Wellbeing: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [annRes, sentRes] = await Promise.all([
-          fetch('http://localhost:3001/api/announcements'),
-          fetch('http://localhost:3001/api/sentiment')
+        const [annData, sentData] = await Promise.all([
+          api.get<Announcement[]>('/announcements'),
+          api.get<any[]>('/sentiment')
         ]);
-        if (annRes.ok) setAnnouncementsList(await annRes.json());
-        if (sentRes.ok) setSentimentData(await sentRes.json());
+        setAnnouncementsList(annData);
+        setSentimentData(sentData);
       } catch (error) {
         console.error('Error fetching wellbeing data:', error);
       }
@@ -48,26 +49,12 @@ export const Wellbeing: React.FC = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/announcements', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          title: newAnnouncement.title,
-          description: newAnnouncement.description,
-          type: newAnnouncement.type || 'announcement',
-          date: newAnnouncement.date || null
-        })
+      const createdAnnouncement = await api.post<Announcement>('/announcements', {
+        title: newAnnouncement.title,
+        description: newAnnouncement.description,
+        type: newAnnouncement.type || 'announcement',
+        date: newAnnouncement.date || null
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create announcement');
-      }
-
-      const createdAnnouncement = await response.json();
 
       // Add to local state
       setAnnouncementsList([createdAnnouncement, ...announcementsList]);

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { JobHistoryItem, Employee, PerformanceReview, DocumentItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { api } from '../lib/api';
+import { api, API_HOST, BASE_URL } from '../lib/api';
 import { Toast } from '../components/Toast';
 import {
     MapPin,
@@ -119,7 +119,7 @@ export const EmployeeDetail: React.FC = () => {
                     setEmployee(employeeData);
                     // Prepend API URL if avatar is a relative path
                     const avatarUrl = employeeData.avatar
-                        ? (employeeData.avatar.startsWith('/') ? `http://localhost:3001${employeeData.avatar}` : employeeData.avatar)
+                        ? (employeeData.avatar.startsWith('/') ? `${API_HOST}${employeeData.avatar}` : employeeData.avatar)
                         : `https://ui-avatars.com/api/?name=${employeeData.name}`;
                     setAvatar(avatarUrl);
                     setCurrentSkills(employeeData.skills || []);
@@ -176,7 +176,7 @@ export const EmployeeDetail: React.FC = () => {
             setEmployee(updatedEmployee);
             // Prepend API URL if avatar is a relative path
             const avatarUrl = updatedEmployee.avatar
-                ? (updatedEmployee.avatar.startsWith('/') ? `http://localhost:3001${updatedEmployee.avatar}` : updatedEmployee.avatar)
+                ? (updatedEmployee.avatar.startsWith('/') ? `${API_HOST}${updatedEmployee.avatar}` : updatedEmployee.avatar)
                 : avatar;
             setAvatar(avatarUrl);
 
@@ -230,7 +230,7 @@ export const EmployeeDetail: React.FC = () => {
                 const formData = new FormData();
                 formData.append('avatar', file);
 
-                const response = await fetch('http://localhost:3001/api/employees/upload-avatar', {
+                const response = await fetch(`${BASE_URL}/employees/upload-avatar`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -246,7 +246,7 @@ export const EmployeeDetail: React.FC = () => {
 
                 // Update avatar with the server URL (prepend API URL if relative path)
                 const fullAvatarUrl = data.avatarUrl.startsWith('/')
-                    ? `http://localhost:3001${data.avatarUrl}`
+                    ? `${API_HOST}${data.avatarUrl}`
                     : data.avatarUrl;
                 setAvatar(fullAvatarUrl);
                 showToast('Avatar uploaded successfully!', 'success');
@@ -356,7 +356,7 @@ export const EmployeeDetail: React.FC = () => {
                 formData.append('category', 'Employee Documents');
 
                 // Upload to API
-                const response = await fetch('http://localhost:3001/api/documents', {
+                const response = await fetch(`${BASE_URL}/documents`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`

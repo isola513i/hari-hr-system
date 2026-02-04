@@ -237,25 +237,27 @@ export const OrgChart: React.FC = () => {
     return nodes.filter(n => n.id !== modalState.nodeId && !descendants.includes(n.id));
   }, [nodes, modalState]);
 
-  // Recursive Tree Component
-  const TreeNode: React.FC<{ node: OrgNode }> = ({ node }) => {
+  // Recursive Tree Component with visual tree connectors
+  const TreeNode: React.FC<{ node: OrgNode; isRoot?: boolean }> = ({ node, isRoot = false }) => {
     const isCollapsed = collapsedNodes.has(node.id);
     const hasChildren = node.children && node.children.length > 0;
     const isHighlighted = node.id === highlightedId;
+    const childCount = node.children?.length || 0;
 
     return (
       <div className="flex flex-col items-center">
         <div className="group relative z-10">
           {/* Card */}
           <div
-            className={`flex flex-col items-center bg-card-light dark:bg-card-dark border transition-all rounded-xl p-4 w-52 shadow-sm ${isHighlighted
-              ? 'ring-4 ring-primary border-primary scale-105'
-              : 'border-border-light dark:border-border-dark'
-              } ${isAdmin ? 'hover:shadow-lg hover:border-primary/50' : ''}`}
+            className={`flex flex-col items-center bg-card-light dark:bg-card-dark border transition-all duration-200 rounded-xl p-4 w-52 ${isHighlighted
+              ? 'ring-4 ring-primary border-primary scale-105 shadow-lg shadow-primary/20'
+              : 'border-border-light dark:border-border-dark shadow-sm'
+              } ${isRoot ? 'ring-2 ring-primary/30 shadow-md' : ''}
+              ${isAdmin ? 'hover:shadow-lg hover:border-primary/50 hover:-translate-y-0.5' : ''}`}
           >
             {/* Avatar with status indicator */}
             <div className="relative mb-3">
-              <img src={node.avatar} alt={node.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100 dark:ring-gray-700" />
+              <img src={node.avatar} alt={node.name} className={`rounded-full object-cover ring-2 ${isRoot ? 'w-14 h-14 ring-primary/30' : 'w-12 h-12 ring-gray-100 dark:ring-gray-700'}`} />
               {node.status && (
                 <span
                   className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 ${
@@ -265,7 +267,7 @@ export const OrgChart: React.FC = () => {
                 ></span>
               )}
             </div>
-            <h3 className="font-bold text-sm text-text-light dark:text-text-dark text-center">{node.name}</h3>
+            <h3 className={`font-bold text-text-light dark:text-text-dark text-center ${isRoot ? 'text-sm' : 'text-sm'}`}>{node.name}</h3>
             <p className="text-xs text-text-muted-light dark:text-text-muted-dark text-center">{node.role}</p>
 
             {/* Department badge */}
@@ -306,7 +308,7 @@ export const OrgChart: React.FC = () => {
               <button onClick={() => openAddModal(node.id)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-green-500" title="Add Subordinate">
                 <Plus size={14} />
               </button>
-              {!node.parentId ? null : ( // Prevent deleting root easily
+              {!node.parentId ? null : (
                 <button onClick={() => handleDelete(node.id)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-red-500" title="Delete">
                   <Trash2 size={14} />
                 </button>
@@ -315,27 +317,34 @@ export const OrgChart: React.FC = () => {
           )}
         </div>
 
-        {/* Children Rendering with Connectors */}
+        {/* Tree Connectors & Children */}
         {hasChildren && !isCollapsed && (
-          <div className="flex flex-col items-center animate-in fade-in zoom-in-95 duration-200">
-            {/* Vertical Line from Parent */}
-            <div className="w-px h-8 bg-border-light dark:bg-border-dark"></div>
+          <div className="flex flex-col items-center animate-in fade-in slide-in-from-top-2 duration-300">
+            {/* Vertical stem from parent down to junction */}
+            <div className="w-0.5 h-7 bg-gradient-to-b from-primary/40 to-primary/20 dark:from-primary/30 dark:to-primary/15"></div>
 
-            <div className="flex gap-8 relative">
-              {/* Horizontal Bar to connect children */}
-              {node.children!.length > 1 && (
-                <div className="absolute top-0 left-0 right-0 h-px bg-border-light dark:bg-border-dark translate-y-0"
+            {/* Junction dot */}
+            {childCount > 1 && (
+              <div className="w-2 h-2 rounded-full bg-primary/30 dark:bg-primary/25 -mt-1 -mb-1 z-10 ring-2 ring-background-light dark:ring-background-dark"></div>
+            )}
+
+            {/* Children row with horizontal bridge */}
+            <div className="relative flex">
+              {/* Horizontal bridge line across children */}
+              {childCount > 1 && (
+                <div
+                  className="absolute top-0 h-0.5 bg-primary/20 dark:bg-primary/15"
                   style={{
-                    left: `calc(${100 / (node.children!.length * 2)}%)`,
-                    right: `calc(${100 / (node.children!.length * 2)}%)`
+                    left: `calc(${100 / (childCount * 2)}%)`,
+                    right: `calc(${100 / (childCount * 2)}%)`
                   }}
                 ></div>
               )}
 
               {node.children!.map((child) => (
-                <div key={child.id} className="flex flex-col items-center relative">
-                  {/* Vertical Line to Child */}
-                  <div className="w-px h-8 bg-border-light dark:bg-border-dark"></div>
+                <div key={child.id} className="flex flex-col items-center" style={{ padding: '0 20px' }}>
+                  {/* Vertical drop line to child */}
+                  <div className="w-0.5 h-7 bg-primary/20 dark:bg-primary/15"></div>
                   <TreeNode node={child} />
                 </div>
               ))}
@@ -343,9 +352,15 @@ export const OrgChart: React.FC = () => {
           </div>
         )}
 
-        {/* Placeholder line if collapsed to show continuity hint */}
+        {/* Collapsed indicator */}
         {hasChildren && isCollapsed && (
-          <div className="w-px h-4 bg-dashed bg-border-light dark:bg-border-dark"></div>
+          <div className="flex flex-col items-center mt-1">
+            <div className="w-0.5 h-3 bg-primary/10"></div>
+            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[10px] text-primary/60 font-medium">
+              <Users size={10} />
+              {childCount}
+            </div>
+          </div>
         )}
       </div>
     );
@@ -426,12 +441,14 @@ export const OrgChart: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-grow bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl p-8 overflow-auto relative bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#2d3748_1px,transparent_1px)] [background-size:16px_16px]">
+      <div className="flex-grow bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl p-8 overflow-auto relative bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#2d3748_1px,transparent_1px)] [background-size:20px_20px]">
         <div
-          className="flex justify-center min-w-max pt-8 transition-transform origin-top duration-200"
+          className="flex justify-center min-w-max pt-4 pb-8 transition-transform origin-top duration-300 ease-out"
           style={{ transform: `scale(${zoom})` }}
         >
-          {tree.map(root => <TreeNode key={root.id} node={root} />)}
+          <div className="flex gap-16">
+            {tree.map(root => <TreeNode key={root.id} node={root} isRoot />)}
+          </div>
         </div>
       </div>
 

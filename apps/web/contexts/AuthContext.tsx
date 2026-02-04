@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { User, UserRole } from '../types';
-import { api } from '../lib/api';
+import { api, API_HOST } from '../lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -26,7 +26,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const parsedUser = JSON.parse(storedUser);
         // Transform relative avatar URL to absolute URL if needed
         if (parsedUser.avatar && parsedUser.avatar.startsWith('/')) {
-          parsedUser.avatar = `http://localhost:3001${parsedUser.avatar}`;
+          parsedUser.avatar = `${API_HOST}${parsedUser.avatar}`;
         }
         setUser(parsedUser);
       } catch (e) {
@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Map BackendUser to frontend User type
       // Transform relative avatar URL to absolute URL
       const avatarUrl = data.user.avatar
-        ? (data.user.avatar.startsWith('/') ? `http://localhost:3001${data.user.avatar}` : data.user.avatar)
+        ? (data.user.avatar.startsWith('/') ? `${API_HOST}${data.user.avatar}` : data.user.avatar)
         : 'https://ui-avatars.com/api/?name=User';
 
       const userObj: User = {

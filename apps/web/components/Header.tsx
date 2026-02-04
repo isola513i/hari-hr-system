@@ -15,7 +15,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { ChangePasswordModal } from "./ChangePasswordModal";
-import { api } from "../lib/api";
+import { api, API_HOST } from "../lib/api";
 
 interface SearchResult {
   id: string;
@@ -192,7 +192,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             subtitle: `${e.role} • ${e.department}`,
             // Transform relative avatar URL to absolute URL
             avatar: e.avatar && e.avatar.startsWith('/')
-              ? `http://localhost:3001${e.avatar}`
+              ? `${API_HOST}${e.avatar}`
               : e.avatar,
           }));
 

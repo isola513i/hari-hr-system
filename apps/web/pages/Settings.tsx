@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User, Bell, Lock, Eye, Moon, Sun, Monitor, Globe, Save, AlertCircle, Camera } from 'lucide-react';
 import { Toast } from '../components/Toast';
 import { useAuth } from '../contexts/AuthContext';
-import { api } from '../lib/api';
+import { api, API_HOST, BASE_URL } from '../lib/api';
 
 export const Settings: React.FC = () => {
   const { user, updateUser } = useAuth();
@@ -147,7 +147,7 @@ export const Settings: React.FC = () => {
       if (user.avatar) {
         // Prepend API URL if avatar is a relative path
         const fullAvatarUrl = user.avatar.startsWith('/')
-          ? `http://localhost:3001${user.avatar}`
+          ? `${API_HOST}${user.avatar}`
           : user.avatar;
         setAvatarPreview(fullAvatarUrl);
       }
@@ -232,7 +232,7 @@ export const Settings: React.FC = () => {
       const formData = new FormData();
       formData.append('avatar', file);
 
-      const response = await fetch('http://localhost:3001/api/employees/upload-avatar', {
+      const response = await fetch(`${BASE_URL}/employees/upload-avatar`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -248,7 +248,7 @@ export const Settings: React.FC = () => {
 
       // Update preview with the server URL (prepend API URL if relative path)
       const fullAvatarUrl = data.avatarUrl.startsWith('/')
-        ? `http://localhost:3001${data.avatarUrl}`
+        ? `${API_HOST}${data.avatarUrl}`
         : data.avatarUrl;
       setAvatarPreview(fullAvatarUrl);
 

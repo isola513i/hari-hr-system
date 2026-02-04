@@ -3,7 +3,7 @@ import { Search, MoreHorizontal, Mail, MapPin, Eye, ChevronDown, User, Briefcase
 import { useNavigate } from 'react-router-dom';
 import { Employee } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { api } from '../lib/api';
+import { api, API_HOST } from '../lib/api';
 import { Toast } from '../components/Toast';
 import { Modal } from '../components/Modal';
 import { Dropdown, DropdownOption } from '../components/Dropdown';
@@ -79,7 +79,7 @@ export const Employees: React.FC = () => {
       const employeesWithFullAvatars = data.map(emp => ({
         ...emp,
         avatar: emp.avatar && emp.avatar.startsWith('/')
-          ? `http://localhost:3001${emp.avatar}`
+          ? `${API_HOST}${emp.avatar}`
           : emp.avatar
       }));
       setEmployeesList(employeesWithFullAvatars);

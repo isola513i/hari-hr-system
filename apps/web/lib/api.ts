@@ -1,7 +1,21 @@
 import { LoginCredentials, AuthResponse } from '../types';
 
 // Use environment variable for API URL, fallback to /api for local development with proxy
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+export const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
+// API host for constructing asset URLs (avatars, uploads)
+// If VITE_API_URL is set (e.g. https://api.example.com/api), extract the origin
+// If not set (local dev with proxy), use empty string for relative URLs
+export const API_HOST = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
+  : '';
+
+// Helper to resolve avatar URLs - converts relative paths to absolute
+export const resolveAvatarUrl = (avatar: string | null | undefined, fallbackName?: string): string => {
+  if (!avatar) return `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName || 'User')}`;
+  if (avatar.startsWith('/')) return `${API_HOST}${avatar}`;
+  return avatar;
+};
 
 /**
  * Type for request body data

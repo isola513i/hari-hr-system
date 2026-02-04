@@ -43,7 +43,7 @@ import {
   Announcement,
   MyTeamHierarchy
 } from '../types';
-import { api } from '../lib/api';
+import { api, API_HOST } from '../lib/api';
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -224,14 +224,14 @@ export const Dashboard: React.FC = () => {
       const employees = employeesRaw.map(emp => ({
         ...emp,
         avatar: emp.avatar && emp.avatar.startsWith('/')
-          ? `http://localhost:3001${emp.avatar}`
+          ? `${API_HOST}${emp.avatar}`
           : emp.avatar
       }));
 
       const events = eventsRaw.map(evt => ({
         ...evt,
         avatar: evt.avatar && evt.avatar.startsWith('/')
-          ? `http://localhost:3001${evt.avatar}`
+          ? `${API_HOST}${evt.avatar}`
           : evt.avatar
       }));
 

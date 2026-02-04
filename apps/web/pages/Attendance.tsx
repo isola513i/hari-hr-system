@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Calendar, TrendingUp, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { api } from '../lib/api';
 
 interface AttendanceRecord {
   id: string;
@@ -39,33 +40,17 @@ const Attendance: React.FC = () => {
       const startDate = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0];
       const endDate = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0];
 
-      const token = localStorage.getItem('token');
-
       // Fetch attendance records
-      const recordsRes = await fetch(
-        `http://localhost:3001/api/attendance/employee/${user?.employeeId}?startDate=${startDate}&endDate=${endDate}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      const recordsData = await api.get<AttendanceRecord[]>(
+        `/attendance/employee/${user?.employeeId}?startDate=${startDate}&endDate=${endDate}`
       );
-
-      if (recordsRes.ok) {
-        const recordsData = await recordsRes.json();
-        setRecords(recordsData);
-      }
+      setRecords(recordsData);
 
       // Fetch summary
-      const summaryRes = await fetch(
-        `http://localhost:3001/api/attendance/employee/${user?.employeeId}/summary?startDate=${startDate}&endDate=${endDate}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      const summaryData = await api.get<AttendanceSummary>(
+        `/attendance/employee/${user?.employeeId}/summary?startDate=${startDate}&endDate=${endDate}`
       );
-
-      if (summaryRes.ok) {
-        const summaryData = await summaryRes.json();
-        setSummary(summaryData);
-      }
+      setSummary(summaryData);
     } catch (error) {
       console.error('Error fetching attendance:', error);
     } finally {

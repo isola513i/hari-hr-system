@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { LeaveRequest, LeaveBalance } from '../types';
-import { api } from '../lib/api';
+import { api, API_HOST } from '../lib/api';
 // Mocks removed
 
 interface LeaveContextType {
@@ -26,7 +26,7 @@ export const LeaveProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const requestsWithFullAvatars = data.map(req => ({
         ...req,
         avatar: req.avatar && req.avatar.startsWith('/')
-          ? `http://localhost:3001${req.avatar}`
+          ? `${API_HOST}${req.avatar}`
           : req.avatar
       }));
       setRequests(requestsWithFullAvatars);
