@@ -71,13 +71,15 @@ export const OrgProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             const payload: any = {};
             if (updates.name) payload.name = updates.name;
             if (updates.role) payload.role = updates.role;
-            if (updates.department) payload.department = updates.department;
+            if (updates.department !== undefined) payload.department = updates.department;
+            if (updates.avatar) payload.avatar = updates.avatar;
             if ('parentId' in updates) payload.managerId = updates.parentId || null;
 
             await api.patch(`/employees/${id}`, payload);
-            fetchNodes();
+            await fetchNodes();
         } catch (error) {
             console.error('Error updating node:', error);
+            throw error;
         }
     };
 

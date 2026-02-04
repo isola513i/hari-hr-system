@@ -38,4 +38,5 @@ export interface UpdateEmployeeDTO extends Partial<CreateEmployeeDTO> {
     slack?: string;
     emergencyContact?: string;
     skills?: string[];
+    managerId?: string | null;
 }

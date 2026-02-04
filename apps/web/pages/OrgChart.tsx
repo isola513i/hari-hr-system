@@ -200,32 +200,38 @@ export const OrgChart: React.FC = () => {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!inputName || !inputRole) return;
 
-    if (modalState.type === 'add') {
-      if (!inputEmail) return; // Email is required for new employees
-      const newNode = {
-        id: Date.now().toString(),
-        parentId: inputParentId || modalState.nodeId,
-        name: inputName,
-        role: inputRole,
-        email: inputEmail,
-        department: inputDepartment,
-        avatar: inputAvatar,
-      };
-      addNode(newNode);
-    } else if (modalState.type === 'edit' && modalState.nodeId) {
-      updateNode(modalState.nodeId, {
-        name: inputName,
-        role: inputRole,
-        department: inputDepartment,
-        avatar: inputAvatar,
-        parentId: inputParentId || null // Allow null for root
-      });
-    }
+    try {
+      if (modalState.type === 'add') {
+        if (!inputEmail) return; // Email is required for new employees
+        const newNode = {
+          id: Date.now().toString(),
+          parentId: inputParentId || modalState.nodeId,
+          name: inputName,
+          role: inputRole,
+          email: inputEmail,
+          department: inputDepartment,
+          avatar: inputAvatar,
+        };
+        await addNode(newNode);
+        showToast('Employee added successfully.', 'success');
+      } else if (modalState.type === 'edit' && modalState.nodeId) {
+        await updateNode(modalState.nodeId, {
+          name: inputName,
+          role: inputRole,
+          department: inputDepartment,
+          avatar: inputAvatar,
+          parentId: inputParentId || null // Allow null for root
+        });
+        showToast('Position updated successfully.', 'success');
+      }
 
-    setModalState({ ...modalState, isOpen: false });
+      setModalState({ ...modalState, isOpen: false });
+    } catch (error) {
+      showToast('Failed to save changes. Please try again.', 'error');
+    }
   };
 
   // Get available parents for the dropdown (exclude self and descendants to prevent cycles)

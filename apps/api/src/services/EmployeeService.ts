@@ -183,6 +183,10 @@ export class EmployeeService {
             updates.push(`skills = $${paramIndex++}`);
             values.push(data.skills);
         }
+        if (data.managerId !== undefined) {
+            updates.push(`manager_id = $${paramIndex++}`);
+            values.push(data.managerId || null);
+        }
 
         if (updates.length === 0) {
             return existing;
