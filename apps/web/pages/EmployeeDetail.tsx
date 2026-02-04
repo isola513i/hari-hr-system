@@ -196,11 +196,55 @@ export const EmployeeDetail: React.FC = () => {
     };
 
     // Avatar Handlers
-    const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
-            const imageUrl = URL.createObjectURL(file);
-            setAvatar(imageUrl); // Updates the preview immediately
+
+            // Validate file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('Image size must be less than 5MB.', 'error');
+                return;
+            }
+
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+            if (!allowedTypes.includes(file.type)) {
+                showToast('Please upload a JPG, PNG, or GIF image.', 'error');
+                return;
+            }
+
+            // Show preview immediately
+            const previewUrl = URL.createObjectURL(file);
+            setAvatar(previewUrl);
+
+            try {
+                // Upload the file to the server
+                const formData = new FormData();
+                formData.append('avatar', file);
+
+                const response = await fetch('http://localhost:3001/api/employees/upload-avatar', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to upload avatar');
+                }
+
+                const data = await response.json();
+
+                // Update avatar with the server URL
+                setAvatar(data.avatarUrl);
+                showToast('Avatar uploaded successfully!', 'success');
+            } catch (error) {
+                console.error('Avatar upload error:', error);
+                showToast('Failed to upload avatar. Please try again.', 'error');
+                // Revert to original avatar on error
+                setAvatar(employee?.avatar || `https://ui-avatars.com/api/?name=${employee?.name}`);
+            }
         }
     };
 

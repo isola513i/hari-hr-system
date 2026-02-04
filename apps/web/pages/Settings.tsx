@@ -202,7 +202,7 @@ export const Settings: React.FC = () => {
     fileInputRef.current?.click();
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -219,13 +219,42 @@ export const Settings: React.FC = () => {
       return;
     }
 
-    // Preview the image
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setAvatarPreview(event.target?.result as string);
-      showToast('Avatar updated! Click "Save Changes" to apply.', 'info');
-    };
-    reader.readAsDataURL(file);
+    // Show preview immediately
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreview(previewUrl);
+
+    try {
+      // Upload the file to the server
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const response = await fetch('http://localhost:3001/api/employees/upload-avatar', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload avatar');
+      }
+
+      const data = await response.json();
+
+      // Update preview with the server URL
+      setAvatarPreview(data.avatarUrl);
+
+      // Also update the form data
+      setFormData(prev => ({ ...prev, avatar: data.avatarUrl }));
+
+      showToast('Avatar uploaded! Click "Save Changes" to apply.', 'success');
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      showToast('Failed to upload avatar. Please try again.', 'error');
+      // Revert to original avatar on error
+      setAvatarPreview(user?.avatar || `https://ui-avatars.com/api/?name=${user?.name}`);
+    }
   };
 
   // Handle Password Change
