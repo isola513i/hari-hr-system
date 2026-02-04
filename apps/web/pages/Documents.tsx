@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../lib/api';
+import { api, BASE_URL } from '../lib/api';
 import {
     FileText,
     Download,
@@ -120,7 +120,7 @@ export const Documents: React.FC = () => {
         const fetchImage = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`/api/documents/${previewDoc.id}/download`, {
+                const response = await fetch(`${BASE_URL}/documents/${previewDoc.id}/download`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -208,7 +208,7 @@ export const Documents: React.FC = () => {
         try {
             // Use fetch directly for file download since api client returns JSON
             const token = localStorage.getItem('token');
-            const response = await fetch(`/api/documents/${docId}/download`, {
+            const response = await fetch(`${BASE_URL}/documents/${docId}/download`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -269,7 +269,7 @@ export const Documents: React.FC = () => {
             formData.append('employeeId', user?.id || '');
 
             const token = localStorage.getItem('token');
-            const response = await fetch('/api/documents', {
+            const response = await fetch(`${BASE_URL}/documents`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { UserPlus, Mail, Lock, CheckCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { BASE_URL } from "../lib/api";
 
 interface PasswordStrength {
   score: number;
@@ -66,7 +67,7 @@ const Register: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`/api/auth/check-email?email=${encodeURIComponent(email)}`);
+      const response = await fetch(`${BASE_URL}/auth/check-email?email=${encodeURIComponent(email)}`);
       const data = await response.json();
 
       if (data.eligible) {
@@ -104,7 +105,7 @@ const Register: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/auth/register", {
+      const response = await fetch(`${BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, confirmPassword }),
