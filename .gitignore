@@ -25,3 +25,9 @@ coverage
 *.njsproj
 *.sln
 *.sw?
+
+# Uploads directory
+apps/api/uploads/
+
+# Debug files
+debug-*.js
