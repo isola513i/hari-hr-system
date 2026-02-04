@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Calendar, Clock, CheckCircle2, XCircle, AlertCircle, Plus } from 'lucide-react';
 import { useLeave } from '../contexts/LeaveContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -203,9 +204,9 @@ export const TimeOff: React.FC = () => {
       </div>
 
       {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-md">
+      {isModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-md animate-in fade-in zoom-in duration-200">
             <div className="p-6 space-y-4">
               <h3 className="font-bold text-lg text-text-light dark:text-text-dark mb-4">Request Time Off</h3>
               <div>
@@ -213,7 +214,7 @@ export const TimeOff: React.FC = () => {
                 <select
                   value={leaveForm.type}
                   onChange={(e) => setLeaveForm({ ...leaveForm, type: e.target.value })}
-                  className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm"
+                  className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark"
                 >
                   <option value="Vacation">Vacation</option>
                   <option value="Sick Leave">Sick Leave</option>
@@ -227,7 +228,7 @@ export const TimeOff: React.FC = () => {
                     type="date"
                     value={leaveForm.startDate}
                     onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
-                    className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm"
+                    className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark"
                   />
                 </div>
                 <div>
@@ -236,7 +237,7 @@ export const TimeOff: React.FC = () => {
                     type="date"
                     value={leaveForm.endDate}
                     onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
-                    className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm"
+                    className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark"
                   />
                 </div>
               </div>
@@ -246,16 +247,17 @@ export const TimeOff: React.FC = () => {
                   rows={3}
                   value={leaveForm.reason}
                   onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })}
-                  className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm resize-none"
+                  className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm resize-none text-text-light dark:text-text-dark"
                 />
               </div>
               <div className="flex justify-end gap-3 pt-4">
-                <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm text-text-muted-light">Cancel</button>
-                <button onClick={handleSubmit} className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg">Submit</button>
+                <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm text-text-muted-light hover:text-text-light dark:hover:text-text-dark transition-colors">Cancel</button>
+                <button onClick={handleSubmit} className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors">Submit</button>
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Toast Notification */}
