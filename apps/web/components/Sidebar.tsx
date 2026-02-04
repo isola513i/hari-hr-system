@@ -49,8 +49,12 @@ export const Sidebar: React.FC = () => {
     <aside className="w-64 flex-shrink-0 bg-primary-dark text-white flex flex-col h-full shadow-xl">
       <div className="p-6 pb-8 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className={`aspect-square w-10 h-10 rounded-lg flex items-center justify-center shadow-lg transition-colors ${isAdmin ? 'bg-gradient-to-tr from-primary to-accent-teal' : 'bg-gradient-to-tr from-accent-teal to-green-500'}`}>
-            <span className="font-bold text-xl text-white">A</span>
+          <div className="aspect-square w-10 h-10 rounded-lg overflow-hidden shadow-lg bg-white flex items-center justify-center">
+            <img
+              src="/logo/AIYA_Logo.png"
+              alt="AIYA Logo"
+              className="w-full h-full object-contain p-1"
+            />
           </div>
           <div className="flex flex-col">
             <h1 className="text-white text-base font-bold leading-tight">HARI</h1>
