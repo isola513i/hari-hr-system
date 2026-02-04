@@ -151,7 +151,7 @@ export const handleApiError = (
   if (apiError.code === 'UNAUTHORIZED') {
     setTimeout(() => {
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      window.location.href = '/#/login';
     }, 2000);
   }
 

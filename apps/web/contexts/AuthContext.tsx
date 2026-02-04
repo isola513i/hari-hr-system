@@ -76,7 +76,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('user');
     setUser(null);
     // Force redirect to login if needed, or let the ProtectedRoute handle it
-    window.location.href = '/login';
+    window.location.href = '/#/login';
   };
 
   const updateUser = (updates: Partial<User>) => {

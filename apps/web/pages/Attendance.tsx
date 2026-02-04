@@ -48,7 +48,7 @@ const Attendance: React.FC = () => {
 
       // Fetch summary
       const summaryData = await api.get<AttendanceSummary>(
-        `/attendance/employee/${user?.employeeId}/summary?startDate=${startDate}&endDate=${endDate}`
+        `/attendance/summary/${user?.employeeId}?startDate=${startDate}&endDate=${endDate}`
       );
       setSummary(summaryData);
     } catch (error) {
@@ -148,7 +148,7 @@ const Attendance: React.FC = () => {
               <div>
                 <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Total Hours</p>
                 <p className="text-2xl font-bold text-text-light dark:text-text-dark">
-                  {summary.totalHours.toFixed(1)}h
+                  {Number(summary.totalHours || 0).toFixed(1)}h
                 </p>
               </div>
             </div>
@@ -190,7 +190,7 @@ const Attendance: React.FC = () => {
               <div>
                 <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Avg Hours/Day</p>
                 <p className="text-2xl font-bold text-text-light dark:text-text-dark">
-                  {summary.totalDays > 0 ? (summary.totalHours / summary.totalDays).toFixed(1) : '0'}h
+                  {summary.totalDays > 0 ? (Number(summary.totalHours || 0) / summary.totalDays).toFixed(1) : '0'}h
                 </p>
               </div>
             </div>
@@ -227,7 +227,7 @@ const Attendance: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">{formatDate(record.date)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">{formatTime(record.clockIn)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">{formatTime(record.clockOut)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">{record.totalHours ? `${record.totalHours.toFixed(1)}h` : '-'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">{record.totalHours != null ? `${Number(record.totalHours).toFixed(1)}h` : '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(record.status)}`}>{record.status}</span>
                     </td>
@@ -263,7 +263,7 @@ const Attendance: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-text-muted-light dark:text-text-muted-dark">Hours</p>
-                      <p className="font-medium text-text-light dark:text-text-dark">{record.totalHours ? `${record.totalHours.toFixed(1)}h` : '-'}</p>
+                      <p className="font-medium text-text-light dark:text-text-dark">{record.totalHours != null ? `${Number(record.totalHours).toFixed(1)}h` : '-'}</p>
                     </div>
                   </div>
                 </div>

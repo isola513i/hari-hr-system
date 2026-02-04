@@ -39,7 +39,7 @@ const handleResponse = async (response: Response) => {
         // Token expired or invalid
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        window.location.href = '/#/login';
         throw new Error('Unauthorized');
     }
     if (!response.ok) {
