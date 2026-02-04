@@ -443,12 +443,12 @@ export const Dashboard: React.FC = () => {
 
         <div className="space-y-6 animate-fade-in pb-8">
           {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">Good Morning, {user?.name?.split(' ')[0]}</h1>
-            <p className="text-text-muted-light dark:text-text-muted-dark mt-1">You have {myRequests.filter(r => r.status === 'Pending').length} pending leave requests.</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">Good Morning, {user?.name?.split(' ')[0]}</h1>
+            <p className="text-sm sm:text-base text-text-muted-light dark:text-text-muted-dark mt-1">You have {myRequests.filter(r => r.status === 'Pending').length} pending leave requests.</p>
           </div>
-          <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto">
             {/* Attendance Status Badge */}
             {attendanceStatus?.clockIn && (
               <div className="flex items-center gap-2">
@@ -502,7 +502,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Quick Actions for Employee */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <button
             onClick={() => navigate('/time-off')}
             className="flex items-center justify-center gap-3 p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group"
@@ -534,32 +534,32 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Employee Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm flex items-center justify-between cursor-pointer hover:border-primary/50 transition-colors" onClick={() => navigate('/time-off')}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+          <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 sm:p-6 shadow-sm flex items-center justify-between cursor-pointer hover:border-primary/50 transition-colors" onClick={() => navigate('/time-off')}>
             <div>
-              <p className="text-text-muted-light dark:text-text-muted-dark text-sm font-medium mb-1">Leave Balance</p>
-              <h3 className="text-3xl font-bold text-text-light dark:text-text-dark">{employeeStats.leaveBalance} <span className="text-sm font-normal text-text-muted-light">Days</span></h3>
+              <p className="text-text-muted-light dark:text-text-muted-dark text-xs sm:text-sm font-medium mb-1">Leave Balance</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark">{employeeStats.leaveBalance} <span className="text-xs sm:text-sm font-normal text-text-muted-light">Days</span></h3>
             </div>
-            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-lg">
-              <Plane size={24} />
+            <div className="p-2 sm:p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-lg">
+              <Plane size={20} className="sm:w-6 sm:h-6" />
             </div>
           </div>
-          <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm flex items-center justify-between">
+          <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 sm:p-6 shadow-sm flex items-center justify-between">
             <div>
-              <p className="text-text-muted-light dark:text-text-muted-dark text-sm font-medium mb-1">Next Payday</p>
-              <h3 className="text-3xl font-bold text-text-light dark:text-text-dark">{employeeStats.nextPayday || '—'}</h3>
+              <p className="text-text-muted-light dark:text-text-muted-dark text-xs sm:text-sm font-medium mb-1">Next Payday</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark">{employeeStats.nextPayday || '—'}</h3>
             </div>
-            <div className="p-3 bg-green-50 dark:bg-green-900/20 text-green-500 rounded-lg">
-              <Wallet size={24} />
+            <div className="p-2 sm:p-3 bg-green-50 dark:bg-green-900/20 text-green-500 rounded-lg">
+              <Wallet size={20} className="sm:w-6 sm:h-6" />
             </div>
           </div>
-          <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm flex items-center justify-between">
+          <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 sm:p-6 shadow-sm flex items-center justify-between">
             <div>
-              <p className="text-text-muted-light dark:text-text-muted-dark text-sm font-medium mb-1">Pending Reviews</p>
-              <h3 className="text-3xl font-bold text-text-light dark:text-text-dark">{employeeStats.pendingReviews}</h3>
+              <p className="text-text-muted-light dark:text-text-muted-dark text-xs sm:text-sm font-medium mb-1">Pending Reviews</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark">{employeeStats.pendingReviews}</h3>
             </div>
-            <div className="p-3 bg-orange-50 dark:bg-orange-900/20 text-orange-500 rounded-lg">
-              <FileText size={24} />
+            <div className="p-2 sm:p-3 bg-orange-50 dark:bg-orange-900/20 text-orange-500 rounded-lg">
+              <FileText size={20} className="sm:w-6 sm:h-6" />
             </div>
           </div>
         </div>
@@ -870,8 +870,8 @@ export const Dashboard: React.FC = () => {
         {/* Top Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">HR Overview</h1>
-          <p className="text-text-muted-light dark:text-text-muted-dark mt-1">Welcome back, {user?.name?.split(' ')[0]}. Here's what's happening today.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">HR Overview</h1>
+          <p className="text-sm sm:text-base text-text-muted-light dark:text-text-muted-dark mt-1">Welcome back, {user?.name?.split(' ')[0]}. Here's what's happening today.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <button
@@ -1046,40 +1046,73 @@ export const Dashboard: React.FC = () => {
             </div>
             <span className="text-xs bg-accent-orange/10 text-accent-orange px-2 py-1 rounded-full">{pendingRequests.length} pending</span>
           </div>
-          <div className="p-4 flex-grow overflow-x-auto">
+          <div className="p-4 flex-grow">
             {pendingRequests.length > 0 ? (
-              <table className="w-full text-left text-sm">
-                <tbody className="divide-y divide-border-light dark:divide-border-dark">
+              <>
+                {/* Desktop table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <tbody className="divide-y divide-border-light dark:divide-border-dark">
+                      {pendingRequests.map(req => (
+                        <tr key={req.id}>
+                          <td className="py-3 pr-4">
+                            <div className="flex items-center gap-3">
+                              <img src={req.avatar} alt={req.employeeName} className="w-8 h-8 rounded-full object-cover" />
+                              <span className="font-medium text-text-light dark:text-text-dark">{req.employeeName}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-text-muted-light dark:text-text-muted-dark">{req.type}</td>
+                          <td className="py-3 px-4 text-text-muted-light dark:text-text-muted-dark">{req.dates}</td>
+                          <td className="py-3 pl-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={(e) => handleApproveLeave(req.id, e)}
+                                className="px-3 py-1 text-xs font-medium text-accent-green bg-accent-green/10 rounded-full hover:bg-accent-green/20 transition-colors"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={(e) => handleDeclineLeave(req.id, e)}
+                                className="px-3 py-1 text-xs font-medium text-accent-red bg-accent-red/10 rounded-full hover:bg-accent-red/20 transition-colors"
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {/* Mobile cards */}
+                <div className="md:hidden space-y-3">
                   {pendingRequests.map(req => (
-                    <tr key={req.id}>
-                      <td className="py-3 pr-4">
-                        <div className="flex items-center gap-3">
-                          <img src={req.avatar} alt={req.employeeName} className="w-8 h-8 rounded-full object-cover" />
-                          <span className="font-medium text-text-light dark:text-text-dark">{req.employeeName}</span>
+                    <div key={req.id} className="p-3 bg-background-light dark:bg-background-dark rounded-lg border border-border-light dark:border-border-dark">
+                      <div className="flex items-center gap-3 mb-2">
+                        <img src={req.avatar} alt={req.employeeName} className="w-8 h-8 rounded-full object-cover" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-text-light dark:text-text-dark truncate">{req.employeeName}</p>
+                          <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.type} · {req.dates}</p>
                         </div>
-                      </td>
-                      <td className="py-3 px-4 text-text-muted-light dark:text-text-muted-dark">{req.type}</td>
-                      <td className="py-3 px-4 text-text-muted-light dark:text-text-muted-dark">{req.dates}</td>
-                      <td className="py-3 pl-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={(e) => handleApproveLeave(req.id, e)}
-                            className="px-3 py-1 text-xs font-medium text-accent-green bg-accent-green/10 rounded-full hover:bg-accent-green/20 transition-colors"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={(e) => handleDeclineLeave(req.id, e)}
-                            className="px-3 py-1 text-xs font-medium text-accent-red bg-accent-red/10 rounded-full hover:bg-accent-red/20 transition-colors"
-                          >
-                            Decline
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => handleApproveLeave(req.id, e)}
+                          className="flex-1 px-3 py-1.5 text-xs font-medium text-accent-green bg-accent-green/10 rounded-lg hover:bg-accent-green/20 transition-colors text-center"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={(e) => handleDeclineLeave(req.id, e)}
+                          className="flex-1 px-3 py-1.5 text-xs font-medium text-accent-red bg-accent-red/10 rounded-lg hover:bg-accent-red/20 transition-colors text-center"
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              </>
             ) : (
               <div className="text-center py-8 text-text-muted-light dark:text-text-muted-dark">
                 <CheckCircle2 size={32} className="mx-auto mb-2 opacity-30" />

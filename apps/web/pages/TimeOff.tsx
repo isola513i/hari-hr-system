@@ -90,21 +90,21 @@ export const TimeOff: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-text-light dark:text-text-dark">Time Off</h1>
-          <p className="text-text-muted-light dark:text-text-muted-dark">Manage your leave requests and view balance history.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark">Time Off</h1>
+          <p className="text-sm sm:text-base text-text-muted-light dark:text-text-muted-dark">Manage your leave requests and view balance history.</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-medium rounded-lg shadow-sm hover:bg-primary/90 transition-colors"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white font-medium rounded-lg shadow-sm hover:bg-primary/90 transition-colors w-full sm:w-auto"
         >
           <Plus size={18} /> New Request
         </button>
       </div>
 
       {/* Balances */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
         {balances.map((balance) => (
           <div key={balance.type} className="p-6 bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
             <div className="flex justify-between items-start mb-4">
@@ -224,7 +224,7 @@ export const TimeOff: React.FC = () => {
                   placeholder="Select leave type"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <DatePicker
                   label="Start Date"
                   value={leaveForm.startDate}

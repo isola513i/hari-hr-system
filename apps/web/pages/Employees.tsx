@@ -352,7 +352,7 @@ export const Employees: React.FC = () => {
         )}
 
         {/* Pagination Placeholder */}
-        <div className="p-4 border-t border-border-light dark:border-border-dark flex items-center justify-between text-sm text-text-muted-light dark:text-text-muted-dark">
+        <div className="p-4 border-t border-border-light dark:border-border-dark flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-text-muted-light dark:text-text-muted-dark">
           <span>Showing <span className="font-medium text-text-light dark:text-text-dark">1</span> to <span className="font-medium text-text-light dark:text-text-dark">{filteredEmployees.length}</span> of <span className="font-medium text-text-light dark:text-text-dark">{filteredEmployees.length}</span> results</span>
           <div className="flex gap-2">
             <button className="px-3 py-1 border border-border-light dark:border-border-dark rounded hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50">Previous</button>
@@ -384,7 +384,7 @@ export const Employees: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Role / Job Title</label>
               <div className="relative">

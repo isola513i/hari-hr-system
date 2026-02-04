@@ -322,17 +322,18 @@ export const Settings: React.FC = () => {
     <div className="space-y-6 animate-fade-in max-w-5xl mx-auto">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-           <h1 className="text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">Settings</h1>
-           <p className="text-text-muted-light dark:text-text-muted-dark">Manage your account preferences and application settings.</p>
+           <h1 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">Settings</h1>
+           <p className="text-sm sm:text-base text-text-muted-light dark:text-text-muted-dark">Manage your account preferences and application settings.</p>
         </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8 mt-6">
-        {/* Settings Navigation */}
-        <nav className="w-full lg:w-64 flex-shrink-0 space-y-1">
+        {/* Settings Navigation - horizontal tabs on mobile, vertical sidebar on desktop */}
+        <nav className="w-full lg:w-64 flex-shrink-0">
+          <div className="flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0 -mx-1 px-1 lg:mx-0 lg:px-0">
           <button
             onClick={() => setActiveTab('general')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 lg:w-full ${
               activeTab === 'general'
                 ? 'bg-primary/10 text-primary'
                 : 'text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -343,7 +344,7 @@ export const Settings: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('notifications')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 lg:w-full ${
               activeTab === 'notifications'
                 ? 'bg-primary/10 text-primary'
                 : 'text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -354,7 +355,7 @@ export const Settings: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('appearance')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 lg:w-full ${
               activeTab === 'appearance'
                 ? 'bg-primary/10 text-primary'
                 : 'text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -365,7 +366,7 @@ export const Settings: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('security')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 lg:w-full ${
               activeTab === 'security'
                 ? 'bg-primary/10 text-primary'
                 : 'text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -374,6 +375,7 @@ export const Settings: React.FC = () => {
             <Lock size={18} />
             Security
           </button>
+          </div>
         </nav>
 
         {/* Settings Content */}

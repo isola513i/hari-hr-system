@@ -94,6 +94,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Apply theme to document
@@ -230,7 +231,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           <Menu size={24} />
         </button>
 
-        {/* Search */}
+        {/* Desktop Search */}
         <div className="md:w-96 hidden md:block" ref={searchRef}>
           <div className="relative">
             <Search
@@ -309,7 +310,14 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
+          {/* Mobile Search Toggle */}
+          <button
+            onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+            className="md:hidden p-2 rounded-full hover:bg-background-light dark:hover:bg-background-dark text-text-muted-light dark:text-text-muted-dark transition-colors"
+          >
+            <Search size={20} />
+          </button>
           <div className="relative" ref={notificationRef}>
             <button
               onClick={() => setIsNotificationOpen(!isNotificationOpen)}
@@ -323,7 +331,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
             {/* Notification Dropdown */}
             {isNotificationOpen && (
-              <div className="absolute right-0 top-full mt-2 w-80 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-lg overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+              <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-lg overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                 <div className="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
                   <h3 className="font-semibold text-text-light dark:text-text-dark">
                     Notifications
@@ -439,6 +447,71 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           </div>
         </div>
       </header>
+
+      {/* Mobile Search Bar - slides down below header */}
+      {isMobileSearchOpen && (
+        <div className="md:hidden bg-card-light dark:bg-card-dark border-b border-border-light dark:border-border-dark px-4 py-3 shadow-sm z-10" ref={searchRef}>
+          <div className="relative">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark"
+              size={18}
+            />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => searchQuery && setShowResults(true)}
+              placeholder="Search employees..."
+              autoFocus
+              className="w-full pl-10 pr-10 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+            />
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setShowResults(false);
+                setIsMobileSearchOpen(false);
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted-light hover:text-text-light transition-colors"
+            >
+              <X size={16} />
+            </button>
+
+            {/* Mobile Search Results */}
+            {showResults && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-lg overflow-hidden z-50">
+                {isSearching ? (
+                  <div className="p-4 text-center text-text-muted-light text-sm">Searching...</div>
+                ) : searchResults.length > 0 ? (
+                  <ul>
+                    {searchResults.map((result) => (
+                      <li key={`mobile-${result.type}-${result.id}`}>
+                        <button
+                          onClick={() => { handleResultClick(result); setIsMobileSearchOpen(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-background-light dark:hover:bg-background-dark transition-colors text-left"
+                        >
+                          {result.avatar ? (
+                            <img src={result.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Users size={16} className="text-primary" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-text-light dark:text-text-dark">{result.title}</p>
+                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{result.subtitle}</p>
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="p-4 text-center text-text-muted-light text-sm">No results found</div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 };

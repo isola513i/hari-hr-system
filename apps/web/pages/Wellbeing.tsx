@@ -90,14 +90,14 @@ export const Wellbeing: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in relative">
-      <header className="flex flex-wrap justify-between items-center gap-4 mb-8">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div className="flex flex-col">
-          <h1 className="text-text-light dark:text-text-dark text-3xl font-bold tracking-tight">Employee Well-being</h1>
-          <p className="text-text-muted-light dark:text-text-muted-dark text-base">Fostering a positive and supportive workplace culture.</p>
+          <h1 className="text-text-light dark:text-text-dark text-2xl sm:text-3xl font-bold tracking-tight">Employee Well-being</h1>
+          <p className="text-text-muted-light dark:text-text-muted-dark text-sm sm:text-base">Fostering a positive and supportive workplace culture.</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-medium rounded-lg text-sm shadow-sm hover:bg-primary/90 transition-colors"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white font-medium rounded-lg text-sm shadow-sm hover:bg-primary/90 transition-colors w-full sm:w-auto"
         >
           <Plus size={18} />
           New Announcement
@@ -161,7 +161,7 @@ export const Wellbeing: React.FC = () => {
             </div>
             <div className="space-y-4">
               {announcementsList.map((item) => (
-                <div key={item.id} className="flex items-start gap-4 p-4 rounded-lg bg-background-light dark:bg-background-dark/50 transition-colors hover:bg-background-light/80 dark:hover:bg-background-dark">
+                <div key={item.id} className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-background-light dark:bg-background-dark/50 transition-colors hover:bg-background-light/80 dark:hover:bg-background-dark">
                   <div className={`p-2 rounded-full flex-shrink-0 ${item.type === 'announcement' ? 'bg-primary/10 text-primary' :
                     item.type === 'policy' ? 'bg-accent-orange/10 text-accent-orange' :
                       'bg-accent-teal/10 text-accent-teal'
@@ -171,8 +171,8 @@ export const Wellbeing: React.FC = () => {
                     {item.type === 'event' && <PartyPopper size={20} />}
                   </div>
                   <div className="flex-grow">
-                    <div className="flex items-center gap-2">
-                      <p className="text-text-light dark:text-text-dark font-medium">{item.title}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-text-light dark:text-text-dark font-medium text-sm sm:text-base">{item.title}</p>
                       {item.date && (
                         <span className="text-xs bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark px-1.5 py-0.5 rounded text-text-muted-light">
                           {item.date}
@@ -295,7 +295,7 @@ export const Wellbeing: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Type</label>
                   <Dropdown
