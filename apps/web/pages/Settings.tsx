@@ -206,9 +206,9 @@ export const Settings: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (800KB max)
-    if (file.size > 800 * 1024) {
-      showToast('Image size must be less than 800KB.', 'error');
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image size must be less than 5MB.', 'error');
       return;
     }
 
@@ -382,7 +382,7 @@ export const Settings: React.FC = () => {
                         >
                             Change Avatar
                         </button>
-                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-2">JPG, GIF or PNG. Max size 800K</p>
+                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-2">JPG, GIF or PNG. Max size 5MB</p>
                     </div>
                 </div>
 
