@@ -23,7 +23,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const storedUser = localStorage.getItem('user');
     if (token && storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        // Transform relative avatar URL to absolute URL if needed
+        if (parsedUser.avatar && parsedUser.avatar.startsWith('/')) {
+          parsedUser.avatar = `http://localhost:3001${parsedUser.avatar}`;
+        }
+        setUser(parsedUser);
       } catch (e) {
         console.error("Failed to parse user from local storage", e);
         localStorage.removeItem('user');
@@ -39,13 +44,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       // Backend returns: { token, user: BackendUser }
       // Map BackendUser to frontend User type
+      // Transform relative avatar URL to absolute URL
+      const avatarUrl = data.user.avatar
+        ? (data.user.avatar.startsWith('/') ? `http://localhost:3001${data.user.avatar}` : data.user.avatar)
+        : 'https://ui-avatars.com/api/?name=User';
+
       const userObj: User = {
         id: data.user.employeeId || data.user.userId,
         employeeId: data.user.employeeId,
         email: data.user.email,
         name: data.user.name || 'User',
         role: data.user.role as UserRole,
-        avatar: data.user.avatar || 'https://ui-avatars.com/api/?name=User',
+        avatar: avatarUrl,
         jobTitle: data.user.jobTitle || 'Employee',
         bio: data.user.bio,
         phone: data.user.phone

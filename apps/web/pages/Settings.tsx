@@ -145,7 +145,11 @@ export const Settings: React.FC = () => {
       setCountryCode(extractedCountryCode);
 
       if (user.avatar) {
-        setAvatarPreview(user.avatar);
+        // Prepend API URL if avatar is a relative path
+        const fullAvatarUrl = user.avatar.startsWith('/')
+          ? `http://localhost:3001${user.avatar}`
+          : user.avatar;
+        setAvatarPreview(fullAvatarUrl);
       }
     }
   }, [user]);
@@ -242,11 +246,11 @@ export const Settings: React.FC = () => {
 
       const data = await response.json();
 
-      // Update preview with the server URL
-      setAvatarPreview(data.avatarUrl);
-
-      // Also update the form data
-      setFormData(prev => ({ ...prev, avatar: data.avatarUrl }));
+      // Update preview with the server URL (prepend API URL if relative path)
+      const fullAvatarUrl = data.avatarUrl.startsWith('/')
+        ? `http://localhost:3001${data.avatarUrl}`
+        : data.avatarUrl;
+      setAvatarPreview(fullAvatarUrl);
 
       showToast('Avatar uploaded! Click "Save Changes" to apply.', 'success');
     } catch (error) {

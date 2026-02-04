@@ -117,7 +117,11 @@ export const EmployeeDetail: React.FC = () => {
 
                 if (employeeData) {
                     setEmployee(employeeData);
-                    setAvatar(employeeData.avatar || `https://ui-avatars.com/api/?name=${employeeData.name}`);
+                    // Prepend API URL if avatar is a relative path
+                    const avatarUrl = employeeData.avatar
+                        ? (employeeData.avatar.startsWith('/') ? `http://localhost:3001${employeeData.avatar}` : employeeData.avatar)
+                        : `https://ui-avatars.com/api/?name=${employeeData.name}`;
+                    setAvatar(avatarUrl);
                     setCurrentSkills(employeeData.skills || []);
 
                     // Auxiliary Data
@@ -170,7 +174,11 @@ export const EmployeeDetail: React.FC = () => {
 
             // Update local state with the response from server (ensures data is in sync)
             setEmployee(updatedEmployee);
-            setAvatar(updatedEmployee.avatar || avatar);
+            // Prepend API URL if avatar is a relative path
+            const avatarUrl = updatedEmployee.avatar
+                ? (updatedEmployee.avatar.startsWith('/') ? `http://localhost:3001${updatedEmployee.avatar}` : updatedEmployee.avatar)
+                : avatar;
+            setAvatar(avatarUrl);
 
             // If user is editing their own profile, update AuthContext to keep Settings page in sync
             if (isOwnProfile && updateUser) {
@@ -236,8 +244,11 @@ export const EmployeeDetail: React.FC = () => {
 
                 const data = await response.json();
 
-                // Update avatar with the server URL
-                setAvatar(data.avatarUrl);
+                // Update avatar with the server URL (prepend API URL if relative path)
+                const fullAvatarUrl = data.avatarUrl.startsWith('/')
+                    ? `http://localhost:3001${data.avatarUrl}`
+                    : data.avatarUrl;
+                setAvatar(fullAvatarUrl);
                 showToast('Avatar uploaded successfully!', 'success');
             } catch (error) {
                 console.error('Avatar upload error:', error);

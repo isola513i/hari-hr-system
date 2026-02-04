@@ -22,7 +22,14 @@ export const LeaveProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const fetchRequests = async () => {
     try {
       const data = await api.get<LeaveRequest[]>('/leave-requests');
-      setRequests(data);
+      // Transform relative avatar URLs to absolute URLs
+      const requestsWithFullAvatars = data.map(req => ({
+        ...req,
+        avatar: req.avatar && req.avatar.startsWith('/')
+          ? `http://localhost:3001${req.avatar}`
+          : req.avatar
+      }));
+      setRequests(requestsWithFullAvatars);
     } catch (error) {
       console.error('Error fetching leave requests:', error);
       setRequests([]);

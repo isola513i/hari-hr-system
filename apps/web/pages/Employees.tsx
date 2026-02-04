@@ -75,7 +75,14 @@ export const Employees: React.FC = () => {
   const fetchEmployees = async () => {
     try {
       const data = await api.get<any[]>('/employees');
-      setEmployeesList(data);
+      // Transform relative avatar URLs to absolute URLs
+      const employeesWithFullAvatars = data.map(emp => ({
+        ...emp,
+        avatar: emp.avatar && emp.avatar.startsWith('/')
+          ? `http://localhost:3001${emp.avatar}`
+          : emp.avatar
+      }));
+      setEmployeesList(employeesWithFullAvatars);
     } catch (error) {
       console.error('Error fetching employees:', error);
     }

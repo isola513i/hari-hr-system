@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Megaphone, ScrollText, PartyPopper, ChevronLeft, ChevronRight, Plus, X, Check, Calendar, Type, AlignLeft } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Announcement } from '../types';
 import { Toast } from '../components/Toast';
+import { Dropdown } from '../components/Dropdown';
 
 export const Wellbeing: React.FC = () => {
   const SENTIMENT_COLORS = ['#2ecc71', '#f39c12', '#e74c3c'];
@@ -26,8 +28,8 @@ export const Wellbeing: React.FC = () => {
     const fetchData = async () => {
       try {
         const [annRes, sentRes] = await Promise.all([
-          fetch('http://localhost:3000/api/announcements'),
-          fetch('http://localhost:3000/api/sentiment')
+          fetch('http://localhost:3001/api/announcements'),
+          fetch('http://localhost:3001/api/sentiment')
         ]);
         if (annRes.ok) setAnnouncementsList(await annRes.json());
         if (sentRes.ok) setSentimentData(await sentRes.json());
@@ -38,25 +40,44 @@ export const Wellbeing: React.FC = () => {
     fetchData();
   }, []);
 
-  const handleSaveAnnouncement = (e: React.FormEvent) => {
+  const handleSaveAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAnnouncement.title || !newAnnouncement.description) {
       showToast('Please fill in title and description.', 'warning');
       return;
     }
 
-    const newItem: Announcement = {
-      id: Date.now().toString(),
-      title: newAnnouncement.title,
-      description: newAnnouncement.description,
-      type: newAnnouncement.type as 'announcement' | 'policy' | 'event',
-      date: newAnnouncement.date
-    };
+    try {
+      const response = await fetch('http://localhost:3001/api/announcements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          title: newAnnouncement.title,
+          description: newAnnouncement.description,
+          type: newAnnouncement.type || 'announcement',
+          date: newAnnouncement.date || null
+        })
+      });
 
-    setAnnouncementsList([newItem, ...announcementsList]);
-    setIsModalOpen(false);
-    setNewAnnouncement({ type: 'announcement', title: '', description: '', date: '' });
-    showToast('Announcement posted successfully!', 'success');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create announcement');
+      }
+
+      const createdAnnouncement = await response.json();
+
+      // Add to local state
+      setAnnouncementsList([createdAnnouncement, ...announcementsList]);
+      setIsModalOpen(false);
+      setNewAnnouncement({ type: 'announcement', title: '', description: '', date: '' });
+      showToast('Announcement posted successfully!', 'success');
+    } catch (error: any) {
+      console.error('Error creating announcement:', error);
+      showToast(error.message || 'Failed to create announcement. Please try again.', 'error');
+    }
   };
 
   const handlePrevMonth = () => {
@@ -234,8 +255,8 @@ export const Wellbeing: React.FC = () => {
       </div>
 
       {/* Add Announcement Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      {isModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
               <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
@@ -268,18 +289,16 @@ export const Wellbeing: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Type</label>
-                  <div className="relative">
-                    <Megaphone className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-                    <select
-                      value={newAnnouncement.type}
-                      onChange={(e) => setNewAnnouncement({ ...newAnnouncement, type: e.target.value as any })}
-                      className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark appearance-none"
-                    >
-                      <option value="announcement">Announcement</option>
-                      <option value="policy">Policy Update</option>
-                      <option value="event">Event</option>
-                    </select>
-                  </div>
+                  <Dropdown
+                    value={newAnnouncement.type || 'announcement'}
+                    onChange={(value) => setNewAnnouncement({ ...newAnnouncement, type: value as any })}
+                    options={[
+                      { value: 'announcement', label: 'Announcement' },
+                      { value: 'policy', label: 'Policy Update' },
+                      { value: 'event', label: 'Event' }
+                    ]}
+                    placeholder="Select announcement type"
+                  />
                 </div>
 
                 <div>
@@ -329,7 +348,8 @@ export const Wellbeing: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Toast Notification */}

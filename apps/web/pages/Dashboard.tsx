@@ -187,13 +187,28 @@ export const Dashboard: React.FC = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [employees, auditLogs, headcountStats, events, announcements] = await Promise.all([
+      const [employeesRaw, auditLogs, headcountStats, eventsRaw, announcements] = await Promise.all([
         api.get<Employee[]>('/employees'),
         api.get<AuditLogItem[]>('/audit-logs'),
         api.get<ChartDataPoint[]>('/headcount-stats'),
         api.get<UpcomingEvent[]>('/events'),
         api.get<Announcement[]>('/announcements')
       ]);
+
+      // Transform relative avatar URLs to absolute URLs
+      const employees = employeesRaw.map(emp => ({
+        ...emp,
+        avatar: emp.avatar && emp.avatar.startsWith('/')
+          ? `http://localhost:3001${emp.avatar}`
+          : emp.avatar
+      }));
+
+      const events = eventsRaw.map(evt => ({
+        ...evt,
+        avatar: evt.avatar && evt.avatar.startsWith('/')
+          ? `http://localhost:3001${evt.avatar}`
+          : evt.avatar
+      }));
 
       // Stats
       setActiveEmployeesCount(employees.filter((employee) => employee.status === 'Active').length);
@@ -898,8 +913,8 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Recent Activity & Notes */}
-        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Recent Activity, Notes & Announcements */}
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Recent Activity */}
           <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
             <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
@@ -922,6 +937,38 @@ export const Dashboard: React.FC = () => {
                 </div>
               ))}
               <button onClick={() => navigate('/compliance')} className="w-full text-center text-xs text-primary mt-2 hover:underline">View Full Log</button>
+            </div>
+          </div>
+
+          {/* Latest Announcements */}
+          <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
+            <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
+              <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Latest Announcements</h2>
+              <button onClick={() => navigate('/wellbeing')} className="text-xs text-primary font-medium hover:underline">View All</button>
+            </div>
+            <div className="p-4 space-y-4 max-h-[250px] overflow-y-auto">
+              {announcements.length > 0 ? (
+                announcements.slice(0, 3).map(ann => (
+                  <div key={ann.id} className="pb-3 border-b border-border-light dark:border-border-dark last:border-0 last:pb-0">
+                    <div className="flex items-start gap-2 mb-1">
+                      <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                        ann.type === 'announcement' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                        ann.type === 'policy' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                        'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400'
+                      }`}>
+                        {ann.type}
+                      </span>
+                      {ann.date && <span className="text-xs text-text-muted-light dark:text-text-muted-dark">{ann.date}</span>}
+                    </div>
+                    <p className="text-sm font-medium text-text-light dark:text-text-dark mb-1">{ann.title}</p>
+                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark line-clamp-2">{ann.description}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-text-muted-light dark:text-text-muted-dark text-sm">
+                  No announcements yet.
+                </div>
+              )}
             </div>
           </div>
 

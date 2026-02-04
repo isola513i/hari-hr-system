@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import { query } from "./db";
 import path from "path";
 import swaggerUi from "swagger-ui-express";
-import { generalLimiter, helmetConfig } from "./middlewares/security";
+import { generalLimiter, helmetConfig, apiLimiter } from "./middlewares/security";
 import { auditLogMiddleware, getAuditLogs } from "./middlewares/auditLog";
 import { authenticateToken, requireAdmin } from "./middlewares/auth";
 import { swaggerSpec } from "./config/swagger";
@@ -323,7 +323,7 @@ app.get("/api/events", async (req: Request, res: Response) => {
 // GET /api/announcements
 app.get("/api/announcements", async (req: Request, res: Response) => {
   try {
-    const result = await query("SELECT * FROM announcements");
+    const result = await query("SELECT * FROM announcements ORDER BY id DESC");
     const items = result.rows.map((row) => ({
       id: row.id,
       title: row.title,
@@ -335,6 +335,120 @@ app.get("/api/announcements", async (req: Request, res: Response) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed" });
+  }
+});
+
+// POST /api/announcements - Create new announcement
+app.post("/api/announcements", authenticateToken, apiLimiter, async (req: Request, res: Response) => {
+  const { title, description, type, date } = req.body;
+
+  // Validation
+  if (!title || !description) {
+    return res.status(400).json({ error: "Title and description are required" });
+  }
+
+  if (type && !['announcement', 'policy', 'event'].includes(type)) {
+    return res.status(400).json({ error: "Invalid type. Must be 'announcement', 'policy', or 'event'" });
+  }
+
+  try {
+    const result = await query(
+      `INSERT INTO announcements (title, description, type, date_str)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [title, description, type || 'announcement', date || null]
+    );
+
+    const newAnnouncement = result.rows[0];
+    res.status(201).json({
+      id: newAnnouncement.id,
+      title: newAnnouncement.title,
+      description: newAnnouncement.description,
+      type: newAnnouncement.type,
+      date: newAnnouncement.date_str,
+    });
+  } catch (err) {
+    console.error("Error creating announcement:", err);
+    res.status(500).json({ error: "Failed to create announcement" });
+  }
+});
+
+// PATCH /api/announcements/:id - Update announcement
+app.patch("/api/announcements/:id", authenticateToken, requireAdmin, apiLimiter, async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { title, description, type, date } = req.body;
+
+  // Validate type if provided
+  if (type && !['announcement', 'policy', 'event'].includes(type)) {
+    return res.status(400).json({ error: "Invalid type. Must be 'announcement', 'policy', or 'event'" });
+  }
+
+  try {
+    // Build dynamic update query
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramCount = 1;
+
+    if (title !== undefined) {
+      updates.push(`title = $${paramCount++}`);
+      values.push(title);
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${paramCount++}`);
+      values.push(description);
+    }
+    if (type !== undefined) {
+      updates.push(`type = $${paramCount++}`);
+      values.push(type);
+    }
+    if (date !== undefined) {
+      updates.push(`date_str = $${paramCount++}`);
+      values.push(date);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: "No fields to update" });
+    }
+
+    values.push(id);
+    const result = await query(
+      `UPDATE announcements SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`,
+      values
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Announcement not found" });
+    }
+
+    const updatedAnnouncement = result.rows[0];
+    res.json({
+      id: updatedAnnouncement.id,
+      title: updatedAnnouncement.title,
+      description: updatedAnnouncement.description,
+      type: updatedAnnouncement.type,
+      date: updatedAnnouncement.date_str,
+    });
+  } catch (err) {
+    console.error("Error updating announcement:", err);
+    res.status(500).json({ error: "Failed to update announcement" });
+  }
+});
+
+// DELETE /api/announcements/:id - Delete announcement
+app.delete("/api/announcements/:id", authenticateToken, requireAdmin, apiLimiter, async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const result = await query("DELETE FROM announcements WHERE id = $1 RETURNING id", [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Announcement not found" });
+    }
+
+    res.json({ message: "Announcement deleted successfully", id: result.rows[0].id });
+  } catch (err) {
+    console.error("Error deleting announcement:", err);
+    res.status(500).json({ error: "Failed to delete announcement" });
   }
 });
 

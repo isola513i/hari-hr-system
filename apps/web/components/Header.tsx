@@ -189,7 +189,10 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             type: "employee" as const,
             title: e.name,
             subtitle: `${e.role} • ${e.department}`,
-            avatar: e.avatar,
+            // Transform relative avatar URL to absolute URL
+            avatar: e.avatar && e.avatar.startsWith('/')
+              ? `http://localhost:3001${e.avatar}`
+              : e.avatar,
           }));
 
         setSearchResults(employeeResults);
