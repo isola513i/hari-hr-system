@@ -31,7 +31,7 @@ export const Sidebar: React.FC = () => {
     { icon: <Clock size={20} />, label: 'Attendance', path: '/attendance', allowed: !isAdmin },
     { icon: <Calendar size={20} />, label: 'Time Off', path: '/time-off', allowed: !isAdmin },
     { icon: <DollarSign size={20} />, label: 'Expenses', path: '/expenses', allowed: false }, // Hidden - not yet implemented
-    { icon: <MessageSquare size={20} />, label: 'Surveys', path: '/surveys', allowed: !isAdmin },
+    // { icon: <MessageSquare size={20} />, label: 'Surveys', path: '/surveys', allowed: !isAdmin }, // Hidden - not yet implemented
 
     { icon: <Smile size={20} />, label: 'Well-being', path: '/wellbeing', allowed: true },
     { icon: <Users size={20} />, label: 'Employees', path: '/employees', allowed: true },

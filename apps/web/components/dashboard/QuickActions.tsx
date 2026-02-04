@@ -72,7 +72,8 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
         </div>
         <span className="font-medium text-text-light dark:text-text-dark">Expenses</span>
       </button> */}
-      <button
+      {/* Surveys - Hidden until implemented */}
+      {/* <button
         onClick={() => navigate('/surveys')}
         className="flex items-center justify-center gap-3 p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group"
       >
@@ -80,7 +81,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
           <MessageSquare size={20} />
         </div>
         <span className="font-medium text-text-light dark:text-text-dark">Surveys</span>
-      </button>
+      </button> */}
     </div>
   );
 };
