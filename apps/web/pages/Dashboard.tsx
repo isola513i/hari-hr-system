@@ -1031,9 +1031,9 @@ export const Dashboard: React.FC = () => {
             </div>
             <button className="text-text-muted-light hover:text-primary hidden md:block"><MoreHorizontal size={20} /></button>
           </div>
-          <div className="h-[200px] md:h-[250px] w-full flex-grow">
-            {headcountData && headcountData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={150}>
+          <div className="h-[200px] md:h-[250px] w-full flex-grow" style={{ minHeight: 200, minWidth: 300 }}>
+            {headcountData && headcountData.length > 0 && !isLoading ? (
+              <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={headcountData}>
                   <defs>
                     <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
