@@ -14,7 +14,6 @@ import {
   ChevronDown,
   ChevronUp,
   Check,
-  Filter,
   ArrowLeft,
   Move,
 } from 'lucide-react';
@@ -584,24 +583,16 @@ export const OrgChart: React.FC = () => {
           )}
 
           {/* Department Filter */}
-          <div className="relative">
-            <Filter
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light z-10 pointer-events-none"
-              size={14}
-            />
-            <div className="pl-5">
-              <Dropdown
-                value={departmentFilter}
-                onChange={(value) => setDepartmentFilter(value as Department | '')}
-                options={[
-                  { value: '', label: 'All Departments' },
-                  ...departments.map((dept) => ({ value: dept, label: dept }))
-                ]}
-                placeholder="All Departments"
-                className="text-sm"
-              />
-            </div>
-          </div>
+          <Dropdown
+            value={departmentFilter}
+            onChange={(value) => setDepartmentFilter(value as Department | '')}
+            options={[
+              { value: '', label: 'All Departments' },
+              ...departments.map((dept) => ({ value: dept, label: dept }))
+            ]}
+            placeholder="All Departments"
+            width="w-44"
+          />
 
           {/* Search Bar */}
           <div className="relative">
