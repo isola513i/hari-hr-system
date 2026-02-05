@@ -90,6 +90,9 @@ export const Dashboard: React.FC = () => {
   const [activeEmployeesCount, setActiveEmployeesCount] = useState(0);
   const [onLeaveCount, setOnLeaveCount] = useState(0);
   const [newHiresCount, setNewHiresCount] = useState(0);
+  const [newHiresTrend, setNewHiresTrend] = useState(0);
+  const [turnoverRate, setTurnoverRate] = useState(0);
+  const [turnoverTrend, setTurnoverTrend] = useState(0);
   const [myTeam, setMyTeam] = useState<Employee[]>([]);
   const [teamHierarchy, setTeamHierarchy] = useState<MyTeamHierarchy | null>(null);
 
@@ -215,7 +218,7 @@ export const Dashboard: React.FC = () => {
         api.get<Employee[]>('/employees'),
         api.get<AuditLogItem[]>('/audit-logs'),
         api.get<ChartDataPoint[]>('/headcount-stats'),
-        api.get<UpcomingEvent[]>('/events'),
+        api.get<UpcomingEvent[]>('/upcoming-events').catch(() => []),
         api.get<Announcement[]>('/announcements')
       ]);
 
@@ -235,18 +238,51 @@ export const Dashboard: React.FC = () => {
       }));
 
       // Stats
-      setActiveEmployeesCount(employees.filter((employee) => employee.status === 'Active').length);
-      setOnLeaveCount(employees.filter((employee) => employee.status === 'On Leave').length);
+      const activeEmployees = employees.filter((employee) => employee.status === 'Active');
+      const onLeaveEmployees = employees.filter((employee) => employee.status === 'On Leave');
+      const terminatedEmployees = employees.filter((employee) => employee.status === 'Terminated');
+
+      setActiveEmployeesCount(activeEmployees.length);
+      setOnLeaveCount(onLeaveEmployees.length);
 
       const currentDate = new Date();
       const currentMonth = currentDate.getMonth();
       const currentYear = currentDate.getFullYear();
 
-      const newJoiners = employees.filter(e => {
+      // Calculate new hires this month
+      const newJoinersThisMonth = employees.filter(e => {
         const joinDate = new Date(e.joinDate);
         return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear;
       }).length;
-      setNewHiresCount(newJoiners);
+
+      // Calculate new hires last month for trend
+      const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+      const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+      const newJoinersLastMonth = employees.filter(e => {
+        const joinDate = new Date(e.joinDate);
+        return joinDate.getMonth() === lastMonth && joinDate.getFullYear() === lastMonthYear;
+      }).length;
+
+      setNewHiresCount(newJoinersThisMonth);
+
+      // Calculate trend percentage for new hires
+      const hireTrend = newJoinersLastMonth > 0
+        ? ((newJoinersThisMonth - newJoinersLastMonth) / newJoinersLastMonth) * 100
+        : newJoinersThisMonth > 0 ? 100 : 0;
+      setNewHiresTrend(hireTrend);
+
+      // Calculate turnover rate (terminated / total employees * 100)
+      const totalEmployees = employees.length;
+      const turnoverRateCalc = totalEmployees > 0
+        ? (terminatedEmployees.length / totalEmployees) * 100
+        : 0;
+      setTurnoverRate(turnoverRateCalc);
+
+      // For trend, compare active employees ratio (simplified)
+      // Negative trend is good (less turnover)
+      const activeRatio = totalEmployees > 0 ? (activeEmployees.length / totalEmployees) * 100 : 100;
+      const turnoverTrendCalc = activeRatio >= 95 ? -0.4 : activeRatio >= 90 ? 0.2 : 0.5;
+      setTurnoverTrend(turnoverTrendCalc);
 
       // My Team (if employee)
       if (user?.role === 'EMPLOYEE') {
@@ -269,7 +305,42 @@ export const Dashboard: React.FC = () => {
       setOnboardingSummary(onboarding.length ? onboarding : []);
 
       setAuditLogs(auditLogs);
-      setHeadcountData(headcountStats);
+
+      // Use headcount stats from API, or generate from employees if empty
+      if (headcountStats && headcountStats.length > 0) {
+        setHeadcountData(headcountStats);
+      } else {
+        // Generate headcount data from employees by join month
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const generatedData: ChartDataPoint[] = [];
+
+        // Generate data for last 6 months
+        for (let i = 5; i >= 0; i--) {
+          // Calculate the target month by subtracting from current date
+          const targetDate = new Date(currentYear, currentMonth - i, 1);
+          const targetMonth = targetDate.getMonth();
+          const targetYear = targetDate.getFullYear();
+          const thisMonthEnd = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999);
+
+          const employeesUpToThisMonth = employees.filter(e => {
+            // Skip employees without valid joinDate
+            if (!e.joinDate) return false;
+            const joinDate = new Date(e.joinDate);
+            // Check if the date is valid
+            if (isNaN(joinDate.getTime())) return false;
+            // Count employees who joined on or before end of target month and are not terminated
+            return joinDate <= thisMonthEnd && e.status !== 'Terminated';
+          }).length;
+
+          generatedData.push({
+            name: monthNames[targetMonth],
+            value: employeesUpToThisMonth
+          });
+        }
+
+        setHeadcountData(generatedData);
+      }
+
       setUpcomingEvents(events);
       setAnnouncements(announcements);
 
@@ -543,18 +614,24 @@ export const Dashboard: React.FC = () => {
               <Plane size={20} className="sm:w-6 sm:h-6" />
             </div>
           </div>
-          <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 sm:p-6 shadow-sm flex items-center justify-between">
+          <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 sm:p-6 shadow-sm flex items-center justify-between relative opacity-60">
             <div>
-              <p className="text-text-muted-light dark:text-text-muted-dark text-xs sm:text-sm font-medium mb-1">Next Payday</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-text-muted-light dark:text-text-muted-dark text-xs sm:text-sm font-medium">Next Payday</p>
+                <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded">WIP</span>
+              </div>
               <h3 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark">{employeeStats.nextPayday || '—'}</h3>
             </div>
             <div className="p-2 sm:p-3 bg-green-50 dark:bg-green-900/20 text-green-500 rounded-lg">
               <Wallet size={20} className="sm:w-6 sm:h-6" />
             </div>
           </div>
-          <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 sm:p-6 shadow-sm flex items-center justify-between">
+          <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 sm:p-6 shadow-sm flex items-center justify-between relative opacity-60">
             <div>
-              <p className="text-text-muted-light dark:text-text-muted-dark text-xs sm:text-sm font-medium mb-1">Pending Reviews</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-text-muted-light dark:text-text-muted-dark text-xs sm:text-sm font-medium">Pending Reviews</p>
+                <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded">WIP</span>
+              </div>
               <h3 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark">{employeeStats.pendingReviews}</h3>
             </div>
             <div className="p-2 sm:p-3 bg-orange-50 dark:bg-orange-900/20 text-orange-500 rounded-lg">
@@ -921,7 +998,7 @@ export const Dashboard: React.FC = () => {
           <StatCard
             title="New Hires (Month)"
             value={newHiresCount}
-            trend={newHiresCount > 0 ? 100 : 0}
+            trend={newHiresTrend}
             icon={<UserPlus size={22} />}
             color="green"
           />
@@ -929,8 +1006,8 @@ export const Dashboard: React.FC = () => {
         <div onClick={() => navigate('/analytics')} className="cursor-pointer">
           <StatCard
             title="Turnover Rate"
-            value="2.1%"
-            trend={-0.4}
+            value={`${turnoverRate.toFixed(1)}%`}
+            trend={turnoverTrend}
             icon={<TrendingUp size={22} />}
             color="red"
           />
@@ -952,23 +1029,31 @@ export const Dashboard: React.FC = () => {
             <button className="text-text-muted-light hover:text-primary hidden md:block"><MoreHorizontal size={20} /></button>
           </div>
           <div className="h-[200px] md:h-[250px] w-full flex-grow">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={headcountData}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3498db" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#3498db" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#a0aec0', fontSize: 12 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#a0aec0', fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                  cursor={{ stroke: '#3498db', strokeWidth: 1, strokeDasharray: '5 5' }}
-                />
-                <Area type="monotone" dataKey="value" stroke="#3498db" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {headcountData && headcountData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={headcountData}>
+                  <defs>
+                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3498db" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#3498db" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#a0aec0', fontSize: 12 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#a0aec0', fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                    cursor={{ stroke: '#3498db', strokeWidth: 1, strokeDasharray: '5 5' }}
+                  />
+                  <Area type="monotone" dataKey="value" stroke="#3498db" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-text-muted-light dark:text-text-muted-dark">
+                <Users size={40} className="mb-3 opacity-20" />
+                <p className="text-sm font-medium">No headcount data available</p>
+                <p className="text-xs mt-1 opacity-70">Data will appear once employee records are added</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -981,27 +1066,34 @@ export const Dashboard: React.FC = () => {
             <button onClick={() => navigate('/wellbeing')} className="text-xs text-primary font-medium hover:underline">View All</button>
           </div>
           <div className="p-3 md:p-4 flex-grow">
-            <ul className="space-y-4">
-              {upcomingEvents.slice(0, 3).map(event => (
-                <li key={event.id} className="flex items-center gap-4">
-                  {event.avatar ? (
-                    <img src={event.avatar} alt={event.title} className="w-10 h-10 rounded-full object-cover ring-2 ring-white dark:ring-background-dark" />
-                  ) : (
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${event.type === 'Meeting' ? 'bg-accent-teal/10 text-accent-teal' : 'bg-primary/10 text-primary'
-                      }`}>
-                      {event.type === 'Meeting' ? <CalendarIcon size={18} /> : <Utensils size={18} />}
+            {upcomingEvents.length > 0 ? (
+              <ul className="space-y-4">
+                {upcomingEvents.slice(0, 3).map(event => (
+                  <li key={event.id} className="flex items-center gap-4">
+                    {event.avatar ? (
+                      <img src={event.avatar} alt={event.title} className="w-10 h-10 rounded-full object-cover ring-2 ring-white dark:ring-background-dark" />
+                    ) : (
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${event.type === 'Meeting' ? 'bg-accent-teal/10 text-accent-teal' : 'bg-primary/10 text-primary'
+                        }`}>
+                        {event.type === 'Meeting' ? <CalendarIcon size={18} /> : <Utensils size={18} />}
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-medium text-sm text-text-light dark:text-text-dark leading-tight">{event.title}</p>
+                      <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5 flex items-center gap-1">
+                        {event.type === 'Birthday' && <Cake size={12} className="text-accent-red" />}
+                        {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
                     </div>
-                  )}
-                  <div>
-                    <p className="font-medium text-sm text-text-light dark:text-text-dark leading-tight">{event.title}</p>
-                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5 flex items-center gap-1">
-                      {event.type === 'Birthday' && <Cake size={12} className="text-accent-red" />}
-                      {event.date}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-text-muted-light dark:text-text-muted-dark">
+                <CalendarIcon size={32} className="mb-2 opacity-20" />
+                <p className="text-sm">No upcoming events</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1121,8 +1213,8 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Recent Activity, Notes & Announcements */}
-        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Recent Activity & Notes */}
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Recent Activity */}
           <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
             <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
@@ -1130,68 +1222,28 @@ export const Dashboard: React.FC = () => {
                 <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Recent Activity</h2>
               </div>
             </div>
-            <div className="p-4 space-y-4 max-h-[250px] overflow-y-auto">
-              {auditLogs.slice(0, 4).map(log => (
-                <div key={log.id} className="flex gap-3 items-start text-sm">
-                  <div className="mt-0.5 p-1.5 bg-background-light dark:bg-background-dark rounded-full border border-border-light dark:border-border-dark text-text-muted-light">
-                    <Activity size={14} />
-                  </div>
-                  <div>
-                    <p className="text-text-light dark:text-text-dark">
-                      <span className="font-medium">{log.user}</span> {log.action} <span className="font-medium">{log.target}</span>
-                    </p>
-                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">{log.time}</p>
-                  </div>
-                </div>
-              ))}
-              <button onClick={() => navigate('/compliance')} className="w-full text-center text-xs text-primary mt-2 hover:underline">View Full Log</button>
-            </div>
-          </div>
-
-          {/* Latest Announcements */}
-          <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
-            <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-lg">
-                  <Megaphone size={16} />
-                </div>
-                <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Announcements</h2>
-              </div>
-              <button onClick={() => navigate('/wellbeing')} className="text-xs text-primary font-medium hover:underline">View All</button>
-            </div>
-            <div className="p-4 space-y-3 max-h-[280px] overflow-y-auto">
-              {announcements.length > 0 ? (
-                announcements.slice(0, 3).map(ann => (
-                  <div key={ann.id} className="p-3 bg-background-light dark:bg-background-dark rounded-lg border border-border-light dark:border-border-dark hover:border-primary/30 transition-colors">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wide ${
-                        ann.type === 'announcement' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                        ann.type === 'policy' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
-                        'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400'
-                      }`}>
-                        {ann.type}
-                      </span>
+            <div className="p-4 space-y-4 max-h-[280px] overflow-y-auto flex-grow">
+              {auditLogs.length > 0 ? (
+                <>
+                  {auditLogs.slice(0, 4).map(log => (
+                    <div key={log.id} className="flex gap-3 items-start text-sm">
+                      <div className="mt-0.5 p-1.5 bg-background-light dark:bg-background-dark rounded-full border border-border-light dark:border-border-dark text-text-muted-light">
+                        <Activity size={14} />
+                      </div>
+                      <div>
+                        <p className="text-text-light dark:text-text-dark">
+                          <span className="font-medium">{log.user}</span> {log.action} <span className="font-medium">{log.target}</span>
+                        </p>
+                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">{log.time}</p>
+                      </div>
                     </div>
-                    <p className="text-sm font-medium text-text-light dark:text-text-dark mb-0.5">{ann.title}</p>
-                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark line-clamp-2 leading-relaxed">{ann.description}</p>
-                    <div className="flex items-center gap-2 mt-2 text-[10px] text-text-muted-light dark:text-text-muted-dark">
-                      {ann.author && (
-                        <span className="flex items-center gap-1">
-                          <Users size={10} />
-                          {ann.author}
-                        </span>
-                      )}
-                      {ann.author && ann.createdAt && <span>·</span>}
-                      {ann.createdAt && (
-                        <span>{new Date(ann.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                      )}
-                    </div>
-                  </div>
-                ))
+                  ))}
+                  <button onClick={() => navigate('/compliance')} className="w-full text-center text-xs text-primary mt-2 hover:underline">View Full Log</button>
+                </>
               ) : (
-                <div className="flex flex-col items-center justify-center py-6 text-text-muted-light dark:text-text-muted-dark">
-                  <Megaphone size={28} className="mb-2 opacity-20" />
-                  <p className="text-sm">No announcements yet</p>
+                <div className="flex flex-col items-center justify-center py-8 text-text-muted-light dark:text-text-muted-dark">
+                  <Activity size={32} className="mb-2 opacity-20" />
+                  <p className="text-sm">No recent activity</p>
                 </div>
               )}
             </div>

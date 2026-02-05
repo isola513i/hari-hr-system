@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Calendar, TrendingUp, AlertCircle } from 'lucide-react';
+import { Clock, TrendingUp, AlertCircle, CheckCircle2, Briefcase } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
 import { Dropdown, DropdownOption } from '../components/Dropdown';
@@ -146,28 +146,30 @@ const Attendance: React.FC = () => {
 
       {/* Summary Cards */}
       {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-          <div className="p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+          {/* Total Working Days */}
+          <div className="p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg">
-                <Clock size={20} />
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
+                <Briefcase size={20} />
               </div>
-              <div>
-                <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Total Hours</p>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark">Working Days</p>
                 <p className="text-2xl font-bold text-text-light dark:text-text-dark">
-                  {Number(summary.totalHours || 0).toFixed(1)}h
+                  {summary.totalDays}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl">
+          {/* On-Time Days */}
+          <div className="p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
-                <Calendar size={20} />
+              <div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg">
+                <CheckCircle2 size={20} />
               </div>
-              <div>
-                <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Present Days</p>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark">On-Time Days</p>
                 <p className="text-2xl font-bold text-text-light dark:text-text-dark">
                   {summary.presentDays}
                 </p>
@@ -175,13 +177,14 @@ const Attendance: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl">
+          {/* Late Days */}
+          <div className="p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-lg">
                 <AlertCircle size={20} />
               </div>
-              <div>
-                <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Late Days</p>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark">Late Days</p>
                 <p className="text-2xl font-bold text-text-light dark:text-text-dark">
                   {summary.lateDays}
                 </p>
@@ -189,13 +192,29 @@ const Attendance: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl">
+          {/* Total Hours */}
+          <div className="p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg">
+                <Clock size={20} />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark">Total Hours</p>
+                <p className="text-2xl font-bold text-text-light dark:text-text-dark">
+                  {Number(summary.totalHours || 0).toFixed(1)}h
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Average Hours per Day */}
+          <div className="p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 rounded-lg">
                 <TrendingUp size={20} />
               </div>
-              <div>
-                <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Avg Hours/Day</p>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark">Avg Hours/Day</p>
                 <p className="text-2xl font-bold text-text-light dark:text-text-dark">
                   {summary.totalDays > 0 ? (Number(summary.totalHours || 0) / summary.totalDays).toFixed(1) : '0'}h
                 </p>

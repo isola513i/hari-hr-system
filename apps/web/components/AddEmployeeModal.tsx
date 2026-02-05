@@ -9,6 +9,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Modal } from './Modal';
+import { DatePicker } from './DatePicker';
 
 /**
  * Form data for adding a new employee
@@ -269,27 +270,17 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
 
         {/* Start Date Field */}
         <div>
-          <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
-            Start Date
-          </label>
-          <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-            <input
-              type="date"
-              value={newEmployee.joinDate}
-              onChange={(e) => updateField('joinDate', e.target.value)}
-              className={`w-full pl-10 pr-10 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
-                validationErrors.joinDate
-                  ? 'border-red-500 focus:ring-red-500'
-                  : 'border-border-light dark:border-border-dark focus:ring-primary'
-              }`}
-            />
-            {validationErrors.joinDate && (
-              <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" size={16} />
-            )}
-          </div>
+          <DatePicker
+            label="Start Date"
+            value={newEmployee.joinDate}
+            onChange={(date) => updateField('joinDate', date)}
+            placeholder="Select start date"
+          />
           {validationErrors.joinDate && (
-            <p className="mt-1 text-xs text-red-500">{validationErrors.joinDate}</p>
+            <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+              <AlertCircle size={14} />
+              {validationErrors.joinDate}
+            </p>
           )}
         </div>
 

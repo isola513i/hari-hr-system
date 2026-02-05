@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { OrgNode, Department, DEPARTMENTS } from '../types';
 import {
   Plus,
@@ -83,6 +84,7 @@ const AvatarWithFallback: React.FC<{
 import { useAuth } from '../contexts/AuthContext';
 import { useOrg } from '../contexts/OrgContext';
 import { Toast } from '../components/Toast';
+import { Dropdown } from '../components/Dropdown';
 
 // Helper to build tree structure
 const buildTree = (nodes: OrgNode[]): OrgNode[] => {
@@ -223,6 +225,13 @@ export const OrgChart: React.FC = () => {
   // Pan handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return; // Only left click
+
+    // Don't start panning if clicking on interactive elements (buttons, inputs, etc.)
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('input') || target.closest('select') || target.closest('a')) {
+      return;
+    }
+
     // Prevent text selection during drag
     e.preventDefault();
     setIsPanning(true);
@@ -577,21 +586,21 @@ export const OrgChart: React.FC = () => {
           {/* Department Filter */}
           <div className="relative">
             <Filter
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light z-10 pointer-events-none"
               size={14}
             />
-            <select
-              value={departmentFilter}
-              onChange={(e) => setDepartmentFilter(e.target.value as Department | '')}
-              className="pl-8 pr-8 py-2 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark appearance-none"
-            >
-              <option value="">All Departments</option>
-              {departments.map((dept) => (
-                <option key={dept} value={dept}>
-                  {dept}
-                </option>
-              ))}
-            </select>
+            <div className="pl-5">
+              <Dropdown
+                value={departmentFilter}
+                onChange={(value) => setDepartmentFilter(value as Department | '')}
+                options={[
+                  { value: '', label: 'All Departments' },
+                  ...departments.map((dept) => ({ value: dept, label: dept }))
+                ]}
+                placeholder="All Departments"
+                className="text-sm"
+              />
+            </div>
           </div>
 
           {/* Search Bar */}
@@ -664,8 +673,8 @@ export const OrgChart: React.FC = () => {
       </div>
 
       {/* Edit/Add Modal - Render only if open (and triggered by admin) */}
-      {modalState.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      {modalState.isOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
               <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
@@ -725,18 +734,15 @@ export const OrgChart: React.FC = () => {
                 <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                   Department
                 </label>
-                <select
+                <Dropdown
                   value={inputDepartment}
-                  onChange={(e) => setInputDepartment(e.target.value as Department | '')}
-                  className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark appearance-none"
-                >
-                  <option value="">Select Department</option>
-                  {departments.map((dept) => (
-                    <option key={dept} value={dept}>
-                      {dept}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setInputDepartment(value as Department | '')}
+                  options={[
+                    { value: '', label: 'Select Department' },
+                    ...departments.map((dept) => ({ value: dept, label: dept }))
+                  ]}
+                  placeholder="Select Department"
+                />
               </div>
 
               {modalState.type === 'edit' && (
@@ -744,39 +750,18 @@ export const OrgChart: React.FC = () => {
                   <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                     Reports To
                   </label>
-                  <div className="relative">
-                    <Users
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light"
-                      size={16}
-                    />
-                    <select
-                      value={inputParentId || ''}
-                      onChange={(e) => setInputParentId(e.target.value)}
-                      className="w-full pl-10 pr-8 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark appearance-none"
-                    >
-                      <option value="">No Manager (Root Node)</option>
-                      {availableParents.map((parent) => (
-                        <option key={parent.id} value={parent.id}>
-                          {parent.name} ({parent.role})
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted-light">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="m6 9 6 6 6-6" />
-                      </svg>
-                    </div>
-                  </div>
+                  <Dropdown
+                    value={inputParentId || ''}
+                    onChange={(value) => setInputParentId(value)}
+                    options={[
+                      { value: '', label: 'No Manager (Root Node)' },
+                      ...availableParents.map((parent) => ({
+                        value: parent.id,
+                        label: `${parent.name} (${parent.role})`
+                      }))
+                    ]}
+                    placeholder="Select Manager"
+                  />
                   <p className="text-xs text-text-muted-light mt-1">
                     Change to reassign this employee's manager.
                   </p>
@@ -810,12 +795,13 @@ export const OrgChart: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Delete Confirmation Modal */}
-      {deleteConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      {deleteConfirmId && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="p-6 text-center">
               <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
@@ -844,7 +830,8 @@ export const OrgChart: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Toast Notification */}

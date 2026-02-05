@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
     CheckCircle2,
     Clock,
@@ -14,11 +15,13 @@ import {
     Briefcase,
     ExternalLink
 } from 'lucide-react';
-import { OnboardingTask, KeyContact } from '../types';
+import { OnboardingTask, KeyContact, Employee } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrg } from '../contexts/OrgContext';
 import { Toast } from '../components/Toast';
 import { Modal } from '../components/Modal';
+import { DatePicker } from '../components/DatePicker';
+import { api } from '../lib/api';
 
 export const Onboarding: React.FC = () => {
     const { user } = useAuth();
@@ -51,31 +54,121 @@ export const Onboarding: React.FC = () => {
         startDate: ''
     });
 
+    // Autocomplete state
+    const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
+    const [emailSuggestions, setEmailSuggestions] = useState<Employee[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+    const emailInputRef = useRef<HTMLInputElement>(null);
+    const suggestionsRef = useRef<HTMLDivElement>(null);
+
     // Fetch Data
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [tasksRes, contactsRes] = await Promise.all([
-                    fetch('http://localhost:3000/api/tasks'),
-                    fetch('http://localhost:3000/api/contacts')
-                ]);
-
-                if (tasksRes.ok) {
-                    const tasksData = await tasksRes.json();
-                    // Normalize tasks to ensure priority is always defined
-                    const normalizedTasks: OnboardingTask[] = tasksData.map((task: any) => ({
-                        ...task,
-                        priority: task.priority || 'Medium'
-                    }));
-                    setTasks(normalizedTasks);
+                // Fetch employees for autocomplete functionality
+                try {
+                    const employeesData = await api.get<Employee[]>('/employees');
+                    setAllEmployees(employeesData);
+                    console.log('✅ Loaded employees for autocomplete:', employeesData.length);
+                } catch (empError) {
+                    console.log('⚠️ Could not fetch employees for autocomplete');
+                    setAllEmployees([]);
                 }
-                if (contactsRes.ok) setKeyContacts(await contactsRes.json());
+
+                // TODO: Fetch tasks and contacts when API endpoints are implemented
+                // For now, set empty arrays to avoid network errors
+                setTasks([]);
+                setKeyContacts([]);
+
+                console.log('ℹ️ Onboarding page loaded (Tasks & Contacts APIs pending implementation)');
             } catch (error) {
-                console.error('Error fetching onboarding data:', error);
+                console.log('⚠️ Error initializing onboarding page:', error);
             }
         };
         fetchData();
     }, []);
+
+    // Handle click outside to close suggestions
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node) &&
+                emailInputRef.current && !emailInputRef.current.contains(event.target as Node)
+            ) {
+                setShowSuggestions(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Update dropdown position on scroll or resize
+    useEffect(() => {
+        const updatePosition = () => {
+            if (emailInputRef.current && showSuggestions) {
+                const rect = emailInputRef.current.getBoundingClientRect();
+                setDropdownPosition({
+                    top: rect.bottom + window.scrollY + 4,
+                    left: rect.left + window.scrollX,
+                    width: rect.width
+                });
+            }
+        };
+
+        window.addEventListener('scroll', updatePosition, true);
+        window.addEventListener('resize', updatePosition);
+
+        return () => {
+            window.removeEventListener('scroll', updatePosition, true);
+            window.removeEventListener('resize', updatePosition);
+        };
+    }, [showSuggestions]);
+
+    // Handle email input change with autocomplete
+    const handleEmailChange = (value: string) => {
+        setInviteForm({ ...inviteForm, email: value });
+
+        // Update dropdown position
+        if (emailInputRef.current) {
+            const rect = emailInputRef.current.getBoundingClientRect();
+            setDropdownPosition({
+                top: rect.bottom + window.scrollY + 4,
+                left: rect.left + window.scrollX,
+                width: rect.width
+            });
+        }
+
+        if (value.trim().length > 0) {
+            const filtered = allEmployees.filter(emp =>
+                emp.email.toLowerCase().includes(value.toLowerCase()) ||
+                emp.name.toLowerCase().includes(value.toLowerCase())
+            ).slice(0, 5); // Show max 5 suggestions
+
+            console.log('All employees:', allEmployees.length);
+            console.log('Filtered employees:', filtered);
+
+            setEmailSuggestions(filtered);
+            setShowSuggestions(filtered.length > 0);
+        } else {
+            setEmailSuggestions([]);
+            setShowSuggestions(false);
+        }
+    };
+
+    // Handle selecting an employee from suggestions
+    const handleSelectEmployee = (employee: Employee) => {
+        setInviteForm({
+            name: employee.name,
+            email: employee.email,
+            role: employee.role,
+            department: employee.department,
+            startDate: employee.joinDate || ''
+        });
+        setShowSuggestions(false);
+        setEmailSuggestions([]);
+    };
 
     const toggleTask = (id: string) => {
         setTasks(tasks.map(task =>
@@ -164,27 +257,59 @@ export const Onboarding: React.FC = () => {
     const priorities = ['All', 'High', 'Medium', 'Low'];
     const dateOptions = ['All', 'Overdue', 'Due Soon'];
 
-    const handleInviteSubmit = (e: React.FormEvent) => {
+    const handleInviteSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Add to Org Chart Logic (Fix for E2E Test)
-        addNode({
-            // Pass full form data for API
-            name: inviteForm.name,
-            email: inviteForm.email,
-            role: inviteForm.role,
-            department: inviteForm.department,
-            startDate: inviteForm.startDate,
-            parentId: '2', // Default parent
+        try {
+            // Check if employee already exists
+            const existingEmployee = allEmployees.find(emp =>
+                emp.email.toLowerCase() === inviteForm.email.toLowerCase()
+            );
 
-            // Legacy/UI fields (fetched by API usually, but handy if we optimistic update)
-            id: Date.now().toString(),
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(inviteForm.name)}&background=random`,
-        });
+            if (existingEmployee) {
+                // Employee exists - just send onboarding invitation
+                // TODO: In the future, this should trigger an actual email or update onboarding_status
+                console.log('Sending onboarding invitation to existing employee:', existingEmployee.id);
 
-        showToast(`Onboarding invitation sent to ${inviteForm.email}!`, 'success');
-        setIsInviteModalOpen(false);
-        setInviteForm({ name: '', email: '', role: '', department: '', startDate: '' });
+                // Optionally update employee's onboarding status via API
+                try {
+                    await api.put(`/employees/${existingEmployee.id}`, {
+                        onboardingStatus: 'In Progress'
+                    });
+                } catch (updateError) {
+                    console.log('Could not update onboarding status:', updateError);
+                }
+
+                showToast(`Onboarding invitation sent to ${inviteForm.name}!`, 'success');
+            } else {
+                // Employee doesn't exist - create new employee
+                await addNode({
+                    // Pass full form data for API
+                    name: inviteForm.name,
+                    email: inviteForm.email,
+                    role: inviteForm.role,
+                    department: inviteForm.department,
+                    startDate: inviteForm.startDate,
+                    parentId: '2', // Default parent
+
+                    // Legacy/UI fields (fetched by API usually, but handy if we optimistic update)
+                    id: Date.now().toString(),
+                    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(inviteForm.name)}&background=random`,
+                });
+
+                showToast(`New employee ${inviteForm.name} added and invited to onboarding!`, 'success');
+
+                // Refresh employees list for autocomplete
+                const updatedEmployees = await api.get<Employee[]>('/employees');
+                setAllEmployees(updatedEmployees);
+            }
+
+            setIsInviteModalOpen(false);
+            setInviteForm({ name: '', email: '', role: '', department: '', startDate: '' });
+        } catch (error) {
+            console.error('Error in handleInviteSubmit:', error);
+            showToast('Failed to process invitation. Please try again.', 'error');
+        }
     };
 
     const handleSaveTemplate = () => {
@@ -501,16 +626,82 @@ export const Onboarding: React.FC = () => {
                     <div>
                         <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Email Address</label>
                         <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light z-10" size={16} />
                             <input
+                                ref={emailInputRef}
                                 required
                                 type="email"
                                 value={inviteForm.email}
-                                onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                                onChange={(e) => handleEmailChange(e.target.value)}
+                                onFocus={() => {
+                                    if (emailInputRef.current) {
+                                        const rect = emailInputRef.current.getBoundingClientRect();
+                                        setDropdownPosition({
+                                            top: rect.bottom + window.scrollY + 4,
+                                            left: rect.left + window.scrollX,
+                                            width: rect.width
+                                        });
+                                    }
+                                    if (inviteForm.email.trim().length > 0 && emailSuggestions.length > 0) {
+                                        setShowSuggestions(true);
+                                    }
+                                }}
                                 placeholder="e.g. sarah@example.com"
+                                autoComplete="off"
                                 className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
                             />
+
+                            {/* Autocomplete Dropdown using Portal */}
+                            {showSuggestions && emailSuggestions.length > 0 && dropdownPosition && createPortal(
+                                <div
+                                    ref={suggestionsRef}
+                                    style={{
+                                        position: 'absolute',
+                                        top: dropdownPosition.top,
+                                        left: dropdownPosition.left,
+                                        width: dropdownPosition.width,
+                                        zIndex: 99999
+                                    }}
+                                    className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg shadow-2xl max-h-60 overflow-y-auto"
+                                >
+                                    {emailSuggestions.map((emp) => (
+                                        <button
+                                            key={emp.id}
+                                            type="button"
+                                            onClick={() => handleSelectEmployee(emp)}
+                                            className="w-full px-4 py-3 text-left hover:bg-background-light dark:hover:bg-background-dark transition-colors flex items-center gap-3 border-b border-border-light dark:border-border-dark last:border-0"
+                                        >
+                                            <img
+                                                src={emp.avatar}
+                                                alt={emp.name}
+                                                className="w-10 h-10 rounded-full object-cover"
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-text-light dark:text-text-dark truncate">
+                                                    {emp.name}
+                                                </p>
+                                                <p className="text-xs text-text-muted-light dark:text-text-muted-dark truncate">
+                                                    {emp.email}
+                                                </p>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <span className="text-xs text-text-muted-light dark:text-text-muted-dark">
+                                                        {emp.role}
+                                                    </span>
+                                                    <span className="text-xs text-text-muted-light dark:text-text-muted-dark">•</span>
+                                                    <span className="text-xs text-text-muted-light dark:text-text-muted-dark">
+                                                        {emp.department}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>,
+                                document.body
+                            )}
                         </div>
+                        <p className="mt-1 text-xs text-text-muted-light dark:text-text-muted-dark">
+                            Start typing to search for existing employees
+                        </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -546,17 +737,12 @@ export const Onboarding: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Start Date</label>
-                        <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-                            <input
-                                required
-                                type="date"
-                                value={inviteForm.startDate}
-                                onChange={(e) => setInviteForm({ ...inviteForm, startDate: e.target.value })}
-                                className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                            />
-                        </div>
+                        <DatePicker
+                            label="Start Date"
+                            value={inviteForm.startDate}
+                            onChange={(date) => setInviteForm({ ...inviteForm, startDate: date })}
+                            placeholder="Select start date"
+                        />
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4">

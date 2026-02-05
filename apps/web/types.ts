@@ -159,7 +159,7 @@ export interface UpcomingEvent {
   id: string;
   title: string;
   date: string;
-  type: 'Birthday' | 'Meeting' | 'Social';
+  type: 'Birthday' | 'Meeting' | 'Social' | 'Training' | 'Holiday' | 'Deadline' | 'Company Event';
   avatar?: string;
   color?: string;
 }

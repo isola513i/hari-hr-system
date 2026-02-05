@@ -6,7 +6,6 @@ import {
   LogOut,
   User as UserIcon,
   Shield,
-  Lock,
   Users,
   FileText,
   X,
@@ -14,7 +13,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { ChangePasswordModal } from "./ChangePasswordModal";
 import { api, API_HOST } from "../lib/api";
 
 interface SearchResult {
@@ -32,7 +30,6 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const { user, logout } = useAuth();
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -218,10 +215,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
   return (
     <>
-      <ChangePasswordModal
-        isOpen={isChangePasswordOpen}
-        onClose={() => setIsChangePasswordOpen(false)}
-      />
       <header className="h-16 bg-card-light dark:bg-card-dark border-b border-border-light dark:border-border-dark flex items-center justify-between px-4 md:px-8 sticky top-0 z-20 shadow-sm">
         {/* Mobile Menu Button */}
         <button
@@ -423,15 +416,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                   className="w-full text-left px-4 py-2 text-sm text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark flex items-center gap-2"
                 >
                   <UserIcon size={16} /> Profile
-                </button>
-                <button
-                  onClick={() => {
-                    setIsChangePasswordOpen(true);
-                    setIsProfileOpen(false);
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark flex items-center gap-2"
-                >
-                  <Lock size={16} /> Change Password
                 </button>
                 <div className="h-px bg-border-light dark:bg-border-dark my-1"></div>
                 <button

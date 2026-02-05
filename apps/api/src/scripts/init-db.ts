@@ -13,6 +13,7 @@ const schema = `
 -- Clean up existing tables
 DROP TABLE IF EXISTS personal_notes CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS upcoming_events CASCADE;
 DROP TABLE IF EXISTS audit_logs_persistent CASCADE;
 DROP TABLE IF EXISTS audit_logs CASCADE;
 DROP TABLE IF EXISTS compliance_items CASCADE;
@@ -385,6 +386,18 @@ CREATE TABLE notifications (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 22. Upcoming Events (Calendar)
+CREATE TABLE upcoming_events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title VARCHAR(255) NOT NULL,
+    date DATE NOT NULL,
+    type VARCHAR(50) DEFAULT 'Meeting', -- Birthday, Meeting, Social
+    avatar TEXT,
+    color VARCHAR(20),
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Notifications indexes
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX idx_notifications_read ON notifications(read);
@@ -409,6 +422,10 @@ CREATE TABLE personal_notes (
 CREATE INDEX idx_personal_notes_user_id ON personal_notes(user_id);
 CREATE INDEX idx_personal_notes_pinned ON personal_notes(pinned DESC);
 CREATE INDEX idx_personal_notes_updated_at ON personal_notes(updated_at DESC);
+
+-- Upcoming events indexes
+CREATE INDEX idx_upcoming_events_date ON upcoming_events(date);
+CREATE INDEX idx_upcoming_events_type ON upcoming_events(type);
 `;
 
 export const runMigration = async () => {
@@ -432,6 +449,12 @@ INSERT INTO users (id, email, password_hash, role) VALUES
 
 INSERT INTO employees (id, user_id, name, email, role, department, status, join_date) VALUES
 ('00000000-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'System Admin', 'admin@aiya.ai', 'HR Admin', 'Human Resources', 'Active', CURRENT_DATE);
+
+-- Sample Job History for System Admin
+INSERT INTO job_history (employee_id, role, department, start_date, end_date, description) VALUES
+('00000000-0000-0000-0000-000000000001', 'HR Admin', 'Human Resources', '2024-01-01', NULL, 'Leading HR operations, managing employee data and overseeing recruitment processes.'),
+('00000000-0000-0000-0000-000000000001', 'HR Specialist', 'Human Resources', '2022-06-01', '2023-12-31', 'Handled employee onboarding, benefits administration, and HR policy implementation.'),
+('00000000-0000-0000-0000-000000000001', 'HR Assistant', 'Human Resources', '2021-01-15', '2022-05-31', 'Supported HR team with administrative tasks, scheduling interviews, and maintaining employee records.');
 `;
 
     await pool.query(seededSchema);

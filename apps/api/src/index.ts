@@ -193,6 +193,37 @@ app.get("/api/job-history", async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/job-history - Add new job history entry
+app.post("/api/job-history", authenticateToken, async (req: Request, res: Response) => {
+  const { employeeId, role, department, startDate, endDate, description } = req.body;
+
+  if (!employeeId || !role || !department || !startDate) {
+    return res.status(400).json({ error: "Employee ID, role, department, and start date are required" });
+  }
+
+  try {
+    const result = await query(
+      `INSERT INTO job_history (employee_id, role, department, start_date, end_date, description)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [employeeId, role, department, startDate, endDate && endDate !== "Present" ? endDate : null, description || null]
+    );
+
+    const newHistory = result.rows[0];
+    res.status(201).json({
+      id: newHistory.id,
+      role: newHistory.role,
+      department: newHistory.department,
+      startDate: newHistory.start_date,
+      endDate: newHistory.end_date || "Present",
+      description: newHistory.description,
+    });
+  } catch (err) {
+    console.error("Error creating job history:", err);
+    res.status(500).json({ error: "Failed to create job history" });
+  }
+});
+
 // GET /api/performance-reviews
 app.get("/api/performance-reviews", async (req: Request, res: Response) => {
   const { employeeId } = req.query;
@@ -561,6 +592,63 @@ app.get("/api/sentiment", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/upcoming-events
+app.get("/api/upcoming-events", async (req: Request, res: Response) => {
+  try {
+    const result = await query("SELECT * FROM upcoming_events ORDER BY date ASC");
+    const events = result.rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      date: row.date,
+      type: row.type,
+      avatar: row.avatar,
+      color: row.color,
+    }));
+    res.json(events);
+  } catch (err) {
+    console.error("Error fetching upcoming events:", err);
+    res.status(500).json({ error: "Failed to fetch upcoming events" });
+  }
+});
+
+// POST /api/upcoming-events - Create new upcoming event
+app.post("/api/upcoming-events", authenticateToken, apiLimiter, async (req: Request, res: Response) => {
+  const { title, date, type } = req.body;
+
+  // Validation
+  if (!title || !date) {
+    return res.status(400).json({ error: "Title and date are required" });
+  }
+
+  const validTypes = ['Birthday', 'Meeting', 'Social', 'Training', 'Holiday', 'Deadline', 'Company Event'];
+  if (type && !validTypes.includes(type)) {
+    return res.status(400).json({ error: "Invalid event type" });
+  }
+
+  try {
+    const userId = (req as any).user?.userId || null;
+    const result = await query(
+      `INSERT INTO upcoming_events (title, date, type, created_by)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [title, date, type || 'Meeting', userId]
+    );
+
+    const newEvent = result.rows[0];
+    res.status(201).json({
+      id: newEvent.id,
+      title: newEvent.title,
+      date: newEvent.date,
+      type: newEvent.type,
+      avatar: newEvent.avatar,
+      color: newEvent.color,
+    });
+  } catch (err) {
+    console.error("Error creating upcoming event:", err);
+    res.status(500).json({ error: "Failed to create upcoming event" });
+  }
+});
+
 // GET /api/leave-balances/:employeeId (Existing code continues...)
 
 // POST /api/system/setup (Initial setup - only works when database is empty)
@@ -630,6 +718,22 @@ const runLightMigrations = async () => {
   try {
     await query(`ALTER TABLE announcements ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id) ON DELETE SET NULL`);
     await query(`ALTER TABLE announcements ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()`);
+
+    // Create upcoming_events table if it doesn't exist
+    await query(`
+      CREATE TABLE IF NOT EXISTS upcoming_events (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        title VARCHAR(255) NOT NULL,
+        date DATE NOT NULL,
+        type VARCHAR(50) DEFAULT 'Meeting',
+        avatar TEXT,
+        color VARCHAR(20),
+        created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_upcoming_events_date ON upcoming_events(date)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_upcoming_events_type ON upcoming_events(type)`);
   } catch (err) {
     // Table may not exist yet — ignore
   }

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
 
 export interface DropdownOption {
@@ -19,13 +20,14 @@ interface DropdownProps {
  * Custom Dropdown Component
  *
  * A consistent dropdown component that works the same across all browsers.
- * Replaces native <select> elements for better UX and consistency.
+ * Uses React Portal to render menu outside parent containers (works in modals).
  *
  * Features:
  * - Custom styling that looks the same everywhere
  * - Keyboard navigation support
  * - Click outside to close
  * - Visual indicator for selected option
+ * - Portal-based rendering for modal compatibility
  */
 export const Dropdown: React.FC<DropdownProps> = ({
   options,
@@ -36,16 +38,42 @@ export const Dropdown: React.FC<DropdownProps> = ({
   width = 'w-full'
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Get the label for the currently selected value
   const selectedOption = options.find(opt => opt.value === value);
   const displayLabel = selectedOption ? selectedOption.label : placeholder;
 
+  // Calculate position and open dropdown
+  const handleToggle = () => {
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+    setIsOpen(!isOpen);
+  };
+
+  // Reset position when closed
+  useEffect(() => {
+    if (!isOpen) {
+      setMenuPosition(null);
+    }
+  }, [isOpen]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        buttonRef.current && !buttonRef.current.contains(target) &&
+        menuRef.current && !menuRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -82,11 +110,12 @@ export const Dropdown: React.FC<DropdownProps> = ({
   };
 
   return (
-    <div ref={dropdownRef} className={`relative ${width} ${className}`}>
+    <div className={`relative ${width} ${className}`}>
       {/* Dropdown Button */}
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         className="w-full flex items-center justify-between pl-4 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer text-text-light dark:text-text-dark hover:border-primary/50"
       >
         <span className={selectedOption ? '' : 'text-text-muted-light'}>
@@ -100,9 +129,19 @@ export const Dropdown: React.FC<DropdownProps> = ({
         />
       </button>
 
-      {/* Dropdown Menu */}
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+      {/* Dropdown Menu - rendered via Portal */}
+      {isOpen && menuPosition && createPortal(
+        <div
+          ref={menuRef}
+          style={{
+            position: 'absolute',
+            top: menuPosition.top,
+            left: menuPosition.left,
+            minWidth: menuPosition.width,
+            zIndex: 99999
+          }}
+          className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+        >
           <div className="max-h-60 overflow-y-auto py-1">
             {options.map((option) => {
               const isSelected = option.value === value;
@@ -112,19 +151,20 @@ export const Dropdown: React.FC<DropdownProps> = ({
                   key={option.value}
                   type="button"
                   onClick={() => handleSelect(option.value)}
-                  className={`w-full flex items-center justify-between px-4 py-2 text-sm text-left transition-colors ${
+                  className={`w-full flex items-center justify-between gap-3 px-4 py-2 text-sm text-left transition-colors whitespace-nowrap ${
                     isSelected
                       ? 'bg-primary/10 text-primary font-medium'
                       : 'text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark'
                   }`}
                 >
                   <span>{option.label}</span>
-                  {isSelected && <Check size={16} className="text-primary" />}
+                  {isSelected && <Check size={16} className="text-primary flex-shrink-0" />}
                 </button>
               );
             })}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

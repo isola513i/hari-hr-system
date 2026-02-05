@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 
 interface DatePickerProps {
@@ -7,18 +8,35 @@ interface DatePickerProps {
   placeholder?: string;
   label?: string;
   minDate?: string;
+  disabled?: boolean;
 }
 
+/**
+ * Custom DatePicker Component
+ *
+ * A consistent date picker that displays in English regardless of system locale.
+ * Uses React Portal to render calendar outside parent containers (works in modals).
+ *
+ * Features:
+ * - Custom calendar UI in English
+ * - Month/year navigation
+ * - Keyboard support (Escape to close)
+ * - Click outside to close
+ * - Portal-based rendering for modal compatibility
+ */
 export const DatePicker: React.FC<DatePickerProps> = ({
   value,
   onChange,
   placeholder = 'Select date',
   label,
-  minDate
+  minDate,
+  disabled = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -27,17 +45,70 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  // Calculate position and open calendar
+  const handleToggle = () => {
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const calendarWidth = 280;
+      const calendarHeight = 340;
+
+      // Check if calendar would go off the right edge
+      let left = rect.left + window.scrollX;
+      if (left + calendarWidth > window.innerWidth) {
+        left = rect.right + window.scrollX - calendarWidth;
+      }
+
+      // Check if calendar would go off the bottom edge
+      let top = rect.bottom + window.scrollY + 8;
+      if (rect.bottom + calendarHeight > window.innerHeight) {
+        top = rect.top + window.scrollY - calendarHeight - 8;
+      }
+
+      setMenuPosition({ top, left });
+    }
+    setIsOpen(!isOpen);
+  };
+
+  // Reset position when closed
+  useEffect(() => {
+    if (!isOpen) {
+      setMenuPosition(null);
+    }
+  }, [isOpen]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        buttonRef.current && !buttonRef.current.contains(target) &&
+        calendarRef.current && !calendarRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isOpen]);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen]);
 
   // Initialize current month from value if provided
   useEffect(() => {
@@ -47,7 +118,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   }, [value]);
 
   const formatDate = (date: Date): string => {
-    return date.toISOString().split('T')[0];
+    // Use local timezone instead of UTC to avoid date shifting
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const formatDisplayDate = (dateString: string): string => {
@@ -129,7 +204,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const days = getDaysInMonth(currentMonth);
 
   return (
-    <div ref={containerRef} className="relative">
+    <div className="relative">
       {label && (
         <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
           {label}
@@ -137,9 +212,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       )}
 
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark text-left flex items-center justify-between hover:border-primary/50 transition-colors"
+        onClick={handleToggle}
+        disabled={disabled}
+        className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark text-left flex items-center justify-between hover:border-primary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-border-light dark:disabled:hover:border-border-dark"
       >
         <span className={value ? '' : 'text-text-muted-light dark:text-text-muted-dark'}>
           {value ? formatDisplayDate(value) : placeholder}
@@ -147,8 +224,18 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         <Calendar size={16} className="text-text-muted-light" />
       </button>
 
-      {isOpen && (
-        <div className="absolute z-50 mt-2 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg shadow-xl p-4 min-w-[280px]">
+      {/* Calendar - rendered via Portal */}
+      {isOpen && menuPosition && createPortal(
+        <div
+          ref={calendarRef}
+          style={{
+            position: 'absolute',
+            top: menuPosition.top,
+            left: menuPosition.left,
+            zIndex: 99999
+          }}
+          className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg shadow-xl p-4 min-w-[280px] animate-in fade-in slide-in-from-top-2 duration-200"
+        >
           {/* Month Navigation */}
           <div className="flex items-center justify-between mb-4">
             <button
@@ -233,7 +320,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               Clear
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

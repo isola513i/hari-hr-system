@@ -5,6 +5,7 @@ import { JobHistoryItem, Employee, PerformanceReview, DocumentItem } from '../ty
 import { useAuth } from '../contexts/AuthContext';
 import { api, API_HOST, BASE_URL } from '../lib/api';
 import { Toast } from '../components/Toast';
+import { DatePicker } from '../components/DatePicker';
 import {
     MapPin,
     Mail,
@@ -320,26 +321,32 @@ export const EmployeeDetail: React.FC = () => {
             role: '',
             department: '',
             startDate: '',
-            endDate: 'Present',
+            endDate: '',
             description: ''
         });
         setIsAddHistoryModalOpen(true);
     };
 
-    const handleSaveNewHistory = () => {
-        if (!newHistoryForm.role || !newHistoryForm.department || !newHistoryForm.startDate) return;
+    const handleSaveNewHistory = async () => {
+        if (!newHistoryForm.role || !newHistoryForm.department || !newHistoryForm.startDate || !id) return;
 
-        const newItem: JobHistoryItem = {
-            id: Date.now().toString(),
-            role: newHistoryForm.role!,
-            department: newHistoryForm.department!,
-            startDate: newHistoryForm.startDate!,
-            endDate: newHistoryForm.endDate || 'Present',
-            description: newHistoryForm.description || ''
-        };
+        try {
+            const newItem = await api.post<JobHistoryItem>('/job-history', {
+                employeeId: id,
+                role: newHistoryForm.role,
+                department: newHistoryForm.department,
+                startDate: newHistoryForm.startDate,
+                endDate: newHistoryForm.endDate || null,
+                description: newHistoryForm.description || ''
+            });
 
-        setHistoryList([newItem, ...historyList]);
-        setIsAddHistoryModalOpen(false);
+            setHistoryList([newItem, ...historyList]);
+            setIsAddHistoryModalOpen(false);
+            showToast('Employment history added successfully!', 'success');
+        } catch (error) {
+            const apiError = error as Error;
+            showToast(apiError.message || 'Failed to add employment history.', 'error');
+        }
     };
 
     // Documents Handler
@@ -861,7 +868,7 @@ export const EmployeeDetail: React.FC = () => {
                                 <div className="space-y-6 animate-fade-in">
                                     <div className="flex justify-between items-center mb-4">
                                         <h3 className="text-lg font-bold text-text-light dark:text-text-dark">Employment History</h3>
-                                        {isAdmin && (
+                                        {(isAdmin || isOwnProfile) && (
                                             <button
                                                 onClick={handleAddHistoryClick}
                                                 className="flex items-center gap-2 px-3 py-1.5 bg-primary text-white rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
@@ -876,7 +883,7 @@ export const EmployeeDetail: React.FC = () => {
                                             <div key={job.id} className="relative pl-8">
                                                 <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white dark:border-card-dark ${index === 0 ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
 
-                                                {editingHistoryId === job.id && tempHistoryItem && isAdmin ? (
+                                                {editingHistoryId === job.id && tempHistoryItem && (isAdmin || isOwnProfile) ? (
                                                     <div className="bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg p-4 space-y-3">
                                                         <div className="grid grid-cols-2 gap-3">
                                                             <div>
@@ -898,6 +905,7 @@ export const EmployeeDetail: React.FC = () => {
                                                             <div>
                                                                 <label className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark">Start Date</label>
                                                                 <input
+                                                                    type="date"
                                                                     value={tempHistoryItem.startDate}
                                                                     onChange={(e) => setTempHistoryItem({ ...tempHistoryItem, startDate: e.target.value })}
                                                                     className="w-full mt-1 px-2 py-1.5 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded focus:outline-none focus:ring-1 focus:ring-primary text-text-light dark:text-text-dark"
@@ -906,10 +914,21 @@ export const EmployeeDetail: React.FC = () => {
                                                             <div>
                                                                 <label className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark">End Date</label>
                                                                 <input
-                                                                    value={tempHistoryItem.endDate}
+                                                                    type="date"
+                                                                    value={tempHistoryItem.endDate && tempHistoryItem.endDate !== 'Present' ? tempHistoryItem.endDate : ''}
                                                                     onChange={(e) => setTempHistoryItem({ ...tempHistoryItem, endDate: e.target.value })}
-                                                                    className="w-full mt-1 px-2 py-1.5 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded focus:outline-none focus:ring-1 focus:ring-primary text-text-light dark:text-text-dark"
+                                                                    disabled={!tempHistoryItem.endDate || tempHistoryItem.endDate === 'Present'}
+                                                                    className="w-full mt-1 px-2 py-1.5 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded focus:outline-none focus:ring-1 focus:ring-primary text-text-light dark:text-text-dark disabled:opacity-50 disabled:cursor-not-allowed"
                                                                 />
+                                                                <label className="flex items-center mt-1 cursor-pointer">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={!tempHistoryItem.endDate || tempHistoryItem.endDate === 'Present'}
+                                                                        onChange={(e) => setTempHistoryItem({ ...tempHistoryItem, endDate: e.target.checked ? 'Present' : '' })}
+                                                                        className="w-3 h-3 text-primary bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark rounded focus:ring-1 focus:ring-primary"
+                                                                    />
+                                                                    <span className="ml-1 text-xs text-text-muted-light dark:text-text-muted-dark">Current</span>
+                                                                </label>
                                                             </div>
                                                         </div>
                                                         <div>
@@ -938,28 +957,30 @@ export const EmployeeDetail: React.FC = () => {
                                                     </div>
                                                 ) : (
                                                     <div className="group">
-                                                        <div className="flex flex-wrap justify-between items-start gap-2 mb-1">
-                                                            <h4 className="text-base font-bold text-text-light dark:text-text-dark">{job.role}</h4>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className={`text-xs px-2 py-0.5 rounded font-medium ${index === 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'}`}>
-                                                                    {job.startDate} - {job.endDate}
-                                                                </span>
-                                                                {/* Only Admin can edit history */}
-                                                                {isAdmin && (
-                                                                    <button
-                                                                        onClick={() => startEditHistory(job)}
-                                                                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-text-muted-light hover:text-primary"
-                                                                        title="Edit"
-                                                                    >
-                                                                        <Edit2 size={14} />
-                                                                    </button>
-                                                                )}
+                                                        <div className="flex justify-between items-start gap-4 mb-2">
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <h4 className="text-base font-bold text-text-light dark:text-text-dark">{job.role}</h4>
+                                                                    {/* Admin or own profile can edit history */}
+                                                                    {(isAdmin || isOwnProfile) && (
+                                                                        <button
+                                                                            onClick={() => startEditHistory(job)}
+                                                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-text-muted-light hover:text-primary"
+                                                                            title="Edit"
+                                                                        >
+                                                                            <Edit2 size={14} />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-sm font-medium text-primary mb-2">{job.department}</p>
+                                                                <p className="text-sm text-text-muted-light dark:text-text-muted-dark leading-relaxed">
+                                                                    {job.description}
+                                                                </p>
                                                             </div>
+                                                            <span className={`text-sm font-medium whitespace-nowrap ${index === 0 ? 'text-green-600 dark:text-green-400' : 'text-text-muted-light dark:text-text-muted-dark'}`}>
+                                                                {job.startDate} - {job.endDate}
+                                                            </span>
                                                         </div>
-                                                        <p className="text-sm font-medium text-primary mb-2">{job.department}</p>
-                                                        <p className="text-sm text-text-muted-light dark:text-text-muted-dark leading-relaxed">
-                                                            {job.description}
-                                                        </p>
                                                     </div>
                                                 )}
                                             </div>
@@ -1354,8 +1375,8 @@ export const EmployeeDetail: React.FC = () => {
                 document.body
             )}
 
-            {/* Add History Modal (Admin Only) */}
-            {isAddHistoryModalOpen && isAdmin && createPortal(
+            {/* Add History Modal (Admin or Own Profile) */}
+            {isAddHistoryModalOpen && (isAdmin || isOwnProfile) && createPortal(
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
                     <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
                         <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
@@ -1395,23 +1416,30 @@ export const EmployeeDetail: React.FC = () => {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Start Date</label>
-                                    <input
-                                        type="date"
+                                    <DatePicker
+                                        label="Start Date"
                                         value={newHistoryForm.startDate || ''}
-                                        onChange={(e) => setNewHistoryForm({ ...newHistoryForm, startDate: e.target.value })}
-                                        className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                                        onChange={(date) => setNewHistoryForm({ ...newHistoryForm, startDate: date })}
+                                        placeholder="Select start date"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">End Date</label>
-                                    <input
-                                        type="text"
-                                        value={newHistoryForm.endDate || ''}
-                                        onChange={(e) => setNewHistoryForm({ ...newHistoryForm, endDate: e.target.value })}
-                                        placeholder="Present"
-                                        className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                                    <DatePicker
+                                        label="End Date"
+                                        value={newHistoryForm.endDate && newHistoryForm.endDate !== 'Present' ? newHistoryForm.endDate : ''}
+                                        onChange={(date) => setNewHistoryForm({ ...newHistoryForm, endDate: date })}
+                                        placeholder="Select end date"
+                                        disabled={!newHistoryForm.endDate || newHistoryForm.endDate === 'Present'}
                                     />
+                                    <label className="flex items-center mt-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={!newHistoryForm.endDate || newHistoryForm.endDate === 'Present'}
+                                            onChange={(e) => setNewHistoryForm({ ...newHistoryForm, endDate: e.target.checked ? 'Present' : '' })}
+                                            className="w-4 h-4 text-primary bg-background-light dark:bg-background-dark border-border-light dark:border-border-dark rounded focus:ring-2 focus:ring-primary"
+                                        />
+                                        <span className="ml-2 text-sm text-text-muted-light dark:text-text-muted-dark">Current Position</span>
+                                    </label>
                                 </div>
                             </div>
 
@@ -1475,12 +1503,11 @@ export const EmployeeDetail: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Date</label>
-                                <input
-                                    type="date"
+                                <DatePicker
+                                    label="Date"
                                     value={reviewForm.date || ''}
-                                    onChange={(e) => setReviewForm({ ...reviewForm, date: e.target.value })}
-                                    className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                                    onChange={(date) => setReviewForm({ ...reviewForm, date: date })}
+                                    placeholder="Select review date"
                                 />
                             </div>
 
