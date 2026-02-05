@@ -31,6 +31,10 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3001;
 
+// Trust proxy for Render.com and other reverse proxies
+// Required for express-rate-limit to work correctly behind proxies
+app.set('trust proxy', 1);
+
 // Security: Helmet - Security headers
 app.use(helmetConfig);
 
@@ -50,6 +54,8 @@ app.use(compression({
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
+  "https://hari-hr-system.vercel.app",
+  "https://hari-hr-system-api.vercel.app",
   process.env.FRONTEND_URL,
 ].filter(Boolean) as string[];
 

@@ -9,6 +9,8 @@ export const initializeSocket = (httpServer: HTTPServer): SocketIOServer => {
       origin: [
         'http://localhost:5173',
         'http://localhost:3000',
+        'https://hari-hr-system.vercel.app',
+        'https://hari-hr-system-api.vercel.app',
         process.env.FRONTEND_URL || '',
       ].filter(Boolean),
       methods: ['GET', 'POST'],
