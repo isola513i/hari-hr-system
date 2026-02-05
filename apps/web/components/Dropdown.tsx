@@ -14,6 +14,8 @@ interface DropdownProps {
   placeholder?: string;
   className?: string;
   width?: string;
+  id?: string;
+  name?: string;
 }
 
 /**
@@ -35,7 +37,9 @@ export const Dropdown: React.FC<DropdownProps> = ({
   onChange,
   placeholder = 'Select an option',
   className = '',
-  width = 'w-full'
+  width = 'w-full',
+  id,
+  name
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -115,6 +119,8 @@ export const Dropdown: React.FC<DropdownProps> = ({
       <button
         ref={buttonRef}
         type="button"
+        id={id}
+        name={name}
         onClick={handleToggle}
         className="w-full flex items-center justify-between pl-4 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer text-text-light dark:text-text-dark hover:border-primary/50"
       >

@@ -6,7 +6,6 @@ import {
   LogOut,
   User as UserIcon,
   Shield,
-  Users,
   FileText,
   X,
   Menu,
@@ -14,6 +13,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { api, API_HOST } from "../lib/api";
+import { Avatar } from "./Avatar";
 
 interface SearchResult {
   id: string;
@@ -267,19 +267,15 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                           onClick={() => handleResultClick(result)}
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-background-light dark:hover:bg-background-dark transition-colors text-left"
                         >
-                          {result.avatar ? (
-                            <img
+                          {result.type === "employee" ? (
+                            <Avatar
                               src={result.avatar}
-                              alt=""
-                              className="w-8 h-8 rounded-full object-cover"
+                              name={result.title}
+                              size="md"
                             />
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                              {result.type === "employee" ? (
-                                <Users size={16} className="text-primary" />
-                              ) : (
-                                <FileText size={16} className="text-primary" />
-                              )}
+                              <FileText size={16} className="text-primary" />
                             </div>
                           )}
                           <div>
@@ -387,10 +383,11 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               onClick={() => setIsProfileOpen(!isProfileOpen)}
               className="flex items-center gap-3 hover:bg-background-light dark:hover:bg-background-dark p-1.5 rounded-lg transition-colors"
             >
-              <img
-                src={user?.avatar || "https://ui-avatars.com/api/?name=User"}
-                alt="User"
-                className="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20"
+              <Avatar
+                src={user?.avatar}
+                name={user?.name}
+                size="md"
+                className="ring-2 ring-primary/20"
               />
               <div className="text-left hidden sm:block">
                 <p className="text-sm font-semibold text-text-light dark:text-text-dark leading-none">
@@ -475,13 +472,11 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                           onClick={() => { handleResultClick(result); setIsMobileSearchOpen(false); }}
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-background-light dark:hover:bg-background-dark transition-colors text-left"
                         >
-                          {result.avatar ? (
-                            <img src={result.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Users size={16} className="text-primary" />
-                            </div>
-                          )}
+                          <Avatar
+                            src={result.avatar}
+                            name={result.title}
+                            size="md"
+                          />
                           <div>
                             <p className="text-sm font-medium text-text-light dark:text-text-dark">{result.title}</p>
                             <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{result.subtitle}</p>

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import LeaveRequestService from '../services/LeaveRequestService';
+import { emitLeaveRequestCreated, emitLeaveRequestUpdated, emitLeaveRequestDeleted } from '../socket';
 
 export class LeaveRequestController {
     async getAllLeaveRequests(req: Request, res: Response): Promise<void> {
@@ -32,6 +33,10 @@ export class LeaveRequestController {
             }
 
             const leaveRequest = await LeaveRequestService.createLeaveRequest(requestData);
+
+            // Emit real-time event
+            emitLeaveRequestCreated(leaveRequest);
+
             res.status(201).json(leaveRequest);
         } catch (error: any) {
             console.error('Create leave request error:', error);
@@ -50,6 +55,10 @@ export class LeaveRequestController {
             }
 
             const leaveRequest = await LeaveRequestService.updateLeaveRequestStatus(id, { status });
+
+            // Emit real-time event
+            emitLeaveRequestUpdated(leaveRequest);
+
             res.json(leaveRequest);
         } catch (error: any) {
             console.error('Update leave request error:', error);
@@ -65,6 +74,10 @@ export class LeaveRequestController {
         try {
             const { id } = req.params;
             await LeaveRequestService.deleteLeaveRequest(id);
+
+            // Emit real-time event
+            emitLeaveRequestDeleted(id);
+
             res.json({ message: 'Leave request deleted successfully' });
         } catch (error: any) {
             console.error('Delete leave request error:', error);

@@ -28,6 +28,7 @@ import {
 import { ResponsiveContainer, XAxis, YAxis, AreaChart, Area, Tooltip } from 'recharts';
 import { StatCard } from '../components/StatCard';
 import { Toast } from '../components/Toast';
+import { Avatar } from '../components/Avatar';
 import { AddEmployeeModal } from '../components/AddEmployeeModal';
 import { LeaveManagementModal } from '../components/LeaveManagementModal';
 // Removed constant imports - using API data
@@ -709,7 +710,7 @@ export const Dashboard: React.FC = () => {
               {/* Team members */}
               {myTeam.map(teammate => (
                 <div key={teammate.id} className="flex items-center gap-3">
-                  <img src={teammate.avatar} alt={teammate.name} className="w-10 h-10 rounded-full object-cover" />
+                  <Avatar src={teammate.avatar} name={teammate.name} size="lg" />
                   <div>
                     <p className="text-sm font-medium text-text-light dark:text-text-dark">{teammate.name}</p>
                     <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{teammate.role}</p>
@@ -1074,7 +1075,7 @@ export const Dashboard: React.FC = () => {
                 {upcomingEvents.slice(0, 3).map(event => (
                   <li key={event.id} className="flex items-center gap-4">
                     {event.avatar ? (
-                      <img src={event.avatar} alt={event.title} className="w-10 h-10 rounded-full object-cover ring-2 ring-white dark:ring-background-dark" />
+                      <Avatar src={event.avatar} name={event.title} size="lg" className="ring-2 ring-white dark:ring-background-dark" />
                     ) : (
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${event.type === 'Meeting' ? 'bg-accent-teal/10 text-accent-teal' : 'bg-primary/10 text-primary'
                         }`}>
@@ -1151,7 +1152,7 @@ export const Dashboard: React.FC = () => {
                         <tr key={req.id}>
                           <td className="py-3 pr-4">
                             <div className="flex items-center gap-3">
-                              <img src={req.avatar} alt={req.employeeName} className="w-8 h-8 rounded-full object-cover" />
+                              <Avatar src={req.avatar} name={req.employeeName} size="md" />
                               <span className="font-medium text-text-light dark:text-text-dark">{req.employeeName}</span>
                             </div>
                           </td>
@@ -1183,7 +1184,7 @@ export const Dashboard: React.FC = () => {
                   {pendingRequests.map(req => (
                     <div key={req.id} className="p-3 bg-background-light dark:bg-background-dark rounded-lg border border-border-light dark:border-border-dark">
                       <div className="flex items-center gap-3 mb-2">
-                        <img src={req.avatar} alt={req.employeeName} className="w-8 h-8 rounded-full object-cover" />
+                        <Avatar src={req.avatar} name={req.employeeName} size="md" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-text-light dark:text-text-dark truncate">{req.employeeName}</p>
                           <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.type} · {req.dates}</p>

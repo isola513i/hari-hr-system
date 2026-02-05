@@ -584,6 +584,8 @@ export const OrgChart: React.FC = () => {
 
           {/* Department Filter */}
           <Dropdown
+            id="orgchart-department-filter"
+            name="department"
             value={departmentFilter}
             onChange={(value) => setDepartmentFilter(value as Department | '')}
             options={[

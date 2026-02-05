@@ -7,6 +7,7 @@ import { api, API_HOST } from '../lib/api';
 import { Toast } from '../components/Toast';
 import { Modal } from '../components/Modal';
 import { Dropdown, DropdownOption } from '../components/Dropdown';
+import { Avatar } from '../components/Avatar';
 
 export const Employees: React.FC = () => {
   const { user } = useAuth();
@@ -201,7 +202,7 @@ export const Employees: React.FC = () => {
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-3">
-                      <img src={emp.avatar} alt={emp.name} className="w-10 h-10 rounded-full object-cover ring-2 ring-transparent group-hover:ring-primary/20 transition-all" />
+                      <Avatar src={emp.avatar} name={emp.name} size="lg" className="ring-2 ring-transparent group-hover:ring-primary/20 transition-all" />
                       <div>
                         <p className="font-semibold text-text-light dark:text-text-dark group-hover:text-primary transition-colors">{emp.name}</p>
                         <p className="text-xs text-text-muted-light dark:text-text-muted-dark flex items-center gap-1">
@@ -274,7 +275,7 @@ export const Employees: React.FC = () => {
             >
               {/* Employee Info */}
               <div className="flex items-center gap-3 mb-3">
-                <img src={emp.avatar} alt={emp.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-primary/20" />
+                <Avatar src={emp.avatar} name={emp.name} size="xl" className="ring-2 ring-primary/20" />
                 <div className="flex-1">
                   <p className="font-semibold text-text-light dark:text-text-dark">{emp.name}</p>
                   <p className="text-xs text-text-muted-light dark:text-text-muted-dark flex items-center gap-1">

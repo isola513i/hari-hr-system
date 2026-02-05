@@ -22,6 +22,7 @@ import { Toast } from '../components/Toast';
 import { Modal } from '../components/Modal';
 import { DatePicker } from '../components/DatePicker';
 import { api } from '../lib/api';
+import { Avatar } from '../components/Avatar';
 
 export const Onboarding: React.FC = () => {
     const { user } = useAuth();
@@ -535,7 +536,7 @@ export const Onboarding: React.FC = () => {
                         <div className="p-4 space-y-3">
                             {keyContacts.map(contact => (
                                 <div key={contact.id} className="flex items-center gap-3 p-2 hover:bg-background-light dark:hover:bg-background-dark rounded-lg transition-colors">
-                                    <img src={contact.avatar} alt={contact.name} className="w-10 h-10 rounded-full object-cover ring-1 ring-border-light dark:ring-border-dark" />
+                                    <Avatar src={contact.avatar} name={contact.name} size="lg" className="ring-1 ring-border-light dark:ring-border-dark" />
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-text-light dark:text-text-dark">{contact.name}</p>
                                         <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{contact.role} • {contact.relation}</p>

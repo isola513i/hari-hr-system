@@ -1,48 +1,80 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { LeaveRequest, LeaveBalance } from '../types';
 import { api, API_HOST } from '../lib/api';
-// Mocks removed
+import { getSocket } from '../lib/socket';
 
 interface LeaveContextType {
   requests: LeaveRequest[];
   addRequest: (request: LeaveRequest) => Promise<void>;
   updateRequestStatus: (id: string, status: 'Approved' | 'Rejected') => Promise<void>;
   getLeaveBalance: (employeeId: string) => Promise<LeaveBalance[]>;
+  refetchRequests: () => Promise<void>;
 }
 
 const LeaveContext = createContext<LeaveContextType | undefined>(undefined);
 
+// Helper to transform avatar URLs
+const transformAvatarUrl = (req: LeaveRequest): LeaveRequest => ({
+  ...req,
+  avatar: req.avatar && req.avatar.startsWith('/')
+    ? `${API_HOST}${req.avatar}`
+    : req.avatar
+});
+
 export const LeaveProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [requests, setRequests] = useState<LeaveRequest[]>([]); // Start empty
+  const [requests, setRequests] = useState<LeaveRequest[]>([]);
 
-
-
-  // ...
-
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     try {
       const data = await api.get<LeaveRequest[]>('/leave-requests');
-      // Transform relative avatar URLs to absolute URLs
-      const requestsWithFullAvatars = data.map(req => ({
-        ...req,
-        avatar: req.avatar && req.avatar.startsWith('/')
-          ? `${API_HOST}${req.avatar}`
-          : req.avatar
-      }));
+      const requestsWithFullAvatars = data.map(transformAvatarUrl);
       setRequests(requestsWithFullAvatars);
     } catch (error) {
       console.error('Error fetching leave requests:', error);
       setRequests([]);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    // Initial fetch
     fetchRequests();
-  }, []);
+
+    // Set up Socket.io listeners for real-time updates
+    const socket = getSocket();
+
+    const handleLeaveRequestCreated = (newRequest: LeaveRequest) => {
+      console.log('Real-time: Leave request created', newRequest.id);
+      const transformedRequest = transformAvatarUrl(newRequest);
+      setRequests(prev => [...prev, transformedRequest]);
+    };
+
+    const handleLeaveRequestUpdated = (updatedRequest: LeaveRequest) => {
+      console.log('Real-time: Leave request updated', updatedRequest.id);
+      const transformedRequest = transformAvatarUrl(updatedRequest);
+      setRequests(prev =>
+        prev.map(req => req.id === updatedRequest.id ? transformedRequest : req)
+      );
+    };
+
+    const handleLeaveRequestDeleted = ({ id }: { id: string }) => {
+      console.log('Real-time: Leave request deleted', id);
+      setRequests(prev => prev.filter(req => req.id !== id));
+    };
+
+    socket.on('leave-request:created', handleLeaveRequestCreated);
+    socket.on('leave-request:updated', handleLeaveRequestUpdated);
+    socket.on('leave-request:deleted', handleLeaveRequestDeleted);
+
+    // Cleanup listeners on unmount
+    return () => {
+      socket.off('leave-request:created', handleLeaveRequestCreated);
+      socket.off('leave-request:updated', handleLeaveRequestUpdated);
+      socket.off('leave-request:deleted', handleLeaveRequestDeleted);
+    };
+  }, [fetchRequests]);
 
   const addRequest = async (request: LeaveRequest) => {
     try {
-      // Ensure payload matches API expectation even if types differ
       const payload = {
         employeeId: request.employeeId,
         type: request.type,
@@ -52,18 +84,20 @@ export const LeaveProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       };
 
       await api.post('/leave-requests', payload);
-      fetchRequests();
+      // No need to fetchRequests - socket will handle the update
     } catch (e) {
       console.error(e);
+      throw e;
     }
   };
 
   const updateRequestStatus = async (id: string, status: 'Approved' | 'Rejected') => {
     try {
       await api.patch(`/leave-requests/${id}`, { status });
-      fetchRequests();
+      // No need to fetchRequests - socket will handle the update
     } catch (e) {
       console.error(e);
+      throw e;
     }
   };
 
@@ -80,7 +114,7 @@ export const LeaveProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   return (
-    <LeaveContext.Provider value={{ requests, addRequest, updateRequestStatus, getLeaveBalance }}>
+    <LeaveContext.Provider value={{ requests, addRequest, updateRequestStatus, getLeaveBalance, refetchRequests: fetchRequests }}>
       {children}
     </LeaveContext.Provider>
   );

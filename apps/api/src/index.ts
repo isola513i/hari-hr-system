@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import compression from "compression";
 import dotenv from "dotenv";
+import http from "http";
 import { query } from "./db";
 import path from "path";
 import swaggerUi from "swagger-ui-express";
@@ -9,6 +10,7 @@ import { generalLimiter, helmetConfig, apiLimiter } from "./middlewares/security
 import { auditLogMiddleware, getAuditLogs } from "./middlewares/auditLog";
 import { authenticateToken, requireAdmin } from "./middlewares/auth";
 import { swaggerSpec } from "./config/swagger";
+import { initializeSocket } from "./socket";
 
 // Import Clean Architecture routes
 import authRoutes from "./routes/authRoutes";
@@ -781,11 +783,18 @@ const runLightMigrations = async () => {
   }
 };
 
+// Create HTTP server for Socket.io
+const httpServer = http.createServer(app);
+
+// Initialize Socket.io
+initializeSocket(httpServer);
+
 // Only start the server when running locally (not in Vercel serverless)
 if (process.env.VERCEL !== '1') {
   runLightMigrations().then(() => {
-    app.listen(port, () => {
+    httpServer.listen(port, () => {
       console.log(`Server running at http://localhost:${port}`);
+      console.log(`Socket.io enabled for real-time updates`);
     });
   });
 }
