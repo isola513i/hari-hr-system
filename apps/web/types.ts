@@ -2,6 +2,24 @@ import React from 'react';
 
 export type UserRole = 'HR_ADMIN' | 'EMPLOYEE';
 
+// Department type for strict type checking
+export const DEPARTMENTS = [
+  'Human Resources',
+  'Engineering',
+  'Developer',
+  'Marketing',
+  'Sales',
+  'Finance',
+  'Operations',
+  'Product',
+  'Design',
+  'Legal',
+  'Customer Support',
+  'Tester',
+] as const;
+
+export type Department = (typeof DEPARTMENTS)[number];
+
 export interface User {
   id: string;
   employeeId?: string;
@@ -180,9 +198,9 @@ export interface OrgNode {
   name: string;
   role: string;
   avatar: string;
-  department?: string;
+  department?: Department;
   email?: string;
-  status?: string;
+  status?: 'Active' | 'On Leave' | 'Terminated';
   directReportCount?: number;
   children?: OrgNode[]; // Helper for recursive rendering
 }
