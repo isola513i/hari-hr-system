@@ -565,14 +565,49 @@ function getLogType(resource: string): string {
   return "user";
 }
 
-// GET /api/headcount-stats
+// GET /api/headcount-stats - dynamically calculated from employees
 app.get("/api/headcount-stats", async (req: Request, res: Response) => {
   try {
-    const result = await query("SELECT * FROM stats_headcount ORDER BY id ASC");
-    res.json(result.rows);
+    // Get all non-terminated employees with their join dates
+    const result = await query(`
+      SELECT join_date, status FROM employees
+      WHERE join_date IS NOT NULL
+    `);
+
+    const employees = result.rows;
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+
+    const headcountData: { name: string; value: number }[] = [];
+
+    // Generate data for last 6 months
+    for (let i = 5; i >= 0; i--) {
+      // Calculate the target month
+      const targetDate = new Date(currentYear, currentMonth - i, 1);
+      const targetMonth = targetDate.getMonth();
+      const targetYear = targetDate.getFullYear();
+      // End of target month
+      const thisMonthEnd = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999);
+
+      // Count employees who joined on or before end of target month and are not terminated
+      const employeesUpToThisMonth = employees.filter((e: { join_date: string; status: string }) => {
+        const joinDate = new Date(e.join_date);
+        if (isNaN(joinDate.getTime())) return false;
+        return joinDate <= thisMonthEnd && e.status !== 'Terminated';
+      }).length;
+
+      headcountData.push({
+        name: monthNames[targetMonth],
+        value: employeesUpToThisMonth
+      });
+    }
+
+    res.json(headcountData);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed" });
+    res.status(500).json({ error: "Failed to get headcount stats" });
   }
 });
 
