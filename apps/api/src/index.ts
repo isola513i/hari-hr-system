@@ -99,6 +99,13 @@ app.get("/api-docs.json", (_req, res) => {
 });
 
 // ==========================================
+// HEALTH CHECK (for cron jobs / keep-alive)
+// ==========================================
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// ==========================================
 // CLEAN ARCHITECTURE ROUTES
 // ==========================================
 
