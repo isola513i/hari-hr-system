@@ -1,9 +1,11 @@
 import { io, Socket } from 'socket.io-client';
 
-// Socket server URL - use API host or default to localhost
+// Socket server URL
+// In development: use empty string to connect via Vite proxy
+// In production: use the API host from environment variable
 const SOCKET_URL = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
-  : 'http://localhost:3001';
+  : '';
 
 let socket: Socket | null = null;
 
