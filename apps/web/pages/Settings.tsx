@@ -1,5 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Bell, Lock, Eye, Moon, Sun, Monitor, Globe, Save, AlertCircle, Camera } from 'lucide-react';
+import {
+  User,
+  Bell,
+  Lock,
+  Eye,
+  Moon,
+  Sun,
+  Monitor,
+  Globe,
+  Save,
+  AlertCircle,
+  Camera,
+} from 'lucide-react';
 import { Toast } from '../components/Toast';
 import { useAuth } from '../contexts/AuthContext';
 import { api, API_HOST, BASE_URL } from '../lib/api';
@@ -8,12 +20,14 @@ export const Settings: React.FC = () => {
   const { user, updateUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [activeTab, setActiveTab] = useState<'general' | 'notifications' | 'security' | 'appearance'>('general');
+  const [activeTab, setActiveTab] = useState<
+    'general' | 'notifications' | 'security' | 'appearance'
+  >('general');
   const [notifications, setNotifications] = useState({
     email: true,
     push: true,
     slack: false,
-    news: true
+    news: true,
   });
 
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
@@ -25,7 +39,7 @@ export const Settings: React.FC = () => {
     lastName: '',
     email: '',
     phone: '',
-    bio: ''
+    bio: '',
   });
   const [countryCode, setCountryCode] = useState('+66'); // Default to Thailand
   const [avatarPreview, setAvatarPreview] = useState('https://picsum.photos/id/338/200/200');
@@ -34,18 +48,27 @@ export const Settings: React.FC = () => {
   const [passwords, setPasswords] = useState({
     current: '',
     new: '',
-    confirm: ''
+    confirm: '',
   });
   const [passwordErrors, setPasswordErrors] = useState<{ [key: string]: string }>({});
 
   // Loading and Toast state
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
-    show: false, message: '', type: 'success'
+  const [toast, setToast] = useState<{
+    show: boolean;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    show: false,
+    message: '',
+    type: 'success',
   });
 
-  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+  const showToast = (
+    message: string,
+    type: 'success' | 'error' | 'warning' | 'info' = 'success'
+  ) => {
     setToast({ show: true, message, type });
   };
 
@@ -101,8 +124,10 @@ export const Settings: React.FC = () => {
     if (savedLanguage) {
       setLanguage(savedLanguage);
     }
+  }, []);
 
-    // Listen for system theme changes
+  // Listen for system theme changes
+  useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleSystemThemeChange = () => {
       if (theme === 'system') {
@@ -112,7 +137,7 @@ export const Settings: React.FC = () => {
 
     mediaQuery.addEventListener('change', handleSystemThemeChange);
     return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
-  }, []);
+  }, [theme]);
 
   // Load user profile on mount
   useEffect(() => {
@@ -127,7 +152,7 @@ export const Settings: React.FC = () => {
       // Assuming phone is stored as "+66812345678"
       if (user.phone && user.phone.startsWith('+')) {
         const match = user.phone.match(/^(\+\d{1,4})(.*)/);
-        if (match) {
+        if (match && match[1] && match[2] !== undefined) {
           extractedCountryCode = match[1];
           phoneNumber = match[2].trim();
         }
@@ -140,7 +165,7 @@ export const Settings: React.FC = () => {
         lastName: names.slice(1).join(' ') || '',
         email: user.email || '',
         phone: phoneNumber, // Just the number without country code
-        bio: user.bio || '' // Load bio from user if exists
+        bio: user.bio || '', // Load bio from user if exists
       });
       setCountryCode(extractedCountryCode);
 
@@ -155,7 +180,7 @@ export const Settings: React.FC = () => {
   }, [user]);
 
   const handleNotificationChange = (key: keyof typeof notifications) => {
-    setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
+    setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   // Handle Save Changes (Profile)
@@ -172,12 +197,12 @@ export const Settings: React.FC = () => {
       // Combine country code and phone number
       const fullPhoneNumber = profile.phone ? `${countryCode}${profile.phone}` : '';
 
-      const updatedEmployee = await api.patch(`/employees/${user.employeeId}`, {
+      await api.patch(`/employees/${user.employeeId}`, {
         name: fullName,
         email: profile.email,
         phone: fullPhoneNumber,
         bio: profile.bio,
-        avatar: avatarPreview
+        avatar: avatarPreview,
       });
 
       // Update AuthContext with new user data
@@ -186,7 +211,7 @@ export const Settings: React.FC = () => {
         email: profile.email,
         phone: fullPhoneNumber,
         bio: profile.bio,
-        avatar: avatarPreview
+        avatar: avatarPreview,
       });
 
       showToast('Profile saved successfully!', 'success');
@@ -235,9 +260,9 @@ export const Settings: React.FC = () => {
       const response = await fetch(`${BASE_URL}/employees/upload-avatar`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
-        body: formData
+        body: formData,
       });
 
       if (!response.ok) {
@@ -293,7 +318,7 @@ export const Settings: React.FC = () => {
     try {
       await api.post('/auth/change-password', {
         currentPassword: passwords.current,
-        newPassword: passwords.new
+        newPassword: passwords.new,
       });
       showToast('Password changed successfully!', 'success');
       setPasswords({ current: '', new: '', confirm: '' });
@@ -322,8 +347,12 @@ export const Settings: React.FC = () => {
     <div className="space-y-6 animate-fade-in max-w-5xl mx-auto">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-           <h1 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">Settings</h1>
-           <p className="text-sm sm:text-base text-text-muted-light dark:text-text-muted-dark">Manage your account preferences and application settings.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">
+            Settings
+          </h1>
+          <p className="text-sm sm:text-base text-text-muted-light dark:text-text-muted-dark">
+            Manage your account preferences and application settings.
+          </p>
         </div>
       </div>
 
@@ -331,377 +360,456 @@ export const Settings: React.FC = () => {
         {/* Settings Navigation - horizontal tabs on mobile, vertical sidebar on desktop */}
         <nav className="w-full lg:w-64 flex-shrink-0">
           <div className="flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0 -mx-1 px-1 lg:mx-0 lg:px-0">
-          <button
-            onClick={() => setActiveTab('general')}
-            className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 lg:w-full ${
-              activeTab === 'general'
-                ? 'bg-primary/10 text-primary'
-                : 'text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800'
-            }`}
-          >
-            <User size={18} />
-            General
-          </button>
-          <button
-            onClick={() => setActiveTab('notifications')}
-            className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 lg:w-full ${
-              activeTab === 'notifications'
-                ? 'bg-primary/10 text-primary'
-                : 'text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800'
-            }`}
-          >
-            <Bell size={18} />
-            Notifications
-          </button>
-          <button
-            onClick={() => setActiveTab('appearance')}
-            className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 lg:w-full ${
-              activeTab === 'appearance'
-                ? 'bg-primary/10 text-primary'
-                : 'text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800'
-            }`}
-          >
-            <Eye size={18} />
-            Appearance
-          </button>
-          <button
-            onClick={() => setActiveTab('security')}
-            className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 lg:w-full ${
-              activeTab === 'security'
-                ? 'bg-primary/10 text-primary'
-                : 'text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800'
-            }`}
-          >
-            <Lock size={18} />
-            Security
-          </button>
+            <button
+              onClick={() => setActiveTab('general')}
+              className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 lg:w-full ${
+                activeTab === 'general'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+            >
+              <User size={18} />
+              General
+            </button>
+            <button
+              onClick={() => setActiveTab('notifications')}
+              className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 lg:w-full ${
+                activeTab === 'notifications'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+            >
+              <Bell size={18} />
+              Notifications
+            </button>
+            <button
+              onClick={() => setActiveTab('appearance')}
+              className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 lg:w-full ${
+                activeTab === 'appearance'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+            >
+              <Eye size={18} />
+              Appearance
+            </button>
+            <button
+              onClick={() => setActiveTab('security')}
+              className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 lg:w-full ${
+                activeTab === 'security'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+            >
+              <Lock size={18} />
+              Security
+            </button>
           </div>
         </nav>
 
         {/* Settings Content */}
         <div className="flex-1 bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
-            
-            {/* General Tab */}
-            {activeTab === 'general' && (
-              <div className="p-6 space-y-6 animate-fade-in">
-                <div className="border-b border-border-light dark:border-border-dark pb-4">
-                    <h2 className="text-xl font-bold text-text-light dark:text-text-dark">Profile Information</h2>
-                    <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Update your public profile details.</p>
-                </div>
-                
-                <div className="flex items-center gap-6">
-                    <div className="relative group">
-                      <img
-                          src={avatarPreview}
-                          alt="Profile"
-                          className="w-20 h-20 rounded-full object-cover ring-4 ring-gray-50 dark:ring-gray-800"
-                      />
-                      <button
-                        onClick={handleAvatarClick}
-                        className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Camera size={24} className="text-white" />
-                      </button>
-                    </div>
-                    <div>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/jpeg,image/png,image/gif"
-                          onChange={handleAvatarChange}
-                          className="hidden"
-                        />
-                        <button
-                          onClick={handleAvatarClick}
-                          className="px-4 py-2 bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                        >
-                            Change Avatar
-                        </button>
-                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-2">JPG, GIF or PNG. Max size 5MB</p>
-                    </div>
-                </div>
+          {/* General Tab */}
+          {activeTab === 'general' && (
+            <div className="p-6 space-y-6 animate-fade-in">
+              <div className="border-b border-border-light dark:border-border-dark pb-4">
+                <h2 className="text-xl font-bold text-text-light dark:text-text-dark">
+                  Profile Information
+                </h2>
+                <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
+                  Update your public profile details.
+                </p>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">First Name</label>
-                        <input
-                            type="text"
-                            value={profile.firstName}
-                            onChange={(e) => setProfile(prev => ({ ...prev, firstName: e.target.value }))}
-                            className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Last Name</label>
-                        <input
-                            type="text"
-                            value={profile.lastName}
-                            onChange={(e) => setProfile(prev => ({ ...prev, lastName: e.target.value }))}
-                            className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Email Address</label>
-                        <input
-                            type="email"
-                            value={profile.email}
-                            onChange={(e) => setProfile(prev => ({ ...prev, email: e.target.value }))}
-                            className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Phone Number</label>
-                        <div className="flex gap-2">
-                            <select
-                                value={countryCode}
-                                onChange={(e) => setCountryCode(e.target.value)}
-                                className="w-32 px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark cursor-pointer"
-                            >
-                                <option value="+66">🇹🇭 +66</option>
-                                <option value="+1">🇺🇸 +1</option>
-                                <option value="+44">🇬🇧 +44</option>
-                                <option value="+65">🇸🇬 +65</option>
-                                <option value="+81">🇯🇵 +81</option>
-                                <option value="+86">🇨🇳 +86</option>
-                                <option value="+91">🇮🇳 +91</option>
-                                <option value="+61">🇦🇺 +61</option>
-                                <option value="+82">🇰🇷 +82</option>
-                                <option value="+33">🇫🇷 +33</option>
-                                <option value="+49">🇩🇪 +49</option>
-                            </select>
-                            <input
-                                type="tel"
-                                value={profile.phone}
-                                onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '') }))}
-                                placeholder="812345678"
-                                className="flex-1 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                            />
-                        </div>
-                        <p className="mt-1 text-xs text-text-muted-light dark:text-text-muted-dark">
-                            Enter phone number without country code or special characters
-                        </p>
-                    </div>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Bio</label>
-                    <textarea
-                        rows={4}
-                        value={profile.bio}
-                        onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
-                        placeholder="Tell us about yourself, your role, and experience..."
-                        className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark resize-none"
-                    />
-                </div>
-
-                {/* Save Changes Button - Only in General Tab */}
-                <div className="flex justify-end pt-4 border-t border-border-light dark:border-border-dark">
+              <div className="flex items-center gap-6">
+                <div className="relative group">
+                  <img
+                    src={avatarPreview}
+                    alt="Profile"
+                    className="w-20 h-20 rounded-full object-cover ring-4 ring-gray-50 dark:ring-gray-800"
+                  />
                   <button
-                    onClick={handleSaveChanges}
-                    disabled={isSaving}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-medium rounded-lg text-sm shadow-sm hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleAvatarClick}
+                    className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                   >
-                    <Save size={18} />
-                    {isSaving ? 'Saving...' : 'Save Changes'}
+                    <Camera size={24} className="text-white" />
+                  </button>
+                </div>
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={handleAvatarClick}
+                    className="px-4 py-2 bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Change Avatar
+                  </button>
+                  <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-2">
+                    JPG, GIF or PNG. Max size 5MB
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    value={profile.firstName}
+                    onChange={(e) => setProfile((prev) => ({ ...prev, firstName: e.target.value }))}
+                    className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    value={profile.lastName}
+                    onChange={(e) => setProfile((prev) => ({ ...prev, lastName: e.target.value }))}
+                    className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={profile.email}
+                    onChange={(e) => setProfile((prev) => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                    Phone Number
+                  </label>
+                  <div className="flex gap-2">
+                    <select
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      className="w-32 px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark cursor-pointer"
+                    >
+                      <option value="+66">🇹🇭 +66</option>
+                      <option value="+1">🇺🇸 +1</option>
+                      <option value="+44">🇬🇧 +44</option>
+                      <option value="+65">🇸🇬 +65</option>
+                      <option value="+81">🇯🇵 +81</option>
+                      <option value="+86">🇨🇳 +86</option>
+                      <option value="+91">🇮🇳 +91</option>
+                      <option value="+61">🇦🇺 +61</option>
+                      <option value="+82">🇰🇷 +82</option>
+                      <option value="+33">🇫🇷 +33</option>
+                      <option value="+49">🇩🇪 +49</option>
+                    </select>
+                    <input
+                      type="tel"
+                      value={profile.phone}
+                      onChange={(e) =>
+                        setProfile((prev) => ({
+                          ...prev,
+                          phone: e.target.value.replace(/\D/g, ''),
+                        }))
+                      }
+                      placeholder="812345678"
+                      className="flex-1 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-text-muted-light dark:text-text-muted-dark">
+                    Enter phone number without country code or special characters
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                  Bio
+                </label>
+                <textarea
+                  rows={4}
+                  value={profile.bio}
+                  onChange={(e) => setProfile((prev) => ({ ...prev, bio: e.target.value }))}
+                  placeholder="Tell us about yourself, your role, and experience..."
+                  className="w-full px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark resize-none"
+                />
+              </div>
+
+              {/* Save Changes Button - Only in General Tab */}
+              <div className="flex justify-end pt-4 border-t border-border-light dark:border-border-dark">
+                <button
+                  onClick={handleSaveChanges}
+                  disabled={isSaving}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-medium rounded-lg text-sm shadow-sm hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Save size={18} />
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Notifications Tab */}
+          {activeTab === 'notifications' && (
+            <div className="p-6 space-y-6 animate-fade-in">
+              <div className="border-b border-border-light dark:border-border-dark pb-4">
+                <h2 className="text-xl font-bold text-text-light dark:text-text-dark">
+                  Notifications
+                </h2>
+                <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
+                  Choose how you want to be notified.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-background-light dark:bg-background-dark/50 rounded-lg">
+                  <div>
+                    <h3 className="font-medium text-text-light dark:text-text-dark">
+                      Email Notifications
+                    </h3>
+                    <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
+                      Receive daily summaries and critical alerts via email.
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={notifications.email}
+                      onChange={() => handleNotificationChange('email')}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-background-light dark:bg-background-dark/50 rounded-lg">
+                  <div>
+                    <h3 className="font-medium text-text-light dark:text-text-dark">
+                      Push Notifications
+                    </h3>
+                    <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
+                      Receive real-time alerts on your desktop.
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={notifications.push}
+                      onChange={() => handleNotificationChange('push')}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-background-light dark:bg-background-dark/50 rounded-lg">
+                  <div>
+                    <h3 className="font-medium text-text-light dark:text-text-dark">
+                      Slack Integration
+                    </h3>
+                    <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
+                      Forward important updates to your Slack workspace.
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={notifications.slack}
+                      onChange={() => handleNotificationChange('slack')}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Appearance Tab */}
+          {activeTab === 'appearance' && (
+            <div className="p-6 space-y-6 animate-fade-in">
+              <div className="border-b border-border-light dark:border-border-dark pb-4">
+                <h2 className="text-xl font-bold text-text-light dark:text-text-dark">
+                  Appearance
+                </h2>
+                <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
+                  Customize the look and feel of the application.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-medium text-text-light dark:text-text-dark mb-4">
+                  Theme Preference
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <button
+                    onClick={() => handleThemeChange('light')}
+                    className={`p-4 border rounded-xl flex flex-col items-center gap-3 transition-all ${theme === 'light' ? 'border-primary bg-primary/5 text-primary' : 'border-border-light dark:border-border-dark hover:border-primary/50'}`}
+                  >
+                    <Sun size={24} />
+                    <span className="text-sm font-medium">Light</span>
+                  </button>
+                  <button
+                    onClick={() => handleThemeChange('dark')}
+                    className={`p-4 border rounded-xl flex flex-col items-center gap-3 transition-all ${theme === 'dark' ? 'border-primary bg-primary/5 text-primary' : 'border-border-light dark:border-border-dark hover:border-primary/50'}`}
+                  >
+                    <Moon size={24} />
+                    <span className="text-sm font-medium">Dark</span>
+                  </button>
+                  <button
+                    onClick={() => handleThemeChange('system')}
+                    className={`p-4 border rounded-xl flex flex-col items-center gap-3 transition-all ${theme === 'system' ? 'border-primary bg-primary/5 text-primary' : 'border-border-light dark:border-border-dark hover:border-primary/50'}`}
+                  >
+                    <Monitor size={24} />
+                    <span className="text-sm font-medium">System</span>
                   </button>
                 </div>
               </div>
-            )}
 
-            {/* Notifications Tab */}
-            {activeTab === 'notifications' && (
-                <div className="p-6 space-y-6 animate-fade-in">
-                     <div className="border-b border-border-light dark:border-border-dark pb-4">
-                        <h2 className="text-xl font-bold text-text-light dark:text-text-dark">Notifications</h2>
-                        <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Choose how you want to be notified.</p>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-background-light dark:bg-background-dark/50 rounded-lg">
-                            <div>
-                                <h3 className="font-medium text-text-light dark:text-text-dark">Email Notifications</h3>
-                                <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Receive daily summaries and critical alerts via email.</p>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" checked={notifications.email} onChange={() => handleNotificationChange('email')} className="sr-only peer" />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-                            </label>
-                        </div>
-
-                        <div className="flex items-center justify-between p-4 bg-background-light dark:bg-background-dark/50 rounded-lg">
-                            <div>
-                                <h3 className="font-medium text-text-light dark:text-text-dark">Push Notifications</h3>
-                                <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Receive real-time alerts on your desktop.</p>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" checked={notifications.push} onChange={() => handleNotificationChange('push')} className="sr-only peer" />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-                            </label>
-                        </div>
-
-                         <div className="flex items-center justify-between p-4 bg-background-light dark:bg-background-dark/50 rounded-lg">
-                            <div>
-                                <h3 className="font-medium text-text-light dark:text-text-dark">Slack Integration</h3>
-                                <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Forward important updates to your Slack workspace.</p>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" checked={notifications.slack} onChange={() => handleNotificationChange('slack')} className="sr-only peer" />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-                            </label>
-                        </div>
-                    </div>
+              <div>
+                <h3 className="font-medium text-text-light dark:text-text-dark mb-4">Language</h3>
+                <div className="relative">
+                  <Globe
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light"
+                    size={18}
+                  />
+                  <select
+                    value={language}
+                    onChange={handleLanguageChange}
+                    className="w-full pl-10 pr-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark cursor-pointer"
+                  >
+                    <option value="en">English</option>
+                    <option value="th">ไทย (Thai)</option>
+                  </select>
                 </div>
-            )}
+              </div>
+            </div>
+          )}
 
-            {/* Appearance Tab */}
-             {activeTab === 'appearance' && (
-                <div className="p-6 space-y-6 animate-fade-in">
-                     <div className="border-b border-border-light dark:border-border-dark pb-4">
-                        <h2 className="text-xl font-bold text-text-light dark:text-text-dark">Appearance</h2>
-                        <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Customize the look and feel of the application.</p>
-                    </div>
+          {/* Security Tab */}
+          {activeTab === 'security' && (
+            <div className="p-6 space-y-6 animate-fade-in">
+              <div className="border-b border-border-light dark:border-border-dark pb-4">
+                <h2 className="text-xl font-bold text-text-light dark:text-text-dark">Security</h2>
+                <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
+                  Protect your account and data.
+                </p>
+              </div>
 
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-medium text-text-light dark:text-text-dark mb-4">
+                    Change Password
+                  </h3>
+                  <div className="space-y-3">
                     <div>
-                        <h3 className="font-medium text-text-light dark:text-text-dark mb-4">Theme Preference</h3>
-                        <div className="grid grid-cols-3 gap-4">
-                            <button
-                                onClick={() => handleThemeChange('light')}
-                                className={`p-4 border rounded-xl flex flex-col items-center gap-3 transition-all ${theme === 'light' ? 'border-primary bg-primary/5 text-primary' : 'border-border-light dark:border-border-dark hover:border-primary/50'}`}
-                            >
-                                <Sun size={24} />
-                                <span className="text-sm font-medium">Light</span>
-                            </button>
-                             <button
-                                onClick={() => handleThemeChange('dark')}
-                                className={`p-4 border rounded-xl flex flex-col items-center gap-3 transition-all ${theme === 'dark' ? 'border-primary bg-primary/5 text-primary' : 'border-border-light dark:border-border-dark hover:border-primary/50'}`}
-                            >
-                                <Moon size={24} />
-                                <span className="text-sm font-medium">Dark</span>
-                            </button>
-                             <button
-                                onClick={() => handleThemeChange('system')}
-                                className={`p-4 border rounded-xl flex flex-col items-center gap-3 transition-all ${theme === 'system' ? 'border-primary bg-primary/5 text-primary' : 'border-border-light dark:border-border-dark hover:border-primary/50'}`}
-                            >
-                                <Monitor size={24} />
-                                <span className="text-sm font-medium">System</span>
-                            </button>
-                        </div>
+                      <input
+                        type="password"
+                        placeholder="Current Password"
+                        value={passwords.current}
+                        onChange={(e) => {
+                          setPasswords((prev) => ({ ...prev, current: e.target.value }));
+                          if (passwordErrors.current)
+                            setPasswordErrors((prev) => ({ ...prev, current: '' }));
+                        }}
+                        autoComplete="current-password"
+                        className={`w-full px-4 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark ${
+                          passwordErrors.current
+                            ? 'border-red-500'
+                            : 'border-border-light dark:border-border-dark'
+                        }`}
+                      />
+                      {passwordErrors.current && (
+                        <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                          <AlertCircle size={12} /> {passwordErrors.current}
+                        </p>
+                      )}
                     </div>
-
                     <div>
-                         <h3 className="font-medium text-text-light dark:text-text-dark mb-4">Language</h3>
-                         <div className="relative">
-                            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={18} />
-                            <select
-                              value={language}
-                              onChange={handleLanguageChange}
-                              className="w-full pl-10 pr-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark cursor-pointer"
-                            >
-                                <option value="en">English</option>
-                                <option value="th">ไทย (Thai)</option>
-                            </select>
-                         </div>
+                      <input
+                        type="password"
+                        placeholder="New Password"
+                        value={passwords.new}
+                        onChange={(e) => {
+                          setPasswords((prev) => ({ ...prev, new: e.target.value }));
+                          if (passwordErrors.new)
+                            setPasswordErrors((prev) => ({ ...prev, new: '' }));
+                        }}
+                        autoComplete="new-password"
+                        className={`w-full px-4 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark ${
+                          passwordErrors.new
+                            ? 'border-red-500'
+                            : 'border-border-light dark:border-border-dark'
+                        }`}
+                      />
+                      {passwordErrors.new && (
+                        <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                          <AlertCircle size={12} /> {passwordErrors.new}
+                        </p>
+                      )}
                     </div>
+                    <div>
+                      <input
+                        type="password"
+                        placeholder="Confirm New Password"
+                        value={passwords.confirm}
+                        onChange={(e) => {
+                          setPasswords((prev) => ({ ...prev, confirm: e.target.value }));
+                          if (passwordErrors.confirm)
+                            setPasswordErrors((prev) => ({ ...prev, confirm: '' }));
+                        }}
+                        autoComplete="new-password"
+                        className={`w-full px-4 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark ${
+                          passwordErrors.confirm
+                            ? 'border-red-500'
+                            : 'border-border-light dark:border-border-dark'
+                        }`}
+                      />
+                      {passwordErrors.confirm && (
+                        <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                          <AlertCircle size={12} /> {passwordErrors.confirm}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleChangePassword}
+                    disabled={isChangingPassword}
+                    className="mt-3 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark text-text-light dark:text-text-dark font-medium rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isChangingPassword ? 'Updating...' : 'Update Password'}
+                  </button>
                 </div>
-            )}
 
-            {/* Security Tab */}
-            {activeTab === 'security' && (
-                <div className="p-6 space-y-6 animate-fade-in">
-                     <div className="border-b border-border-light dark:border-border-dark pb-4">
-                        <h2 className="text-xl font-bold text-text-light dark:text-text-dark">Security</h2>
-                        <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Protect your account and data.</p>
+                <div className="pt-4 border-t border-border-light dark:border-border-dark">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium text-text-light dark:text-text-dark">
+                        Two-Factor Authentication
+                      </h3>
+                      <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
+                        Add an extra layer of security to your account.
+                      </p>
                     </div>
-
-                    <div className="space-y-4">
-                        <div>
-                             <h3 className="font-medium text-text-light dark:text-text-dark mb-4">Change Password</h3>
-                             <div className="space-y-3">
-                                <div>
-                                  <input
-                                      type="password"
-                                      placeholder="Current Password"
-                                      value={passwords.current}
-                                      onChange={(e) => {
-                                        setPasswords(prev => ({ ...prev, current: e.target.value }));
-                                        if (passwordErrors.current) setPasswordErrors(prev => ({ ...prev, current: '' }));
-                                      }}
-                                      className={`w-full px-4 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark ${
-                                        passwordErrors.current ? 'border-red-500' : 'border-border-light dark:border-border-dark'
-                                      }`}
-                                  />
-                                  {passwordErrors.current && (
-                                    <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                                      <AlertCircle size={12} /> {passwordErrors.current}
-                                    </p>
-                                  )}
-                                </div>
-                                <div>
-                                  <input
-                                      type="password"
-                                      placeholder="New Password"
-                                      value={passwords.new}
-                                      onChange={(e) => {
-                                        setPasswords(prev => ({ ...prev, new: e.target.value }));
-                                        if (passwordErrors.new) setPasswordErrors(prev => ({ ...prev, new: '' }));
-                                      }}
-                                      className={`w-full px-4 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark ${
-                                        passwordErrors.new ? 'border-red-500' : 'border-border-light dark:border-border-dark'
-                                      }`}
-                                  />
-                                  {passwordErrors.new && (
-                                    <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                                      <AlertCircle size={12} /> {passwordErrors.new}
-                                    </p>
-                                  )}
-                                </div>
-                                <div>
-                                  <input
-                                      type="password"
-                                      placeholder="Confirm New Password"
-                                      value={passwords.confirm}
-                                      onChange={(e) => {
-                                        setPasswords(prev => ({ ...prev, confirm: e.target.value }));
-                                        if (passwordErrors.confirm) setPasswordErrors(prev => ({ ...prev, confirm: '' }));
-                                      }}
-                                      className={`w-full px-4 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark ${
-                                        passwordErrors.confirm ? 'border-red-500' : 'border-border-light dark:border-border-dark'
-                                      }`}
-                                  />
-                                  {passwordErrors.confirm && (
-                                    <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                                      <AlertCircle size={12} /> {passwordErrors.confirm}
-                                    </p>
-                                  )}
-                                </div>
-                             </div>
-                             <button
-                               onClick={handleChangePassword}
-                               disabled={isChangingPassword}
-                               className="mt-3 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark text-text-light dark:text-text-dark font-medium rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                             >
-                                {isChangingPassword ? 'Updating...' : 'Update Password'}
-                            </button>
-                        </div>
-
-                         <div className="pt-4 border-t border-border-light dark:border-border-dark">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h3 className="font-medium text-text-light dark:text-text-dark">Two-Factor Authentication</h3>
-                                    <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Add an extra layer of security to your account.</p>
-                                </div>
-                                <button
-                                  onClick={handleEnable2FA}
-                                  className="px-4 py-2 bg-primary/10 text-primary font-medium rounded-lg text-sm hover:bg-primary/20 transition-colors"
-                                >
-                                    Enable 2FA
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    <button
+                      onClick={handleEnable2FA}
+                      className="px-4 py-2 bg-primary/10 text-primary font-medium rounded-lg text-sm hover:bg-primary/20 transition-colors"
+                    >
+                      Enable 2FA
+                    </button>
+                  </div>
                 </div>
-            )}
-
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -710,7 +818,7 @@ export const Settings: React.FC = () => {
         <Toast
           message={toast.message}
           type={toast.type}
-          onClose={() => setToast(prev => ({ ...prev, show: false }))}
+          onClose={() => setToast((prev) => ({ ...prev, show: false }))}
         />
       )}
     </div>

@@ -18,7 +18,6 @@ import {
   Wallet,
   Plane,
   FileText,
-  DollarSign,
   Palmtree,
   MessageSquare,
   Trash2,
@@ -309,7 +308,7 @@ export const Dashboard: React.FC = () => {
       if (fetchedNotes.length > 0) {
         // Show pinned note first, or most recent
         const pinnedNote = fetchedNotes.find(n => n.pinned);
-        setQuickNote(pinnedNote?.content || fetchedNotes[0].content);
+        setQuickNote(pinnedNote?.content || fetchedNotes[0]?.content || '');
       }
     } catch (error) {
       console.error('Error fetching notes:', error);
@@ -480,7 +479,7 @@ export const Dashboard: React.FC = () => {
             {/* Check In/Out Button */}
             <button
               onClick={handleClockAction}
-              disabled={isClockingIn || (attendanceStatus?.clockIn && attendanceStatus?.clockOut)}
+              disabled={isClockingIn || !!(attendanceStatus?.clockIn && attendanceStatus?.clockOut)}
               className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg text-sm shadow-sm transition-all ${
                 attendanceStatus?.clockIn && !attendanceStatus?.clockOut
                   ? 'bg-accent-orange text-white hover:bg-accent-orange/90 hover:shadow-md'

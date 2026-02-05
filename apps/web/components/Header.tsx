@@ -244,6 +244,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => searchQuery && setShowResults(true)}
               placeholder="Search employees, documents, policies..."
+              autoComplete="off"
               className="w-full pl-10 pr-10 py-2 bg-background-light dark:bg-background-dark border border-transparent focus:border-primary/30 rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             />
             {searchQuery && (
@@ -463,6 +464,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               onFocus={() => searchQuery && setShowResults(true)}
               placeholder="Search employees..."
               autoFocus
+              autoComplete="off"
               className="w-full pl-10 pr-10 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
             />
             <button

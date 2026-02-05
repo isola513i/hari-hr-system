@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Clock, Calendar, TrendingUp, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
+import { Dropdown, DropdownOption } from '../components/Dropdown';
 
 interface AttendanceRecord {
   id: string;
@@ -92,9 +93,25 @@ const Attendance: React.FC = () => {
     }
   };
 
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+  const monthOptions: DropdownOption[] = [
+    { value: '0', label: 'January' },
+    { value: '1', label: 'February' },
+    { value: '2', label: 'March' },
+    { value: '3', label: 'April' },
+    { value: '4', label: 'May' },
+    { value: '5', label: 'June' },
+    { value: '6', label: 'July' },
+    { value: '7', label: 'August' },
+    { value: '8', label: 'September' },
+    { value: '9', label: 'October' },
+    { value: '10', label: 'November' },
+    { value: '11', label: 'December' }
+  ];
+
+  const yearOptions: DropdownOption[] = [
+    { value: '2024', label: '2024' },
+    { value: '2025', label: '2025' },
+    { value: '2026', label: '2026' }
   ];
 
   return (
@@ -112,28 +129,18 @@ const Attendance: React.FC = () => {
 
         {/* Month/Year Selector */}
         <div className="flex gap-2 sm:gap-3">
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 border border-border-light dark:border-border-dark rounded-lg bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark text-sm"
-          >
-            {months.map((month, index) => (
-              <option key={month} value={index}>
-                {month}
-              </option>
-            ))}
-          </select>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="px-3 sm:px-4 py-2 border border-border-light dark:border-border-dark rounded-lg bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark text-sm"
-          >
-            {[2024, 2025, 2026].map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
+          <Dropdown
+            options={monthOptions}
+            value={String(selectedMonth)}
+            onChange={(val) => setSelectedMonth(Number(val))}
+            width="w-36 sm:w-40"
+          />
+          <Dropdown
+            options={yearOptions}
+            value={String(selectedYear)}
+            onChange={(val) => setSelectedYear(Number(val))}
+            width="w-24 sm:w-28"
+          />
         </div>
       </div>
 
