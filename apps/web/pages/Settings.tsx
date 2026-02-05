@@ -457,10 +457,12 @@ export const Settings: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                  <label htmlFor="firstName" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                     First Name
                   </label>
                   <input
+                    id="firstName"
+                    name="firstName"
                     type="text"
                     value={profile.firstName}
                     onChange={(e) => setProfile((prev) => ({ ...prev, firstName: e.target.value }))}
@@ -468,10 +470,12 @@ export const Settings: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                  <label htmlFor="lastName" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                     Last Name
                   </label>
                   <input
+                    id="lastName"
+                    name="lastName"
                     type="text"
                     value={profile.lastName}
                     onChange={(e) => setProfile((prev) => ({ ...prev, lastName: e.target.value }))}
@@ -479,10 +483,12 @@ export const Settings: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                  <label htmlFor="email" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                     Email Address
                   </label>
                   <input
+                    id="email"
+                    name="email"
                     type="email"
                     value={profile.email}
                     onChange={(e) => setProfile((prev) => ({ ...prev, email: e.target.value }))}
@@ -490,13 +496,16 @@ export const Settings: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                  <label htmlFor="phone" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                     Phone Number
                   </label>
                   <div className="flex gap-2">
                     <select
+                      id="countryCode"
+                      name="countryCode"
                       value={countryCode}
                       onChange={(e) => setCountryCode(e.target.value)}
+                      aria-label="Country code"
                       className="w-32 px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark cursor-pointer"
                     >
                       <option value="+66">🇹🇭 +66</option>
@@ -512,6 +521,8 @@ export const Settings: React.FC = () => {
                       <option value="+49">🇩🇪 +49</option>
                     </select>
                     <input
+                      id="phone"
+                      name="phone"
                       type="tel"
                       value={profile.phone}
                       onChange={(e) =>
@@ -531,10 +542,12 @@ export const Settings: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                <label htmlFor="bio" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                   Bio
                 </label>
                 <textarea
+                  id="bio"
+                  name="bio"
                   rows={4}
                   value={profile.bio}
                   onChange={(e) => setProfile((prev) => ({ ...prev, bio: e.target.value }))}
@@ -675,13 +688,15 @@ export const Settings: React.FC = () => {
               </div>
 
               <div>
-                <h3 className="font-medium text-text-light dark:text-text-dark mb-4">Language</h3>
+                <label htmlFor="language" className="font-medium text-text-light dark:text-text-dark mb-4 block">Language</label>
                 <div className="relative">
                   <Globe
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light"
                     size={18}
                   />
                   <select
+                    id="language"
+                    name="language"
                     value={language}
                     onChange={handleLanguageChange}
                     className="w-full pl-10 pr-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark cursor-pointer"
@@ -711,7 +726,10 @@ export const Settings: React.FC = () => {
                   </h3>
                   <div className="space-y-3">
                     <div>
+                      <label htmlFor="currentPassword" className="sr-only">Current Password</label>
                       <input
+                        id="currentPassword"
+                        name="currentPassword"
                         type="password"
                         placeholder="Current Password"
                         value={passwords.current}
@@ -734,7 +752,10 @@ export const Settings: React.FC = () => {
                       )}
                     </div>
                     <div>
+                      <label htmlFor="newPassword" className="sr-only">New Password</label>
                       <input
+                        id="newPassword"
+                        name="newPassword"
                         type="password"
                         placeholder="New Password"
                         value={passwords.new}
@@ -757,7 +778,10 @@ export const Settings: React.FC = () => {
                       )}
                     </div>
                     <div>
+                      <label htmlFor="confirmPassword" className="sr-only">Confirm New Password</label>
                       <input
+                        id="confirmPassword"
+                        name="confirmPassword"
                         type="password"
                         placeholder="Confirm New Password"
                         value={passwords.confirm}

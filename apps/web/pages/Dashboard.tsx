@@ -791,7 +791,10 @@ export const Dashboard: React.FC = () => {
             <div className="p-4 flex-grow flex flex-col gap-3">
               {/* Note input */}
               <div className="relative">
+                <label htmlFor="employeeNote" className="sr-only">Personal Note</label>
                 <textarea
+                  id="employeeNote"
+                  name="employeeNote"
                   value={quickNote}
                   onChange={(e) => setQuickNote(e.target.value)}
                   placeholder="Write a note..."
@@ -1264,7 +1267,10 @@ export const Dashboard: React.FC = () => {
             </div>
             <div className="p-4 flex-grow flex flex-col">
               <div className="relative">
+                <label htmlFor="adminNote" className="sr-only">Quick Note</label>
                 <textarea
+                  id="adminNote"
+                  name="adminNote"
                   value={quickNote}
                   onChange={(e) => setQuickNote(e.target.value)}
                   placeholder="Write a quick note..."
