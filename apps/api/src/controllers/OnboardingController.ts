@@ -11,13 +11,20 @@ export class OnboardingController {
       const user = (req as any).user;
       const { employeeId } = req.query;
 
-      // EMPLOYEE role → only their own tasks
+      // EMPLOYEE role → only their own tasks (auto-seed if first visit)
       if (user.role === "EMPLOYEE") {
         if (!user.employeeId) {
           res.status(403).json({ error: "No employee profile linked" });
           return;
         }
-        const tasks = await OnboardingService.getTasksByEmployeeId(user.employeeId);
+        let tasks = await OnboardingService.getTasksByEmployeeId(user.employeeId);
+        if (tasks.length === 0) {
+          try {
+            tasks = await OnboardingService.seedDefaultTasks(user.employeeId);
+          } catch {
+            // Seed failed (e.g. employee not found) — return empty
+          }
+        }
         res.json(tasks);
         return;
       }
