@@ -151,7 +151,6 @@ const Notifications: React.FC = () => {
                       <button
                         onClick={(e) => handleDelete(e, notif.id)}
                         className="p-1.5 rounded-lg text-text-muted-light dark:text-text-muted-dark hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
-                        style={{ opacity: 1 }}
                         title="Delete notification"
                       >
                         <Trash2 size={14} />
