@@ -54,3 +54,16 @@ export const emitLeaveRequestDeleted = (id: string) => {
     io.emit('leave-request:deleted', { id });
   }
 };
+
+// Event emitters for notifications
+export const emitNotificationCreated = (notification: any) => {
+  if (io) {
+    io.emit('notification:new', notification);
+  }
+};
+
+export const emitNotificationRefresh = () => {
+  if (io) {
+    io.emit('notification:refresh');
+  }
+};

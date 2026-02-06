@@ -11,6 +11,7 @@ import {
   Menu,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { useNotifications } from "../contexts/NotificationContext";
 import { useNavigate } from "react-router-dom";
 import { api, API_HOST } from "../lib/api";
 import { Avatar } from "./Avatar";
@@ -32,59 +33,18 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { notifications, unreadCount, markAllAsRead, markAsRead } = useNotifications();
   const notificationRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
-  // Real notifications from API
-  interface NotificationItem {
-    id: string;
-    title: string;
-    message: string;
-    type: string;
-    read: boolean;
-    link?: string;
-    time: string;
-  }
-
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
-
-  // Fetch notifications from API
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      setIsLoadingNotifications(true);
-      try {
-        const data = await api.get<NotificationItem[]>("/notifications");
-        setNotifications(data);
-      } catch (error) {
-        console.error("Failed to fetch notifications:", error);
-      } finally {
-        setIsLoadingNotifications(false);
-      }
-    };
-
-    fetchNotifications();
-    // Refresh notifications every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Mark all notifications as read
   const handleMarkAllRead = async () => {
-    try {
-      await api.put("/notifications/mark-all-read", {});
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    } catch (error) {
-      console.error("Failed to mark notifications as read:", error);
-    }
+    await markAllAsRead();
   };
 
-  // View all notifications (navigate to notifications page or show toast)
   const handleViewAllNotifications = () => {
     setIsNotificationOpen(false);
-    // TODO: Replace with navigate('/notifications') when page exists
-    alert("Notifications page coming soon!");
+    navigate('/notifications');
   };
-  const navigate = useNavigate();
 
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
@@ -314,7 +274,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               className="relative p-2 rounded-full hover:bg-background-light dark:hover:bg-background-dark text-text-muted-light dark:text-text-muted-dark transition-colors"
             >
               <Bell size={20} />
-              {notifications.filter((n) => !n.read).length > 0 && (
+              {unreadCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent-red rounded-full ring-2 ring-card-light dark:ring-card-dark"></span>
               )}
             </button>
@@ -338,6 +298,11 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                     notifications.map((notif) => (
                       <div
                         key={notif.id}
+                        onClick={async () => {
+                          if (!notif.read) await markAsRead(notif.id);
+                          setIsNotificationOpen(false);
+                          if (notif.link) navigate(notif.link);
+                        }}
                         className={`px-4 py-3 hover:bg-background-light dark:hover:bg-background-dark cursor-pointer border-b border-border-light dark:border-border-dark last:border-0 ${!notif.read ? "bg-primary/5" : ""}`}
                       >
                         <div className="flex items-start gap-3">

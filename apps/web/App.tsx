@@ -4,6 +4,7 @@ import { Layout } from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import { LeaveProvider } from "./contexts/LeaveContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import { OrgProvider } from "./contexts/OrgContext";
 import { ToastProvider } from "./contexts/ToastContext";
 import { ToastContainer } from "./components/ToastContainer";
@@ -55,6 +56,7 @@ const Surveys = lazy(() =>
   import("./pages/Surveys").then((m) => ({ default: m.Surveys })),
 );
 const Attendance = lazy(() => import("./pages/Attendance"));
+const Notifications = lazy(() => import("./pages/Notifications"));
 
 // Loading component
 const PageLoader = () => (
@@ -83,11 +85,13 @@ const App: React.FC = () => {
                   <Route
                     path="/"
                     element={
-                      <LeaveProvider>
-                        <OrgProvider>
-                          <Layout />
-                        </OrgProvider>
-                      </LeaveProvider>
+                      <NotificationProvider>
+                        <LeaveProvider>
+                          <OrgProvider>
+                            <Layout />
+                          </OrgProvider>
+                        </LeaveProvider>
+                      </NotificationProvider>
                     }
                   >
                     <Route index element={<Dashboard />} />
@@ -104,6 +108,7 @@ const App: React.FC = () => {
                     <Route path="analytics" element={<Analytics />} />
                     <Route path="documents" element={<Documents />} />
                     <Route path="settings" element={<Settings />} />
+                    <Route path="notifications" element={<Notifications />} />
                     <Route path="help" element={<HelpSupport />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Route>
