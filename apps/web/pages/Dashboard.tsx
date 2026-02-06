@@ -279,10 +279,7 @@ export const Dashboard: React.FC = () => {
         : 0;
       setTurnoverRate(turnoverRateCalc);
 
-      // For trend, compare active employees ratio (simplified)
-      // Negative trend is good (less turnover)
-      const activeRatio = totalEmployees > 0 ? (activeEmployees.length / totalEmployees) * 100 : 100;
-      const turnoverTrendCalc = activeRatio >= 95 ? -0.4 : activeRatio >= 90 ? 0.2 : 0.5;
+      const turnoverTrendCalc = terminatedEmployees.length > 0 ? turnoverRateCalc : 0;
       setTurnoverTrend(turnoverTrendCalc);
 
       // My Team (if employee)

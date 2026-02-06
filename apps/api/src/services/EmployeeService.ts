@@ -85,7 +85,7 @@ export class EmployeeService {
     }
 
     async createEmployee(employeeData: CreateEmployeeDTO): Promise<Employee> {
-        const { name, email, role, department, startDate, salary, password } = employeeData;
+        const { name, email, role, department, joinDate, salary, password } = employeeData;
 
         // Check if email already exists
         const existingEmployee = await query(
@@ -111,7 +111,7 @@ export class EmployeeService {
             `INSERT INTO employees (name, email, role, department, join_date, avatar, status)
              VALUES ($1, $2, $3, $4, $5, $6, $7)
              RETURNING *`,
-            [name, email, role, department, startDate, avatar, 'Active']
+            [name, email, role, department, joinDate, avatar, 'Active']
         );
 
         return this.mapRowToEmployee(result.rows[0]);
@@ -151,9 +151,9 @@ export class EmployeeService {
             updates.push(`salary = $${paramIndex++}`);
             values.push(data.salary);
         }
-        if (data.startDate) {
+        if (data.joinDate) {
             updates.push(`join_date = $${paramIndex++}`);
-            values.push(data.startDate);
+            values.push(data.joinDate);
         }
         if (data.bio !== undefined) {
             updates.push(`bio = $${paramIndex++}`);
@@ -213,7 +213,7 @@ export class EmployeeService {
             email: row.email,
             role: row.role,
             department: row.department,
-            startDate: row.join_date,
+            joinDate: row.join_date || row.created_at,
             salary: row.salary,
             avatar: row.avatar,
             status: row.status,
