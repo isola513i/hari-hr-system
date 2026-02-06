@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { ChevronRight, Home } from 'lucide-react';
+import { api } from '../lib/api';
 
 /**
  * Route name mapping configuration
@@ -15,6 +16,7 @@ const ROUTE_NAME_MAP: Record<string, string> = {
   'documents': 'Documents',
   'onboarding': 'Onboarding',
   'settings': 'Settings',
+  'notifications': 'Notifications',
   'help': 'Help & Support',
 };
 
@@ -138,6 +140,7 @@ const BreadcrumbItem: React.FC<BreadcrumbItemProps> = ({
  */
 export const Breadcrumbs: React.FC = () => {
   const location = useLocation();
+  const [employeeName, setEmployeeName] = useState<string | null>(null);
 
   // Parse URL pathname into individual segments, filtering out empty strings
   const pathSegments = location.pathname
@@ -145,6 +148,35 @@ export const Breadcrumbs: React.FC = () => {
     .filter((segment) => segment.length > 0);
 
   const isOnHomePage = pathSegments.length === 0;
+
+  // Detect employee detail page and fetch name
+  const employeeId = pathSegments[0] === 'employees' && pathSegments[1] ? pathSegments[1] : null;
+
+  useEffect(() => {
+    if (!employeeId) {
+      setEmployeeName(null);
+      return;
+    }
+
+    let cancelled = false;
+    api.get<{ name: string }>(`/employees/${employeeId}`)
+      .then((data) => {
+        if (!cancelled) setEmployeeName(data.name);
+      })
+      .catch(() => {
+        if (!cancelled) setEmployeeName(null);
+      });
+
+    return () => { cancelled = true; };
+  }, [employeeId]);
+
+  const getDisplayName = (pathSegment: string, segmentIndex: number) => {
+    const previousSegment = segmentIndex > 0 ? pathSegments[segmentIndex - 1] : undefined;
+    if (isEmployeeDetailPage(previousSegment)) {
+      return employeeName || 'Employee Details';
+    }
+    return ROUTE_NAME_MAP[pathSegment] || formatPathSegment(pathSegment);
+  };
 
   return (
     <nav
@@ -168,11 +200,7 @@ export const Breadcrumbs: React.FC = () => {
       {pathSegments.map((pathSegment, segmentIndex) => {
         const pathUrl = buildPathUrl(pathSegments, segmentIndex);
         const isLastItem = segmentIndex === pathSegments.length - 1;
-        const displayName = getBreadcrumbDisplayName(
-          pathSegment,
-          segmentIndex,
-          pathSegments
-        );
+        const displayName = getDisplayName(pathSegment, segmentIndex);
 
         return (
           <React.Fragment key={pathUrl}>

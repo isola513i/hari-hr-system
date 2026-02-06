@@ -173,6 +173,22 @@ export interface KeyContact {
   avatar: string;
 }
 
+export interface OnboardingDocument {
+  id: string;
+  employeeId: string;
+  name: string;
+  description: string;
+  status: 'Pending' | 'Uploaded' | 'Approved' | 'Rejected';
+  filePath: string | null;
+  fileType: string | null;
+  fileSize: string | null;
+  uploadedAt: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+  createdAt: string;
+}
+
 export interface JobHistoryItem {
   id: string;
   role: string;
@@ -416,4 +432,21 @@ export interface EmployeeFilterParams {
   department?: string;
   status?: Employee['status'];
   search?: string;
+}
+
+// ============================================================================
+// Notification Types
+// ============================================================================
+
+export type NotificationType = 'info' | 'success' | 'warning' | 'leave' | 'employee' | 'document' | 'system';
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  read: boolean;
+  link?: string;
+  time: string;
+  created_at: string;
 }

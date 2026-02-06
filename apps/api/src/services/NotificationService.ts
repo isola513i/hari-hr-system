@@ -4,6 +4,7 @@ import {
   CreateNotificationRequest,
   NotificationResponse,
 } from "../models/Notification";
+import { emitNotificationCreated, emitNotificationRefresh } from "../socket";
 
 // Helper function to format relative time
 function formatRelativeTime(date: Date): string {
@@ -79,7 +80,9 @@ export class NotificationService {
        RETURNING *`,
       [data.user_id, data.title, data.message, data.type || "info", data.link]
     );
-    return toResponse(result.rows[0]);
+    const notification = toResponse(result.rows[0]);
+    emitNotificationCreated(notification);
+    return notification;
   }
 
   // Create notifications for multiple users
@@ -109,6 +112,7 @@ export class NotificationService {
        VALUES ${values}`,
       params
     );
+    emitNotificationRefresh();
   }
 
   // Create notification for all HR admins

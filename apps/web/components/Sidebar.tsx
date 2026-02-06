@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -48,8 +48,8 @@ export const Sidebar: React.FC = () => {
   return (
     <aside className="w-64 flex-shrink-0 bg-primary-dark text-white flex flex-col h-full shadow-xl">
       <div className="p-6 pb-8 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <div className="aspect-square w-10 h-10 rounded-lg overflow-hidden shadow-lg bg-white flex items-center justify-center">
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="aspect-square w-10 h-10 rounded-lg overflow-hidden shadow-lg bg-white flex items-center justify-center group-hover:shadow-xl transition-shadow">
             <img
               src="/logo/AIYA_Logo.png"
               alt="AIYA Logo"
@@ -57,10 +57,10 @@ export const Sidebar: React.FC = () => {
             />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-white text-base font-bold leading-tight">HARI</h1>
+            <h1 className="text-white text-base font-bold leading-tight group-hover:text-gray-200 transition-colors">HARI</h1>
             <p className="text-gray-400 text-xs font-medium">by AIYA • {isAdmin ? 'Admin' : 'Employee'}</p>
           </div>
-        </div>
+        </Link>
       </div>
 
       <nav className="flex flex-col gap-1 flex-grow p-4 overflow-y-auto">
