@@ -789,6 +789,35 @@ const runLightMigrations = async () => {
     `);
     await query(`CREATE INDEX IF NOT EXISTS idx_onboarding_docs_employee ON onboarding_documents(employee_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_onboarding_docs_status ON onboarding_documents(status)`);
+
+    // Fix: change onboarding_status default from 'Completed' to 'Not Started'
+    await query(`ALTER TABLE employees ALTER COLUMN onboarding_status SET DEFAULT 'Not Started'`);
+
+    // Recalculate onboarding progress for all employees based on actual task data
+    await query(`
+      UPDATE employees e SET
+        onboarding_percentage = COALESCE(sub.pct, 0),
+        onboarding_status = CASE
+          WHEN sub.pct IS NULL THEN 'Not Started'
+          WHEN sub.pct = 100 THEN 'Completed'
+          WHEN sub.pct > 0 THEN 'In Progress'
+          ELSE 'Not Started'
+        END
+      FROM (
+        SELECT employee_id,
+          ROUND(COUNT(*) FILTER (WHERE completed = true) * 100.0 / NULLIF(COUNT(*), 0))::int AS pct
+        FROM tasks
+        GROUP BY employee_id
+      ) sub
+      WHERE e.id = sub.employee_id
+    `);
+
+    // Employees with no tasks at all → 'Not Started'
+    await query(`
+      UPDATE employees SET onboarding_status = 'Not Started', onboarding_percentage = 0
+      WHERE id NOT IN (SELECT DISTINCT employee_id FROM tasks WHERE employee_id IS NOT NULL)
+        AND onboarding_status = 'Completed'
+    `);
   } catch (err) {
     // Table may not exist yet — ignore
   }
