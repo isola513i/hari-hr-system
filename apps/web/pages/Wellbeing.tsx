@@ -162,6 +162,17 @@ export const Wellbeing: React.FC = () => {
     setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
   };
 
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      await api.delete(`/upcoming-events/${eventId}`);
+      setUpcomingEvents(upcomingEvents.filter(e => e.id !== eventId));
+      showToast('Event deleted successfully!', 'success');
+    } catch (error: any) {
+      console.error('Error deleting event:', error);
+      showToast(error.message || 'Failed to delete event.', 'error');
+    }
+  };
+
   const handleSaveEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEvent.title || !newEvent.date) {
@@ -206,13 +217,13 @@ export const Wellbeing: React.FC = () => {
       case 'Social':
         return 'bg-primary';
       case 'Training':
-        return 'bg-accent-purple';
+        return 'bg-purple-500';
       case 'Holiday':
         return 'bg-accent-green';
       case 'Deadline':
         return 'bg-accent-orange';
       case 'Company Event':
-        return 'bg-accent-blue';
+        return 'bg-blue-500';
       default:
         return 'bg-gray-400';
     }
@@ -370,12 +381,19 @@ export const Wellbeing: React.FC = () => {
               {nextUpcomingEvents.length > 0 ? (
                 <div className="space-y-4">
                   {nextUpcomingEvents.map((event) => (
-                    <div key={event.id} className="flex items-center gap-3">
+                    <div key={event.id} className="flex items-center gap-3 group">
                       <div className={`w-1 h-8 rounded-full ${getEventColorClass(event.type)}`}></div>
-                      <div>
-                        <p className="text-sm font-medium text-text-light dark:text-text-dark">{event.title}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-text-light dark:text-text-dark truncate">{event.title}</p>
                         <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{formatEventDate(event.date)}</p>
                       </div>
+                      <button
+                        onClick={() => handleDeleteEvent(event.id)}
+                        className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 text-text-muted-light hover:text-red-500 transition-all"
+                        title="Delete event"
+                      >
+                        <X size={14} />
+                      </button>
                     </div>
                   ))}
                 </div>

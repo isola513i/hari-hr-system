@@ -576,10 +576,10 @@ function getLogType(resource: string): string {
 // GET /api/headcount-stats - dynamically calculated from employees
 app.get("/api/headcount-stats", async (req: Request, res: Response) => {
   try {
-    // Get all non-terminated employees with their join dates
+    // Get all employees with their join dates (fall back to created_at if join_date is NULL)
     const result = await query(`
-      SELECT join_date, status FROM employees
-      WHERE join_date IS NOT NULL
+      SELECT COALESCE(join_date, created_at::date) AS effective_date, status
+      FROM employees
     `);
 
     const employees = result.rows;
@@ -600,8 +600,8 @@ app.get("/api/headcount-stats", async (req: Request, res: Response) => {
       const thisMonthEnd = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999);
 
       // Count employees who joined on or before end of target month and are not terminated
-      const employeesUpToThisMonth = employees.filter((e: { join_date: string; status: string }) => {
-        const joinDate = new Date(e.join_date);
+      const employeesUpToThisMonth = employees.filter((e: { effective_date: string; status: string }) => {
+        const joinDate = new Date(e.effective_date);
         if (isNaN(joinDate.getTime())) return false;
         return joinDate <= thisMonthEnd && e.status !== 'Terminated';
       }).length;
@@ -696,6 +696,21 @@ app.post("/api/upcoming-events", authenticateToken, apiLimiter, async (req: Requ
   } catch (err) {
     console.error("Error creating upcoming event:", err);
     res.status(500).json({ error: "Failed to create upcoming event" });
+  }
+});
+
+// DELETE /api/upcoming-events/:id - Delete an upcoming event
+app.delete("/api/upcoming-events/:id", authenticateToken, async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const result = await query("DELETE FROM upcoming_events WHERE id = $1", [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+    res.json({ message: "Event deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting upcoming event:", err);
+    res.status(500).json({ error: "Failed to delete upcoming event" });
   }
 });
 
