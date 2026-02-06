@@ -17,6 +17,8 @@ export interface Employee {
     emergencyContact?: string;
     skills?: string[];
     managerId?: string;
+    onboardingStatus?: string;
+    onboardingPercentage?: number;
 }
 
 export interface CreateEmployeeDTO {

@@ -226,6 +226,8 @@ export class EmployeeService {
             emergencyContact: row.emergency_contact,
             managerId: row.manager_id,
             skills: row.skills,
+            onboardingStatus: row.onboarding_status || 'Not Started',
+            onboardingPercentage: row.onboarding_percentage || 0,
         };
     }
 
