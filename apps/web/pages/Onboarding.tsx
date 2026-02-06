@@ -410,7 +410,7 @@ export const Onboarding: React.FC = () => {
                     setAllEmployees([]);
                 }
 
-                // Fetch onboarding tasks
+                // Fetch onboarding tasks (may auto-seed for employees)
                 try {
                     const tasksData = await api.get<OnboardingTask[]>('/onboarding/tasks');
                     setTasks(tasksData);
@@ -428,7 +428,7 @@ export const Onboarding: React.FC = () => {
                     setKeyContacts([]);
                 }
 
-                // Fetch onboarding documents
+                // Fetch onboarding documents (after tasks, since auto-seed creates both)
                 try {
                     const docsData = await api.get<OnboardingDocument[]>('/onboarding/documents');
                     setOnboardingDocs(docsData);
