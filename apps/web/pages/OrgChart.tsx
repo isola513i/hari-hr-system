@@ -247,9 +247,13 @@ export const OrgChart: React.FC = () => {
     const scaleY = availH / tRect.height;
     const newZoom = Math.min(Math.max(Math.min(scaleX, scaleY), 0.3), 1.5);
 
+    // Account for content's natural offset inside the container (padding, flex, etc.)
+    const nx = tRect.left - cRect.left;
+    const ny = tRect.top - cRect.top;
+
     // Center the content
-    const panX = (cRect.width - tRect.width * newZoom) / 2;
-    const panY = (cRect.height - tRect.height * newZoom) / 2;
+    const panX = (cRect.width - tRect.width * newZoom) / 2 - nx;
+    const panY = (cRect.height - tRect.height * newZoom) / 2 - ny;
 
     setZoom(newZoom);
     setPanPosition({ x: panX, y: panY });
