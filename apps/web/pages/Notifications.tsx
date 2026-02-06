@@ -38,9 +38,14 @@ const Notifications: React.FC = () => {
     ? notifications.filter(n => !n.read)
     : notifications;
 
+  const isInternalLink = (link: string) => {
+    // Only allow internal route-style links (e.g., "/settings/profile")
+    return typeof link === 'string' && link.startsWith('/') && !link.startsWith('//');
+  };
+
   const handleClick = async (id: string, link?: string) => {
     await markAsRead(id);
-    if (link) {
+    if (link && isInternalLink(link)) {
       navigate(link);
     }
   };
