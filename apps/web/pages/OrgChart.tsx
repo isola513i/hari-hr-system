@@ -262,7 +262,7 @@ export const OrgChart: React.FC = () => {
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      const delta = e.deltaY > 0 ? -0.05 : 0.05;
       setZoom((prev) => Math.min(1.5, Math.max(0.3, prev + delta)));
     };
 
