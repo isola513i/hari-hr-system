@@ -307,7 +307,29 @@ export class OnboardingService {
       return null;
     }
 
+    // Recalculate onboarding progress when completed status changes
+    if (dto.completed !== undefined && result.rows[0].employee_id) {
+      await this.recalculateProgress(result.rows[0].employee_id);
+    }
+
     return mapTaskRow(result.rows[0]);
+  }
+
+  // Recalculate and sync onboarding_percentage + onboarding_status on employees table
+  private async recalculateProgress(employeeId: string): Promise<void> {
+    const countResult = await query(
+      `SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE completed = true) as done FROM tasks WHERE employee_id = $1`,
+      [employeeId]
+    );
+    const total = parseInt(countResult.rows[0].total, 10);
+    const done = parseInt(countResult.rows[0].done, 10);
+    const percentage = total > 0 ? Math.round((done / total) * 100) : 0;
+    const status = percentage === 100 ? "Completed" : percentage > 0 ? "In Progress" : "Not Started";
+
+    await query(
+      `UPDATE employees SET onboarding_percentage = $1, onboarding_status = $2 WHERE id = $3`,
+      [percentage, status, employeeId]
+    );
   }
 
   // Delete a task
