@@ -5,7 +5,6 @@ import {
     Clock,
     FileText,
     Upload,
-    MoreVertical,
     Mail,
     Calendar,
     Users,
@@ -13,16 +12,339 @@ import {
     Filter,
     User,
     Briefcase,
-    ExternalLink
+    ExternalLink,
+    ArrowRight,
+    ListChecks,
+    GitBranch,
+    CircleDot,
+    Circle,
+    Trophy,
+    Download,
+    Eye,
+    XCircle,
+    ThumbsUp,
+    ThumbsDown,
+    MessageSquare,
 } from 'lucide-react';
-import { OnboardingTask, KeyContact, Employee } from '../types';
+import { OnboardingTask, KeyContact, Employee, OnboardingDocument } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrg } from '../contexts/OrgContext';
 import { Toast } from '../components/Toast';
 import { Modal } from '../components/Modal';
 import { DatePicker } from '../components/DatePicker';
-import { api } from '../lib/api';
+import { api, BASE_URL } from '../lib/api';
+import { Dropdown } from '../components/Dropdown';
 import { Avatar } from '../components/Avatar';
+
+// ==========================================
+// Onboarding Flow Graph Component (Demo)
+// ==========================================
+interface FlowStage {
+    id: string;
+    label: string;
+    icon: React.ReactNode;
+    color: string;
+    bgColor: string;
+    borderColor: string;
+    tasks: { title: string; completed: boolean }[];
+}
+
+const OnboardingFlowGraph: React.FC<{ tasks: OnboardingTask[] }> = ({ tasks }) => {
+    // Group tasks by stage
+    const stageMap = tasks.reduce((acc, task) => {
+        if (!acc[task.stage]) acc[task.stage] = [];
+        acc[task.stage]!.push({ title: task.title, completed: task.completed });
+        return acc;
+    }, {} as Record<string, { title: string; completed: boolean }[]>);
+
+    const stages: FlowStage[] = [
+        {
+            id: 'pre-boarding',
+            label: 'Pre-boarding',
+            icon: <FileText size={22} />,
+            color: 'text-blue-600 dark:text-blue-400',
+            bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+            borderColor: 'border-blue-200 dark:border-blue-800',
+            tasks: stageMap['Pre-boarding'] || [],
+        },
+        {
+            id: 'week-1',
+            label: 'Week 1',
+            icon: <Calendar size={22} />,
+            color: 'text-violet-600 dark:text-violet-400',
+            bgColor: 'bg-violet-50 dark:bg-violet-900/20',
+            borderColor: 'border-violet-200 dark:border-violet-800',
+            tasks: stageMap['Week 1'] || [],
+        },
+        {
+            id: 'month-1',
+            label: 'Month 1',
+            icon: <Clock size={22} />,
+            color: 'text-amber-600 dark:text-amber-400',
+            bgColor: 'bg-amber-50 dark:bg-amber-900/20',
+            borderColor: 'border-amber-200 dark:border-amber-800',
+            tasks: stageMap['Month 1'] || [],
+        },
+        {
+            id: 'completed',
+            label: 'Completed',
+            icon: <Trophy size={22} />,
+            color: 'text-emerald-600 dark:text-emerald-400',
+            bgColor: 'bg-emerald-50 dark:bg-emerald-900/20',
+            borderColor: 'border-emerald-200 dark:border-emerald-800',
+            tasks: [],
+        },
+    ];
+
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(t => t.completed).length;
+    const allDone = totalTasks > 0 && completedTasks === totalTasks;
+
+    // Determine which stage is "active" (first stage with incomplete tasks)
+    const getStageStatus = (stage: FlowStage): 'done' | 'active' | 'pending' => {
+        if (stage.id === 'completed') return allDone ? 'done' : 'pending';
+        if (stage.tasks.length === 0) return 'pending';
+        const allCompleted = stage.tasks.every(t => t.completed);
+        const someCompleted = stage.tasks.some(t => t.completed);
+        if (allCompleted) return 'done';
+        if (someCompleted) return 'active';
+        // Check if previous stages are done
+        const stageIndex = stages.findIndex(s => s.id === stage.id);
+        const previousStages = stages.slice(0, stageIndex).filter(s => s.id !== 'completed');
+        const allPreviousDone = previousStages.every(s => s.tasks.length === 0 || s.tasks.every(t => t.completed));
+        return allPreviousDone ? 'active' : 'pending';
+    };
+
+    return (
+        <div className="space-y-6">
+            {/* Flow Overview Card */}
+            <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-lg font-bold text-text-light dark:text-text-dark">Onboarding Pipeline</h2>
+                    <span className="text-sm text-text-muted-light dark:text-text-muted-dark">
+                        {completedTasks}/{totalTasks} tasks completed
+                    </span>
+                </div>
+                <p className="text-sm text-text-muted-light dark:text-text-muted-dark mb-6">
+                    Visual overview of the onboarding journey from pre-boarding to full integration.
+                </p>
+
+                {/* Horizontal Flow Pipeline */}
+                <div className="flex items-start gap-0 overflow-x-auto pb-4">
+                    {stages.map((stage, index) => {
+                        const status = getStageStatus(stage);
+                        const stageCompleted = stage.tasks.filter(t => t.completed).length;
+                        const stageTotal = stage.tasks.length;
+                        const stageProgress = stageTotal > 0 ? Math.round((stageCompleted / stageTotal) * 100) : (status === 'done' ? 100 : 0);
+
+                        return (
+                            <React.Fragment key={stage.id}>
+                                {/* Stage Card */}
+                                <div className={`flex-shrink-0 w-56 rounded-xl border-2 transition-all duration-300 ${
+                                    status === 'done'
+                                        ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-900/10'
+                                        : status === 'active'
+                                            ? `${stage.borderColor} ${stage.bgColor} ring-2 ring-offset-2 ring-offset-background-light dark:ring-offset-background-dark ring-primary/30`
+                                            : 'border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark opacity-60'
+                                }`}>
+                                    {/* Stage Header */}
+                                    <div className="p-4 pb-3">
+                                        <div className="flex items-center gap-2.5 mb-2">
+                                            {/* Status indicator */}
+                                            <div className={`p-2 rounded-lg ${
+                                                status === 'done'
+                                                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+                                                    : status === 'active'
+                                                        ? `${stage.bgColor} ${stage.color}`
+                                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
+                                            }`}>
+                                                {status === 'done' ? <CheckCircle2 size={22} /> : stage.icon}
+                                            </div>
+                                            <div>
+                                                <h3 className={`text-sm font-bold ${
+                                                    status === 'done'
+                                                        ? 'text-emerald-700 dark:text-emerald-400'
+                                                        : status === 'active'
+                                                            ? 'text-text-light dark:text-text-dark'
+                                                            : 'text-text-muted-light dark:text-text-muted-dark'
+                                                }`}>
+                                                    {stage.label}
+                                                </h3>
+                                                <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
+                                                    {stage.id === 'completed'
+                                                        ? (allDone ? 'All done!' : 'Pending')
+                                                        : `${stageCompleted}/${stageTotal} tasks`
+                                                    }
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Progress bar */}
+                                        {stage.id !== 'completed' && stageTotal > 0 && (
+                                            <div className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full transition-all duration-700 ease-out ${
+                                                        status === 'done' ? 'bg-emerald-500' : 'bg-primary'
+                                                    }`}
+                                                    style={{ width: `${stageProgress}%` }}
+                                                />
+                                            </div>
+                                        )}
+                                        {stage.id === 'completed' && (
+                                            <div className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full transition-all duration-700 ease-out ${allDone ? 'bg-emerald-500' : ''}`}
+                                                    style={{ width: allDone ? '100%' : '0%' }}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Task List */}
+                                    {stage.tasks.length > 0 && (
+                                        <div className="px-4 pb-4 space-y-1.5">
+                                            {stage.tasks.map((task, taskIdx) => (
+                                                <div key={taskIdx} className="flex items-start gap-2">
+                                                    {task.completed
+                                                        ? <CheckCircle2 size={14} className="text-emerald-500 mt-0.5 flex-shrink-0" />
+                                                        : status === 'active'
+                                                            ? <CircleDot size={14} className="text-primary mt-0.5 flex-shrink-0" />
+                                                            : <Circle size={14} className="text-gray-300 dark:text-gray-600 mt-0.5 flex-shrink-0" />
+                                                    }
+                                                    <span className={`text-xs leading-tight ${
+                                                        task.completed
+                                                            ? 'line-through text-text-muted-light dark:text-text-muted-dark'
+                                                            : 'text-text-light dark:text-text-dark'
+                                                    }`}>
+                                                        {task.title}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {stage.id === 'completed' && (
+                                        <div className="px-4 pb-4 text-center">
+                                            {allDone ? (
+                                                <div className="py-3">
+                                                    <Trophy size={28} className="text-emerald-500 mx-auto mb-1" />
+                                                    <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Onboarding Complete!</p>
+                                                </div>
+                                            ) : (
+                                                <div className="py-3">
+                                                    <Trophy size={28} className="text-gray-300 dark:text-gray-600 mx-auto mb-1" />
+                                                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark">Complete all stages</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Arrow Connector */}
+                                {index < stages.length - 1 && (
+                                    <div className="flex-shrink-0 flex items-center justify-center w-10 self-center pt-2">
+                                        <div className="flex items-center">
+                                            <div className={`w-5 h-0.5 ${
+                                                getStageStatus(stages[index]!) === 'done'
+                                                    ? 'bg-emerald-400 dark:bg-emerald-600'
+                                                    : 'bg-border-light dark:bg-border-dark'
+                                            }`} />
+                                            <ArrowRight size={16} className={`-ml-1 ${
+                                                getStageStatus(stages[index]!) === 'done'
+                                                    ? 'text-emerald-400 dark:text-emerald-600'
+                                                    : 'text-border-light dark:text-border-dark'
+                                            }`} />
+                                        </div>
+                                    </div>
+                                )}
+                            </React.Fragment>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Stage Detail Cards (vertical breakdown) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {stages.filter(s => s.id !== 'completed').map(stage => {
+                    const status = getStageStatus(stage);
+                    const stageCompleted = stage.tasks.filter(t => t.completed).length;
+                    const stageTotal = stage.tasks.length;
+
+                    return (
+                        <div
+                            key={stage.id}
+                            className={`bg-card-light dark:bg-card-dark rounded-xl border shadow-sm overflow-hidden ${
+                                status === 'done'
+                                    ? 'border-emerald-200 dark:border-emerald-800'
+                                    : status === 'active'
+                                        ? stage.borderColor
+                                        : 'border-border-light dark:border-border-dark'
+                            }`}
+                        >
+                            {/* Colored top bar */}
+                            <div className={`h-1 ${
+                                status === 'done'
+                                    ? 'bg-emerald-500'
+                                    : status === 'active'
+                                        ? 'bg-primary'
+                                        : 'bg-gray-200 dark:bg-gray-700'
+                            }`} />
+
+                            <div className="p-5">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`p-1.5 rounded-lg ${
+                                            status === 'done'
+                                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+                                                : `${stage.bgColor} ${stage.color}`
+                                        }`}>
+                                            {status === 'done' ? <CheckCircle2 size={18} /> : stage.icon}
+                                        </div>
+                                        <h3 className="font-semibold text-text-light dark:text-text-dark">{stage.label}</h3>
+                                    </div>
+                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                                        status === 'done'
+                                            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+                                            : status === 'active'
+                                                ? `${stage.bgColor} ${stage.color}`
+                                                : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+                                    }`}>
+                                        {stageTotal > 0 ? `${stageCompleted}/${stageTotal}` : '0'}
+                                    </span>
+                                </div>
+
+                                <div className="space-y-2.5">
+                                    {stage.tasks.map((task, idx) => (
+                                        <div key={idx} className="flex items-start gap-2.5">
+                                            {task.completed
+                                                ? <CheckCircle2 size={16} className="text-emerald-500 mt-0.5 flex-shrink-0" />
+                                                : status === 'active'
+                                                    ? <CircleDot size={16} className="text-primary mt-0.5 flex-shrink-0" />
+                                                    : <Circle size={16} className="text-gray-300 dark:text-gray-600 mt-0.5 flex-shrink-0" />
+                                            }
+                                            <span className={`text-sm ${
+                                                task.completed
+                                                    ? 'line-through text-text-muted-light dark:text-text-muted-dark'
+                                                    : 'text-text-light dark:text-text-dark'
+                                            }`}>
+                                                {task.title}
+                                            </span>
+                                        </div>
+                                    ))}
+                                    {stage.tasks.length === 0 && (
+                                        <p className="text-sm text-text-muted-light dark:text-text-muted-dark italic">
+                                            No tasks assigned yet
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
 
 export const Onboarding: React.FC = () => {
     const { user } = useAuth();
@@ -36,9 +358,19 @@ export const Onboarding: React.FC = () => {
         setToast({ show: true, message, type });
     };
 
+    // Tab state
+    const [activeTab, setActiveTab] = useState<'checklist' | 'flow'>('checklist');
+
     // State
     const [tasks, setTasks] = useState<OnboardingTask[]>([]);
     const [keyContacts, setKeyContacts] = useState<KeyContact[]>([]);
+
+    // Document Checklist state
+    const [onboardingDocs, setOnboardingDocs] = useState<OnboardingDocument[]>([]);
+    const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
+    const [reviewNoteDocId, setReviewNoteDocId] = useState<string | null>(null);
+    const [reviewNote, setReviewNote] = useState('');
+    const fileInputRef2 = useRef<HTMLInputElement>(null);
 
     // Filters State
     const [assigneeFilter, setAssigneeFilter] = useState<string>('All');
@@ -54,6 +386,7 @@ export const Onboarding: React.FC = () => {
         department: '',
         startDate: ''
     });
+    const [inviteErrors, setInviteErrors] = useState<Record<string, string>>({});
 
     // Autocomplete state
     const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
@@ -77,12 +410,32 @@ export const Onboarding: React.FC = () => {
                     setAllEmployees([]);
                 }
 
-                // TODO: Fetch tasks and contacts when API endpoints are implemented
-                // For now, set empty arrays to avoid network errors
-                setTasks([]);
-                setKeyContacts([]);
+                // Fetch onboarding tasks
+                try {
+                    const tasksData = await api.get<OnboardingTask[]>('/onboarding/tasks');
+                    setTasks(tasksData);
+                } catch (taskError) {
+                    console.log('⚠️ Could not fetch onboarding tasks');
+                    setTasks([]);
+                }
 
-                console.log('ℹ️ Onboarding page loaded (Tasks & Contacts APIs pending implementation)');
+                // Fetch key contacts
+                try {
+                    const contactsData = await api.get<KeyContact[]>('/onboarding/contacts');
+                    setKeyContacts(contactsData);
+                } catch (contactError) {
+                    console.log('⚠️ Could not fetch key contacts');
+                    setKeyContacts([]);
+                }
+
+                // Fetch onboarding documents
+                try {
+                    const docsData = await api.get<OnboardingDocument[]>('/onboarding/documents');
+                    setOnboardingDocs(docsData);
+                } catch (docError) {
+                    console.log('⚠️ Could not fetch onboarding documents');
+                    setOnboardingDocs([]);
+                }
             } catch (error) {
                 console.log('⚠️ Error initializing onboarding page:', error);
             }
@@ -171,24 +524,37 @@ export const Onboarding: React.FC = () => {
         setEmailSuggestions([]);
     };
 
-    const toggleTask = (id: string) => {
-        setTasks(tasks.map(task =>
-            task.id === id ? { ...task, completed: !task.completed } : task
-        ));
+    const toggleTask = async (id: string) => {
+        const task = tasks.find(t => t.id === id);
+        if (!task) return;
+        const newCompleted = !task.completed;
+        // Optimistic update
+        setTasks(tasks.map(t => t.id === id ? { ...t, completed: newCompleted } : t));
+        try {
+            await api.patch(`/onboarding/tasks/${id}`, { completed: newCompleted });
+        } catch (error) {
+            // Revert on failure
+            setTasks(tasks.map(t => t.id === id ? { ...t, completed: task.completed } : t));
+            showToast('Failed to update task', 'error');
+        }
     };
 
-    const cyclePriority = (id: string) => {
-        const updatedTasks: OnboardingTask[] = tasks.map(task => {
-            if (task.id === id) {
-                const priorities: ('High' | 'Medium' | 'Low')[] = ['High', 'Medium', 'Low'];
-                const currentPriority: 'High' | 'Medium' | 'Low' = task.priority || 'Medium';
-                const currentIndex = priorities.indexOf(currentPriority);
-                const nextPriority = priorities[(currentIndex + 1) % priorities.length];
-                return { ...task, priority: nextPriority } as OnboardingTask;
-            }
-            return { ...task, priority: task.priority || 'Medium' } as OnboardingTask;
-        });
-        setTasks(updatedTasks);
+    const cyclePriority = async (id: string) => {
+        const task = tasks.find(t => t.id === id);
+        if (!task) return;
+        const priorities: ('High' | 'Medium' | 'Low')[] = ['High', 'Medium', 'Low'];
+        const currentPriority: 'High' | 'Medium' | 'Low' = task.priority || 'Medium';
+        const currentIndex = priorities.indexOf(currentPriority);
+        const nextPriority = priorities[(currentIndex + 1) % priorities.length];
+        // Optimistic update
+        setTasks(tasks.map(t => t.id === id ? { ...t, priority: nextPriority } as OnboardingTask : t));
+        try {
+            await api.patch(`/onboarding/tasks/${id}`, { priority: nextPriority });
+        } catch (error) {
+            // Revert on failure
+            setTasks(tasks.map(t => t.id === id ? { ...t, priority: currentPriority } as OnboardingTask : t));
+            showToast('Failed to update priority', 'error');
+        }
     };
 
     const calculateProgress = () => {
@@ -254,12 +620,58 @@ export const Onboarding: React.FC = () => {
     }, {} as Record<string, OnboardingTask[]>);
 
     // Derived options for dropdowns
-    const assignees = ['All', 'My Tasks', ...Array.from(new Set(tasks.map(t => t.assignee))).filter(a => a !== 'HR')];
-    const priorities = ['All', 'High', 'Medium', 'Low'];
-    const dateOptions = ['All', 'Overdue', 'Due Soon'];
+    const assigneeOptions = [
+        { value: 'All', label: 'All Assignees' },
+        { value: 'My Tasks', label: 'My Tasks' },
+        ...Array.from(new Set(tasks.map(t => t.assignee))).filter(a => a !== 'HR').map(a => ({ value: a, label: a }))
+    ];
+    const priorityOptions = [
+        { value: 'All', label: 'All Priorities' },
+        { value: 'High', label: 'High' },
+        { value: 'Medium', label: 'Medium' },
+        { value: 'Low', label: 'Low' },
+    ];
+    const dateFilterOptions = [
+        { value: 'All', label: 'All Dates' },
+        { value: 'Overdue', label: 'Overdue' },
+        { value: 'Due Soon', label: 'Due Soon' },
+    ];
+
+    const validateInviteForm = (): boolean => {
+        const errors: Record<string, string> = {};
+
+        if (!inviteForm.name.trim()) {
+            errors.name = 'Full name is required';
+        } else if (inviteForm.name.trim().length < 2) {
+            errors.name = 'Name must be at least 2 characters';
+        }
+
+        if (!inviteForm.email.trim()) {
+            errors.email = 'Email address is required';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteForm.email)) {
+            errors.email = 'Please enter a valid email address';
+        }
+
+        if (!inviteForm.role.trim()) {
+            errors.role = 'Role is required';
+        }
+
+        if (!inviteForm.department.trim()) {
+            errors.department = 'Department is required';
+        }
+
+        if (!inviteForm.startDate) {
+            errors.startDate = 'Start date is required';
+        }
+
+        setInviteErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
 
     const handleInviteSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!validateInviteForm()) return;
 
         try {
             // Check if employee already exists
@@ -268,17 +680,24 @@ export const Onboarding: React.FC = () => {
             );
 
             if (existingEmployee) {
-                // Employee exists - just send onboarding invitation
-                // TODO: In the future, this should trigger an actual email or update onboarding_status
-                console.log('Sending onboarding invitation to existing employee:', existingEmployee.id);
-
-                // Optionally update employee's onboarding status via API
+                // Employee exists - seed onboarding tasks for them
                 try {
-                    await api.put(`/employees/${existingEmployee.id}`, {
-                        onboardingStatus: 'In Progress'
-                    });
-                } catch (updateError) {
-                    console.log('Could not update onboarding status:', updateError);
+                    await api.post(`/onboarding/tasks/seed/${existingEmployee.id}`, {});
+                } catch (seedError: any) {
+                    // 409 = tasks already exist, which is fine
+                    if (!seedError.message?.includes('already exist')) {
+                        console.log('Could not seed tasks:', seedError);
+                    }
+                }
+
+                // Refetch tasks and documents to show newly seeded ones
+                try {
+                    const updatedTasks = await api.get<OnboardingTask[]>('/onboarding/tasks');
+                    setTasks(updatedTasks);
+                    const updatedDocs = await api.get<OnboardingDocument[]>('/onboarding/documents');
+                    setOnboardingDocs(updatedDocs);
+                } catch (fetchError) {
+                    console.log('Could not refetch tasks/documents:', fetchError);
                 }
 
                 showToast(`Onboarding invitation sent to ${inviteForm.name}!`, 'success');
@@ -298,15 +717,32 @@ export const Onboarding: React.FC = () => {
                     avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(inviteForm.name)}&background=random`,
                 });
 
-                showToast(`New employee ${inviteForm.name} added and invited to onboarding!`, 'success');
-
                 // Refresh employees list for autocomplete
                 const updatedEmployees = await api.get<Employee[]>('/employees');
                 setAllEmployees(updatedEmployees);
+
+                // Seed onboarding tasks for the new employee
+                const newEmployee = updatedEmployees.find(
+                    emp => emp.email.toLowerCase() === inviteForm.email.toLowerCase()
+                );
+                if (newEmployee) {
+                    try {
+                        await api.post(`/onboarding/tasks/seed/${newEmployee.id}`, {});
+                        const updatedTasks = await api.get<OnboardingTask[]>('/onboarding/tasks');
+                        setTasks(updatedTasks);
+                        const updatedDocs = await api.get<OnboardingDocument[]>('/onboarding/documents');
+                        setOnboardingDocs(updatedDocs);
+                    } catch (seedError) {
+                        console.log('Could not seed tasks for new employee:', seedError);
+                    }
+                }
+
+                showToast(`New employee ${inviteForm.name} added and invited to onboarding!`, 'success');
             }
 
             setIsInviteModalOpen(false);
             setInviteForm({ name: '', email: '', role: '', department: '', startDate: '' });
+            setInviteErrors({});
         } catch (error) {
             console.error('Error in handleInviteSubmit:', error);
             showToast('Failed to process invitation. Please try again.', 'error');
@@ -325,6 +761,82 @@ export const Onboarding: React.FC = () => {
             default: return 'bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
         }
     };
+
+    // Onboarding Document Checklist handlers
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'Pending': return 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
+            case 'Uploaded': return 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400';
+            case 'Approved': return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400';
+            case 'Rejected': return 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400';
+            default: return 'bg-gray-100 text-gray-600';
+        }
+    };
+
+    const handleDocUpload = async (docId: string, file: File) => {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${BASE_URL}/onboarding/documents/${docId}/upload`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData,
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error);
+            }
+            const updatedDoc = await response.json();
+            setOnboardingDocs(prev => prev.map(d => d.id === docId ? updatedDoc : d));
+            showToast('Document uploaded!', 'success');
+        } catch (error: any) {
+            showToast(error.message || 'Upload failed', 'error');
+        } finally {
+            setUploadingDocId(null);
+        }
+    };
+
+    const handleDocDownload = async (docId: string) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${BASE_URL}/onboarding/documents/${docId}/download`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!response.ok) {
+                showToast('Download failed', 'error');
+                return;
+            }
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'document';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+            showToast('Download started!', 'success');
+        } catch {
+            showToast('Download failed', 'error');
+        }
+    };
+
+    const handleDocReview = async (docId: string, status: 'Approved' | 'Rejected', note?: string) => {
+        try {
+            const updatedDoc = await api.patch<OnboardingDocument>(`/onboarding/documents/${docId}/review`, { status, note });
+            setOnboardingDocs(prev => prev.map(d => d.id === docId ? updatedDoc : d));
+            showToast(`Document ${status.toLowerCase()}!`, status === 'Approved' ? 'success' : 'warning');
+            setReviewNoteDocId(null);
+            setReviewNote('');
+        } catch {
+            showToast('Failed to review document', 'error');
+        }
+    };
+
+    const docsUploaded = onboardingDocs.filter(d => d.status !== 'Pending').length;
+    const docsApproved = onboardingDocs.filter(d => d.status === 'Approved').length;
 
     return (
         <div className="space-y-6 animate-fade-in relative">
@@ -359,6 +871,39 @@ export const Onboarding: React.FC = () => {
                 )}
             </div>
 
+            {/* Tab Switcher */}
+            <div className="flex items-center gap-1 bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-1.5 shadow-sm w-fit">
+                <button
+                    onClick={() => setActiveTab('checklist')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        activeTab === 'checklist'
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark'
+                    }`}
+                >
+                    <ListChecks size={16} />
+                    Checklist
+                </button>
+                <button
+                    onClick={() => setActiveTab('flow')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        activeTab === 'flow'
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark'
+                    }`}
+                >
+                    <GitBranch size={16} />
+                    Onboarding Flow
+                </button>
+            </div>
+
+            {/* ==================== FLOW TAB ==================== */}
+            {activeTab === 'flow' && (
+                <OnboardingFlowGraph tasks={tasks} />
+            )}
+
+            {/* ==================== CHECKLIST TAB ==================== */}
+            {activeTab === 'checklist' && <>
             {/* Progress Overview Card */}
             <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
@@ -394,29 +939,26 @@ export const Onboarding: React.FC = () => {
                                 <span>Filter Tasks:</span>
                             </div>
 
-                            <select
+                            <Dropdown
+                                options={assigneeOptions}
                                 value={assigneeFilter}
-                                onChange={(e) => setAssigneeFilter(e.target.value)}
-                                className="px-3 py-1.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
-                            >
-                                {assignees.map(a => <option key={a} value={a}>{a}</option>)}
-                            </select>
+                                onChange={setAssigneeFilter}
+                                width="w-40"
+                            />
 
-                            <select
+                            <Dropdown
+                                options={priorityOptions}
                                 value={priorityFilter}
-                                onChange={(e) => setPriorityFilter(e.target.value)}
-                                className="px-3 py-1.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
-                            >
-                                {priorities.map(p => <option key={p} value={p}>{p === 'All' ? 'All Priorities' : p}</option>)}
-                            </select>
+                                onChange={setPriorityFilter}
+                                width="w-40"
+                            />
 
-                            <select
+                            <Dropdown
+                                options={dateFilterOptions}
                                 value={dateFilter}
-                                onChange={(e) => setDateFilter(e.target.value)}
-                                className="px-3 py-1.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
-                            >
-                                {dateOptions.map(d => <option key={d} value={d}>{d === 'All' ? 'All Dates' : d}</option>)}
-                            </select>
+                                onChange={setDateFilter}
+                                width="w-36"
+                            />
                         </div>
                     )}
 
@@ -553,87 +1095,216 @@ export const Onboarding: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Document Collection */}
+                    {/* Document Checklist */}
                     <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
                         <div className="p-5 border-b border-border-light dark:border-border-dark">
-                            <h2 className="text-lg font-bold text-text-light dark:text-text-dark">Document Collection</h2>
+                            <div className="flex items-center justify-between mb-2">
+                                <h2 className="text-lg font-bold text-text-light dark:text-text-dark">Document Checklist</h2>
+                                {onboardingDocs.length > 0 && (
+                                    <span className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">
+                                        {docsUploaded}/{onboardingDocs.length} uploaded
+                                    </span>
+                                )}
+                            </div>
+                            {onboardingDocs.length > 0 && (
+                                <div className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-primary rounded-full transition-all duration-500"
+                                        style={{ width: `${onboardingDocs.length > 0 ? Math.round((docsApproved / onboardingDocs.length) * 100) : 0}%` }}
+                                    />
+                                </div>
+                            )}
                         </div>
-                        <div className="p-5 space-y-4">
-                            <div className="flex items-center justify-between p-3 bg-background-light dark:bg-background-dark/50 rounded-lg border border-border-light dark:border-border-dark">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded">
-                                        <FileText size={18} />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-text-light dark:text-text-dark">Signed Contract</p>
-                                        <p className="text-xs text-accent-green">Uploaded</p>
-                                    </div>
+                        <div className="p-4 space-y-3">
+                            {onboardingDocs.length === 0 && (
+                                <div className="text-center py-6">
+                                    <FileText size={28} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                                    <p className="text-sm text-text-muted-light dark:text-text-muted-dark">No documents required yet</p>
+                                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">Documents will appear after onboarding is initiated</p>
                                 </div>
-                                <button onClick={() => showToast('Document options coming soon!', 'info')} className="p-1.5 text-text-muted-light hover:text-primary"><MoreVertical size={16} /></button>
-                            </div>
-
-                            <div className="flex items-center justify-between p-3 bg-background-light dark:bg-background-dark/50 rounded-lg border border-border-light dark:border-border-dark">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded">
-                                        <FileText size={18} />
+                            )}
+                            {onboardingDocs.map(doc => (
+                                <div key={doc.id} className="p-3 bg-background-light dark:bg-background-dark/50 rounded-lg border border-border-light dark:border-border-dark">
+                                    <div className="flex items-start gap-3">
+                                        <div className={`p-2 rounded flex-shrink-0 ${
+                                            doc.status === 'Approved' ? 'bg-emerald-100 dark:bg-emerald-900/30' :
+                                            doc.status === 'Rejected' ? 'bg-red-100 dark:bg-red-900/30' :
+                                            doc.status === 'Uploaded' ? 'bg-blue-100 dark:bg-blue-900/30' :
+                                            'bg-gray-100 dark:bg-gray-800'
+                                        }`}>
+                                            {doc.status === 'Approved' ? <CheckCircle2 size={18} className="text-emerald-600" /> :
+                                             doc.status === 'Rejected' ? <XCircle size={18} className="text-red-500" /> :
+                                             doc.status === 'Uploaded' ? <Eye size={18} className="text-blue-500" /> :
+                                             <FileText size={18} className="text-gray-400" />}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                                <p className="text-sm font-medium text-text-light dark:text-text-dark truncate">{doc.name}</p>
+                                                <span className={`px-1.5 py-0.5 text-[10px] font-semibold rounded ${getStatusBadge(doc.status)}`}>
+                                                    {doc.status}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{doc.description}</p>
+                                            {doc.fileType && doc.fileSize && (
+                                                <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">
+                                                    {doc.fileType} &middot; {doc.fileSize}
+                                                </p>
+                                            )}
+                                            {doc.reviewNote && (
+                                                <div className="flex items-start gap-1 mt-1.5 text-xs text-amber-600 dark:text-amber-400">
+                                                    <MessageSquare size={12} className="mt-0.5 flex-shrink-0" />
+                                                    <span>{doc.reviewNote}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                            {/* Upload button — for Pending or Rejected items */}
+                                            {(doc.status === 'Pending' || doc.status === 'Rejected') && (
+                                                <button
+                                                    onClick={() => {
+                                                        setUploadingDocId(doc.id);
+                                                        fileInputRef2.current?.click();
+                                                    }}
+                                                    className="p-1.5 text-text-muted-light hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                                                    title="Upload file"
+                                                >
+                                                    <Upload size={14} />
+                                                </button>
+                                            )}
+                                            {/* Download button — for uploaded files */}
+                                            {doc.filePath && (
+                                                <button
+                                                    onClick={() => handleDocDownload(doc.id)}
+                                                    className="p-1.5 text-text-muted-light hover:text-primary rounded transition-colors"
+                                                    title="Download"
+                                                >
+                                                    <Download size={14} />
+                                                </button>
+                                            )}
+                                            {/* Admin: Approve / Reject buttons */}
+                                            {user?.role === 'HR_ADMIN' && doc.status === 'Uploaded' && (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleDocReview(doc.id, 'Approved')}
+                                                        className="p-1.5 text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded transition-colors"
+                                                        title="Approve"
+                                                    >
+                                                        <ThumbsUp size={14} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setReviewNoteDocId(doc.id);
+                                                            setReviewNote('');
+                                                        }}
+                                                        className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                                        title="Reject"
+                                                    >
+                                                        <ThumbsDown size={14} />
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-text-light dark:text-text-dark">ID / Passport Copy</p>
-                                        <p className="text-xs text-accent-green">Uploaded</p>
-                                    </div>
+                                    {/* Reject note input */}
+                                    {reviewNoteDocId === doc.id && (
+                                        <div className="mt-3 flex items-center gap-2">
+                                            <input
+                                                type="text"
+                                                value={reviewNote}
+                                                onChange={e => setReviewNote(e.target.value)}
+                                                placeholder="Reason for rejection (optional)"
+                                                className="flex-1 px-3 py-1.5 text-xs bg-white dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-1 focus:ring-red-400 text-text-light dark:text-text-dark"
+                                                autoFocus
+                                            />
+                                            <button
+                                                onClick={() => handleDocReview(doc.id, 'Rejected', reviewNote)}
+                                                className="px-3 py-1.5 text-xs font-medium bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                            >
+                                                Reject
+                                            </button>
+                                            <button
+                                                onClick={() => { setReviewNoteDocId(null); setReviewNote(''); }}
+                                                className="px-2 py-1.5 text-xs text-text-muted-light hover:text-text-light dark:text-text-muted-dark"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                                <button onClick={() => showToast('Document options coming soon!', 'info')} className="p-1.5 text-text-muted-light hover:text-primary"><MoreVertical size={16} /></button>
-                            </div>
-
-                            <div className="flex items-center justify-between p-3 border border-dashed border-border-light dark:border-border-dark rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer group">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded group-hover:text-primary group-hover:bg-primary/10 transition-colors">
-                                        <Upload size={18} />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-text-light dark:text-text-dark">Tax Forms (W-4)</p>
-                                        <p className="text-xs text-accent-orange">Pending Upload</p>
-                                    </div>
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     </div>
+
+                    {/* Hidden file input for document upload */}
+                    <input
+                        ref={fileInputRef2}
+                        type="file"
+                        className="hidden"
+                        accept=".pdf,.docx,.doc,.xlsx,.jpg,.jpeg,.png"
+                        onChange={e => {
+                            if (e.target.files?.[0] && uploadingDocId) {
+                                handleDocUpload(uploadingDocId, e.target.files[0]);
+                            }
+                            e.target.value = '';
+                        }}
+                    />
                 </div>
             </div>
+
+            </>}
 
             {/* Invite Employee Modal */}
             <Modal
                 isOpen={isInviteModalOpen}
-                onClose={() => setIsInviteModalOpen(false)}
+                onClose={() => { setIsInviteModalOpen(false); setInviteErrors({}); }}
                 title="Invite New Employee"
                 maxWidth="lg"
             >
-                <form onSubmit={handleInviteSubmit} className="p-6 space-y-4">
+                <form onSubmit={handleInviteSubmit} noValidate className="p-6 space-y-4">
+                    {/* Full Name */}
                     <div>
-                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Full Name</label>
+                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                            Full Name <span className="text-red-500">*</span>
+                        </label>
                         <div className="relative">
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                             <input
-                                required
                                 type="text"
                                 value={inviteForm.name}
-                                onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })}
+                                onChange={(e) => {
+                                    setInviteForm({ ...inviteForm, name: e.target.value });
+                                    if (inviteErrors.name) setInviteErrors(prev => { const { name, ...rest } = prev; return rest; });
+                                }}
                                 placeholder="e.g. Sarah Connor"
-                                className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                                className={`w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
+                                    inviteErrors.name
+                                        ? 'border-red-400 dark:border-red-500 focus:ring-red-300'
+                                        : 'border-border-light dark:border-border-dark focus:ring-primary'
+                                }`}
                             />
                         </div>
+                        {inviteErrors.name && (
+                            <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                                <AlertCircle size={12} /> {inviteErrors.name}
+                            </p>
+                        )}
                     </div>
 
+                    {/* Email Address */}
                     <div>
-                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Email Address</label>
+                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                            Email Address <span className="text-red-500">*</span>
+                        </label>
                         <div className="relative">
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light z-10" size={16} />
                             <input
                                 ref={emailInputRef}
-                                required
                                 type="email"
                                 value={inviteForm.email}
-                                onChange={(e) => handleEmailChange(e.target.value)}
+                                onChange={(e) => {
+                                    handleEmailChange(e.target.value);
+                                    if (inviteErrors.email) setInviteErrors(prev => { const { email, ...rest } = prev; return rest; });
+                                }}
                                 onFocus={() => {
                                     if (emailInputRef.current) {
                                         const rect = emailInputRef.current.getBoundingClientRect();
@@ -649,7 +1320,11 @@ export const Onboarding: React.FC = () => {
                                 }}
                                 placeholder="e.g. sarah@example.com"
                                 autoComplete="off"
-                                className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                                className={`w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
+                                    inviteErrors.email
+                                        ? 'border-red-400 dark:border-red-500 focus:ring-red-300'
+                                        : 'border-border-light dark:border-border-dark focus:ring-primary'
+                                }`}
                             />
 
                             {/* Autocomplete Dropdown using Portal */}
@@ -700,56 +1375,102 @@ export const Onboarding: React.FC = () => {
                                 document.body
                             )}
                         </div>
-                        <p className="mt-1 text-xs text-text-muted-light dark:text-text-muted-dark">
-                            Start typing to search for existing employees
-                        </p>
+                        {inviteErrors.email ? (
+                            <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                                <AlertCircle size={12} /> {inviteErrors.email}
+                            </p>
+                        ) : (
+                            <p className="mt-1 text-xs text-text-muted-light dark:text-text-muted-dark">
+                                Start typing to search for existing employees
+                            </p>
+                        )}
                     </div>
 
+                    {/* Role & Department */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Role</label>
+                            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                                Role <span className="text-red-500">*</span>
+                            </label>
                             <div className="relative">
                                 <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                                 <input
-                                    required
                                     type="text"
                                     value={inviteForm.role}
-                                    onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value })}
+                                    onChange={(e) => {
+                                        setInviteForm({ ...inviteForm, role: e.target.value });
+                                        if (inviteErrors.role) setInviteErrors(prev => { const { role, ...rest } = prev; return rest; });
+                                    }}
                                     placeholder="e.g. Developer"
-                                    className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                                    className={`w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
+                                        inviteErrors.role
+                                            ? 'border-red-400 dark:border-red-500 focus:ring-red-300'
+                                            : 'border-border-light dark:border-border-dark focus:ring-primary'
+                                    }`}
                                 />
                             </div>
+                            {inviteErrors.role && (
+                                <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                                    <AlertCircle size={12} /> {inviteErrors.role}
+                                </p>
+                            )}
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Department</label>
+                            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                                Department <span className="text-red-500">*</span>
+                            </label>
                             <div className="relative">
                                 <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                                 <input
-                                    required
                                     type="text"
                                     value={inviteForm.department}
-                                    onChange={(e) => setInviteForm({ ...inviteForm, department: e.target.value })}
+                                    onChange={(e) => {
+                                        setInviteForm({ ...inviteForm, department: e.target.value });
+                                        if (inviteErrors.department) setInviteErrors(prev => { const { department, ...rest } = prev; return rest; });
+                                    }}
                                     placeholder="e.g. Engineering"
-                                    className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                                    className={`w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
+                                        inviteErrors.department
+                                            ? 'border-red-400 dark:border-red-500 focus:ring-red-300'
+                                            : 'border-border-light dark:border-border-dark focus:ring-primary'
+                                    }`}
                                 />
                             </div>
+                            {inviteErrors.department && (
+                                <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                                    <AlertCircle size={12} /> {inviteErrors.department}
+                                </p>
+                            )}
                         </div>
                     </div>
 
+                    {/* Start Date */}
                     <div>
                         <DatePicker
                             label="Start Date"
                             value={inviteForm.startDate}
-                            onChange={(date) => setInviteForm({ ...inviteForm, startDate: date })}
+                            onChange={(date) => {
+                                setInviteForm({ ...inviteForm, startDate: date });
+                                if (inviteErrors.startDate) setInviteErrors(prev => { const { startDate, ...rest } = prev; return rest; });
+                            }}
                             placeholder="Select start date"
                         />
+                        {inviteErrors.startDate && (
+                            <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                                <AlertCircle size={12} /> {inviteErrors.startDate}
+                            </p>
+                        )}
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4">
                         <button
                             type="button"
-                            onClick={() => setIsInviteModalOpen(false)}
+                            onClick={() => {
+                                setIsInviteModalOpen(false);
+                                setInviteErrors({});
+                                setInviteForm({ name: '', email: '', role: '', department: '', startDate: '' });
+                            }}
                             className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:text-text-muted-dark dark:hover:text-text-dark"
                         >
                             Cancel

@@ -24,6 +24,7 @@ import notificationRoutes from "./routes/notificationRoutes";
 import dashboardRoutes from "./routes/dashboardRoutes";
 import orgChartRoutes from "./routes/orgChartRoutes";
 import notesRoutes from "./routes/notesRoutes";
+import onboardingRoutes from "./routes/onboardingRoutes";
 import { runMigration } from "./scripts/init-db";
 
 dotenv.config();
@@ -131,6 +132,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/org-chart", orgChartRoutes);
 app.use("/api/notes", notesRoutes);
+app.use("/api/onboarding", onboardingRoutes);
 
 // Backward compatibility for leave balances endpoint
 // Old: GET /api/leave-balances/:employeeId
@@ -146,28 +148,6 @@ app.get(
 // ==========================================
 // NEW ENDPOINTS (Tasks, Documents, etc.)
 // ==========================================
-
-// GET /api/tasks
-app.get("/api/tasks", async (req: Request, res: Response) => {
-  try {
-    const result = await query("SELECT * FROM tasks ORDER BY due_date ASC");
-    const tasks = result.rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      stage: row.stage,
-      assignee: row.assignee,
-      dueDate: row.due_date, // Date string
-      completed: row.completed,
-      priority: row.priority,
-      link: row.link,
-    }));
-    res.json(tasks);
-  } catch (err) {
-    console.error("Error fetching tasks:", err);
-    res.status(500).json({ error: "Failed to fetch tasks" });
-  }
-});
 
 // GET /api/training-modules
 app.get("/api/training-modules", async (req: Request, res: Response) => {
@@ -526,17 +506,6 @@ app.delete("/api/announcements/:id", authenticateToken, requireAdmin, apiLimiter
   }
 });
 
-// GET /api/contacts
-app.get("/api/contacts", async (req: Request, res: Response) => {
-  try {
-    const result = await query("SELECT * FROM contacts");
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed" });
-  }
-});
-
 // GET /api/audit-logs
 app.get("/api/audit-logs", async (req: Request, res: Response) => {
   try {
@@ -799,6 +768,27 @@ const runLightMigrations = async () => {
     `);
     await query(`CREATE INDEX IF NOT EXISTS idx_upcoming_events_date ON upcoming_events(date)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_upcoming_events_type ON upcoming_events(type)`);
+
+    // Create onboarding_documents table if it doesn't exist
+    await query(`
+      CREATE TABLE IF NOT EXISTS onboarding_documents (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        status VARCHAR(50) DEFAULT 'Pending',
+        file_path TEXT,
+        file_type VARCHAR(20),
+        file_size VARCHAR(20),
+        uploaded_at TIMESTAMP WITH TIME ZONE,
+        reviewed_by UUID REFERENCES users(id),
+        reviewed_at TIMESTAMP WITH TIME ZONE,
+        review_note TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_onboarding_docs_employee ON onboarding_documents(employee_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_onboarding_docs_status ON onboarding_documents(status)`);
   } catch (err) {
     // Table may not exist yet — ignore
   }

@@ -173,6 +173,22 @@ export interface KeyContact {
   avatar: string;
 }
 
+export interface OnboardingDocument {
+  id: string;
+  employeeId: string;
+  name: string;
+  description: string;
+  status: 'Pending' | 'Uploaded' | 'Approved' | 'Rejected';
+  filePath: string | null;
+  fileType: string | null;
+  fileSize: string | null;
+  uploadedAt: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+  createdAt: string;
+}
+
 export interface JobHistoryItem {
   id: string;
   role: string;
