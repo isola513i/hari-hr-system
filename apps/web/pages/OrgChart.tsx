@@ -140,6 +140,7 @@ export const OrgChart: React.FC = () => {
 
   // Pan/Zoom state
   const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [isPanning, setIsPanning] = useState(false);
   const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
@@ -220,10 +221,50 @@ export const OrgChart: React.FC = () => {
     setZoom(parseFloat(e.target.value));
   };
 
+  // Fit the tree content to the visible container area
+  const fitToView = useCallback(() => {
+    const container = containerRef.current;
+    const content = contentRef.current;
+    if (!container || !content) return;
+
+    const cRect = container.getBoundingClientRect();
+    const padding = 64; // px breathing room
+    const availW = cRect.width - padding;
+    const availH = cRect.height - padding;
+
+    // Measure content at scale=1 (reset transform temporarily)
+    const prevTransform = content.style.transform;
+    const prevTransition = content.style.transition;
+    content.style.transition = 'none';
+    content.style.transform = 'translate(0px, 0px) scale(1)';
+    const tRect = content.getBoundingClientRect();
+    content.style.transform = prevTransform;
+    content.style.transition = prevTransition;
+
+    if (tRect.width === 0 || tRect.height === 0) return;
+
+    const scaleX = availW / tRect.width;
+    const scaleY = availH / tRect.height;
+    const newZoom = Math.min(Math.max(Math.min(scaleX, scaleY), 0.3), 1.5);
+
+    // Center the content
+    const panX = (cRect.width - tRect.width * newZoom) / 2;
+    const panY = (cRect.height - tRect.height * newZoom) / 2;
+
+    setZoom(newZoom);
+    setPanPosition({ x: panX, y: panY });
+  }, []);
+
   const resetZoom = () => {
-    setZoom(1);
-    setPanPosition({ x: 0, y: 0 });
+    fitToView();
   };
+
+  // Auto-fit when tree data changes
+  useEffect(() => {
+    // Small delay to let the DOM render the tree nodes first
+    const timer = setTimeout(fitToView, 100);
+    return () => clearTimeout(timer);
+  }, [tree, fitToView]);
 
   // Pan handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -754,7 +795,8 @@ export const OrgChart: React.FC = () => {
           </div>
         )}
         <div
-          className="flex justify-center min-w-max pt-8 pb-8 transition-transform origin-center"
+          ref={contentRef}
+          className="flex justify-center min-w-max pt-8 pb-8 transition-transform origin-top-left"
           style={{
             transform: `translate(${panPosition.x}px, ${panPosition.y}px) scale(${zoom})`,
             transition: isPanning ? 'none' : 'transform 0.2s ease-out',
