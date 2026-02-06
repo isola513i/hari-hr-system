@@ -181,6 +181,10 @@ export const OrgChart: React.FC = () => {
   // Collapse State
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
 
+  // Drag & Drop state
+  const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
+  const [dragOverNodeId, setDragOverNodeId] = useState<string | null>(null);
+
   // Modal Inputs
   const [inputName, setInputName] = useState('');
   const [inputRole, setInputRole] = useState('');
@@ -227,7 +231,7 @@ export const OrgChart: React.FC = () => {
 
     // Don't start panning if clicking on interactive elements (buttons, inputs, etc.)
     const target = e.target as HTMLElement;
-    if (target.closest('button') || target.closest('input') || target.closest('select') || target.closest('a')) {
+    if (target.closest('[draggable="true"]') || target.closest('button') || target.closest('input') || target.closest('select') || target.closest('a')) {
       return;
     }
 
@@ -398,6 +402,83 @@ export const OrgChart: React.FC = () => {
     return nodes.filter((n) => n.id !== modalState.nodeId && !descendants.includes(n.id));
   }, [nodes, modalState]);
 
+  // Drag & Drop: check if dropping draggedId onto targetId is valid
+  const isValidDrop = useCallback(
+    (draggedId: string, targetId: string): boolean => {
+      if (draggedId === targetId) return false; // Can't drop on self
+      const draggedNode = nodes.find((n) => n.id === draggedId);
+      if (!draggedNode) return false;
+      if (draggedNode.parentId === targetId) return false; // Already reports to this person
+      const descendants = getDescendants(draggedId, nodes);
+      if (descendants.includes(targetId)) return false; // Cycle prevention
+      return true;
+    },
+    [nodes]
+  );
+
+  // Drag handlers
+  const handleDragStart = useCallback(
+    (e: React.DragEvent, nodeId: string) => {
+      if (!isAdmin) return;
+      const node = nodes.find((n) => n.id === nodeId);
+      if (!node || !node.parentId) {
+        e.preventDefault(); // Block root nodes
+        return;
+      }
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', nodeId);
+      setDraggedNodeId(nodeId);
+    },
+    [isAdmin, nodes]
+  );
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent, targetId: string) => {
+      e.preventDefault();
+      if (!draggedNodeId || draggedNodeId === targetId) {
+        e.dataTransfer.dropEffect = 'none';
+      } else if (isValidDrop(draggedNodeId, targetId)) {
+        e.dataTransfer.dropEffect = 'move';
+      } else {
+        e.dataTransfer.dropEffect = 'none';
+      }
+      setDragOverNodeId(targetId);
+    },
+    [draggedNodeId, isValidDrop]
+  );
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverNodeId(null);
+  }, []);
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent, targetId: string) => {
+      e.preventDefault();
+      const draggedId = e.dataTransfer.getData('text/plain');
+      if (!draggedId || !isValidDrop(draggedId, targetId)) {
+        setDraggedNodeId(null);
+        setDragOverNodeId(null);
+        return;
+      }
+      try {
+        await updateNode(draggedId, { parentId: targetId });
+        const draggedName = nodes.find((n) => n.id === draggedId)?.name || 'Employee';
+        const targetName = nodes.find((n) => n.id === targetId)?.name || 'Manager';
+        showToast(`${draggedName} now reports to ${targetName}.`, 'success');
+      } catch {
+        showToast('Failed to reassign manager. Please try again.', 'error');
+      }
+      setDraggedNodeId(null);
+      setDragOverNodeId(null);
+    },
+    [isValidDrop, updateNode, nodes, showToast]
+  );
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedNodeId(null);
+    setDragOverNodeId(null);
+  }, []);
+
   // Recursive Tree Component with visual tree connectors
   const TreeNode: React.FC<{ node: OrgNode; isRoot?: boolean }> = ({ node, isRoot = false }) => {
     const isCollapsed = collapsedNodes.has(node.id);
@@ -405,17 +486,36 @@ export const OrgChart: React.FC = () => {
     const isHighlighted = node.id === highlightedId;
     const childCount = node.children?.length || 0;
 
+    // Drag & drop state for this card
+    const isDragging = draggedNodeId === node.id;
+    const isDragOver = dragOverNodeId === node.id && draggedNodeId !== null;
+    const canDrop = isDragOver && draggedNodeId !== null && isValidDrop(draggedNodeId, node.id);
+    const isDraggable = isAdmin && !!node.parentId;
+
     return (
       <div className="flex flex-col items-center">
         <div className="group relative z-10">
           {/* Card */}
           <div
+            draggable={isDraggable}
+            onDragStart={(e) => handleDragStart(e, node.id)}
+            onDragOver={(e) => handleDragOver(e, node.id)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, node.id)}
+            onDragEnd={handleDragEnd}
             className={`flex flex-col items-center bg-card-light dark:bg-card-dark border transition-all duration-200 rounded-xl p-4 w-52 ${
               isHighlighted
                 ? 'ring-4 ring-primary border-primary scale-105 shadow-lg shadow-primary/20'
-                : 'border-border-light dark:border-border-dark shadow-sm'
+                : isDragging
+                  ? 'opacity-40 scale-95 border-border-light dark:border-border-dark shadow-sm'
+                  : isDragOver && canDrop
+                    ? 'ring-4 ring-green-400 border-green-400 bg-green-50 dark:bg-green-900/20 scale-105 shadow-lg'
+                    : isDragOver && !canDrop
+                      ? 'ring-4 ring-red-400 border-red-400'
+                      : 'border-border-light dark:border-border-dark shadow-sm'
             } ${isRoot ? 'ring-2 ring-primary/30 shadow-md' : ''}
-              ${isAdmin ? 'hover:shadow-lg hover:border-primary/50 hover:-translate-y-0.5' : ''}`}
+              ${isDraggable ? 'cursor-grab active:cursor-grabbing' : ''}
+              ${isAdmin && !isDragging ? 'hover:shadow-lg hover:border-primary/50 hover:-translate-y-0.5' : ''}`}
           >
             {/* Avatar with fallback and status indicator */}
             <div className="relative mb-3">
@@ -515,29 +615,25 @@ export const OrgChart: React.FC = () => {
             {/* Vertical line from parent to horizontal bar */}
             <div className="w-[2px] h-6 bg-primary/30 dark:bg-primary/25"></div>
 
-            {/* Children container */}
-            <div className="relative">
-              {/* Horizontal line - spans from first child center to last child center */}
-              {childCount > 1 && (
-                <div
-                  className="absolute top-0 h-[2px] bg-primary/30 dark:bg-primary/25"
-                  style={{
-                    left: `calc(100% / ${childCount} / 2)`,
-                    right: `calc(100% / ${childCount} / 2)`,
-                  }}
-                ></div>
-              )}
-
-              {/* Children row */}
-              <div className="flex">
-                {node.children!.map((child) => (
-                  <div key={child.id} className="flex flex-col items-center px-4">
-                    {/* Vertical drop line */}
-                    <div className="w-[2px] h-6 bg-primary/30 dark:bg-primary/25"></div>
-                    <TreeNode node={child} />
-                  </div>
-                ))}
-              </div>
+            {/* Children row */}
+            <div className="flex">
+              {node.children!.map((child, index) => (
+                <div key={child.id} className="flex flex-col items-center px-4 relative">
+                  {/* Horizontal connector segment: first=right half, last=left half, middle=full */}
+                  {childCount > 1 && (
+                    <div
+                      className="absolute top-0 h-[2px] bg-primary/30 dark:bg-primary/25"
+                      style={{
+                        left: index === 0 ? '50%' : '0',
+                        right: index === node.children!.length - 1 ? '50%' : '0',
+                      }}
+                    />
+                  )}
+                  {/* Vertical drop line */}
+                  <div className="w-[2px] h-6 bg-primary/30 dark:bg-primary/25"></div>
+                  <TreeNode node={child} />
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -565,7 +661,7 @@ export const OrgChart: React.FC = () => {
           </h1>
           <p className="text-text-muted-light dark:text-text-muted-dark text-sm mt-1">
             {isAdmin
-              ? 'Hover over cards to add, edit or remove people.'
+              ? 'Hover over cards to add, edit or remove people. Drag cards to reassign managers.'
               : 'View the company hierarchy.'}
           </p>
         </div>
@@ -650,6 +746,13 @@ export const OrgChart: React.FC = () => {
           <Move size={12} />
           <span>Drag to pan • Scroll to zoom</span>
         </div>
+
+        {/* Drag banner */}
+        {draggedNodeId && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
+            Dragging <span className="font-bold">{nodes.find((n) => n.id === draggedNodeId)?.name}</span> — drop on a card to reassign manager
+          </div>
+        )}
         <div
           className="flex justify-center min-w-max pt-8 pb-8 transition-transform origin-center"
           style={{
