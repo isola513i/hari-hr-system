@@ -574,6 +574,12 @@ export const Onboarding: React.FC = () => {
         }
     };
 
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return dateString;
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
     // Helper logic for dates
     const isDueSoon = (dateString: string) => {
         const today = new Date();
@@ -1053,7 +1059,7 @@ export const Onboarding: React.FC = () => {
                                                                     dueSoon ? 'text-accent-orange bg-accent-orange/10 px-2 py-0.5 rounded' : ''
                                                                 }`}>
                                                                 {(overdue || dueSoon) && !task.completed && <AlertCircle size={12} />}
-                                                                {task.dueDate}
+                                                                {formatDate(task.dueDate)}
                                                             </span>
                                                         </div>
                                                     </div>
