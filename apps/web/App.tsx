@@ -3,14 +3,13 @@ import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./lib/queryClient";
-import { Layout } from "./components/Layout";
-import ProtectedRoute from "./components/ProtectedRoute";
+import { Layout, ProtectedRoute } from "./components/layout";
 import { AuthProvider } from "./contexts/AuthContext";
 import { LeaveProvider } from "./contexts/LeaveContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { OrgProvider } from "./contexts/OrgContext";
 import { ToastProvider } from "./contexts/ToastContext";
-import { ToastContainer } from "./components/ToastContainer";
+import { ToastContainer } from "./components/ui";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 // Lazy load pages for code splitting

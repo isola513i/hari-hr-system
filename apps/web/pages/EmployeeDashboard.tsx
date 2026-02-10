@@ -14,11 +14,10 @@ import {
   Send,
   Trash2
 } from 'lucide-react';
-import { Toast } from '../components/Toast';
-import { Avatar } from '../components/Avatar';
+import { Toast, Avatar } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import { useLeave } from '../contexts/LeaveContext';
-import { Employee } from '../types';
+import type { Employee } from '@hari/shared-types';
 import {
   useAllEmployees,
   useAnnouncements,

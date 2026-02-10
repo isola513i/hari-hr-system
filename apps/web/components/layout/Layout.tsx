@@ -5,8 +5,8 @@ import { Header } from './Header';
 import { Breadcrumbs } from './Breadcrumbs';
 import { Outlet } from 'react-router-dom';
 import { SessionTimeoutWarning } from './SessionTimeoutWarning';
-import { useSessionTimeout } from '../hooks/useSessionTimeout';
-import { useSocketQuerySync } from '../hooks/useSocketQuerySync';
+import { useSessionTimeout } from '../../hooks/useSessionTimeout';
+import { useSocketQuerySync } from '../../hooks/useSocketQuerySync';
 
 export const Layout: React.FC = () => {
   useSocketQuerySync();

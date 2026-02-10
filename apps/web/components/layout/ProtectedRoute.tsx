@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { UserRole } from '../types';
+import { useAuth } from '../../contexts/AuthContext';
+import type { UserRole } from '@hari/shared-types';
 
 interface ProtectedRouteProps {
     requiredRole?: UserRole | UserRole[];

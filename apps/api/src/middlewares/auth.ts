@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import type { UserRole } from '@hari/shared-types';
 
 // Security: Fail fast if JWT_SECRET is not set
 if (!process.env.JWT_SECRET) {
@@ -8,8 +9,7 @@ if (!process.env.JWT_SECRET) {
 }
 const JWT_SECRET: string = process.env.JWT_SECRET;
 
-// User roles
-export type UserRole = 'HR_ADMIN' | 'EMPLOYEE';
+export type { UserRole } from '@hari/shared-types';
 
 // Extend Express Request to include user
 declare global {

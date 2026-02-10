@@ -17,7 +17,7 @@ import {
     Star,
     Trash2,
 } from 'lucide-react';
-import { DatePicker } from '../../components/DatePicker';
+import { DatePicker } from '../ui/DatePicker';
 import { EmployeeModalsProps } from './EmployeeDetailTypes';
 
 export const EmployeeModals: React.FC<EmployeeModalsProps> = ({

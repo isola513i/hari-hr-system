@@ -1,16 +1,4 @@
-export interface LeaveRequest {
-    id: string;
-    employeeId: string;
-    employeeName: string;
-    type: string;
-    startDate: string;
-    endDate: string;
-    dates: string;
-    days: number;
-    reason?: string;
-    status: 'Pending' | 'Approved' | 'Rejected';
-    avatar?: string;
-}
+export type { LeaveRequest, LeaveRequestStatus } from '@hari/shared-types';
 
 export interface CreateLeaveRequestDTO {
     employeeId: string;

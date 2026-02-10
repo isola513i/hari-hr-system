@@ -1,10 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Megaphone, ScrollText, PartyPopper, ChevronLeft, ChevronRight, Plus, X, Check, Calendar, Type, AlignLeft } from 'lucide-react';
-import { Announcement, UpcomingEvent } from '../types';
-import { Toast } from '../components/Toast';
-import { Dropdown } from '../components/Dropdown';
-import { DatePicker } from '../components/DatePicker';
+import type { Announcement, UpcomingEvent } from '@hari/shared-types';
+import { Toast, Dropdown, DatePicker } from '../components/ui';
 import { useAnnouncements, useUpcomingEvents, useAddAnnouncement, useAddEvent, useDeleteEvent } from '../hooks/queries';
 
 export const Wellbeing: React.FC = () => {

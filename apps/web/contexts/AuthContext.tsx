@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { User, UserRole } from '../types';
+import type { UserRole } from '@hari/shared-types';
+import { User } from '../types';
 import { api, API_HOST } from '../lib/api';
 
 interface AuthContextType {

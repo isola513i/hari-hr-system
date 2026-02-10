@@ -1,0 +1,12 @@
+{
+  "name": "@hari/shared-types",
+  "version": "1.0.0",
+  "private": true,
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  }
+}

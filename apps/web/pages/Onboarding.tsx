@@ -8,10 +8,10 @@ import {
     GitBranch,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { OnboardingTask, Employee, OnboardingDocument } from '../types';
+import type { OnboardingTask, Employee, OnboardingDocument } from '@hari/shared-types';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrg } from '../contexts/OrgContext';
-import { Toast } from '../components/Toast';
+import { Toast } from '../components/ui';
 import { api, BASE_URL } from '../lib/api';
 import { queryKeys } from '../lib/queryKeys';
 import { useOnboardingTasks, useOnboardingContacts, useOnboardingDocuments, useAllEmployees } from '../hooks/queries';

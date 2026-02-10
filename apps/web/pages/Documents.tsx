@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BASE_URL } from '../lib/api';
-import { Dropdown } from '../components/Dropdown';
+import { Dropdown } from '../components/ui';
 import { useDocumentList, useDocumentTrash, useDocumentStorage, useDeleteDocument, useRestoreDocument, usePermanentDeleteDocument } from '../hooks/queries';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryKeys';
@@ -25,10 +25,9 @@ import {
   Trash2,
   RotateCcw,
 } from 'lucide-react';
-import { DocumentItem } from '../types';
+import type { DocumentItem } from '@hari/shared-types';
 import { useAuth } from '../contexts/AuthContext';
-import { Toast } from '../components/Toast';
-import { Pagination } from '../components/Pagination';
+import { Toast, Pagination } from '../components/ui';
 
 export const Documents: React.FC = () => {
   const { user } = useAuth();

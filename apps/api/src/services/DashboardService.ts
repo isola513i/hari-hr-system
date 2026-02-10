@@ -1,5 +1,6 @@
 import { query } from '../db';
 import SystemConfigService from './SystemConfigService';
+import type { TeamMember, MyTeamHierarchy } from '@hari/shared-types';
 
 const BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001';
 
@@ -9,32 +10,13 @@ function resolveAvatar(avatar: string | null, name: string): string {
   return avatar;
 }
 
+export type { TeamMember, MyTeamHierarchy } from '@hari/shared-types';
+
 export interface EmployeeStats {
   leaveBalance: number;
   nextPayday: string | null;
   pendingReviews: number;
   pendingSurveys: number;
-}
-
-export interface TeamMember {
-  id: string;
-  name: string;
-  role: string;
-  email: string;
-  avatar: string | null;
-  status: string;
-  department: string;
-}
-
-export interface MyTeamHierarchy {
-  manager: TeamMember | null;
-  peers: TeamMember[];
-  directReports: TeamMember[];
-  stats: {
-    totalDirectReports: number;
-    peersCount: number;
-    departmentsInTeam: number;
-  };
 }
 
 export class DashboardService {

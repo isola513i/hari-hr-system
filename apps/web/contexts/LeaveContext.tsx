@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useCallback, ReactNode } from 'react';
-import { LeaveRequest, LeaveBalance } from '../types';
+import type { LeaveRequest, LeaveBalance } from '@hari/shared-types';
 import {
   useLeaveRequests,
   useAddLeaveRequest,

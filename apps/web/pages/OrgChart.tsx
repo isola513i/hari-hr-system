@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { OrgNode, Department, DEPARTMENTS } from '../types';
+import type { OrgNode } from '@hari/shared-types';
+import { DEPARTMENTS } from '../types';
+import type { Department } from '../types';
 import {
   Plus,
   Edit2,
@@ -82,8 +84,7 @@ const AvatarWithFallback: React.FC<{
 };
 import { useAuth } from '../contexts/AuthContext';
 import { useOrg } from '../contexts/OrgContext';
-import { Toast } from '../components/Toast';
-import { Dropdown } from '../components/Dropdown';
+import { Toast, Dropdown } from '../components/ui';
 
 // Helper to build tree structure
 const buildTree = (nodes: OrgNode[]): OrgNode[] => {
@@ -386,7 +387,7 @@ export const OrgChart: React.FC = () => {
     setInputName(node.name);
     setInputRole(node.role);
     setInputEmail(node.email || '');
-    setInputDepartment(node.department || '');
+    setInputDepartment((node.department as Department) || '');
     setInputAvatar(node.avatar);
     setInputParentId(node.parentId || '');
   };

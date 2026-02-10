@@ -7,9 +7,9 @@ import {
     Users,
     AlertCircle,
 } from 'lucide-react';
-import { Employee } from '../../types';
-import { Modal } from '../Modal';
-import { DatePicker } from '../DatePicker';
+import type { Employee } from '@hari/shared-types';
+import { Modal } from '../ui/Modal';
+import { DatePicker } from '../ui/DatePicker';
 import { InviteModalProps } from './OnboardingTypes';
 
 export const InviteModal: React.FC<InviteModalProps> = ({

@@ -1,25 +1,4 @@
-export interface Employee {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    department: string;
-    joinDate: string;
-    salary?: number;
-    avatar?: string;
-    status?: string;
-    bio?: string;
-    phone?: string;
-    phoneNumber?: string;
-    address?: string;
-    location?: string;
-    slack?: string;
-    emergencyContact?: string;
-    skills?: string[];
-    managerId?: string;
-    onboardingStatus?: string;
-    onboardingPercentage?: number;
-}
+export type { Employee } from '@hari/shared-types';
 
 export interface CreateEmployeeDTO {
     name: string;

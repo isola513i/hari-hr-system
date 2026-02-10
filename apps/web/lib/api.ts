@@ -1,4 +1,4 @@
-import { LoginCredentials, AuthResponse } from '../types';
+import type { LoginCredentials, AuthResponse } from '@hari/shared-types';
 import { retryFetch } from '../utils/retry';
 import errorLogging from '../services/errorLogging';
 

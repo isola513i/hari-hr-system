@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, CheckCircle2, ArrowRight, Clock } from 'lucide-react';
-import { Toast } from '../components/Toast';
+import { Toast } from '../components/ui';
 
 export const Surveys: React.FC = () => {
   const activeSurveys = [

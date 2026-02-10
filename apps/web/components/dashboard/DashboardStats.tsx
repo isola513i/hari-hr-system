@@ -1,6 +1,6 @@
 import React from 'react';
 import { Users, TrendingUp, UserPlus, UserMinus } from 'lucide-react';
-import { StatCard } from '../StatCard';
+import { StatCard } from '../ui/StatCard';
 
 interface DashboardStatsProps {
   activeEmployeesCount: number;

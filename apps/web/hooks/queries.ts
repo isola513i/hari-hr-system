@@ -12,7 +12,6 @@ import type {
   UpcomingEvent,
   Announcement,
   MyTeamHierarchy,
-  PaginatedResponse,
   PerformanceReview,
   JobHistoryItem,
   EmployeeTrainingRecord,
@@ -20,7 +19,8 @@ import type {
   OnboardingTask,
   KeyContact,
   OnboardingDocument,
-} from '../types';
+} from '@hari/shared-types';
+import type { PaginatedResponse } from '../types';
 
 // ---------------------------------------------------------------------------
 // Helpers

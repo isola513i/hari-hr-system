@@ -3,10 +3,8 @@ import { createPortal } from 'react-dom';
 import { Calendar, Clock, CheckCircle2, XCircle, AlertCircle, Plus } from 'lucide-react';
 import { useLeave } from '../contexts/LeaveContext';
 import { useAuth } from '../contexts/AuthContext';
-import { LeaveRequest } from '../types';
-import { Toast } from '../components/Toast';
-import { DatePicker } from '../components/DatePicker';
-import { Dropdown } from '../components/Dropdown';
+import type { LeaveRequest } from '@hari/shared-types';
+import { Toast, DatePicker, Dropdown } from '../components/ui';
 
 export const TimeOff: React.FC = () => {
   const { user } = useAuth();

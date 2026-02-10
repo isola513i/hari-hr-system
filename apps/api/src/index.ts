@@ -12,9 +12,11 @@ import { authenticateToken, requireAdmin } from "./middlewares/auth";
 import { swaggerSpec } from "./config/swagger";
 import { initializeSocket } from "./socket";
 
+// Import modular routes
+import { employeeRoutes } from "./modules/employees";
+
 // Import Clean Architecture routes
 import authRoutes from "./routes/authRoutes";
-import employeeRoutes from "./routes/employeeRoutes";
 import documentRoutes from "./routes/documentRoutes";
 import leaveRequestRoutes from "./routes/leaveRequestRoutes";
 import systemConfigRoutes from "./routes/systemConfigRoutes";

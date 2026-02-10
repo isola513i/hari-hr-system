@@ -1,4 +1,4 @@
-import { OnboardingTask, Employee, OnboardingDocument, KeyContact } from '../../types';
+import type { OnboardingTask, Employee, OnboardingDocument, KeyContact } from '@hari/shared-types';
 
 export interface FlowStage {
     id: string;

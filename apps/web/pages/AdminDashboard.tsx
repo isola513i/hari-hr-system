@@ -19,18 +19,16 @@ import {
   Trash2
 } from 'lucide-react';
 import { ResponsiveContainer, XAxis, YAxis, AreaChart, Area, Tooltip } from 'recharts';
-import { StatCard } from '../components/StatCard';
-import { Toast } from '../components/Toast';
-import { Avatar } from '../components/Avatar';
+import { StatCard, Toast, Avatar } from '../components/ui';
 import { AddEmployeeModal } from '../components/AddEmployeeModal';
 import { LeaveManagementModal } from '../components/LeaveManagementModal';
 import { useAuth } from '../contexts/AuthContext';
 import { useLeave } from '../contexts/LeaveContext';
-import {
+import type {
   ChartDataPoint,
   OnboardingProgressSummary,
   UpcomingEvent,
-} from '../types';
+} from '@hari/shared-types';
 import {
   useAllEmployees,
   useAuditLogs,

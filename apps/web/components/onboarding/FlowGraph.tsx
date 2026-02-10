@@ -9,7 +9,7 @@ import {
     CircleDot,
     Circle,
 } from 'lucide-react';
-import { OnboardingTask } from '../../types';
+import type { OnboardingTask } from '@hari/shared-types';
 import { FlowStage } from './OnboardingTypes';
 
 export const FlowGraph: React.FC<{ tasks: OnboardingTask[] }> = ({ tasks }) => {

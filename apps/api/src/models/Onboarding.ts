@@ -1,3 +1,5 @@
+import type { OnboardingStage, OnboardingPriority, OnboardingDocStatus } from '@hari/shared-types';
+
 // ==========================================
 // Database Row Interfaces (snake_case)
 // ==========================================
@@ -47,10 +49,10 @@ export interface OnboardingDocumentRow {
 export interface CreateOnboardingTaskDTO {
   title: string;
   description?: string;
-  stage: 'Pre-boarding' | 'Week 1' | 'Month 1';
+  stage: OnboardingStage;
   assignee: string;
   dueDate: string;
-  priority: 'High' | 'Medium' | 'Low';
+  priority: OnboardingPriority;
   link?: string;
   employeeId: string;
 }
@@ -58,11 +60,11 @@ export interface CreateOnboardingTaskDTO {
 export interface UpdateOnboardingTaskDTO {
   title?: string;
   description?: string;
-  stage?: 'Pre-boarding' | 'Week 1' | 'Month 1';
+  stage?: OnboardingStage;
   assignee?: string;
   dueDate?: string;
   completed?: boolean;
-  priority?: 'High' | 'Medium' | 'Low';
+  priority?: OnboardingPriority;
   link?: string;
 }
 
@@ -112,6 +114,6 @@ export interface OnboardingDocumentResponse {
 // Enums / Validation Constants
 // ==========================================
 
-export const VALID_STAGES = ['Pre-boarding', 'Week 1', 'Month 1'] as const;
-export const VALID_PRIORITIES = ['High', 'Medium', 'Low'] as const;
-export const VALID_DOC_STATUSES = ['Pending', 'Uploaded', 'Approved', 'Rejected'] as const;
+export const VALID_STAGES: readonly OnboardingStage[] = ['Pre-boarding', 'Week 1', 'Month 1'];
+export const VALID_PRIORITIES: readonly OnboardingPriority[] = ['High', 'Medium', 'Low'];
+export const VALID_DOC_STATUSES: readonly OnboardingDocStatus[] = ['Pending', 'Uploaded', 'Approved', 'Rejected'];

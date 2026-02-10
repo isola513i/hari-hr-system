@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { ChevronRight, Home } from 'lucide-react';
-import { useEmployeeDetail } from '../hooks/queries';
+import { useEmployeeDetail } from '../../hooks/queries';
 
 /**
  * Route name mapping configuration

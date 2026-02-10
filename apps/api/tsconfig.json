@@ -7,11 +7,19 @@
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
         "strict": true,
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "baseUrl": ".",
+        "paths": {
+            "@hari/shared-types": ["../../packages/shared-types/src"]
+        }
     },
+    "include": ["src"],
     "exclude": [
         "src/**/__tests__",
         "src/config/sentry.ts"
+    ],
+    "references": [
+        { "path": "../../packages/shared-types" }
     ],
     "ts-node": {
         "esm": false,

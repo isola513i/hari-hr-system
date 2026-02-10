@@ -14,7 +14,7 @@ import {
 import { useNotifications } from '../contexts/NotificationContext';
 import { useToast } from '../contexts/ToastContext';
 import { useNavigate } from 'react-router-dom';
-import { NotificationType } from '../types';
+import type { NotificationType } from '@hari/shared-types';
 
 const typeConfig: Record<NotificationType, { icon: React.ElementType; bg: string; text: string }> = {
   info: { icon: Info, bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' },

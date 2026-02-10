@@ -1,6 +1,6 @@
 import React from 'react';
 import { Mail } from 'lucide-react';
-import { Avatar } from '../Avatar';
+import { Avatar } from '../ui/Avatar';
 import { KeyContactsProps } from './OnboardingTypes';
 
 export const KeyContacts: React.FC<KeyContactsProps> = ({ contacts, showToast }) => {

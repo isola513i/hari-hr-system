@@ -1,7 +1,7 @@
 import React from 'react';
 import { Check, X, CheckCircle2 } from 'lucide-react';
-import { Modal } from './Modal';
-import { LeaveRequest } from '../types';
+import { Modal } from './ui/Modal';
+import type { LeaveRequest } from '@hari/shared-types';
 
 /**
  * Props for LeaveManagementModal component

@@ -10,11 +10,11 @@ import {
   X,
   Menu,
 } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
-import { useNotifications } from "../contexts/NotificationContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { useNotifications } from "../../contexts/NotificationContext";
 import { useNavigate } from "react-router-dom";
-import { api, API_HOST } from "../lib/api";
-import { Avatar } from "./Avatar";
+import { api, API_HOST } from "../../lib/api";
+import { Avatar } from "../ui/Avatar";
 
 interface SearchResult {
   id: string;

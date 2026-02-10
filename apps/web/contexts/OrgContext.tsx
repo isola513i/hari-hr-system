@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { OrgNode } from '../types';
+import type { OrgNode } from '@hari/shared-types';
 import {
   useOrgChart,
   useAddOrgNode,

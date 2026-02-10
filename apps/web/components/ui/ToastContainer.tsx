@@ -1,5 +1,5 @@
 import React from 'react';
-import { useToast, Toast as ToastType } from '../contexts/ToastContext';
+import { useToast, Toast as ToastType } from '../../contexts/ToastContext';
 import { XMarkIcon, CheckCircleIcon, ExclamationCircleIcon, InformationCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 const Toast: React.FC<{ toast: ToastType; onClose: () => void }> = ({ toast, onClose }) => {

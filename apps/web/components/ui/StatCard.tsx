@@ -1,5 +1,5 @@
 import React from 'react';
-import { StatCardProps } from '../types';
+import { StatCardProps } from '../../types';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 export const StatCard: React.FC<StatCardProps> = React.memo(({ title, value, trend, icon, color }) => {

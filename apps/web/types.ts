@@ -1,8 +1,48 @@
 import React from 'react';
 
-export type UserRole = 'HR_ADMIN' | 'EMPLOYEE';
+// ============================================================================
+// Re-exports from shared types (backwards compat for existing imports)
+// ============================================================================
 
-// Department type for strict type checking
+export type {
+  UserRole,
+  User as BackendUser,
+  LoginCredentials,
+  AuthResponse,
+  Employee,
+  EmployeeStatus,
+  OnboardingStatus,
+  LeaveRequest,
+  LeaveRequestStatus,
+  LeaveBalance,
+  NotificationType,
+  NotificationItem,
+  OnboardingTask,
+  OnboardingDocument,
+  KeyContact,
+  OnboardingStage,
+  OnboardingPriority,
+  OnboardingDocStatus,
+  TeamMember,
+  MyTeamHierarchy,
+  ChartDataPoint,
+  UpcomingEvent,
+  AuditLogItem,
+  Announcement,
+  ComplianceItem,
+  OnboardingProgressSummary,
+  DocumentItem,
+  JobHistoryItem,
+  PerformanceReview,
+  EmployeeTrainingRecord,
+  TrainingModule,
+  OrgNode,
+} from '@hari/shared-types';
+
+// ============================================================================
+// Frontend-only Constants & Types
+// ============================================================================
+
 export const DEPARTMENTS = [
   'Human Resources',
   'Engineering',
@@ -20,37 +60,25 @@ export const DEPARTMENTS = [
 
 export type Department = (typeof DEPARTMENTS)[number];
 
+// ============================================================================
+// Frontend User (with `id` instead of `userId`)
+// ============================================================================
+
 export interface User {
   id: string;
   employeeId?: string;
   email?: string;
   name: string;
-  role: UserRole;
+  role: 'HR_ADMIN' | 'EMPLOYEE';
   avatar: string;
   jobTitle: string;
   bio?: string;
   phone?: string;
 }
 
-export interface Employee {
-  id: string;
-  name: string;
-  role: string;
-  department: string;
-  email: string;
-  avatar: string;
-  status: 'Active' | 'On Leave' | 'Terminated';
-  onboardingStatus: 'Not Started' | 'In Progress' | 'Completed';
-  joinDate: string;
-  location: string;
-  skills: string[];
-  // New fields for ESS
-  bio?: string;
-  phone?: string;
-  slack?: string;
-  emergencyContact?: string;
-  managerId?: string;
-}
+// ============================================================================
+// Component Props
+// ============================================================================
 
 export interface StatCardProps {
   title: string;
@@ -60,233 +88,9 @@ export interface StatCardProps {
   color: 'primary' | 'green' | 'orange' | 'red' | 'teal';
 }
 
-export interface DocumentItem {
-  id: string;
-  name: string;
-  type: string;
-  category: string;
-  size: string;
-  owner: string;
-  employeeId?: string;
-  lastAccessed: string;
-  status: 'Active' | 'Deleted';
-  deletedAt?: string;
-}
-
-export interface ChartDataPoint {
-  name: string;
-  value: number;
-  value2?: number;
-}
-
-export interface LeaveRequest {
-  id: string;
-  employeeId: string;
-  employeeName: string;
-  type: string;
-  dates: string; // Display string like "Jan 15 - Jan 18"
-  startDate: string; // ISO date string
-  endDate: string; // ISO date string
-  reason?: string;
-  days: number;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  avatar: string;
-}
-
-export interface LeaveBalance {
-  type: string;
-  total: number;
-  used: number;
-  remaining: number;
-}
-
-export interface ComplianceItem {
-  id: string;
-  title: string;
-  status: 'Complete' | 'In Progress' | 'Overdue';
-}
-
-export interface AuditLogItem {
-  id: string;
-  user: string;
-  action: string;
-  target: string;
-  time: string;
-  type: 'user' | 'leave' | 'policy';
-}
-
-export interface Announcement {
-  id: string;
-  title: string;
-  description: string;
-  type: 'announcement' | 'policy' | 'event';
-  date?: string;
-  author?: string;
-  createdAt?: string;
-}
-
-export interface OnboardingTask {
-  id: string;
-  title: string;
-  description: string;
-  stage: 'Pre-boarding' | 'Week 1' | 'Month 1';
-  assignee: string;
-  dueDate: string;
-  completed: boolean;
-  priority: 'High' | 'Medium' | 'Low';
-  link?: string; // Link to materials
-}
-
-export interface TrainingModule {
-  id: string;
-  title: string;
-  duration: string;
-  type: 'Video' | 'Quiz' | 'Reading';
-  status: 'Locked' | 'In Progress' | 'Completed';
-  progress: number;
-  thumbnail: string;
-}
-
-export interface OnboardingProgressSummary {
-  id: string;
-  name: string;
-  role: string;
-  progress: number;
-  avatar?: string;
-}
-
-export interface UpcomingEvent {
-  id: string;
-  title: string;
-  date: string;
-  type: 'Birthday' | 'Meeting' | 'Social' | 'Training' | 'Holiday' | 'Deadline' | 'Company Event';
-  avatar?: string;
-  color?: string;
-}
-
-export interface KeyContact {
-  id: string;
-  name: string;
-  role: string;
-  relation: string;
-  email: string;
-  avatar: string;
-}
-
-export interface OnboardingDocument {
-  id: string;
-  employeeId: string;
-  name: string;
-  description: string;
-  status: 'Pending' | 'Uploaded' | 'Approved' | 'Rejected';
-  filePath: string | null;
-  fileType: string | null;
-  fileSize: string | null;
-  uploadedAt: string | null;
-  reviewedBy: string | null;
-  reviewedAt: string | null;
-  reviewNote: string | null;
-  createdAt: string;
-}
-
-export interface JobHistoryItem {
-  id: string;
-  role: string;
-  department: string;
-  startDate: string;
-  endDate: string; // 'Present' if current
-  description: string;
-}
-
-export interface EmployeeTrainingRecord {
-  id: string;
-  employeeId: string;
-  title: string;
-  duration: string;
-  status: 'Completed' | 'In Progress' | 'Not Started';
-  completionDate?: string;
-  score?: number;
-}
-
-export interface OrgNode {
-  id: string;
-  parentId: string | null;
-  name: string;
-  role: string;
-  avatar: string;
-  department?: Department;
-  email?: string;
-  status?: 'Active' | 'On Leave' | 'Terminated';
-  directReportCount?: number;
-  children?: OrgNode[]; // Helper for recursive rendering
-}
-
-export interface MyTeamHierarchy {
-  manager: TeamMember | null;
-  peers: TeamMember[];
-  directReports: TeamMember[];
-  stats: {
-    totalDirectReports: number;
-    peersCount: number;
-    departmentsInTeam: number;
-  };
-}
-
-export interface TeamMember {
-  id: string;
-  name: string;
-  role: string;
-  email: string;
-  avatar: string | null;
-  status: string;
-  department: string;
-}
-
-export interface PerformanceReview {
-  id: string;
-  employeeId: string;
-  date: string;
-  reviewer: string;
-  rating: number; // 1 to 5
-  notes: string;
-}
-
 // ============================================================================
 // API & Network Types
 // ============================================================================
-
-/**
- * Authentication credentials for login
- */
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-/**
- * Backend user structure (as returned by API)
- * Different from frontend User type - needs mapping
- */
-export interface BackendUser {
-  userId: string;
-  employeeId: string;
-  email: string;
-  name: string;
-  role: 'HR_ADMIN' | 'EMPLOYEE';
-  avatar?: string;
-  jobTitle?: string;
-  department?: string;
-  bio?: string;
-  phone?: string;
-}
-
-/**
- * Authentication response from login endpoint
- */
-export interface AuthResponse {
-  token: string;
-  user: BackendUser;
-}
 
 /**
  * Generic API response wrapper
@@ -373,7 +177,7 @@ export interface DocumentUploadData {
 export interface InvitationFormData {
   email: string;
   name: string;
-  role: UserRole;
+  role: 'HR_ADMIN' | 'EMPLOYEE';
   department?: string;
 }
 
@@ -430,23 +234,6 @@ export interface PaginatedResponse<T> {
  */
 export interface EmployeeFilterParams {
   department?: string;
-  status?: Employee['status'];
+  status?: 'Active' | 'On Leave' | 'Terminated';
   search?: string;
-}
-
-// ============================================================================
-// Notification Types
-// ============================================================================
-
-export type NotificationType = 'info' | 'success' | 'warning' | 'leave' | 'employee' | 'document' | 'system';
-
-export interface NotificationItem {
-  id: string;
-  title: string;
-  message: string;
-  type: NotificationType;
-  read: boolean;
-  link?: string;
-  time: string;
-  created_at: string;
 }

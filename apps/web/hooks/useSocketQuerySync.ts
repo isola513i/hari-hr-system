@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getSocket } from '../lib/socket';
 import { queryKeys } from '../lib/queryKeys';
 import { API_HOST } from '../lib/api';
-import type { LeaveRequest, NotificationItem } from '../types';
+import type { LeaveRequest, NotificationItem } from '@hari/shared-types';
 
 const transformAvatarUrl = (req: LeaveRequest): LeaveRequest => ({
   ...req,

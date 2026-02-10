@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useCallback, ReactNode } from 'react';
-import { NotificationItem } from '../types';
+import type { NotificationItem } from '@hari/shared-types';
 import {
   useNotificationsList,
   useMarkNotificationRead,

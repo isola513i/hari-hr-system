@@ -6,8 +6,8 @@ import {
     AlertCircle,
     ExternalLink,
 } from 'lucide-react';
-import { OnboardingTask } from '../../types';
-import { Dropdown } from '../Dropdown';
+import type { OnboardingTask } from '@hari/shared-types';
+import { Dropdown } from '../ui/Dropdown';
 import { TaskListProps } from './OnboardingTypes';
 
 export const TaskList: React.FC<TaskListProps & { children?: React.ReactNode }> = ({

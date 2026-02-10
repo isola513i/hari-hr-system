@@ -1,3 +1,6 @@
+export type { NotificationType } from '@hari/shared-types';
+import type { NotificationType } from '@hari/shared-types';
+
 export interface Notification {
   id: string;
   user_id: string;
@@ -8,15 +11,6 @@ export interface Notification {
   link?: string;
   created_at: Date;
 }
-
-export type NotificationType =
-  | 'info'
-  | 'success'
-  | 'warning'
-  | 'leave'
-  | 'employee'
-  | 'document'
-  | 'system';
 
 export interface CreateNotificationRequest {
   user_id: string;
@@ -33,6 +27,6 @@ export interface NotificationResponse {
   type: NotificationType;
   read: boolean;
   link?: string;
-  time: string; // Formatted relative time (e.g., "5 min ago")
+  time: string;
   created_at: Date;
 }

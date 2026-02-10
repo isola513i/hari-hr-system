@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Clock, TrendingUp, AlertCircle, CheckCircle2, Briefcase } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAttendanceRecords, useAttendanceSummary } from '../hooks/queries';
-import { Dropdown, DropdownOption } from '../components/Dropdown';
+import { Dropdown, type DropdownOption } from '../components/ui';
 
 interface AttendanceSummary {
   totalDays: number;

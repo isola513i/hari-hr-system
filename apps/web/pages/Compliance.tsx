@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, AlertCircle, Clock, UserPlus, CheckSquare, FileEdit, Download } from 'lucide-react';
-import { Toast } from '../components/Toast';
+import { Toast } from '../components/ui';
 
 export const Compliance: React.FC = () => {
   const [items, setItems] = useState<any[]>([]);
