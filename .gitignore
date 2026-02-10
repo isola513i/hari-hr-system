@@ -9,7 +9,6 @@ lerna-debug.log*
 
 node_modules
 dist
-!apps/api/dist
 dist-ssr
 *.local
 
@@ -47,3 +46,4 @@ debug-*.js
 .env.production
 .env.staging
 .env.*.local
+*.tsbuildinfo
