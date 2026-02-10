@@ -1,9 +1,10 @@
+import type { ReactNode, FormEvent } from 'react';
 import { OnboardingTask, Employee, OnboardingDocument, KeyContact } from '../../types';
 
 export interface FlowStage {
     id: string;
     label: string;
-    icon: React.ReactNode;
+    icon: ReactNode;
     color: string;
     bgColor: string;
     borderColor: string;
@@ -30,7 +31,7 @@ export interface TaskListProps {
     onSetDateFilter: (value: string) => void;
     onToggleTask: (id: string) => void;
     onCyclePriority: (id: string) => void;
-    getStageIcon: (stage: string) => React.ReactNode;
+    getStageIcon: (stage: string) => ReactNode;
     formatDate: (dateString: string) => string;
     isDueSoon: (dateString: string) => boolean;
     isOverdue: (dateString: string) => boolean;
@@ -71,5 +72,5 @@ export interface InviteModalProps {
     onSetInviteForm: (form: InviteModalProps['inviteForm']) => void;
     onSetInviteErrors: (errors: Record<string, string>) => void;
     onSelectEmployee: (employee: Employee) => void;
-    onSubmit: (e: React.FormEvent) => void;
+    onSubmit: (e: FormEvent) => void;
 }
