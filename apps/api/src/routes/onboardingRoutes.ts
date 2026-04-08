@@ -53,6 +53,30 @@ router.get(
   OnboardingController.getContacts.bind(OnboardingController)
 );
 
+// POST /api/onboarding/contacts - Create contact (admin only)
+router.post(
+  "/contacts",
+  requireAdmin,
+  apiLimiter,
+  OnboardingController.createContact.bind(OnboardingController)
+);
+
+// PUT /api/onboarding/contacts/:id - Update contact (admin only)
+router.put(
+  "/contacts/:id",
+  requireAdmin,
+  apiLimiter,
+  OnboardingController.updateContact.bind(OnboardingController)
+);
+
+// DELETE /api/onboarding/contacts/:id - Delete contact (admin only)
+router.delete(
+  "/contacts/:id",
+  requireAdmin,
+  apiLimiter,
+  OnboardingController.deleteContact.bind(OnboardingController)
+);
+
 // ==========================================
 // Document Checklist Routes
 // ==========================================

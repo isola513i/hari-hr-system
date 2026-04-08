@@ -168,6 +168,47 @@ export class OnboardingController {
     }
   }
 
+  // POST /api/onboarding/contacts
+  async createContact(req: Request, res: Response): Promise<void> {
+    try {
+      const { name, role, relation, email } = req.body;
+      if (!name || !role || !email) {
+        res.status(400).json({ error: "Name, role, and email are required" });
+        return;
+      }
+      const contact = await OnboardingService.createContact({ name, role, relation: relation || '', email });
+      res.status(201).json(contact);
+    } catch (error) {
+      console.error("Error creating contact:", error);
+      res.status(500).json({ error: "Failed to create contact" });
+    }
+  }
+
+  // PUT /api/onboarding/contacts/:id
+  async updateContact(req: Request, res: Response): Promise<void> {
+    try {
+      const { name, role, relation, email } = req.body;
+      const contact = await OnboardingService.updateContact(req.params.id, { name, role, relation, email });
+      if (!contact) { res.status(404).json({ error: "Contact not found" }); return; }
+      res.json(contact);
+    } catch (error) {
+      console.error("Error updating contact:", error);
+      res.status(500).json({ error: "Failed to update contact" });
+    }
+  }
+
+  // DELETE /api/onboarding/contacts/:id
+  async deleteContact(req: Request, res: Response): Promise<void> {
+    try {
+      const deleted = await OnboardingService.deleteContact(req.params.id);
+      if (!deleted) { res.status(404).json({ error: "Contact not found" }); return; }
+      res.json({ message: "Contact deleted" });
+    } catch (error) {
+      console.error("Error deleting contact:", error);
+      res.status(500).json({ error: "Failed to delete contact" });
+    }
+  }
+
   // ==========================================
   // Document Checklist Endpoints
   // ==========================================

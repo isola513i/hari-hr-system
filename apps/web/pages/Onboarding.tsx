@@ -16,7 +16,7 @@ import { Toast } from '../components/Toast';
 import { Dropdown } from '../components/Dropdown';
 import { api, BASE_URL, getAuthToken } from '../lib/api';
 import { queryKeys } from '../lib/queryKeys';
-import { useOnboardingTasks, useOnboardingContacts, useOnboardingDocuments, useAllEmployees } from '../hooks/queries';
+import { useOnboardingTasks, useOnboardingContacts, useOnboardingDocuments, useAllEmployees, useCreateContact, useUpdateContact, useDeleteContact } from '../hooks/queries';
 import { TaskList, KeyContacts, DocumentChecklist, InviteModal, OnboardingOverview } from '../components/onboarding';
 
 export const Onboarding: React.FC = () => {
@@ -36,6 +36,28 @@ export const Onboarding: React.FC = () => {
     // React Query hooks for data fetching
     const { data: tasks = [] } = useOnboardingTasks();
     const { data: keyContacts = [] } = useOnboardingContacts();
+    const createContactMutation = useCreateContact();
+    const updateContactMutation = useUpdateContact();
+    const deleteContactMutation = useDeleteContact();
+
+    const handleAddContact = async (data: { name: string; role: string; relation: string; email: string }) => {
+        try {
+            await createContactMutation.mutateAsync(data);
+            showToast('Contact added', 'success');
+        } catch { showToast('Failed to add contact', 'error'); }
+    };
+    const handleEditContact = async (id: string, data: { name: string; role: string; relation: string; email: string }) => {
+        try {
+            await updateContactMutation.mutateAsync({ id, data });
+            showToast('Contact updated', 'success');
+        } catch { showToast('Failed to update contact', 'error'); }
+    };
+    const handleDeleteContact = async (id: string) => {
+        try {
+            await deleteContactMutation.mutateAsync(id);
+            showToast('Contact deleted', 'success');
+        } catch { showToast('Failed to delete contact', 'error'); }
+    };
 
     // Document Checklist state (from React Query)
     const { data: onboardingDocs = [] } = useOnboardingDocuments();
@@ -475,7 +497,14 @@ export const Onboarding: React.FC = () => {
                         isOverdue={isOverdue}
                         getPriorityBadgeClass={getPriorityBadgeClass}
                     >
-                        <KeyContacts contacts={keyContacts} showToast={showToast} />
+                        <KeyContacts
+                            contacts={keyContacts}
+                            showToast={showToast}
+                            isAdmin={user?.role === 'HR_ADMIN'}
+                            onAddContact={handleAddContact}
+                            onEditContact={handleEditContact}
+                            onDeleteContact={handleDeleteContact}
+                        />
                         <DocumentChecklist
                             documents={visibleDocs}
                             userRole={user?.role}

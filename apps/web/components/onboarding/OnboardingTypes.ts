@@ -41,6 +41,10 @@ export interface TaskListProps {
 export interface KeyContactsProps {
     contacts: KeyContact[];
     showToast: ShowToastFn;
+    isAdmin?: boolean;
+    onAddContact?: (data: { name: string; role: string; relation: string; email: string }) => void;
+    onEditContact?: (id: string, data: { name: string; role: string; relation: string; email: string }) => void;
+    onDeleteContact?: (id: string) => void;
 }
 
 export interface DocumentChecklistProps {

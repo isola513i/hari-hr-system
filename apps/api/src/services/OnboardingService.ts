@@ -475,6 +475,43 @@ export class OnboardingService {
     return result.rows.map(mapContactRow);
   }
 
+  // Create a new contact
+  async createContact(data: { name: string; role: string; relation: string; email: string; avatar?: string }): Promise<KeyContactResponse> {
+    const avatar = data.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`;
+    const result = await query(
+      `INSERT INTO contacts (name, role, relation, email, avatar) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [data.name, data.role, data.relation, data.email, avatar]
+    );
+    return mapContactRow(result.rows[0]);
+  }
+
+  // Update a contact
+  async updateContact(id: string, data: { name?: string; role?: string; relation?: string; email?: string }): Promise<KeyContactResponse | null> {
+    const fields: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+    if (data.name !== undefined) { fields.push(`name = $${idx++}`); values.push(data.name); }
+    if (data.role !== undefined) { fields.push(`role = $${idx++}`); values.push(data.role); }
+    if (data.relation !== undefined) { fields.push(`relation = $${idx++}`); values.push(data.relation); }
+    if (data.email !== undefined) { fields.push(`email = $${idx++}`); values.push(data.email); }
+    if (fields.length === 0) return null;
+    // Update avatar based on new name
+    if (data.name !== undefined) {
+      fields.push(`avatar = $${idx++}`);
+      values.push(`https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`);
+    }
+    values.push(id);
+    const result = await query(`UPDATE contacts SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`, values);
+    if (result.rows.length === 0) return null;
+    return mapContactRow(result.rows[0]);
+  }
+
+  // Delete a contact
+  async deleteContact(id: string): Promise<boolean> {
+    const result = await query(`DELETE FROM contacts WHERE id = $1`, [id]);
+    return (result.rowCount ?? 0) > 0;
+  }
+
   // ==========================================
   // Document Checklist Methods
   // ==========================================

@@ -396,6 +396,32 @@ export const useOnboardingContacts = () => {
   });
 };
 
+export const useCreateContact = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name: string; role: string; relation: string; email: string }) =>
+      api.post<KeyContact>('/onboarding/contacts', data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: queryKeys.onboarding.contacts() }); },
+  });
+};
+
+export const useUpdateContact = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<KeyContact> }) =>
+      api.put<KeyContact>(`/onboarding/contacts/${id}`, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: queryKeys.onboarding.contacts() }); },
+  });
+};
+
+export const useDeleteContact = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/onboarding/contacts/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: queryKeys.onboarding.contacts() }); },
+  });
+};
+
 export const useOnboardingDocuments = () => {
   return useQuery({
     queryKey: queryKeys.onboarding.documents(),
