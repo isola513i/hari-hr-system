@@ -1,8 +1,4 @@
 {
-  "framework": "vite",
-  "installCommand": "npm install --workspaces",
-  "buildCommand": "cd apps/web && npm run build",
-  "outputDirectory": "apps/web/dist",
   "rewrites": [
     { "source": "/((?!assets|favicon|static).*)", "destination": "/index.html" }
   ]
