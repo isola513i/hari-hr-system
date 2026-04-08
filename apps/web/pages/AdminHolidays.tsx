@@ -4,6 +4,8 @@ import { Calendar, Plus, Pencil, Trash2, RotateCw } from 'lucide-react';
 import { useHolidays, useCreateHoliday, useUpdateHoliday, useDeleteHoliday } from '../hooks/queries';
 import { useToast } from '../contexts/ToastContext';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { Modal } from '../components/Modal';
+import { DatePicker } from '../components/DatePicker';
 import type { PublicHoliday } from '../types';
 
 interface HolidayFormState {
@@ -165,98 +167,80 @@ export const AdminHolidays: React.FC = () => {
       </div>
 
       {/* Create/Edit Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
-            <h2 className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark mb-4">
-              {editingId ? t('leave:holidays.editHoliday') : t('leave:holidays.addHoliday')}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-1">
-                  {t('leave:holidays.name')}
-                </label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
-                  className="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-primary-light dark:text-text-primary-dark focus:ring-2 focus:ring-primary focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-1">
-                  {t('leave:holidays.date')}
-                </label>
-                <input
-                  type="date"
-                  value={form.date}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
-                  required
-                  className="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-primary-light dark:text-text-primary-dark focus:ring-2 focus:ring-primary focus:outline-none"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="isRecurring"
-                  checked={form.isRecurring}
-                  onChange={(e) => setForm({ ...form, isRecurring: e.target.checked })}
-                  className="w-4 h-4 text-primary border-border-light dark:border-border-dark rounded focus:ring-primary"
-                />
-                <label htmlFor="isRecurring" className="text-sm text-text-primary-light dark:text-text-primary-dark">
-                  {t('leave:holidays.recurring')}
-                </label>
-              </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 text-sm text-text-muted-light dark:text-text-muted-dark hover:text-text-primary-light dark:hover:text-text-primary-dark transition-colors"
-                >
-                  {t('common:cancel')}
-                </button>
-                <button
-                  type="submit"
-                  disabled={createHoliday.isPending || updateHoliday.isPending}
-                  className="px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
-                >
-                  {editingId ? t('common:save') : t('leave:holidays.addHoliday')}
-                </button>
-              </div>
-            </form>
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editingId ? t('leave:holidays.editHoliday') : t('leave:holidays.addHoliday')}>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+              {t('leave:holidays.name')}
+            </label>
+            <input
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              required
+              className="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none"
+            />
           </div>
-        </div>
-      )}
+          <div>
+            <DatePicker
+              label={t('leave:holidays.date')}
+              value={form.date}
+              onChange={(date) => setForm({ ...form, date })}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isRecurring"
+              checked={form.isRecurring}
+              onChange={(e) => setForm({ ...form, isRecurring: e.target.checked })}
+            />
+            <label htmlFor="isRecurring" className="text-sm text-text-light dark:text-text-dark">
+              {t('leave:holidays.recurring')}
+            </label>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setModalOpen(false)}
+              className="px-4 py-2 text-sm text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors"
+            >
+              {t('common:buttons.cancel')}
+            </button>
+            <button
+              type="submit"
+              disabled={createHoliday.isPending || updateHoliday.isPending}
+              className="px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+            >
+              {editingId ? t('common:buttons.save') : t('leave:holidays.addHoliday')}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Delete Confirm Modal */}
-      {deleteConfirmId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl w-full max-w-sm mx-4 p-6">
-            <h2 className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark mb-2">
+      <Modal isOpen={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} title={t('leave:holidays.deleteHoliday')} maxWidth="sm">
+        <div className="p-6">
+          <p className="text-sm text-text-muted-light dark:text-text-muted-dark mb-4">
+            {t('leave:holidays.deleteConfirm')}
+          </p>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setDeleteConfirmId(null)}
+              className="px-4 py-2 text-sm text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors"
+            >
+              {t('common:buttons.cancel')}
+            </button>
+            <button
+              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+              disabled={deleteHoliday.isPending}
+              className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+            >
               {t('leave:holidays.deleteHoliday')}
-            </h2>
-            <p className="text-sm text-text-muted-light dark:text-text-muted-dark mb-4">
-              {t('leave:holidays.deleteConfirm')}
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setDeleteConfirmId(null)}
-                className="px-4 py-2 text-sm text-text-muted-light dark:text-text-muted-dark hover:text-text-primary-light dark:hover:text-text-primary-dark transition-colors"
-              >
-                {t('common:cancel')}
-              </button>
-              <button
-                onClick={() => handleDelete(deleteConfirmId)}
-                disabled={deleteHoliday.isPending}
-                className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
-              >
-                {t('leave:holidays.deleteHoliday')}
-              </button>
-            </div>
+            </button>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 };

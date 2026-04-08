@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BASE_URL, getAuthToken } from '../lib/api';
 import { Dropdown } from '../components/Dropdown';
@@ -66,6 +66,14 @@ export const Documents: React.FC = () => {
   const [selectedFileType, setSelectedFileType] = useState<string>('All');
   const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
+
+  const blobUrlRefs = useRef<{ image: string | null; pdf: string | null }>({ image: null, pdf: null });
+
+  const displaySize = (size: string | undefined) => {
+    if (!size || /^0(\.0+)?\s*(B|KB|MB|GB)$/i.test(size)) return '-';
+    return size;
+  };
 
   // Upload State
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -115,43 +123,63 @@ export const Documents: React.FC = () => {
     setCurrentPage(1);
   };
 
-  // Fetch image preview with auth token
+  // Fetch file preview with auth token (images + PDF)
   useEffect(() => {
+    // Revoke previous blob URLs
+    if (blobUrlRefs.current.image) URL.revokeObjectURL(blobUrlRefs.current.image);
+    if (blobUrlRefs.current.pdf) URL.revokeObjectURL(blobUrlRefs.current.pdf);
+    blobUrlRefs.current = { image: null, pdf: null };
+
     if (!previewDoc) {
       setPreviewImageUrl(null);
+      setPreviewPdfUrl(null);
       return;
     }
 
     const imageTypes = ['JPG', 'PNG', 'JPEG', 'GIF'];
-    if (!imageTypes.includes(previewDoc.type)) {
+    const isImage = imageTypes.includes(previewDoc.type);
+    const isPdf = previewDoc.type === 'PDF';
+
+    if (!isImage && !isPdf) {
       setPreviewImageUrl(null);
+      setPreviewPdfUrl(null);
       return;
     }
 
-    const fetchImage = async () => {
+    let cancelled = false;
+
+    const fetchPreview = async () => {
       try {
         const token = getAuthToken();
         const response = await fetch(`${BASE_URL}/documents/${previewDoc.id}/download`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (response.ok) {
+        if (response.ok && !cancelled) {
           const blob = await response.blob();
           const url = URL.createObjectURL(blob);
-          setPreviewImageUrl(url);
+          if (isImage) {
+            blobUrlRefs.current.image = url;
+            setPreviewImageUrl(url);
+            setPreviewPdfUrl(null);
+          } else {
+            blobUrlRefs.current.pdf = url;
+            setPreviewPdfUrl(url);
+            setPreviewImageUrl(null);
+          }
         }
       } catch (error) {
-        console.error('Error fetching image preview:', error);
+        console.error('Error fetching preview:', error);
       }
     };
 
-    fetchImage();
+    fetchPreview();
 
-    // Cleanup blob URL on unmount
     return () => {
-      if (previewImageUrl) {
-        URL.revokeObjectURL(previewImageUrl);
-      }
+      cancelled = true;
+      if (blobUrlRefs.current.image) URL.revokeObjectURL(blobUrlRefs.current.image);
+      if (blobUrlRefs.current.pdf) URL.revokeObjectURL(blobUrlRefs.current.pdf);
+      blobUrlRefs.current = { image: null, pdf: null };
     };
   }, [previewDoc]);
 
@@ -258,7 +286,7 @@ export const Documents: React.FC = () => {
 
   const handleShare = async (e: React.MouseEvent, doc: DocumentItem) => {
     e.stopPropagation();
-    const shareUrl = `${window.location.origin}/api/documents/${doc.id}/download`;
+    const shareUrl = `${window.location.origin}/#/documents?preview=${doc.id}`;
 
     try {
       await navigator.clipboard.writeText(shareUrl);
@@ -566,7 +594,7 @@ export const Documents: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="h-24 flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 rounded-lg mb-3">
+                  <div className="h-24 flex items-center justify-center bg-white dark:bg-card-dark rounded-lg mb-3">
                     {getFileIcon(doc.type)}
                   </div>
                   <div className="min-w-0">
@@ -577,7 +605,7 @@ export const Documents: React.FC = () => {
                       {doc.name}
                     </h4>
                     <p className="text-xs text-text-muted-light dark:text-text-muted-dark truncate">
-                      {doc.size}
+                      {displaySize(doc.size)}
                     </p>
                   </div>
                 </div>
@@ -615,7 +643,7 @@ export const Documents: React.FC = () => {
                           </span>
                         </td>
                         <td className="px-6 py-3 text-text-muted-light dark:text-text-muted-dark font-mono text-xs">
-                          {doc.size}
+                          {displaySize(doc.size)}
                         </td>
                         <td className="px-6 py-3 text-text-muted-light dark:text-text-muted-dark">
                           {doc.owner}
@@ -679,7 +707,7 @@ export const Documents: React.FC = () => {
 
                     <div className="grid grid-cols-2 gap-2 text-xs text-text-muted-light dark:text-text-muted-dark mb-3">
                       <div>
-                        <span className="font-medium">{t('card.size')}</span> {doc.size}
+                        <span className="font-medium">{t('card.size')}</span> {displaySize(doc.size)}
                       </div>
                       <div>
                         <span className="font-medium">{t('card.owner')}</span> {doc.owner}
@@ -753,7 +781,7 @@ export const Documents: React.FC = () => {
                     {previewDoc.name}
                   </h3>
                   <p className="text-xs text-text-muted-light">
-                    {previewDoc.size} • {formatDate(previewDoc.lastAccessed)}
+                    {displaySize(previewDoc.size)} • {formatDate(previewDoc.lastAccessed)}
                   </p>
                 </div>
               </div>
@@ -789,6 +817,18 @@ export const Documents: React.FC = () => {
                     </div>
                   )}
                 </div>
+              ) : previewDoc.type === 'PDF' ? (
+                previewPdfUrl ? (
+                  <iframe
+                    src={previewPdfUrl}
+                    className="w-full h-full rounded-lg bg-white"
+                    title="PDF Preview"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-64 w-64 bg-gray-200 dark:bg-gray-700 rounded-lg">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                )
               ) : (
                 <div className="text-center p-12 bg-white dark:bg-gray-800 rounded-xl shadow-sm max-w-lg w-full border border-border-light dark:border-border-dark">
                   <div className="flex justify-center mb-6">{getFileIcon(previewDoc.type, 64)}</div>

@@ -18,7 +18,8 @@
     "helpSupport": "Help & Support",
     "signOut": "Sign Out",
     "menu": "Menu",
-    "holidays": "Holidays"
+    "holidays": "Holidays",
+    "training": "Training"
   },
   "header": {
     "searchPlaceholder": "Search employees, documents, policies...",

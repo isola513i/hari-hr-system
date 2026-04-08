@@ -125,13 +125,15 @@ export class EmployeeController {
         try {
             const { id } = req.params;
             await EmployeeService.deleteEmployee(id);
-            res.json({ message: 'Employee deleted successfully' });
+            res.json({ message: 'Employee terminated successfully' });
         } catch (error: any) {
             console.error('Delete employee error:', error);
             if (error.message === 'Employee not found') {
                 res.status(404).json({ error: error.message });
+            } else if (error.message === 'Employee is already terminated') {
+                res.status(409).json({ error: error.message });
             } else {
-                res.status(500).json({ error: 'Failed to delete employee' });
+                res.status(500).json({ error: 'Failed to terminate employee' });
             }
         }
     }

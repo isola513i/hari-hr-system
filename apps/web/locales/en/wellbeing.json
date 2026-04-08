@@ -5,6 +5,10 @@
   "sentiment": {
     "title": "Employee Sentiment",
     "live": "Live",
+    "positive": "Positive",
+    "neutral": "Neutral",
+    "negative": "Negative",
+    "needsWork": "Needs Work",
     "noData": "No Survey Data Yet",
     "noDataDesc": "Sentiment scores will appear here once employees start completing surveys.",
     "responseRate": "Response Rate",

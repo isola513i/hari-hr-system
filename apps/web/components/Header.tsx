@@ -125,9 +125,14 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
   }, []);
 
-  // Close dropdowns when clicking outside (desktop only)
+  // Close dropdowns when clicking outside (desktop only — mobile uses backdrop overlays)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Skip on mobile: portals are rendered outside refs, so mousedown
+      // would close the bottom sheet before the click event reaches buttons.
+      const isMobile = window.innerWidth < 640;
+      if (isMobile) return;
+
       if (
         searchRef.current &&
         !searchRef.current.contains(event.target as Node)
@@ -361,7 +366,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 toggleViewMode();
                 navigate("/");
               }}
-              className="flex items-center gap-1.5 group min-h-[44px]"
+              className="hidden sm:flex items-center gap-1.5 group min-h-[44px]"
               title={isAdminView ? t('header.switchToEmployee') : t('header.switchToAdmin')}
             >
               <span className="text-[11px] font-medium text-text-muted-light dark:text-text-muted-dark">

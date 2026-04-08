@@ -115,7 +115,7 @@ const Login: React.FC = () => {
                 className="h-14 w-14 rounded-xl shadow-lg shadow-black/20 object-contain bg-white/10 p-2"
               />
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">HARI Demo</h1>
+                <h1 className="text-3xl font-bold tracking-tight">HARI</h1>
                 <p className="text-white/70 text-sm">{t('login.tagline')}</p>
               </div>
             </div>
@@ -163,12 +163,10 @@ const Login: React.FC = () => {
 
         <div className="relative z-10 px-6 pt-10 pb-24">
           {/* Top Navigation */}
-          <div className="flex items-center justify-end mb-8">
-            <Link to="/register" className="text-white/80 text-sm flex items-center gap-2">
-              {t('login.newEmployee')}
-              <span className="border border-white/30 rounded-lg px-3 py-1.5 text-white font-medium hover:bg-white/10 transition-colors">
-                {t('login.createAccount')}
-              </span>
+          <div className="flex items-center justify-end gap-2 mb-8">
+            <span className="text-white/80 text-sm">{t('login.newEmployee')}</span>
+            <Link to="/register" className="border border-white/30 rounded-lg px-3 py-1.5 text-white text-sm font-medium hover:bg-white/10 transition-colors">
+              {t('login.createAccount')}
             </Link>
           </div>
 
@@ -179,7 +177,7 @@ const Login: React.FC = () => {
               alt="AIYA Logo"
               className="h-24 w-24 rounded-2xl shadow-lg shadow-black/20 object-contain bg-white p-3 mb-4"
             />
-            <h1 className="text-3xl font-bold text-white tracking-tight">HARI Demo</h1>
+            <h1 className="text-3xl font-bold text-white tracking-tight">HARI</h1>
             <p className="text-white/70 text-sm mt-1">{t('login.tagline')}</p>
           </div>
         </div>
@@ -190,7 +188,7 @@ const Login: React.FC = () => {
         <div className="w-full max-w-md px-4 -mt-16 relative z-10 mb-8 lg:px-0 lg:mt-0 lg:mb-0">
 
           {/* Login Card */}
-          <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 p-8 border border-border-light dark:border-border-dark">
+          <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 p-8 border border-border-light dark:border-border-dark animate-fade-in-up">
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center h-14 w-14 bg-gradient-to-br from-primary to-primary-dark text-white rounded-xl shadow-lg shadow-primary/30 mb-4">
                 <Lock size={26} />

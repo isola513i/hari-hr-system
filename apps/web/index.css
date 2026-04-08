@@ -9,6 +9,74 @@
   }
 }
 
+/* Page transition animations */
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.animate-fade-in-up {
+    animation: fade-in-up 0.5s ease-out both;
+}
+
+/* Hide scrollbar but keep scroll functionality */
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Checkbox styling — scoped to app root */
+#root input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #cbd5e0;
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+#root input[type="checkbox"]:hover {
+    border-color: #3498db;
+}
+#root input[type="checkbox"]:checked {
+    background: #3498db;
+    border-color: #3498db;
+}
+#root input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 4.5px;
+    top: 1.5px;
+    width: 5px;
+    height: 9px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+#root input[type="checkbox"]:focus-visible {
+    outline: 2px solid #3498db40;
+    outline-offset: 1px;
+}
+.dark #root input[type="checkbox"] {
+    border-color: #4a5568;
+}
+.dark #root input[type="checkbox"]:checked {
+    background: #3498db;
+    border-color: #3498db;
+}
+
 /* Custom Scrollbar for a cleaner look */
 ::-webkit-scrollbar {
     width: 8px;

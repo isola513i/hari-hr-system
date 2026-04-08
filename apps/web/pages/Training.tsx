@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   GraduationCap, Plus, BookOpen, Users, AlertCircle, BarChart3,
   Pencil, Trash2, ToggleLeft, ToggleRight, UserPlus,
 } from 'lucide-react';
 import { Modal } from '../components/Modal';
+import { Dropdown } from '../components/Dropdown';
+import { DatePicker } from '../components/DatePicker';
 import { Toast } from '../components/Toast';
 import {
   useTrainingModules,
@@ -17,6 +20,7 @@ import { useAllEmployees } from '../hooks/queries';
 import type { TrainingModule } from '../types';
 
 export const Training: React.FC = () => {
+  const { t } = useTranslation(['training', 'common']);
   const { data: modules, isLoading } = useTrainingModules();
   const { data: analytics } = useTrainingAnalytics();
   const createMutation = useCreateTrainingModule();
@@ -71,16 +75,16 @@ export const Training: React.FC = () => {
           id: editingModule.id,
           data: { title: formTitle, description: formDescription, duration: formDuration, type: formType as TrainingModule['type'] },
         });
-        showToast('Module updated');
+        showToast(t('training:toast.moduleUpdated'));
       } else {
         await createMutation.mutateAsync({
           title: formTitle, description: formDescription, duration: formDuration, type: formType as TrainingModule['type'],
         });
-        showToast('Module created');
+        showToast(t('training:toast.moduleCreated'));
       }
       setIsFormOpen(false);
     } catch {
-      showToast('Failed to save module', 'error');
+      showToast(t('training:toast.saveFailed'), 'error');
     }
   };
 
@@ -90,18 +94,18 @@ export const Training: React.FC = () => {
         id: mod.id,
         data: { isActive: !mod.isActive } as Partial<TrainingModule>,
       });
-      showToast(mod.isActive ? 'Module deactivated' : 'Module activated');
+      showToast(mod.isActive ? t('training:toast.moduleDeactivated') : t('training:toast.moduleActivated'));
     } catch {
-      showToast('Failed to update module', 'error');
+      showToast(t('training:toast.toggleFailed'), 'error');
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await deleteMutation.mutateAsync(id);
-      showToast('Module deactivated');
+      showToast(t('training:toast.moduleDeleted'));
     } catch {
-      showToast('Failed to delete module', 'error');
+      showToast(t('training:toast.deleteFailed'), 'error');
     }
   };
 
@@ -113,17 +117,27 @@ export const Training: React.FC = () => {
         moduleId: bulkModuleId,
         dueDate: bulkDueDate || undefined,
       });
-      showToast(`Training assigned to ${(result as any).assigned} employees`);
+      const assigned = result && typeof result === 'object' && 'assigned' in result ? (result as { assigned: number }).assigned : 0;
+      showToast(t('training:toast.assignedSuccess', { count: assigned }));
       setIsBulkAssignOpen(false);
       setSelectedEmployees([]);
       setBulkModuleId('');
       setBulkDueDate('');
     } catch {
-      showToast('Failed to assign training', 'error');
+      showToast(t('training:toast.assignFailed'), 'error');
     }
   };
 
-  const activeModules = modules?.filter(m => m.isActive !== false) || [];
+  const moduleList = Array.isArray(modules) ? modules : [];
+  const activeModules = moduleList.filter(m => m.isActive !== false);
+  const stats = analytics ? {
+    activeModules: analytics.activeModules ?? 0,
+    totalAssignments: analytics.totalAssignments ?? 0,
+    completionRate: analytics.completionRate ?? 0,
+    overdueCount: analytics.overdueCount ?? 0,
+    completionsByDepartment: Array.isArray(analytics.completionsByDepartment) ? analytics.completionsByDepartment : [],
+    completionsByModule: Array.isArray(analytics.completionsByModule) ? analytics.completionsByModule : [],
+  } : null;
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -131,10 +145,10 @@ export const Training: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-text-light dark:text-text-dark flex items-center gap-2">
-            <GraduationCap size={28} /> Training Management
+            <GraduationCap size={28} /> {t('training:title')}
           </h1>
           <p className="text-sm text-text-muted-light dark:text-text-muted-dark mt-1">
-            Manage training modules and track employee progress
+            {t('training:subtitle')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -142,44 +156,44 @@ export const Training: React.FC = () => {
             onClick={() => setIsBulkAssignOpen(true)}
             className="flex items-center gap-2 px-4 py-2 border border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary/5 transition-colors"
           >
-            <UserPlus size={16} /> Bulk Assign
+            <UserPlus size={16} /> {t('training:bulkAssign')}
           </button>
           <button
             onClick={openCreateForm}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
           >
-            <Plus size={16} /> Create Module
+            <Plus size={16} /> {t('training:createModule')}
           </button>
         </div>
       </div>
 
       {/* Stats */}
-      {analytics && (
+      {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-card-light dark:bg-card-dark rounded-xl p-4 border border-border-light dark:border-border-dark">
             <div className="flex items-center gap-2 text-text-muted-light dark:text-text-muted-dark text-xs mb-1">
-              <BookOpen size={14} /> Total Modules
+              <BookOpen size={14} /> {t('training:stats.totalModules')}
             </div>
-            <p className="text-2xl font-bold text-text-light dark:text-text-dark">{analytics.activeModules}</p>
+            <p className="text-2xl font-bold text-text-light dark:text-text-dark">{stats.activeModules}</p>
           </div>
           <div className="bg-card-light dark:bg-card-dark rounded-xl p-4 border border-border-light dark:border-border-dark">
             <div className="flex items-center gap-2 text-text-muted-light dark:text-text-muted-dark text-xs mb-1">
-              <Users size={14} /> Assignments
+              <Users size={14} /> {t('training:stats.assignments')}
             </div>
-            <p className="text-2xl font-bold text-text-light dark:text-text-dark">{analytics.totalAssignments}</p>
+            <p className="text-2xl font-bold text-text-light dark:text-text-dark">{stats.totalAssignments}</p>
           </div>
           <div className="bg-card-light dark:bg-card-dark rounded-xl p-4 border border-border-light dark:border-border-dark">
             <div className="flex items-center gap-2 text-text-muted-light dark:text-text-muted-dark text-xs mb-1">
-              <BarChart3 size={14} /> Completion Rate
+              <BarChart3 size={14} /> {t('training:stats.completionRate')}
             </div>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{analytics.completionRate}%</p>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.completionRate}%</p>
           </div>
           <div className="bg-card-light dark:bg-card-dark rounded-xl p-4 border border-border-light dark:border-border-dark">
             <div className="flex items-center gap-2 text-text-muted-light dark:text-text-muted-dark text-xs mb-1">
-              <AlertCircle size={14} /> Overdue
+              <AlertCircle size={14} /> {t('training:stats.overdue')}
             </div>
-            <p className={`text-2xl font-bold ${analytics.overdueCount > 0 ? 'text-red-500' : 'text-text-light dark:text-text-dark'}`}>
-              {analytics.overdueCount}
+            <p className={`text-2xl font-bold ${stats.overdueCount > 0 ? 'text-red-500' : 'text-text-light dark:text-text-dark'}`}>
+              {stats.overdueCount}
             </p>
           </div>
         </div>
@@ -188,19 +202,19 @@ export const Training: React.FC = () => {
       {/* Modules Table */}
       <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden">
         <div className="px-6 py-4 border-b border-border-light dark:border-border-dark">
-          <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Training Modules</h2>
+          <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">{t('training:modules.sectionTitle')}</h2>
         </div>
         {isLoading ? (
-          <div className="p-12 text-center text-text-muted-light dark:text-text-muted-dark">Loading...</div>
-        ) : !modules?.length ? (
+          <div className="p-12 text-center text-text-muted-light dark:text-text-muted-dark">{t('training:modules.loading')}</div>
+        ) : !moduleList.length ? (
           <div className="p-12 text-center text-text-muted-light dark:text-text-muted-dark">
             <GraduationCap size={48} className="mx-auto mb-4 opacity-20" />
-            <p>No training modules yet</p>
-            <p className="text-xs mt-1">Create your first module to get started</p>
+            <p>{t('training:modules.noModules')}</p>
+            <p className="text-xs mt-1">{t('training:modules.noModulesHint')}</p>
           </div>
         ) : (
           <div className="divide-y divide-border-light dark:divide-border-dark">
-            {modules.map((mod) => (
+            {moduleList.map((mod) => (
               <div key={mod.id} className={`flex items-center justify-between px-6 py-4 hover:bg-background-light dark:hover:bg-background-dark/50 transition-colors ${!mod.isActive ? 'opacity-50' : ''}`}>
                 <div className="flex items-center gap-4">
                   <div className="p-2 rounded-lg bg-primary/10 text-primary">
@@ -217,7 +231,7 @@ export const Training: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${mod.isActive ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}>
-                    {mod.isActive ? 'Active' : 'Inactive'}
+                    {mod.isActive ? t('training:modules.active') : t('training:modules.inactive')}
                   </span>
                   <button onClick={() => handleToggleActive(mod)} className="p-1.5 text-text-muted-light hover:text-primary rounded transition-colors" title={mod.isActive ? 'Deactivate' : 'Activate'}>
                     {mod.isActive ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
@@ -236,11 +250,11 @@ export const Training: React.FC = () => {
       </div>
 
       {/* Department Completion Stats */}
-      {analytics && analytics.completionsByDepartment.length > 0 && (
+      {stats?.completionsByDepartment && stats.completionsByDepartment.length > 0 && (
         <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6">
-          <h2 className="text-lg font-semibold text-text-light dark:text-text-dark mb-4">Completion by Department</h2>
+          <h2 className="text-lg font-semibold text-text-light dark:text-text-dark mb-4">{t('training:department.sectionTitle')}</h2>
           <div className="space-y-3">
-            {analytics.completionsByDepartment.map((dept) => (
+            {stats.completionsByDepartment.map((dept) => (
               <div key={dept.department} className="flex items-center gap-4">
                 <span className="text-sm text-text-light dark:text-text-dark w-32 truncate">{dept.department}</span>
                 <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-2.5">
@@ -259,91 +273,86 @@ export const Training: React.FC = () => {
       )}
 
       {/* Create/Edit Module Modal */}
-      <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={editingModule ? 'Edit Module' : 'Create Module'}>
-        <div className="space-y-4">
+      <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={editingModule ? t('training:form.editModule') : t('training:form.createModule')}>
+        <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Title *</label>
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('training:form.titleLabel')}</label>
             <input
               value={formTitle}
               onChange={(e) => setFormTitle(e.target.value)}
-              placeholder="e.g., Data Security Basics"
-              className="w-full px-3 py-2 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+              placeholder={t('training:form.titlePlaceholder')}
+              className="w-full px-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-light dark:text-text-dark"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Description</label>
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('training:form.descriptionLabel')}</label>
             <textarea
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+              className="w-full px-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-light dark:text-text-dark"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Duration</label>
+              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('training:form.durationLabel')}</label>
               <input
                 value={formDuration}
                 onChange={(e) => setFormDuration(e.target.value)}
-                placeholder="e.g., 2h, 30m"
-                className="w-full px-3 py-2 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                placeholder={t('training:form.durationPlaceholder')}
+                className="w-full px-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-light dark:text-text-dark"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Type</label>
-              <select
+              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('training:form.typeLabel')}</label>
+              <Dropdown
                 value={formType}
-                onChange={(e) => setFormType(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-              >
-                <option value="Video">Video</option>
-                <option value="Quiz">Quiz</option>
-                <option value="Reading">Reading</option>
-                <option value="Course">Course</option>
-              </select>
+                onChange={setFormType}
+                options={[
+                  { value: 'Video', label: t('training:form.typeVideo') },
+                  { value: 'Quiz', label: t('training:form.typeQuiz') },
+                  { value: 'Reading', label: t('training:form.typeReading') },
+                  { value: 'Course', label: t('training:form.typeCourse') },
+                ]}
+              />
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <button onClick={() => setIsFormOpen(false)} className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:hover:text-text-dark">Cancel</button>
+          <div className="flex justify-end gap-3 pt-2">
+            <button onClick={() => setIsFormOpen(false)} className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:hover:text-text-dark">{t('training:form.cancel')}</button>
             <button
               onClick={handleSaveModule}
               disabled={!formTitle || createMutation.isPending || updateMutation.isPending}
               className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
-              {createMutation.isPending || updateMutation.isPending ? 'Saving...' : editingModule ? 'Update' : 'Create'}
+              {createMutation.isPending || updateMutation.isPending ? t('training:form.saving') : editingModule ? t('training:form.update') : t('training:form.create')}
             </button>
           </div>
         </div>
       </Modal>
 
       {/* Bulk Assign Modal */}
-      <Modal isOpen={isBulkAssignOpen} onClose={() => setIsBulkAssignOpen(false)} title="Bulk Assign Training" maxWidth="lg">
-        <div className="space-y-4">
+      <Modal isOpen={isBulkAssignOpen} onClose={() => setIsBulkAssignOpen(false)} title={t('training:bulkAssignModal.title')} maxWidth="lg">
+        <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Training Module *</label>
-            <select
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('training:bulkAssignModal.moduleLabel')}</label>
+            <Dropdown
               value={bulkModuleId}
-              onChange={(e) => setBulkModuleId(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-            >
-              <option value="">Select a module...</option>
-              {activeModules.map((mod) => (
-                <option key={mod.id} value={mod.id}>{mod.title}</option>
-              ))}
-            </select>
+              onChange={setBulkModuleId}
+              placeholder={t('training:bulkAssignModal.modulePlaceholder')}
+              options={activeModules.map((mod) => ({ value: mod.id, label: mod.title }))}
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Due Date (Optional)</label>
-            <input
-              type="date"
+            <DatePicker
+              label={t('training:bulkAssignModal.dueDateLabel')}
               value={bulkDueDate}
-              onChange={(e) => setBulkDueDate(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+              onChange={setBulkDueDate}
+              minDate={new Date().toISOString().split('T')[0]}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
-              Select Employees ({selectedEmployees.length} selected)
+              {t('training:bulkAssignModal.selectEmployees')} ({t('training:bulkAssignModal.selected', { count: selectedEmployees.length })})
             </label>
             <div className="max-h-48 overflow-y-auto border border-border-light dark:border-border-dark rounded-lg p-2 space-y-1">
               {employees?.map((emp) => (
@@ -364,14 +373,14 @@ export const Training: React.FC = () => {
               ))}
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <button onClick={() => setIsBulkAssignOpen(false)} className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:hover:text-text-dark">Cancel</button>
+          <div className="flex justify-end gap-3 pt-2">
+            <button onClick={() => setIsBulkAssignOpen(false)} className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:hover:text-text-dark">{t('training:bulkAssignModal.cancel')}</button>
             <button
               onClick={handleBulkAssign}
               disabled={!bulkModuleId || selectedEmployees.length === 0 || bulkAssignMutation.isPending}
               className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
-              {bulkAssignMutation.isPending ? 'Assigning...' : `Assign to ${selectedEmployees.length} employees`}
+              {bulkAssignMutation.isPending ? t('training:bulkAssignModal.assigning') : t('training:bulkAssignModal.assignToCount', { count: selectedEmployees.length })}
             </button>
           </div>
         </div>

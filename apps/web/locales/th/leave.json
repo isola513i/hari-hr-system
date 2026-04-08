@@ -88,8 +88,8 @@
     "exportCSV": "ส่งออก CSV",
     "selectAll": "เลือกทั้งหมด",
     "selected": "เลือก {{count}} รายการ",
-    "bulkApprove": "อนุมัติ ({{count}})",
-    "bulkReject": "ปฏิเสธ ({{count}})",
+    "bulkApprove": "อนุมัติ",
+    "bulkReject": "ปฏิเสธ",
     "bulkSuccess": "อัปเดต {{count}} คำขอสำเร็จ"
   },
   "detail": {

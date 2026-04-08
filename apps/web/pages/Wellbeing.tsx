@@ -335,8 +335,8 @@ export const Wellbeing: React.FC = () => {
                     // Label color based on overall score
                     const scoreColor = sentiment.overallScore >= 70 ? 'text-green-500'
                       : sentiment.overallScore >= 50 ? 'text-amber-500' : 'text-red-500';
-                    const sentimentLabel = sentiment.overallScore >= 70 ? 'Positive'
-                      : sentiment.overallScore >= 50 ? 'Neutral' : 'Needs Work';
+                    const sentimentLabel = sentiment.overallScore >= 70 ? t('wellbeing:sentiment.positive')
+                      : sentiment.overallScore >= 50 ? t('wellbeing:sentiment.neutral') : t('wellbeing:sentiment.needsWork');
 
                     return (
                       <div className="relative flex-shrink-0">
@@ -375,15 +375,15 @@ export const Wellbeing: React.FC = () => {
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full bg-green-400" />
-                        <span className="text-xs text-text-muted-light dark:text-text-muted-dark">Positive {sentiment.distribution.positive}%</span>
+                        <span className="text-xs text-text-muted-light dark:text-text-muted-dark">{t('wellbeing:sentiment.positive')} {sentiment.distribution.positive}%</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                        <span className="text-xs text-text-muted-light dark:text-text-muted-dark">Neutral {sentiment.distribution.neutral}%</span>
+                        <span className="text-xs text-text-muted-light dark:text-text-muted-dark">{t('wellbeing:sentiment.neutral')} {sentiment.distribution.neutral}%</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                        <span className="text-xs text-text-muted-light dark:text-text-muted-dark">Negative {sentiment.distribution.negative}%</span>
+                        <span className="text-xs text-text-muted-light dark:text-text-muted-dark">{t('wellbeing:sentiment.negative')} {sentiment.distribution.negative}%</span>
                       </div>
                     </div>
 

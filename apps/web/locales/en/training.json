@@ -1,0 +1,64 @@
+{
+  "title": "Training Management",
+  "subtitle": "Manage training modules and track employee progress",
+  "bulkAssign": "Bulk Assign",
+  "createModule": "Create Module",
+  "stats": {
+    "totalModules": "Total Modules",
+    "assignments": "Assignments",
+    "completionRate": "Completion Rate",
+    "overdue": "Overdue"
+  },
+  "modules": {
+    "sectionTitle": "Training Modules",
+    "loading": "Loading...",
+    "noModules": "No training modules yet",
+    "noModulesHint": "Create your first module to get started",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "department": {
+    "sectionTitle": "Completion by Department"
+  },
+  "form": {
+    "editModule": "Edit Module",
+    "createModule": "Create Module",
+    "titleLabel": "Title *",
+    "titlePlaceholder": "e.g., Data Security Basics",
+    "descriptionLabel": "Description",
+    "durationLabel": "Duration",
+    "durationPlaceholder": "e.g., 2h, 30m",
+    "typeLabel": "Type",
+    "typeVideo": "Video",
+    "typeQuiz": "Quiz",
+    "typeReading": "Reading",
+    "typeCourse": "Course",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "update": "Update",
+    "create": "Create"
+  },
+  "bulkAssignModal": {
+    "title": "Bulk Assign Training",
+    "moduleLabel": "Training Module *",
+    "modulePlaceholder": "Select a module...",
+    "dueDateLabel": "Due Date (Optional)",
+    "selectEmployees": "Select Employees",
+    "selected": "{{count}} selected",
+    "cancel": "Cancel",
+    "assigning": "Assigning...",
+    "assignToCount": "Assign to {{count}} employees"
+  },
+  "toast": {
+    "moduleUpdated": "Module updated",
+    "moduleCreated": "Module created",
+    "saveFailed": "Failed to save module",
+    "moduleDeactivated": "Module deactivated",
+    "moduleActivated": "Module activated",
+    "toggleFailed": "Failed to update module",
+    "moduleDeleted": "Module deleted",
+    "deleteFailed": "Failed to delete module",
+    "assignedSuccess": "Training assigned to {{count}} employees",
+    "assignFailed": "Failed to assign training"
+  }
+}

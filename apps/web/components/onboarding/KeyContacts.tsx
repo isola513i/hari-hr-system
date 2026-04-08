@@ -45,37 +45,44 @@ export const KeyContacts: React.FC<KeyContactsProps> = ({
         setForm(emptyForm);
     };
 
+    const inputClass = "w-full px-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-light dark:text-text-dark placeholder:text-text-muted-light/60";
+
     const renderForm = (onSave: () => void) => (
-        <div className="space-y-2 p-3 bg-background-light dark:bg-background-dark rounded-lg border border-border-light dark:border-border-dark">
-            <div className="grid grid-cols-2 gap-2">
+        <div className="p-4 bg-background-light dark:bg-background-dark rounded-xl border border-border-light dark:border-border-dark space-y-3">
+            <div className="grid grid-cols-2 gap-3">
                 <input
                     value={form.name}
                     onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                    placeholder={t('keyContacts.name', 'Name')}
-                    className="px-2.5 py-1.5 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded focus:outline-none focus:ring-1 focus:ring-primary text-text-light dark:text-text-dark"
+                    placeholder={t('keyContacts.name')}
+                    className={inputClass}
                 />
                 <input
                     value={form.email}
                     onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                    placeholder={t('keyContacts.email', 'Email')}
-                    className="px-2.5 py-1.5 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded focus:outline-none focus:ring-1 focus:ring-primary text-text-light dark:text-text-dark"
+                    placeholder={t('keyContacts.email')}
+                    type="email"
+                    className={inputClass}
                 />
                 <input
                     value={form.role}
                     onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
-                    placeholder={t('keyContacts.role', 'Role')}
-                    className="px-2.5 py-1.5 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded focus:outline-none focus:ring-1 focus:ring-primary text-text-light dark:text-text-dark"
+                    placeholder={t('keyContacts.role')}
+                    className={inputClass}
                 />
                 <input
                     value={form.relation}
                     onChange={e => setForm(f => ({ ...f, relation: e.target.value }))}
-                    placeholder={t('keyContacts.relation', 'Relation')}
-                    className="px-2.5 py-1.5 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded focus:outline-none focus:ring-1 focus:ring-primary text-text-light dark:text-text-dark"
+                    placeholder={t('keyContacts.relation')}
+                    className={inputClass}
                 />
             </div>
-            <div className="flex justify-end gap-1.5">
-                <button onClick={cancelEdit} className="p-1.5 text-text-muted-light hover:text-text-light rounded"><X size={16} /></button>
-                <button onClick={onSave} disabled={!form.name || !form.email} className="p-1.5 text-primary hover:bg-primary/10 rounded disabled:opacity-30"><Check size={16} /></button>
+            <div className="flex justify-end gap-2">
+                <button onClick={cancelEdit} className="px-3 py-1.5 text-sm text-text-muted-light hover:text-text-light dark:hover:text-text-dark transition-colors">
+                    {t('common:buttons.cancel')}
+                </button>
+                <button onClick={onSave} disabled={!form.name || !form.email} className="px-4 py-1.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-40">
+                    <Check size={14} className="inline -mt-0.5 mr-1" />{editingId ? t('common:buttons.save') : t('keyContacts.add')}
+                </button>
             </div>
         </div>
     );
@@ -87,9 +94,9 @@ export const KeyContacts: React.FC<KeyContactsProps> = ({
                 {isAdmin && onAddContact && (
                     <button
                         onClick={() => { setIsAdding(true); setEditingId(null); setForm(emptyForm); }}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/5 rounded-lg transition-colors"
                     >
-                        <Plus size={14} /> {t('keyContacts.add', 'Add')}
+                        <Plus size={14} /> {t('keyContacts.add')}
                     </button>
                 )}
             </div>
@@ -97,8 +104,8 @@ export const KeyContacts: React.FC<KeyContactsProps> = ({
                 {isAdding && renderForm(handleAdd)}
                 {contacts.length === 0 && !isAdding && (
                     <div className="text-center py-6 text-text-muted-light dark:text-text-muted-dark text-sm">
-                        {t('keyContacts.empty', 'No key contacts yet')}
-                        {isAdmin && <p className="text-xs mt-1">{t('keyContacts.addFirst', 'Add your first key contact above')}</p>}
+                        {t('keyContacts.empty')}
+                        {isAdmin && <p className="text-xs mt-1">{t('keyContacts.addFirst')}</p>}
                     </div>
                 )}
                 {contacts.map(contact => (

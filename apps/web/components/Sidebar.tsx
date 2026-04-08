@@ -20,7 +20,7 @@ import {
   GraduationCap,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useLeaveRequests } from '../hooks/queries';
+import { useLeaveRequests, useExpenseClaims } from '../hooks/queries';
 
 export const Sidebar: React.FC = () => {
   const { t } = useTranslation('common');
@@ -30,6 +30,10 @@ export const Sidebar: React.FC = () => {
   const { data: leaveRequests = [] } = useLeaveRequests();
   const hasPendingLeaves = isAdminView && leaveRequests.some(
     (r) => r.status === 'Pending' || r.status === 'Cancel Requested',
+  );
+  const { data: expenseClaims = [] } = useExpenseClaims();
+  const hasPendingExpenses = isAdminView && Array.isArray(expenseClaims) && expenseClaims.some(
+    (c) => c.status === 'Pending',
   );
 
   // Define nav items based on role
@@ -79,7 +83,7 @@ export const Sidebar: React.FC = () => {
         </Link>
       </div>
 
-      <nav className="flex flex-col gap-1 flex-grow p-4 overflow-y-auto">
+      <nav className="flex flex-col gap-1 flex-grow p-4 overflow-y-auto no-scrollbar">
         <p className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-2">{t('nav.menu')}</p>
         {navItems.filter(item => item.allowed).map((item) => (
           <NavLink
@@ -95,6 +99,9 @@ export const Sidebar: React.FC = () => {
             {item.icon}
             <span className="text-sm font-medium">{item.label}</span>
             {item.path === '/leave-requests' && hasPendingLeaves && (
+              <span className="w-2 h-2 rounded-full bg-red-500 ml-auto shrink-0" />
+            )}
+            {item.path === '/expenses' && hasPendingExpenses && (
               <span className="w-2 h-2 rounded-full bg-red-500 ml-auto shrink-0" />
             )}
           </NavLink>

@@ -238,12 +238,10 @@ const Register: React.FC = () => {
 
         <div className="relative z-10 px-6 pt-10 pb-24">
           {/* Top Navigation */}
-          <div className="flex items-center justify-end mb-8">
-            <Link to="/login" className="text-white/80 text-sm flex items-center gap-2">
-              {t('register.alreadyHaveAccount')}
-              <span className="border border-white/30 rounded-lg px-3 py-1.5 text-white font-medium hover:bg-white/10 transition-colors">
-                {t('register.signIn')}
-              </span>
+          <div className="flex items-center justify-end gap-2 mb-8">
+            <span className="text-white/80 text-sm">{t('register.alreadyHaveAccount')}</span>
+            <Link to="/login" className="border border-white/30 rounded-lg px-3 py-1.5 text-white text-sm font-medium hover:bg-white/10 transition-colors">
+              {t('register.signIn')}
             </Link>
           </div>
 
@@ -265,7 +263,7 @@ const Register: React.FC = () => {
         <div className="w-full max-w-md px-4 -mt-16 relative z-10 mb-8 lg:px-0 lg:mt-0 lg:mb-0">
 
           {/* Register Card */}
-          <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 p-8 border border-border-light dark:border-border-dark">
+          <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 p-8 border border-border-light dark:border-border-dark animate-fade-in-up">
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center h-14 w-14 bg-gradient-to-br from-accent-teal to-accent-green text-white rounded-xl shadow-lg shadow-accent-teal/30 mb-4">
                 <UserPlus size={26} />

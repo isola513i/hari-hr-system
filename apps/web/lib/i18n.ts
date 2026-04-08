@@ -20,6 +20,7 @@ import analyticsEN from '../locales/en/analytics.json';
 import payrollEN from '../locales/en/payroll.json';
 import helpEN from '../locales/en/help.json';
 import expensesEN from '../locales/en/expenses.json';
+import trainingEN from '../locales/en/training.json';
 
 // Thai namespaces
 import commonTH from '../locales/th/common.json';
@@ -37,6 +38,7 @@ import analyticsTH from '../locales/th/analytics.json';
 import payrollTH from '../locales/th/payroll.json';
 import helpTH from '../locales/th/help.json';
 import expensesTH from '../locales/th/expenses.json';
+import trainingTH from '../locales/th/training.json';
 
 i18n
   .use(LanguageDetector)
@@ -59,6 +61,7 @@ i18n
         payroll: payrollEN,
         help: helpEN,
         expenses: expensesEN,
+        training: trainingEN,
       },
       th: {
         common: commonTH,
@@ -76,6 +79,7 @@ i18n
         payroll: payrollTH,
         help: helpTH,
         expenses: expensesTH,
+        training: trainingTH,
       },
     },
     detection: {
@@ -88,7 +92,7 @@ i18n
     ns: [
       'common', 'auth', 'dashboard', 'attendance', 'leave',
       'employees', 'documents', 'settings', 'onboarding',
-      'wellbeing', 'compliance', 'analytics', 'payroll', 'help', 'expenses',
+      'wellbeing', 'compliance', 'analytics', 'payroll', 'help', 'expenses', 'training',
     ],
     interpolation: {
       escapeValue: false,

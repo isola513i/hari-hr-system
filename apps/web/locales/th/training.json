@@ -1,0 +1,64 @@
+{
+  "title": "จัดการการฝึกอบรม",
+  "subtitle": "จัดการโมดูลฝึกอบรมและติดตามความคืบหน้าของพนักงาน",
+  "bulkAssign": "มอบหมายแบบกลุ่ม",
+  "createModule": "สร้างโมดูล",
+  "stats": {
+    "totalModules": "โมดูลทั้งหมด",
+    "assignments": "การมอบหมาย",
+    "completionRate": "อัตราสำเร็จ",
+    "overdue": "เกินกำหนด"
+  },
+  "modules": {
+    "sectionTitle": "โมดูลฝึกอบรม",
+    "loading": "กำลังโหลด...",
+    "noModules": "ยังไม่มีโมดูลฝึกอบรม",
+    "noModulesHint": "สร้างโมดูลแรกของคุณเพื่อเริ่มต้น",
+    "active": "ใช้งาน",
+    "inactive": "ไม่ใช้งาน"
+  },
+  "department": {
+    "sectionTitle": "ความสำเร็จแยกตามแผนก"
+  },
+  "form": {
+    "editModule": "แก้ไขโมดูล",
+    "createModule": "สร้างโมดูล",
+    "titleLabel": "ชื่อ *",
+    "titlePlaceholder": "เช่น ความปลอดภัยข้อมูลเบื้องต้น",
+    "descriptionLabel": "คำอธิบาย",
+    "durationLabel": "ระยะเวลา",
+    "durationPlaceholder": "เช่น 2 ชม., 30 นาที",
+    "typeLabel": "ประเภท",
+    "typeVideo": "วิดีโอ",
+    "typeQuiz": "แบบทดสอบ",
+    "typeReading": "บทอ่าน",
+    "typeCourse": "หลักสูตร",
+    "cancel": "ยกเลิก",
+    "saving": "กำลังบันทึก...",
+    "update": "อัปเดต",
+    "create": "สร้าง"
+  },
+  "bulkAssignModal": {
+    "title": "มอบหมายฝึกอบรมแบบกลุ่ม",
+    "moduleLabel": "โมดูลฝึกอบรม *",
+    "modulePlaceholder": "เลือกโมดูล...",
+    "dueDateLabel": "วันครบกำหนด (ไม่บังคับ)",
+    "selectEmployees": "เลือกพนักงาน",
+    "selected": "เลือกแล้ว {{count}} คน",
+    "cancel": "ยกเลิก",
+    "assigning": "กำลังมอบหมาย...",
+    "assignToCount": "มอบหมายให้ {{count}} คน"
+  },
+  "toast": {
+    "moduleUpdated": "อัปเดตโมดูลแล้ว",
+    "moduleCreated": "สร้างโมดูลแล้ว",
+    "saveFailed": "บันทึกโมดูลไม่สำเร็จ",
+    "moduleDeactivated": "ปิดใช้งานโมดูลแล้ว",
+    "moduleActivated": "เปิดใช้งานโมดูลแล้ว",
+    "toggleFailed": "อัปเดตโมดูลไม่สำเร็จ",
+    "moduleDeleted": "ลบโมดูลแล้ว",
+    "deleteFailed": "ลบโมดูลไม่สำเร็จ",
+    "assignedSuccess": "มอบหมายฝึกอบรมให้ {{count}} คนแล้ว",
+    "assignFailed": "มอบหมายฝึกอบรมไม่สำเร็จ"
+  }
+}

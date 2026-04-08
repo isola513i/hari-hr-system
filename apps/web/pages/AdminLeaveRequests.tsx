@@ -758,7 +758,7 @@ export const AdminLeaveRequests: React.FC = () => {
 
       {/* Bulk Action Bar */}
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-5 py-3 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-lg">
+        <div className="fixed bottom-6 left-1/2 lg:left-[calc(50%+128px)] -translate-x-1/2 z-40 flex items-center gap-3 px-5 py-3 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-lg">
           <span className="text-sm font-medium text-text-light dark:text-text-dark">
             {t('leave:admin.selected', { count: selectedIds.size })}
           </span>
@@ -767,20 +767,20 @@ export const AdminLeaveRequests: React.FC = () => {
             disabled={updateLeaveStatusMutation.isPending}
             className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50"
           >
-            {t('leave:admin.bulkApprove', { count: selectedIds.size })}
+            {t('leave:admin.bulkApprove')}
           </button>
           <button
             onClick={() => setBulkRejectOpen(true)}
             disabled={updateLeaveStatusMutation.isPending}
             className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
           >
-            {t('leave:admin.bulkReject', { count: selectedIds.size })}
+            {t('leave:admin.bulkReject')}
           </button>
           <button
             onClick={() => setSelectedIds(new Set())}
             className="px-3 py-2 text-sm text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors"
           >
-            {t('common:cancel')}
+            {t('common:buttons.cancel')}
           </button>
         </div>
       )}
@@ -803,7 +803,7 @@ export const AdminLeaveRequests: React.FC = () => {
                 onClick={() => { setBulkRejectOpen(false); setBulkRejectReason(''); }}
                 className="px-4 py-2 text-sm text-text-muted-light dark:text-text-muted-dark hover:text-text-primary-light dark:hover:text-text-primary-dark transition-colors"
               >
-                {t('common:cancel')}
+                {t('common:buttons.cancel')}
               </button>
               <button
                 onClick={handleBulkReject}

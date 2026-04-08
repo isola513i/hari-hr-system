@@ -872,7 +872,7 @@ export const EmployeeDetail: React.FC = () => {
             <AssignTrainingModal
                 isOpen={isAssignTrainingOpen}
                 onClose={() => setIsAssignTrainingOpen(false)}
-                modules={trainingModulesList || []}
+                modules={Array.isArray(trainingModulesList) ? trainingModulesList : []}
                 onAssign={handleAssignTraining}
                 isLoading={assignTrainingMutation.isPending}
             />

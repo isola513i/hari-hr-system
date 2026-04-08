@@ -79,6 +79,13 @@
   },
   "keyContacts": {
     "title": "Key Contacts",
+    "add": "Add",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "relation": "Relation",
+    "empty": "No key contacts yet",
+    "addFirst": "Add your first key contact above",
     "emailOpened": "Email client opened!",
     "sendEmail": "Send Email"
   },

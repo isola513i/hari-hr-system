@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import { query } from '../db';
+import pool, { query } from '../db';
 import { Employee, CreateEmployeeDTO, UpdateEmployeeDTO } from '../models/Employee';
 import SystemConfigService from './SystemConfigService';
 import { PaginationParams, PaginatedResult, createPaginatedResult } from '../utils/pagination';
@@ -70,6 +70,9 @@ export class EmployeeService {
             // Filter by effective status (accounts for employees on approved leave today)
             conditions.push(`(${effectiveStatusExpr}) = $${paramIndex++}`);
             values.push(status);
+        } else {
+            // By default, exclude terminated employees from listings
+            conditions.push(`e.status != 'Terminated'`);
         }
         if (search) {
             conditions.push(`(e.name ILIKE $${paramIndex} OR e.email ILIKE $${paramIndex} OR e.role ILIKE $${paramIndex})`);
@@ -303,20 +306,39 @@ export class EmployeeService {
     }
 
     async deleteEmployee(id: string): Promise<void> {
-        // Get the employee's manager so subordinates can be reassigned
-        const emp = await query('SELECT manager_id FROM employees WHERE id = $1', [id]);
-        if (emp.rowCount === 0) {
-            throw new Error('Employee not found');
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            const emp = await client.query('SELECT id, status, manager_id FROM employees WHERE id = $1', [id]);
+            if (emp.rowCount === 0) {
+                throw new Error('Employee not found');
+            }
+            if (emp.rows[0].status === 'Terminated') {
+                throw new Error('Employee is already terminated');
+            }
+
+            const parentManagerId: string | null = emp.rows[0].manager_id || null;
+
+            // Reassign subordinates to the terminated employee's manager (move up one level)
+            await client.query(
+                'UPDATE employees SET manager_id = $1 WHERE manager_id = $2',
+                [parentManagerId, id],
+            );
+
+            // Soft-delete: set status to Terminated to preserve historical data
+            await client.query(
+                "UPDATE employees SET status = 'Terminated', manager_id = NULL WHERE id = $1",
+                [id],
+            );
+
+            await client.query('COMMIT');
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
         }
-        const parentManagerId: string | null = emp.rows[0].manager_id || null;
-
-        // Reassign subordinates to the deleted employee's manager (move up one level)
-        await query(
-            'UPDATE employees SET manager_id = $1 WHERE manager_id = $2',
-            [parentManagerId, id],
-        );
-
-        await query('DELETE FROM employees WHERE id = $1', [id]);
     }
 
     private mapRowToEmployee(row: any): Employee {
