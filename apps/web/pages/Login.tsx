@@ -115,7 +115,7 @@ const Login: React.FC = () => {
                 className="h-14 w-14 rounded-xl shadow-lg shadow-black/20 object-contain bg-white/10 p-2"
               />
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">HARI</h1>
+                <h1 className="text-3xl font-bold tracking-tight">HARI Demo</h1>
                 <p className="text-white/70 text-sm">{t('login.tagline')}</p>
               </div>
             </div>
@@ -179,7 +179,7 @@ const Login: React.FC = () => {
               alt="AIYA Logo"
               className="h-24 w-24 rounded-2xl shadow-lg shadow-black/20 object-contain bg-white p-3 mb-4"
             />
-            <h1 className="text-3xl font-bold text-white tracking-tight">HARI</h1>
+            <h1 className="text-3xl font-bold text-white tracking-tight">HARI Demo</h1>
             <p className="text-white/70 text-sm mt-1">{t('login.tagline')}</p>
           </div>
         </div>

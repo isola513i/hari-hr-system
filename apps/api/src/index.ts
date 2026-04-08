@@ -71,6 +71,7 @@ const allowedOrigins = [
   "http://localhost:3000",
   "https://hari-hr-system.vercel.app",
   "https://hari-hr-system-api.vercel.app",
+  "https://demo-hari-free-trial.vercel.app",
   process.env.FRONTEND_URL,
 ].filter(Boolean) as string[];
 
