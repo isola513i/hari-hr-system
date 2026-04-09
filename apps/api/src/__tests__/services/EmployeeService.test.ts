@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import { EmployeeService } from '../../services/EmployeeService';
 import { query } from '../../db';
+import pool from '../../db';
 import SystemConfigService from '../../services/SystemConfigService';
 
 // Mock dependencies
@@ -16,6 +17,15 @@ jest.mock('../../services/JobHistoryService', () => ({
 const mockedQuery = query as jest.MockedFunction<typeof query>;
 const mockedBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
 const mockedSystemConfigService = SystemConfigService as jest.Mocked<typeof SystemConfigService>;
+
+const mockClientQuery = jest.fn();
+const mockClientRelease = jest.fn();
+const mockClient = {
+  query: mockClientQuery,
+  release: mockClientRelease,
+};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(pool as any).connect = jest.fn().mockResolvedValue(mockClient);
 
 describe('EmployeeService', () => {
   let employeeService: EmployeeService;
@@ -300,42 +310,64 @@ describe('EmployeeService', () => {
   });
 
   describe('deleteEmployee', () => {
+    beforeEach(() => {
+      mockClientQuery.mockReset();
+      mockClientRelease.mockReset();
+    });
+
     it('should delete employee and reassign subordinates to parent manager', async () => {
-      mockedQuery
-        .mockResolvedValueOnce({ rows: [{ manager_id: 'mgr-parent' }], rowCount: 1 } as never) // SELECT manager_id
-        .mockResolvedValueOnce({ rows: [], rowCount: 2 } as never) // UPDATE subordinates
-        .mockResolvedValueOnce({ rows: [], rowCount: 1 } as never); // DELETE
+      mockClientQuery
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rows: [{ id: 'emp-123', status: 'Active', manager_id: 'mgr-parent' }], rowCount: 1 }) // SELECT
+        .mockResolvedValueOnce({ rows: [], rowCount: 2 }) // UPDATE subordinates
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // UPDATE soft-delete
+        .mockResolvedValueOnce({}); // COMMIT
 
       await expect(employeeService.deleteEmployee('emp-123')).resolves.not.toThrow();
 
-      expect(mockedQuery).toHaveBeenCalledWith('SELECT manager_id FROM employees WHERE id = $1', ['emp-123']);
-      expect(mockedQuery).toHaveBeenCalledWith(
+      expect(mockClientQuery).toHaveBeenCalledWith('BEGIN');
+      expect(mockClientQuery).toHaveBeenCalledWith(
+        'SELECT id, status, manager_id FROM employees WHERE id = $1', ['emp-123'],
+      );
+      expect(mockClientQuery).toHaveBeenCalledWith(
         'UPDATE employees SET manager_id = $1 WHERE manager_id = $2',
         ['mgr-parent', 'emp-123'],
       );
-      expect(mockedQuery).toHaveBeenCalledWith('DELETE FROM employees WHERE id = $1', ['emp-123']);
+      expect(mockClientQuery).toHaveBeenCalledWith(
+        "UPDATE employees SET status = 'Terminated', manager_id = NULL WHERE id = $1",
+        ['emp-123'],
+      );
+      expect(mockClientQuery).toHaveBeenCalledWith('COMMIT');
+      expect(mockClientRelease).toHaveBeenCalled();
     });
 
     it('should set subordinates manager to null when deleting a root employee', async () => {
-      mockedQuery
-        .mockResolvedValueOnce({ rows: [{ manager_id: null }], rowCount: 1 } as never)
-        .mockResolvedValueOnce({ rows: [], rowCount: 1 } as never)
-        .mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
+      mockClientQuery
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rows: [{ id: 'emp-root', status: 'Active', manager_id: null }], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // UPDATE subordinates
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // UPDATE soft-delete
+        .mockResolvedValueOnce({}); // COMMIT
 
       await expect(employeeService.deleteEmployee('emp-root')).resolves.not.toThrow();
 
-      expect(mockedQuery).toHaveBeenCalledWith(
+      expect(mockClientQuery).toHaveBeenCalledWith(
         'UPDATE employees SET manager_id = $1 WHERE manager_id = $2',
         [null, 'emp-root'],
       );
+      expect(mockClientRelease).toHaveBeenCalled();
     });
 
     it('should throw error when employee not found', async () => {
-      mockedQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
+      mockClientQuery
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // SELECT — not found
 
       await expect(employeeService.deleteEmployee('nonexistent')).rejects.toThrow(
         'Employee not found'
       );
+      expect(mockClientQuery).toHaveBeenCalledWith('ROLLBACK');
+      expect(mockClientRelease).toHaveBeenCalled();
     });
   });
 });
