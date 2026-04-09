@@ -1,53 +1,68 @@
-import nodemailer from "nodemailer";
+import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 
 class EmailService {
-  private transporter: nodemailer.Transporter | null = null;
+  private client: SESClient | null = null;
+  private fromEmail: string = "";
 
   constructor() {
-    this.initTransporter();
+    this.initClient();
   }
 
-  private initTransporter(): void {
-    const host = process.env.SMTP_HOST;
-    const port = parseInt(process.env.SMTP_PORT || "587", 10);
-    const secure = process.env.SMTP_SECURE === "true";
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
+  private initClient(): void {
+    const region = process.env.AWS_SES_REGION;
+    const accessKeyId = process.env.AWS_SES_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.AWS_SES_SECRET_ACCESS_KEY;
+    this.fromEmail = process.env.AWS_SES_FROM_EMAIL || "";
 
-    if (!host || !user || !pass) {
+    if (!region || !accessKeyId || !secretAccessKey || !this.fromEmail) {
       console.warn(
-        "EmailService: SMTP not configured (SMTP_HOST, SMTP_USER, SMTP_PASS required). Emails will be logged to console.",
+        "EmailService: AWS SES not configured (AWS_SES_REGION, AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY, AWS_SES_FROM_EMAIL required). Emails will be logged to console.",
       );
       return;
     }
 
-    this.transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure,
-      auth: { user, pass },
+    this.client = new SESClient({
+      region,
+      credentials: { accessKeyId, secretAccessKey },
     });
   }
 
-  async verifyConnection(): Promise<boolean> {
-    if (!this.transporter) {
-      console.warn("EmailService: No SMTP transporter configured.");
-      return false;
-    }
-    try {
-      await this.transporter.verify();
-      console.log("EmailService: SMTP connection verified.");
-      return true;
-    } catch (err) {
-      console.error("EmailService: SMTP verification failed:", err);
-      return false;
-    }
+  private escapeHtml(str: string): string {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
-  private getFrom(): string {
-    return (
-      process.env.SMTP_FROM || `"HARI HR System" <${process.env.SMTP_USER}>`
-    );
+  private async sendEmail(
+    to: string,
+    subject: string,
+    html: string,
+  ): Promise<void> {
+    if (!this.client) {
+      console.log(`EmailService [DEV]: Would send "${subject}" to ${to}`);
+      return;
+    }
+
+    const command = new SendEmailCommand({
+      Source: this.fromEmail,
+      Destination: { ToAddresses: [to] },
+      Message: {
+        Subject: { Data: subject, Charset: "UTF-8" },
+        Body: { Html: { Data: html, Charset: "UTF-8" } },
+      },
+    });
+
+    try {
+      await this.client.send(command);
+      console.log(`EmailService: Email sent to ${to} — "${subject}"`);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error(`EmailService: Failed to send to ${to} — ${msg}`);
+      throw error;
+    }
   }
 
   async sendPasswordResetEmail(
@@ -58,7 +73,7 @@ class EmailService {
     const frontendUrl =
       process.env.FRONTEND_URL || "http://localhost:5173";
     const resetLink = `${frontendUrl}/#/reset-password?token=${resetToken}`;
-    const greeting = userName ? `Hi ${userName},` : "Hi,";
+    const safeGreeting = userName ? `Hi ${this.escapeHtml(userName)},` : "Hi,";
 
     const html = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
@@ -68,7 +83,7 @@ class EmailService {
         </div>
         <div style="background: #ffffff; border-radius: 12px; padding: 32px; border: 1px solid #e2e8f0;">
           <h2 style="color: #2d3748; margin-top: 0;">Password Reset Request</h2>
-          <p style="color: #4a5568; line-height: 1.6;">${greeting}</p>
+          <p style="color: #4a5568; line-height: 1.6;">${safeGreeting}</p>
           <p style="color: #4a5568; line-height: 1.6;">
             We received a request to reset your password. Click the button below to set a new password.
             This link will expire in <strong>30 minutes</strong>.
@@ -94,28 +109,14 @@ class EmailService {
       </div>
     `;
 
-    const mailOptions = {
-      from: this.getFrom(),
-      to,
-      subject: "HARI - Password Reset Request",
-      html,
-    };
-
-    if (!this.transporter) {
-      console.log("EmailService [DEV]: Password reset email for", to);
-      console.log("EmailService [DEV]: Reset link:", resetLink);
-      return;
-    }
-
-    await this.transporter.sendMail(mailOptions);
-    console.log("EmailService: Password reset email sent to", to);
+    await this.sendEmail(to, "HARI - Password Reset Request", html);
   }
 
   async sendPasswordResetConfirmation(
     to: string,
     userName?: string,
   ): Promise<void> {
-    const greeting = userName ? `Hi ${userName},` : "Hi,";
+    const safeGreeting = userName ? `Hi ${this.escapeHtml(userName)},` : "Hi,";
 
     const html = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
@@ -125,7 +126,7 @@ class EmailService {
         </div>
         <div style="background: #ffffff; border-radius: 12px; padding: 32px; border: 1px solid #e2e8f0;">
           <h2 style="color: #2d3748; margin-top: 0;">Password Changed Successfully</h2>
-          <p style="color: #4a5568; line-height: 1.6;">${greeting}</p>
+          <p style="color: #4a5568; line-height: 1.6;">${safeGreeting}</p>
           <p style="color: #4a5568; line-height: 1.6;">
             Your password has been successfully reset. You can now log in with your new password.
           </p>
@@ -139,23 +140,7 @@ class EmailService {
       </div>
     `;
 
-    const mailOptions = {
-      from: this.getFrom(),
-      to,
-      subject: "HARI - Password Changed Successfully",
-      html,
-    };
-
-    if (!this.transporter) {
-      console.log(
-        "EmailService [DEV]: Password reset confirmation email for",
-        to,
-      );
-      return;
-    }
-
-    await this.transporter.sendMail(mailOptions);
-    console.log("EmailService: Password reset confirmation sent to", to);
+    await this.sendEmail(to, "HARI - Password Changed Successfully", html);
   }
 
   async sendNotificationEmail(
@@ -174,8 +159,8 @@ class EmailService {
           <p style="color: #a0aec0; margin: 5px 0 0; font-size: 14px;">HR Intelligence by AIYA</p>
         </div>
         <div style="background: #ffffff; border-radius: 12px; padding: 32px; border: 1px solid #e2e8f0;">
-          <h2 style="color: #2d3748; margin-top: 0;">${title}</h2>
-          <p style="color: #4a5568; line-height: 1.6;">${message}</p>
+          <h2 style="color: #2d3748; margin-top: 0;">${this.escapeHtml(title)}</h2>
+          <p style="color: #4a5568; line-height: 1.6;">${this.escapeHtml(message)}</p>
           ${link ? `
           <div style="text-align: center; margin: 24px 0;">
             <a href="${actionUrl}"
@@ -190,20 +175,7 @@ class EmailService {
       </div>
     `;
 
-    const mailOptions = {
-      from: this.getFrom(),
-      to,
-      subject: `HARI — ${title}`,
-      html,
-    };
-
-    if (!this.transporter) {
-      console.log(`EmailService [DEV]: Notification email to ${to}: ${title}`);
-      return;
-    }
-
-    await this.transporter.sendMail(mailOptions);
-    console.log(`EmailService: Notification email sent to ${to}`);
+    await this.sendEmail(to, `HARI — ${title}`, html);
   }
 }
 
