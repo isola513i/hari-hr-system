@@ -84,7 +84,8 @@ export class AuthController {
         return;
       }
 
-      await AuthService.forgotPassword(email);
+      const lang = req.headers["accept-language"]?.split(",")[0]?.trim();
+      await AuthService.forgotPassword(email, lang);
       res.json({ message: genericMessage });
     } catch (error: any) {
       // Always return same generic message to prevent user enumeration
@@ -109,7 +110,8 @@ export class AuthController {
         return;
       }
 
-      await AuthService.resetPassword(token, newPassword);
+      const lang = req.headers["accept-language"]?.split(",")[0]?.trim();
+      await AuthService.resetPassword(token, newPassword, lang);
       res.json({ message: "Password has been reset successfully." });
     } catch (error: any) {
       console.error("Reset password error:", error);

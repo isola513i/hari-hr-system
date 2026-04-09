@@ -314,7 +314,7 @@ export class AuthService {
    * Forgot password — generate reset token and send email.
    * Always returns silently to prevent user enumeration.
    */
-  async forgotPassword(email: string): Promise<void> {
+  async forgotPassword(email: string, lang?: string): Promise<void> {
     // Look up user + employee name
     const result = await query(
       `SELECT u.id AS user_id, e.name
@@ -349,7 +349,7 @@ export class AuthService {
 
     // Send email (silent fail — don't expose errors)
     try {
-      await EmailService.sendPasswordResetEmail(email, token, name || undefined);
+      await EmailService.sendPasswordResetEmail(email, token, name || undefined, lang);
     } catch (err) {
       console.error("Failed to send password reset email:", err);
     }
@@ -358,7 +358,7 @@ export class AuthService {
   /**
    * Reset password using token
    */
-  async resetPassword(token: string, newPassword: string): Promise<void> {
+  async resetPassword(token: string, newPassword: string, lang?: string): Promise<void> {
     // Validate password complexity
     const passwordValidation = validatePasswordComplexity(newPassword);
     if (!passwordValidation.valid) {
@@ -412,7 +412,7 @@ export class AuthService {
     );
 
     // Send confirmation email (non-blocking)
-    EmailService.sendPasswordResetConfirmation(row.email, row.name || undefined).catch(
+    EmailService.sendPasswordResetConfirmation(row.email, row.name || undefined, lang).catch(
       (err) => console.error("Failed to send reset confirmation email:", err),
     );
   }

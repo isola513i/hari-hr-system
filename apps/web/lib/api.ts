@@ -109,6 +109,7 @@ function queueRefresh(): Promise<boolean> {
 const getHeaders = () => {
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
+        'Accept-Language': localStorage.getItem('language') || 'en',
     };
     const token = getAuthToken();
     if (token) {

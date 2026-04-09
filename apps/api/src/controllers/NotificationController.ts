@@ -115,11 +115,14 @@ export class NotificationController {
       const adminResult = await query(
         `SELECT u.email FROM users u WHERE u.role = 'HR_ADMIN' AND u.email_notifications = TRUE`
       );
+      const lang = req.headers["accept-language"]?.split(",")[0]?.trim();
       for (const admin of adminResult.rows) {
         EmailService.sendNotificationEmail(
           admin.email,
           `Support Request from ${senderName}: ${subject.trim()}`,
-          message.trim()
+          message.trim(),
+          undefined,
+          lang,
         ).catch((err) => console.error("Failed to email support request:", err));
       }
 

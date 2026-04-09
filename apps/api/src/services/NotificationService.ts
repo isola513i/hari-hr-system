@@ -74,7 +74,7 @@ export class NotificationService {
   }
 
   // Create a new notification
-  async create(data: CreateNotificationRequest): Promise<NotificationResponse> {
+  async create(data: CreateNotificationRequest, lang?: string): Promise<NotificationResponse> {
     const result = await query(
       `INSERT INTO notifications (user_id, title, message, type, link)
        VALUES ($1, $2, $3, $4, $5)
@@ -91,7 +91,7 @@ export class NotificationService {
     ).then((userResult) => {
       const user = userResult.rows[0];
       if (user?.email_notifications) {
-        EmailService.sendNotificationEmail(user.email, data.title, data.message, data.link)
+        EmailService.sendNotificationEmail(user.email, data.title, data.message, data.link, lang)
           .catch((err) => console.error("EmailService: Failed to send notification email:", err));
       }
     }).catch(() => { /* non-blocking */ });
