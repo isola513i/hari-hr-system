@@ -121,7 +121,6 @@ class EmailService {
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error(`EmailService: Failed to send to ${to} — ${msg}`);
-      throw error;
     }
   }
 
@@ -133,7 +132,7 @@ class EmailService {
   ): Promise<void> {
     const l = this.resolveLang(lang);
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    const resetLink = `${frontendUrl}/#/reset-password?token=${resetToken}`;
+    const resetLink = `${frontendUrl}/#/reset-password?token=${encodeURIComponent(resetToken)}`;
     const safeName = userName ? this.escapeHtml(userName) : "";
     const greeting = safeName ? `${t.hi[l]} ${safeName},` : `${t.hi[l]},`;
 
@@ -184,12 +183,13 @@ class EmailService {
   ): Promise<void> {
     const l = this.resolveLang(lang);
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    const actionUrl = link ? `${frontendUrl}/#${link}` : frontendUrl;
+    const safeLink = link && link.startsWith("/") ? link : undefined;
+    const actionUrl = safeLink ? `${frontendUrl}/#${safeLink}` : frontendUrl;
 
     const body = `
       <h2 style="color:#2c3e50;margin-top:0;font-size:22px;">${this.escapeHtml(title)}</h2>
       <p style="color:#4a5568;line-height:1.7;">${this.escapeHtml(message)}</p>
-      ${link ? `
+      ${safeLink ? `
       <div style="text-align:center;margin:24px 0;">
         <a href="${actionUrl}"
            style="background:#3498db;color:#ffffff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;font-size:15px;">

@@ -94,7 +94,7 @@ export class NotificationService {
         EmailService.sendNotificationEmail(user.email, data.title, data.message, data.link, lang)
           .catch((err) => console.error("EmailService: Failed to send notification email:", err));
       }
-    }).catch(() => { /* non-blocking */ });
+    }).catch((err) => console.error("NotificationService: Failed to check email preferences:", err));
 
     return notification;
   }
@@ -186,7 +186,8 @@ export class NotificationService {
   async deleteOlderThan(days: number): Promise<number> {
     const result = await query(
       `DELETE FROM notifications
-       WHERE created_at < NOW() - INTERVAL '${days} days'`
+       WHERE created_at < NOW() - INTERVAL '1 day' * $1`,
+      [days]
     );
     return result.rowCount ?? 0;
   }

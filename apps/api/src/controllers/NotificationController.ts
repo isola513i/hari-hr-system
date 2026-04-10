@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import NotificationService from "../services/NotificationService";
-import EmailService from "../services/EmailService";
 import { query } from "../db";
 
 export class NotificationController {
@@ -13,7 +12,7 @@ export class NotificationController {
         return;
       }
 
-      const limit = parseInt(req.query.limit as string) || 20;
+      const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
       const notifications = await NotificationService.getByUserId(userId, limit);
 
       res.json(notifications);
@@ -103,28 +102,14 @@ export class NotificationController {
       const sender = senderResult.rows[0];
       const senderName = sender?.name || sender?.email || "An employee";
 
-      // Notify all HR admins in-app
+      // Notify all HR admins (in-app + email via notifyAdmins)
+      const lang = req.headers["accept-language"]?.split(",")[0]?.trim();
       await NotificationService.notifyAdmins({
         title: `Support Request: ${subject.trim()}`,
         message: `${senderName}: ${message.trim()}`,
         type: "info",
         link: "/employees",
-      });
-
-      // Also send email to HR admins who have email notifications enabled
-      const adminResult = await query(
-        `SELECT u.email FROM users u WHERE u.role = 'HR_ADMIN' AND u.email_notifications = TRUE`
-      );
-      const lang = req.headers["accept-language"]?.split(",")[0]?.trim();
-      for (const admin of adminResult.rows) {
-        EmailService.sendNotificationEmail(
-          admin.email,
-          `Support Request from ${senderName}: ${subject.trim()}`,
-          message.trim(),
-          undefined,
-          lang,
-        ).catch((err) => console.error("Failed to email support request:", err));
-      }
+      }, lang);
 
       res.json({ message: "Support message sent successfully" });
     } catch (error: any) {
