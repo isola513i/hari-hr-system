@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Calendar } from 'lucide-react';
 import type { LeaveRequest, Employee } from '../types';
-import { useLeaveTypeConfig, useAdminAttendanceCalendar } from '../hooks/queries';
+import { useLeaveTypeConfig, useAdminAttendanceCalendar, useHolidays } from '../hooks/queries';
 import { buildLeaveColorMap, getShortLabel, translateLeaveType } from '../lib/leaveTypeConfig';
 import { Avatar } from './Avatar';
 
@@ -115,6 +115,39 @@ export const LeaveGanttCalendar: React.FC<LeaveCalendarProps> = ({
     }
     return result;
   }, [leaveConfigs]);
+
+  // Fetch public holidays
+  const { data: holidays = [] } = useHolidays();
+  const holidayDateSet = useMemo(() => {
+    const set = new Set<string>();
+    for (const h of holidays) {
+      const start = h.date;
+      const end = h.endDate || h.date;
+      const cur = new Date(start + 'T00:00:00');
+      const last = new Date(end + 'T00:00:00');
+      while (cur <= last) {
+        set.add(toDateKey(cur));
+        cur.setDate(cur.getDate() + 1);
+      }
+    }
+    return set;
+  }, [holidays]);
+
+  // Build a lookup: dateKey -> holiday name
+  const holidayNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const h of holidays) {
+      const start = h.date;
+      const end = h.endDate || h.date;
+      const cur = new Date(start + 'T00:00:00');
+      const last = new Date(end + 'T00:00:00');
+      while (cur <= last) {
+        map.set(toDateKey(cur), h.name);
+        cur.setDate(cur.getDate() + 1);
+      }
+    }
+    return map;
+  }, [holidays]);
 
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [anchor, setAnchor] = useState(() => new Date());
@@ -555,16 +588,25 @@ export const LeaveGanttCalendar: React.FC<LeaveCalendarProps> = ({
           {visibleDates.map((date, i) => {
             const key = toDateKey(date);
             const isToday = key === todayKey;
+            const isHoliday = holidayDateSet.has(key);
+            const holidayName = holidayNameMap.get(key);
             return (
               <div
                 key={key}
-                className={`text-center py-1.5 text-[10px] leading-tight border-b border-border-light dark:border-border-dark select-none ${isToday ? 'bg-primary/5 dark:bg-primary/10' : ''}`}
+                className={`text-center py-1.5 text-[10px] leading-tight border-b border-border-light dark:border-border-dark select-none ${
+                  isHoliday ? 'bg-red-50 dark:bg-red-900/20' : isToday ? 'bg-primary/5 dark:bg-primary/10' : ''
+                }`}
                 style={{ gridRow: 1, gridColumn: i + 2 }}
+                title={holidayName || undefined}
               >
-                <div className={`font-medium ${isToday ? 'text-primary' : 'text-text-muted-light dark:text-text-muted-dark'}`}>
+                <div className={`font-medium ${
+                  isHoliday ? 'text-red-500 dark:text-red-400' : isToday ? 'text-primary' : 'text-text-muted-light dark:text-text-muted-dark'
+                }`}>
                   {date.getDate()}
                 </div>
-                <div className={`${isToday ? 'text-primary' : 'text-text-muted-light dark:text-text-muted-dark'} opacity-70`}>
+                <div className={`${
+                  isHoliday ? 'text-red-400 dark:text-red-500' : isToday ? 'text-primary' : 'text-text-muted-light dark:text-text-muted-dark'
+                } opacity-70`}>
                   {SHORT_DAY_NAMES[date.getDay()]}
                 </div>
               </div>
@@ -585,6 +627,7 @@ export const LeaveGanttCalendar: React.FC<LeaveCalendarProps> = ({
               {visibleDates.map((date, i) => {
                 const key = toDateKey(date);
                 const isToday = key === todayKey;
+                const isHoliday = holidayDateSet.has(key);
                 const stats = attendancePerDay[i];
                 const present = stats?.present ?? 0;
                 const total = stats?.total ?? 0;
@@ -593,20 +636,22 @@ export const LeaveGanttCalendar: React.FC<LeaveCalendarProps> = ({
                 let countColor = 'text-emerald-600 dark:text-emerald-400';
                 if (ratio < 0.75) countColor = 'text-amber-600 dark:text-amber-400';
                 if (ratio < 0.5) countColor = 'text-red-600 dark:text-red-400';
-                // Future dates: gray
-                if (key > todayKey) {
+                // Future dates or holidays: gray
+                if (key > todayKey || isHoliday) {
                   countColor = 'text-text-muted-light dark:text-text-muted-dark';
                 }
 
                 return (
                   <div
                     key={`summary-${key}`}
-                    className={`flex flex-col items-center justify-center border-b-2 border-border-light dark:border-border-dark ${isToday ? 'bg-primary/5 dark:bg-primary/10' : ''}`}
+                    className={`flex flex-col items-center justify-center border-b-2 border-border-light dark:border-border-dark ${
+                      isHoliday ? 'bg-red-50 dark:bg-red-900/20' : isToday ? 'bg-primary/5 dark:bg-primary/10' : ''
+                    }`}
                     style={{ gridRow: summaryRowIdx, gridColumn: i + 2 }}
-                    title={stats ? `${present}/${total} ${t('leave:calendar.checkedIn')}` : ''}
+                    title={isHoliday ? holidayNameMap.get(key) : stats ? `${present}/${total} ${t('leave:calendar.checkedIn')}` : ''}
                   >
                     <span className={`text-xs font-bold ${countColor}`}>
-                      {key > todayKey ? '-' : present}
+                      {isHoliday ? '-' : key > todayKey ? '-' : present}
                     </span>
                     <span className="text-[8px] text-text-muted-light dark:text-text-muted-dark leading-none">
                       /{total}
@@ -652,16 +697,17 @@ export const LeaveGanttCalendar: React.FC<LeaveCalendarProps> = ({
                   const dateKey = toDateKey(date);
                   const isToday = dateKey === todayKey;
                   const isFuture = dateKey > todayKey;
+                  const isHoliday = holidayDateSet.has(dateKey);
                   const checkedIn = showAvailability && attendanceByDate.get(dateKey)?.has(person.employeeId);
 
                   return (
                     <div
                       key={`${person.employeeId}-${dateKey}`}
                       className={`flex items-center justify-center border-b border-border-light dark:border-border-dark ${isToday ? 'border-l-2 border-l-primary/40' : ''}
-                      ${showAvailability && checkedIn ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
+                      ${isHoliday ? 'bg-red-50 dark:bg-red-900/20' : showAvailability && checkedIn ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
                       style={{ gridRow, gridColumn: i + 2 }}
                     >
-                      {showAvailability && !isFuture && (
+                      {showAvailability && !isFuture && !isHoliday && (
                         checkedIn ? (
                           <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400" />
                         ) : (
@@ -741,6 +787,12 @@ export const LeaveGanttCalendar: React.FC<LeaveCalendarProps> = ({
             </span>
           </div>
         ))}
+
+        {/* Public holiday indicator */}
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-2 rounded-sm bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700" />
+          <span className="text-xs text-text-muted-light dark:text-text-muted-dark">{t('leave:calendar.publicHoliday')}</span>
+        </div>
 
         {/* Pending indicator */}
         {isManager && (

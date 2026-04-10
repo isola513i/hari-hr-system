@@ -10,11 +10,13 @@ import type { PublicHoliday } from '../types';
 
 interface HolidayFormState {
   date: string;
+  endDate: string;
   name: string;
   isRecurring: boolean;
+  isMultiDay: boolean;
 }
 
-const emptyForm: HolidayFormState = { date: '', name: '', isRecurring: false };
+const emptyForm: HolidayFormState = { date: '', endDate: '', name: '', isRecurring: false, isMultiDay: false };
 
 export const AdminHolidays: React.FC = () => {
   const { t } = useTranslation(['leave', 'common']);
@@ -37,18 +39,30 @@ export const AdminHolidays: React.FC = () => {
 
   const openEdit = (h: PublicHoliday) => {
     setEditingId(h.id);
-    setForm({ date: h.date, name: h.name, isRecurring: h.isRecurring });
+    setForm({
+      date: h.date,
+      endDate: h.endDate || '',
+      name: h.name,
+      isRecurring: h.isRecurring,
+      isMultiDay: !!h.endDate,
+    });
     setModalOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const payload = {
+        date: form.date,
+        endDate: form.isMultiDay && form.endDate ? form.endDate : null,
+        name: form.name,
+        isRecurring: form.isRecurring,
+      };
       if (editingId) {
-        await updateHoliday.mutateAsync({ id: editingId, ...form });
+        await updateHoliday.mutateAsync({ id: editingId, ...payload });
         showToast(t('leave:holidays.updateSuccess'), 'success');
       } else {
-        await createHoliday.mutateAsync(form);
+        await createHoliday.mutateAsync(payload);
         showToast(t('leave:holidays.createSuccess'), 'success');
       }
       setModalOpen(false);
@@ -99,8 +113,13 @@ export const AdminHolidays: React.FC = () => {
       {/* Table */}
       <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-border-light dark:border-border-dark overflow-hidden">
         {holidays.length === 0 ? (
-          <div className="p-8 text-center text-text-muted-light dark:text-text-muted-dark">
-            {t('leave:holidays.noHolidays')}
+          <div className="flex flex-col items-center justify-center py-20 px-8">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <Calendar className="text-primary" size={28} />
+            </div>
+            <p className="text-text-muted-light dark:text-text-muted-dark text-sm">
+              {t('leave:holidays.noHolidays')}
+            </p>
           </div>
         ) : (
           <table className="w-full">
@@ -124,7 +143,7 @@ export const AdminHolidays: React.FC = () => {
               {holidays.map((h) => (
                 <tr key={h.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                   <td className="px-6 py-4 text-sm text-text-primary-light dark:text-text-primary-dark font-medium">
-                    {formatDate(h.date)}
+                    {h.endDate ? `${formatDate(h.date)} – ${formatDate(h.endDate)}` : formatDate(h.date)}
                   </td>
                   <td className="px-6 py-4 text-sm text-text-primary-light dark:text-text-primary-dark">
                     {h.name}
@@ -183,22 +202,68 @@ export const AdminHolidays: React.FC = () => {
           </div>
           <div>
             <DatePicker
-              label={t('leave:holidays.date')}
+              label={form.isMultiDay ? t('leave:holidays.startDate') : t('leave:holidays.date')}
               value={form.date}
-              onChange={(date) => setForm({ ...form, date })}
+              onChange={(date) => {
+                const updates: Partial<HolidayFormState> = { date };
+                if (form.endDate && date > form.endDate) updates.endDate = '';
+                setForm(f => ({ ...f, ...updates }));
+              }}
             />
           </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="isRecurring"
-              checked={form.isRecurring}
-              onChange={(e) => setForm({ ...form, isRecurring: e.target.checked })}
-            />
-            <label htmlFor="isRecurring" className="text-sm text-text-light dark:text-text-dark">
+          {/* Multi-day toggle */}
+          <label htmlFor="isMultiDay" className="flex items-center gap-3 cursor-pointer select-none group">
+            <div className="relative">
+              <input
+                type="checkbox"
+                id="isMultiDay"
+                checked={form.isMultiDay}
+                onChange={(e) => setForm({ ...form, isMultiDay: e.target.checked, endDate: e.target.checked ? form.endDate : '' })}
+                className="absolute w-0 h-0 opacity-0 peer"
+              />
+              <div className="w-5 h-5 rounded border-2 border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark peer-checked:bg-primary peer-checked:border-primary transition-all flex items-center justify-center group-hover:border-primary/50">
+                {form.isMultiDay && (
+                  <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+            </div>
+            <span className="text-sm text-text-light dark:text-text-dark">
+              {t('leave:holidays.multiDay')}
+            </span>
+          </label>
+          {form.isMultiDay && (
+            <div>
+              <DatePicker
+                label={t('leave:holidays.endDate')}
+                value={form.endDate}
+                onChange={(date) => setForm({ ...form, endDate: date })}
+                minDate={form.date || undefined}
+              />
+            </div>
+          )}
+          <label htmlFor="isRecurring" className="flex items-center gap-3 cursor-pointer select-none group">
+            <div className="relative">
+              <input
+                type="checkbox"
+                id="isRecurring"
+                checked={form.isRecurring}
+                onChange={(e) => setForm({ ...form, isRecurring: e.target.checked })}
+                className="absolute w-0 h-0 opacity-0 peer"
+              />
+              <div className="w-5 h-5 rounded border-2 border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark peer-checked:bg-primary peer-checked:border-primary transition-all flex items-center justify-center group-hover:border-primary/50">
+                {form.isRecurring && (
+                  <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+            </div>
+            <span className="text-sm text-text-light dark:text-text-dark">
               {t('leave:holidays.recurring')}
-            </label>
-          </div>
+            </span>
+          </label>
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"

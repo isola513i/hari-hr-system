@@ -84,6 +84,9 @@ const Announcements = lazy(() =>
 const AdminHolidays = lazy(() =>
   import("./pages/AdminHolidays").then((m) => ({ default: m.AdminHolidays })),
 );
+const Holidays = lazy(() =>
+  import("./pages/Holidays").then((m) => ({ default: m.Holidays })),
+);
 const NotFound = lazy(() =>
   import("./pages/NotFound").then((m) => ({ default: m.NotFound })),
 );
@@ -145,6 +148,7 @@ const App: React.FC = () => {
                     <Route path="time-off/request/:id" element={<PageErrorBoundary><LeaveRequestForm /></PageErrorBoundary>} />
                     <Route path="leave-requests" element={<PageErrorBoundary><AdminLeaveRequests /></PageErrorBoundary>} />
                     <Route path="holidays" element={<PageErrorBoundary><AdminHolidays /></PageErrorBoundary>} />
+                    <Route path="company-holidays" element={<PageErrorBoundary><Holidays /></PageErrorBoundary>} />
                     <Route path="expenses" element={<PageErrorBoundary><Expenses /></PageErrorBoundary>} />
                     <Route path="payroll" element={<PageErrorBoundary><Payroll /></PageErrorBoundary>} />
                     <Route path="surveys" element={<PageErrorBoundary><Surveys /></PageErrorBoundary>} />

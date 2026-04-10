@@ -312,29 +312,29 @@ export const Compliance: React.FC = () => {
         <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex flex-wrap justify-between items-center gap-3">
           <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Compliance Items</h2>
           <div className="flex items-center gap-2">
-            <select
+            <Dropdown
               value={itemStatusFilter}
-              onChange={(e) => { setItemStatusFilter(e.target.value); setItemPage(1); }}
-              className="text-xs px-2 py-1.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded text-text-light dark:text-text-dark"
-            >
-              <option value="">All Status</option>
-              {['Draft', 'Active', 'In Progress', 'Completed', 'Overdue'].map(s => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-            <select
+              onChange={(val) => { setItemStatusFilter(val); setItemPage(1); }}
+              placeholder="All Status"
+              width="w-36"
+              options={[
+                { value: '', label: 'All Status' },
+                ...['Draft', 'Active', 'In Progress', 'Completed', 'Overdue'].map(s => ({ value: s, label: s }))
+              ]}
+            />
+            <Dropdown
               value={itemCategoryFilter}
-              onChange={(e) => { setItemCategoryFilter(e.target.value); setItemPage(1); }}
-              className="text-xs px-2 py-1.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded text-text-light dark:text-text-dark"
-            >
-              <option value="">All Categories</option>
-              {['ISO', 'PDPA', 'Custom'].map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+              onChange={(val) => { setItemCategoryFilter(val); setItemPage(1); }}
+              placeholder="All Categories"
+              width="w-36"
+              options={[
+                { value: '', label: 'All Categories' },
+                ...['ISO', 'PDPA', 'Custom'].map(c => ({ value: c, label: c }))
+              ]}
+            />
             <button
               onClick={openItemCreate}
-              className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded text-xs font-medium hover:bg-primary/90 transition-colors"
+              className="flex items-center gap-1 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
             >
               + Add Item
             </button>
@@ -401,7 +401,7 @@ export const Compliance: React.FC = () => {
 
       {/* Item Form Modal */}
       <Modal isOpen={isItemFormOpen} onClose={() => setIsItemFormOpen(false)} title={editingItem ? 'Edit Compliance Item' : 'Add Compliance Item'}>
-        <div className="space-y-4">
+        <div className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Title *</label>
             <input
@@ -422,21 +422,27 @@ export const Compliance: React.FC = () => {
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-text-light dark:text-text-dark mb-1">Category</label>
-              <select value={itemForm.category} onChange={(e) => setItemForm(f => ({ ...f, category: e.target.value }))} className="w-full px-2 py-2 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark">
-                {['ISO', 'PDPA', 'Custom'].map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <Dropdown
+                value={itemForm.category}
+                onChange={(val) => setItemForm(f => ({ ...f, category: val }))}
+                options={['ISO', 'PDPA', 'Custom'].map(c => ({ value: c, label: c }))}
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-text-light dark:text-text-dark mb-1">Priority</label>
-              <select value={itemForm.priority} onChange={(e) => setItemForm(f => ({ ...f, priority: e.target.value }))} className="w-full px-2 py-2 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark">
-                {['Low', 'Medium', 'High', 'Critical'].map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
+              <Dropdown
+                value={itemForm.priority}
+                onChange={(val) => setItemForm(f => ({ ...f, priority: val }))}
+                options={['Low', 'Medium', 'High', 'Critical'].map(p => ({ value: p, label: p }))}
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-text-light dark:text-text-dark mb-1">Risk Level</label>
-              <select value={itemForm.riskLevel} onChange={(e) => setItemForm(f => ({ ...f, riskLevel: e.target.value }))} className="w-full px-2 py-2 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark">
-                {['Low', 'Medium', 'High', 'Critical'].map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
+              <Dropdown
+                value={itemForm.riskLevel}
+                onChange={(val) => setItemForm(f => ({ ...f, riskLevel: val }))}
+                options={['Low', 'Medium', 'High', 'Critical'].map(r => ({ value: r, label: r }))}
+              />
             </div>
           </div>
           <div>
@@ -459,22 +465,18 @@ export const Compliance: React.FC = () => {
 
       {/* Status Change Modal */}
       <Modal isOpen={!!statusChangeItem} onClose={() => setStatusChangeItem(null)} title="Change Status" maxWidth="sm">
-        <div className="space-y-4">
+        <div className="p-6 space-y-4">
           <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
             Current: <span className={`font-medium ${statusColors[statusChangeItem?.status || ''] || ''} px-2 py-0.5 rounded`}>{statusChangeItem?.status}</span>
           </p>
           <div>
             <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">New Status</label>
-            <select
+            <Dropdown
               value={newStatus}
-              onChange={(e) => setNewStatus(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark"
-            >
-              <option value="">Select...</option>
-              {['Draft', 'Active', 'In Progress', 'Completed'].filter(s => s !== statusChangeItem?.status).map(s => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
+              onChange={(val) => setNewStatus(val)}
+              placeholder="Select..."
+              options={['Draft', 'Active', 'In Progress', 'Completed'].filter(s => s !== statusChangeItem?.status).map(s => ({ value: s, label: s }))}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Reason (Optional)</label>
@@ -496,7 +498,7 @@ export const Compliance: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       <Modal isOpen={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} title="Delete Compliance Item" maxWidth="sm">
-        <div className="space-y-4">
+        <div className="p-6 space-y-4">
           <p className="text-sm text-text-light dark:text-text-dark">
             Are you sure you want to delete this compliance item? This action cannot be undone.
           </p>

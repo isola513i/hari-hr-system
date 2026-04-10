@@ -581,7 +581,7 @@ export const Settings: React.FC = () => {
                       }}
                       maxLength={10}
                       placeholder="812345678"
-                      className="flex-1 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+                      className="flex-1 px-4 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-text-light dark:text-text-dark"
                     />
                   </div>
                 </div>
@@ -644,7 +644,7 @@ export const Settings: React.FC = () => {
                       checked={emailNotifications}
                       onChange={handleEmailNotificationToggle}
                       disabled={isSavingNotif}
-                      className="sr-only peer"
+                      className="absolute w-0 h-0 opacity-0 peer"
                     />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary peer-disabled:opacity-50"></div>
                   </label>

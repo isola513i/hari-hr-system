@@ -19,8 +19,8 @@ export class HolidayController {
 
     async createHoliday(req: Request, res: Response): Promise<void> {
         try {
-            const { date, name, isRecurring } = req.body;
-            const holiday = await HolidayService.createHoliday({ date, name, isRecurring });
+            const { date, endDate, name, isRecurring } = req.body;
+            const holiday = await HolidayService.createHoliday({ date, endDate, name, isRecurring });
             res.status(201).json(holiday);
         } catch (error: any) {
             res.status(error.statusCode || 500).json({ error: error.message || 'Failed to create holiday' });
@@ -30,8 +30,8 @@ export class HolidayController {
     async updateHoliday(req: Request, res: Response): Promise<void> {
         try {
             const { id } = req.params;
-            const { date, name, isRecurring } = req.body;
-            const holiday = await HolidayService.updateHoliday(id, { date, name, isRecurring });
+            const { date, endDate, name, isRecurring } = req.body;
+            const holiday = await HolidayService.updateHoliday(id, { date, endDate, name, isRecurring });
             res.json(holiday);
         } catch (error: any) {
             res.status(error.statusCode || 500).json({ error: error.message || 'Failed to update holiday' });

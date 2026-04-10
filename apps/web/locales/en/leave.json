@@ -181,7 +181,8 @@
     "present": "Present",
     "absent": "Absent",
     "pending": "Pending",
-    "noDataForDay": "No data for this day"
+    "noDataForDay": "No data for this day",
+    "publicHoliday": "Public Holiday"
   },
   "rejectDialog": {
     "title": "Reject Leave Request",
@@ -206,6 +207,9 @@
     "deleteHoliday": "Delete Holiday",
     "name": "Holiday Name",
     "date": "Date",
+    "startDate": "Start Date",
+    "endDate": "End Date (Optional)",
+    "multiDay": "Multiple Days",
     "recurring": "Recurring Annually",
     "recurringYes": "Yearly",
     "recurringNo": "One-time",

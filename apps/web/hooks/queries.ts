@@ -1755,7 +1755,7 @@ export const useHolidays = () => {
 export const useCreateHoliday = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { date: string; name: string; isRecurring?: boolean }) =>
+    mutationFn: (data: { date: string; endDate?: string | null; name: string; isRecurring?: boolean }) =>
       api.post<PublicHoliday>('/holidays', data),
     onSettled: () => {
       qc.invalidateQueries({ queryKey: queryKeys.holidays.all });
@@ -1766,7 +1766,7 @@ export const useCreateHoliday = () => {
 export const useUpdateHoliday = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: string; date?: string; name?: string; isRecurring?: boolean }) =>
+    mutationFn: ({ id, ...data }: { id: string; date?: string; endDate?: string | null; name?: string; isRecurring?: boolean }) =>
       api.put<PublicHoliday>(`/holidays/${id}`, data),
     onSettled: () => {
       qc.invalidateQueries({ queryKey: queryKeys.holidays.all });

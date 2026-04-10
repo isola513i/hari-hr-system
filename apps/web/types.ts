@@ -771,6 +771,7 @@ export interface LeaveQuotaConfig {
 export interface PublicHoliday {
   id: string;
   date: string;
+  endDate: string | null;
   name: string;
   isRecurring: boolean;
   createdAt: string;

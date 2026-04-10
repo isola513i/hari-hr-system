@@ -127,12 +127,13 @@ CREATE TABLE leave_requests (
 CREATE TABLE holidays (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     date DATE NOT NULL,
+    end_date DATE DEFAULT NULL,
     name VARCHAR(255) NOT NULL,
     is_recurring BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-CREATE UNIQUE INDEX idx_holidays_date ON holidays(date);
+CREATE INDEX idx_holidays_date ON holidays(date);
 CREATE INDEX idx_holidays_is_recurring ON holidays(is_recurring);
 
 -- Leave Request Audit History

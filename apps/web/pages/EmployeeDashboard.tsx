@@ -90,6 +90,15 @@ export const EmployeeDashboard: React.FC = () => {
   }, [myLeaveRequests, myExpenses]);
 
   const { data: allEmployees = [] } = useAllEmployees();
+
+  // Department team members for team calendar
+  const departmentTeam = useMemo(() => {
+    if (!allEmployees.length) return [];
+    const currentEmployee = allEmployees.find(e => e.id === user?.employeeId || e.email === user?.email);
+    if (!currentEmployee?.department) return allEmployees.filter(e => e.status !== 'Terminated');
+    return allEmployees.filter(e => e.department === currentEmployee.department && e.status !== 'Terminated');
+  }, [allEmployees, user?.employeeId, user?.email]);
+
   const { data: announcementsData = [] } = useAnnouncements();
   const { data: attendanceStatus } = useAttendanceToday(true);
   const { data: employeeStatsData } = useDashboardEmployeeStats(true);
@@ -369,6 +378,7 @@ export const EmployeeDashboard: React.FC = () => {
       <LeaveGanttCalendar
         userLeaves={myLeaves}
         teamLeaves={teamLeaves}
+        allEmployees={departmentTeam}
         isManager={false}
       />
 

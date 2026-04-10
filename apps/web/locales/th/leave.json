@@ -181,7 +181,8 @@
     "present": "มาทำงาน",
     "absent": "ไม่อยู่",
     "pending": "รอดำเนินการ",
-    "noDataForDay": "ไม่มีข้อมูลในวันนี้"
+    "noDataForDay": "ไม่มีข้อมูลในวันนี้",
+    "publicHoliday": "วันหยุดนักขัตฤกษ์"
   },
   "rejectDialog": {
     "title": "ปฏิเสธคำขอลา",
@@ -206,6 +207,9 @@
     "deleteHoliday": "ลบวันหยุด",
     "name": "ชื่อวันหยุด",
     "date": "วันที่",
+    "startDate": "วันที่เริ่มต้น",
+    "endDate": "วันที่สิ้นสุด (ไม่บังคับ)",
+    "multiDay": "หลายวัน",
     "recurring": "เกิดซ้ำทุกปี",
     "recurringYes": "ทุกปี",
     "recurringNo": "ครั้งเดียว",

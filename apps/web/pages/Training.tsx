@@ -339,8 +339,13 @@ export const Training: React.FC = () => {
               value={bulkModuleId}
               onChange={setBulkModuleId}
               placeholder={t('training:bulkAssignModal.modulePlaceholder')}
-              options={activeModules.map((mod) => ({ value: mod.id, label: mod.title }))}
+              options={activeModules.map((mod) => ({ value: mod.id, label: `${mod.title} (${mod.type} - ${mod.duration})` }))}
             />
+            {activeModules.length === 0 && (
+              <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">
+                {t('training:bulkAssignModal.noModules', 'No training modules available. Create one first.')}
+              </p>
+            )}
           </div>
           <div>
             <DatePicker
@@ -355,22 +360,34 @@ export const Training: React.FC = () => {
               {t('training:bulkAssignModal.selectEmployees')} ({t('training:bulkAssignModal.selected', { count: selectedEmployees.length })})
             </label>
             <div className="max-h-48 overflow-y-auto border border-border-light dark:border-border-dark rounded-lg p-2 space-y-1">
-              {employees?.map((emp) => (
-                <label key={emp.id} className="flex items-center gap-2 p-1.5 hover:bg-background-light dark:hover:bg-background-dark rounded cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedEmployees.includes(emp.id)}
-                    onChange={(e) => {
-                      setSelectedEmployees(prev =>
-                        e.target.checked ? [...prev, emp.id] : prev.filter(id => id !== emp.id)
-                      );
-                    }}
-                    className="w-4 h-4 text-primary rounded border-border-light dark:border-border-dark focus:ring-primary"
-                  />
-                  <span className="text-sm text-text-light dark:text-text-dark">{emp.name}</span>
-                  <span className="text-xs text-text-muted-light dark:text-text-muted-dark">{emp.department}</span>
-                </label>
-              ))}
+              {employees?.map((emp) => {
+                const isChecked = selectedEmployees.includes(emp.id);
+                return (
+                  <label key={emp.id} className="flex items-center gap-3 p-2 hover:bg-background-light dark:hover:bg-background-dark rounded-lg cursor-pointer select-none group">
+                    <div className="relative flex-shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          setSelectedEmployees(prev =>
+                            e.target.checked ? [...prev, emp.id] : prev.filter(id => id !== emp.id)
+                          );
+                        }}
+                        className="absolute w-0 h-0 opacity-0 peer"
+                      />
+                      <div className="w-5 h-5 rounded border-2 border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark peer-checked:bg-primary peer-checked:border-primary transition-all flex items-center justify-center group-hover:border-primary/50">
+                        {isChecked && (
+                          <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-sm text-text-light dark:text-text-dark">{emp.name}</span>
+                    <span className="text-xs text-text-muted-light dark:text-text-muted-dark">{emp.department}</span>
+                  </label>
+                );
+              })}
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-2">
