@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { query } from '../db';
+import NotificationService from '../services/NotificationService';
 
 class AnnouncementsController {
   // GET /api/announcements
@@ -60,6 +61,20 @@ class AnnouncementsController {
       }
 
       const newAnnouncement = result.rows[0];
+
+      // Notify all employees about the new announcement/event
+      const announcementType = type || 'announcement';
+      const notifTitle = announcementType === 'event'
+        ? `New Event: ${title}`
+        : `New Announcement: ${title}`;
+
+      NotificationService.notifyAll({
+        title: notifTitle,
+        message: description.length > 200 ? description.substring(0, 200) + '...' : description,
+        type: 'info',
+        link: '/wellbeing',
+      }).catch((err) => console.error("Failed to notify employees about announcement:", err));
+
       res.status(201).json({
         id: newAnnouncement.id,
         title: newAnnouncement.title,

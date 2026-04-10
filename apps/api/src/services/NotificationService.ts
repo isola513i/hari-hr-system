@@ -149,6 +149,26 @@ export class NotificationService {
     }
   }
 
+  // Create notification for all users (employees + admins)
+  async notifyAll(
+    data: Omit<CreateNotificationRequest, "user_id">,
+    lang?: string
+  ): Promise<void> {
+    const users = await query(
+      `SELECT id, email, email_notifications FROM users`
+    );
+    const userIds = users.rows.map((row) => row.id);
+    await this.createForMultipleUsers(userIds, data);
+
+    // Send email to users who have email notifications enabled
+    for (const user of users.rows) {
+      if (user.email_notifications) {
+        EmailService.sendNotificationEmail(user.email, data.title, data.message, data.link, lang)
+          .catch((err) => console.error("EmailService: Failed to send notification email:", err));
+      }
+    }
+  }
+
   // Mark a notification as read
   async markAsRead(notificationId: string, userId: string): Promise<boolean> {
     const result = await query(
