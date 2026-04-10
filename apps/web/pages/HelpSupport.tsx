@@ -12,6 +12,9 @@ import {
   Settings,
   CheckCircle,
   AlertCircle,
+  GraduationCap,
+  DollarSign,
+  Receipt,
 } from 'lucide-react';
 import { api } from '../lib/api';
 
@@ -33,6 +36,19 @@ export const HelpSupport: React.FC = () => {
     { question: t('faq.q5'), answer: t('faq.a5') },
     { question: t('faq.q6'), answer: t('faq.a6') },
     { question: t('faq.q7'), answer: t('faq.a7') },
+    { question: t('faq.q8'), answer: t('faq.a8') },
+    { question: t('faq.q9'), answer: t('faq.a9') },
+    { question: t('faq.q10'), answer: t('faq.a10') },
+    { question: t('faq.q11'), answer: t('faq.a11') },
+    { question: t('faq.q12'), answer: t('faq.a12') },
+    { question: t('faq.q13'), answer: t('faq.a13') },
+    { question: t('faq.q14'), answer: t('faq.a14') },
+    { question: t('faq.q15'), answer: t('faq.a15') },
+    { question: t('faq.q16'), answer: t('faq.a16') },
+    { question: t('faq.q17'), answer: t('faq.a17') },
+    { question: t('faq.q18'), answer: t('faq.a18') },
+    { question: t('faq.q19'), answer: t('faq.a19') },
+    { question: t('faq.q20'), answer: t('faq.a20') },
   ];
 
   const filteredFaqs = faqs.filter(faq =>
@@ -162,6 +178,42 @@ export const HelpSupport: React.FC = () => {
                 <div>
                   <p className="font-medium text-sm text-text-light dark:text-text-dark">{t('quickLinks.settings')}</p>
                   <p className="text-xs text-text-muted-light">{t('quickLinks.settingsDesc')}</p>
+                </div>
+              </Link>
+              <Link
+                to="/training"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-background-light dark:hover:bg-background-dark transition-colors group"
+              >
+                <div className="p-2 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-lg">
+                  <GraduationCap size={16} />
+                </div>
+                <div>
+                  <p className="font-medium text-sm text-text-light dark:text-text-dark">{t('quickLinks.training')}</p>
+                  <p className="text-xs text-text-muted-light">{t('quickLinks.trainingDesc')}</p>
+                </div>
+              </Link>
+              <Link
+                to="/payroll"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-background-light dark:hover:bg-background-dark transition-colors group"
+              >
+                <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                  <DollarSign size={16} />
+                </div>
+                <div>
+                  <p className="font-medium text-sm text-text-light dark:text-text-dark">{t('quickLinks.payroll')}</p>
+                  <p className="text-xs text-text-muted-light">{t('quickLinks.payrollDesc')}</p>
+                </div>
+              </Link>
+              <Link
+                to="/expenses"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-background-light dark:hover:bg-background-dark transition-colors group"
+              >
+                <div className="p-2 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-lg">
+                  <Receipt size={16} />
+                </div>
+                <div>
+                  <p className="font-medium text-sm text-text-light dark:text-text-dark">{t('quickLinks.expenses')}</p>
+                  <p className="text-xs text-text-muted-light">{t('quickLinks.expensesDesc')}</p>
                 </div>
               </Link>
             </div>
