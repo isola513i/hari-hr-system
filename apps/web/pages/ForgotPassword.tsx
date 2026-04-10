@@ -30,7 +30,10 @@ const ForgotPassword: React.FC = () => {
     try {
       const response = await fetch(`${BASE_URL}/auth/forgot-password`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Accept-Language": localStorage.getItem('language') || 'en',
+        },
         body: JSON.stringify({ email }),
       });
 

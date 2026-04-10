@@ -88,7 +88,10 @@ const ResetPassword: React.FC = () => {
     try {
       const response = await fetch(`${BASE_URL}/auth/reset-password`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Accept-Language": localStorage.getItem('language') || 'en',
+        },
         body: JSON.stringify({ token, newPassword, confirmPassword }),
       });
 
@@ -105,7 +108,17 @@ const ResetPassword: React.FC = () => {
           });
         }, 2000);
       } else {
-        setError(data.error || t('resetPassword.resetFailed'));
+        // Map backend error messages to translated strings
+        const errorMsg = data.error || '';
+        if (errorMsg.includes('must be different')) {
+          setError(t('resetPassword.samePasswordError'));
+        } else if (errorMsg.includes('expired')) {
+          setError(t('resetPassword.linkExpiredError'));
+        } else if (errorMsg.includes('already been used')) {
+          setError(t('resetPassword.linkUsedError'));
+        } else {
+          setError(errorMsg || t('resetPassword.resetFailed'));
+        }
       }
     } catch {
       setError(t('resetPassword.networkError'));

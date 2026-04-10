@@ -117,6 +117,14 @@ router.put('/:id', apiLimiter, receiptUpload.single('receipt'), invalidateCache(
             return res.status(404).json({ error: 'Expense claim not found' });
         }
 
+        // Notify admins about the edit
+        NotificationService.notifyAdmins({
+            title: 'Expense Claim Edited',
+            message: `Expense claim "${claim.title}" has been edited.`,
+            type: 'info',
+            link: '/expenses',
+        }).catch((err) => console.error('Failed to notify admins about expense edit:', err));
+
         emitExpenseClaimUpdated(claim);
         res.json(claim);
     } catch (error: any) {
@@ -174,6 +182,14 @@ router.post('/:id/cancel', apiLimiter, invalidateCache('/api/expense-claims'), a
         if (!claim) {
             return res.status(404).json({ error: 'Expense claim not found' });
         }
+
+        // Notify admins about the cancellation
+        NotificationService.notifyAdmins({
+            title: 'Expense Claim Cancelled',
+            message: `Expense claim "${claim.title}" has been cancelled.`,
+            type: 'warning',
+            link: '/expenses',
+        }).catch((err) => console.error('Failed to notify admins about expense cancel:', err));
 
         emitExpenseClaimUpdated(claim);
         res.json(claim);

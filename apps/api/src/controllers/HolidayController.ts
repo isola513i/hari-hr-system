@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import HolidayService from '../services/HolidayService';
+import NotificationService from '../services/NotificationService';
 
 export class HolidayController {
     async getAllHolidays(req: Request, res: Response): Promise<void> {
@@ -21,6 +22,14 @@ export class HolidayController {
         try {
             const { date, endDate, name, isRecurring } = req.body;
             const holiday = await HolidayService.createHoliday({ date, endDate, name, isRecurring });
+
+            NotificationService.notifyAll({
+                title: 'New Holiday Added',
+                message: `A new holiday "${name}" has been added on ${date}.`,
+                type: 'info',
+                link: '/holidays',
+            }).catch((err) => console.error('Failed to notify about new holiday:', err));
+
             res.status(201).json(holiday);
         } catch (error: any) {
             res.status(error.statusCode || 500).json({ error: error.message || 'Failed to create holiday' });
@@ -32,6 +41,14 @@ export class HolidayController {
             const { id } = req.params;
             const { date, endDate, name, isRecurring } = req.body;
             const holiday = await HolidayService.updateHoliday(id, { date, endDate, name, isRecurring });
+
+            NotificationService.notifyAll({
+                title: 'Holiday Updated',
+                message: `Holiday "${holiday.name}" has been updated.`,
+                type: 'info',
+                link: '/holidays',
+            }).catch((err) => console.error('Failed to notify about holiday update:', err));
+
             res.json(holiday);
         } catch (error: any) {
             res.status(error.statusCode || 500).json({ error: error.message || 'Failed to update holiday' });

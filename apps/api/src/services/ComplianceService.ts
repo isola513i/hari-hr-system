@@ -1,5 +1,6 @@
 import { query } from '../db';
 import { BusinessError } from '../utils/errorResponse';
+import NotificationService from './NotificationService';
 
 export interface ComplianceItem {
   id: string;
@@ -210,6 +211,23 @@ class ComplianceService {
        VALUES ($1, $2, $3, $4, $5)`,
       [id, existing.status, newStatus, userId, reason || null]
     );
+
+    // Notify the assigned employee about status change
+    if (existing.assignedTo) {
+      const empResult = await query(
+        `SELECT user_id FROM employees WHERE id = $1`,
+        [existing.assignedTo]
+      );
+      if (empResult.rows[0]?.user_id) {
+        NotificationService.create({
+          user_id: empResult.rows[0].user_id,
+          title: 'Compliance Status Updated',
+          message: `"${existing.title}" status changed from ${existing.status} to ${newStatus}.${reason ? ` Reason: ${reason}` : ''}`,
+          type: newStatus === 'Completed' ? 'success' : newStatus === 'Overdue' ? 'warning' : 'info',
+          link: '/compliance',
+        }).catch((err) => console.error('Failed to notify about compliance status change:', err));
+      }
+    }
 
     return this.getById(id);
   }

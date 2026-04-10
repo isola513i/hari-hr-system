@@ -58,7 +58,11 @@
     "attendance": "การลงเวลา",
     "payroll": "เงินเดือน",
     "expenses": "ค่าใช้จ่าย",
-    "announcements": "ประกาศ"
+    "announcements": "ประกาศ",
+    "holidays": "วันหยุด",
+    "companyHolidays": "วันหยุดบริษัท",
+    "training": "การฝึกอบรม",
+    "performance": "ประเมินผลงาน"
   },
   "sidebar": {
     "byAiya": "by AIYA",
@@ -104,7 +108,11 @@
     "completed": "เสร็จสิ้น",
     "inProgress": "กำลังดำเนินการ",
     "overdue": "เลยกำหนด",
-    "notStarted": "ยังไม่เริ่ม"
+    "notStarted": "ยังไม่เริ่ม",
+    "terminated": "พ้นสภาพ",
+    "draft": "ฉบับร่าง",
+    "reimbursed": "เบิกจ่ายแล้ว",
+    "assigned": "มอบหมายแล้ว"
   },
   "datePicker": {
     "today": "วันนี้",

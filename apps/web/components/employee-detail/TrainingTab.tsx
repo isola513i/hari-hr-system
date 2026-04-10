@@ -88,7 +88,7 @@ export const TrainingTab: React.FC<TrainingTabProps> = ({
                                         ? 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400'
                                         : 'bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
                                     }`}>
-                                    {record.status}
+                                    {t(`common:status.${record.status === 'In Progress' ? 'inProgress' : record.status.toLowerCase()}`, { defaultValue: record.status })}
                                 </span>
                                 {isAdmin && onDeleteTraining && (
                                     <button

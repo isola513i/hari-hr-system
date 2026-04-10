@@ -581,7 +581,24 @@ export class OnboardingService {
       [status, userId, note || null, id]
     );
     if (result.rows.length === 0) return null;
-    return mapDocumentRow(result.rows[0]);
+
+    // Notify the employee about document review result
+    const doc = result.rows[0];
+    const empResult = await query(
+      `SELECT user_id, name FROM employees WHERE id = $1`,
+      [doc.employee_id]
+    );
+    if (empResult.rows[0]?.user_id) {
+      NotificationService.create({
+        user_id: empResult.rows[0].user_id,
+        title: `Document ${status}`,
+        message: `Your onboarding document "${doc.name}" has been ${status.toLowerCase()}.${note ? ` Note: ${note}` : ''}`,
+        type: status === 'Approved' ? 'success' : 'warning',
+        link: '/onboarding',
+      }).catch((err) => console.error('Failed to notify employee about document review:', err));
+    }
+
+    return mapDocumentRow(doc);
   }
 
   async getDocumentFilePath(id: string): Promise<{ filePath: string | null; name: string; employeeId: string } | null> {

@@ -175,7 +175,7 @@ export const EmployeeHero: React.FC<EmployeeHeroProps> = ({
                                     }`}>
                                     <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${employee.status === 'Active' ? 'bg-green-500' : employee.status === 'Terminated' ? 'bg-red-500' : 'bg-yellow-500'
                                         }`}></span>
-                                    {employee.status}
+                                    {t(`common:status.${employee.status.toLowerCase()}`, { defaultValue: employee.status })}
                                 </span>
                             </div>
                         </div>

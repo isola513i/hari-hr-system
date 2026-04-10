@@ -310,25 +310,25 @@ export const Compliance: React.FC = () => {
       {/* Compliance Items Section */}
       <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden">
         <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex flex-wrap justify-between items-center gap-3">
-          <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Compliance Items</h2>
+          <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">{t('items.title')}</h2>
           <div className="flex items-center gap-2">
             <Dropdown
               value={itemStatusFilter}
               onChange={(val) => { setItemStatusFilter(val); setItemPage(1); }}
-              placeholder="All Status"
+              placeholder={t('items.allStatus')}
               width="w-36"
               options={[
-                { value: '', label: 'All Status' },
-                ...['Draft', 'Active', 'In Progress', 'Completed', 'Overdue'].map(s => ({ value: s, label: s }))
+                { value: '', label: t('items.allStatus') },
+                ...['Draft', 'Active', 'In Progress', 'Completed', 'Overdue'].map(s => ({ value: s, label: t(`items.status${s.replace(/\s/g, '')}`) }))
               ]}
             />
             <Dropdown
               value={itemCategoryFilter}
               onChange={(val) => { setItemCategoryFilter(val); setItemPage(1); }}
-              placeholder="All Categories"
+              placeholder={t('items.allCategories')}
               width="w-36"
               options={[
-                { value: '', label: 'All Categories' },
+                { value: '', label: t('items.allCategories') },
                 ...['ISO', 'PDPA', 'Custom'].map(c => ({ value: c, label: c }))
               ]}
             />
@@ -336,14 +336,14 @@ export const Compliance: React.FC = () => {
               onClick={openItemCreate}
               className="flex items-center gap-1 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
             >
-              + Add Item
+              {t('items.addItem')}
             </button>
           </div>
         </div>
 
         {!itemsData?.data?.length ? (
           <div className="p-8 text-center text-text-muted-light dark:text-text-muted-dark text-sm">
-            No compliance items found
+            {t('items.noItems')}
           </div>
         ) : (
           <>
@@ -353,16 +353,16 @@ export const Compliance: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-sm text-text-light dark:text-text-dark truncate">{item.title}</p>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${statusColors[item.status] || ''}`}>{item.status}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${statusColors[item.status] || ''}`}>{t(`items.status${item.status.replace(/\s/g, '')}`)}</span>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">
                       <span className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">{item.category}</span>
                       <span className={priorityColors[item.priority] || ''}>{item.priority}</span>
-                      <span>Risk: {item.riskLevel}</span>
+                      <span>{t('items.risk')}: {item.riskLevel}</span>
                       {item.assignedToName && <span>→ {item.assignedToName}</span>}
                       {item.dueDate && (
                         <span className={new Date(item.dueDate) < new Date() && item.status !== 'Completed' ? 'text-red-500 font-medium' : ''}>
-                          Due: {new Date(item.dueDate).toLocaleDateString()}
+                          {t('items.due')}: {new Date(item.dueDate).toLocaleDateString()}
                         </span>
                       )}
                     </div>
@@ -387,7 +387,7 @@ export const Compliance: React.FC = () => {
             </div>
             {itemsData.totalPages > 1 && (
               <div className="px-6 py-3 border-t border-border-light dark:border-border-dark flex justify-between items-center text-xs text-text-muted-light dark:text-text-muted-dark">
-                <span>{itemsData.total} items</span>
+                <span>{itemsData.total} {t('items.items')}</span>
                 <div className="flex gap-1">
                   <button onClick={() => setItemPage(p => Math.max(1, p - 1))} disabled={itemPage <= 1} className="px-2 py-1 border rounded disabled:opacity-30"><ChevronLeft size={14} /></button>
                   <span className="px-2 py-1">{itemPage}/{itemsData.totalPages}</span>
@@ -400,10 +400,10 @@ export const Compliance: React.FC = () => {
       </div>
 
       {/* Item Form Modal */}
-      <Modal isOpen={isItemFormOpen} onClose={() => setIsItemFormOpen(false)} title={editingItem ? 'Edit Compliance Item' : 'Add Compliance Item'}>
+      <Modal isOpen={isItemFormOpen} onClose={() => setIsItemFormOpen(false)} title={editingItem ? t('items.editItem') : t('items.addItemTitle')}>
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Title *</label>
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('items.titleLabel')} *</label>
             <input
               value={itemForm.title}
               onChange={(e) => setItemForm(f => ({ ...f, title: e.target.value }))}
@@ -411,7 +411,7 @@ export const Compliance: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Description</label>
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('items.descriptionLabel')}</label>
             <textarea
               value={itemForm.description}
               onChange={(e) => setItemForm(f => ({ ...f, description: e.target.value }))}
@@ -421,7 +421,7 @@ export const Compliance: React.FC = () => {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-medium text-text-light dark:text-text-dark mb-1">Category</label>
+              <label className="block text-xs font-medium text-text-light dark:text-text-dark mb-1">{t('items.categoryLabel')}</label>
               <Dropdown
                 value={itemForm.category}
                 onChange={(val) => setItemForm(f => ({ ...f, category: val }))}
@@ -429,7 +429,7 @@ export const Compliance: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-light dark:text-text-dark mb-1">Priority</label>
+              <label className="block text-xs font-medium text-text-light dark:text-text-dark mb-1">{t('items.priorityLabel')}</label>
               <Dropdown
                 value={itemForm.priority}
                 onChange={(val) => setItemForm(f => ({ ...f, priority: val }))}
@@ -437,7 +437,7 @@ export const Compliance: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-light dark:text-text-dark mb-1">Risk Level</label>
+              <label className="block text-xs font-medium text-text-light dark:text-text-dark mb-1">{t('items.riskLevelLabel')}</label>
               <Dropdown
                 value={itemForm.riskLevel}
                 onChange={(val) => setItemForm(f => ({ ...f, riskLevel: val }))}
@@ -446,7 +446,7 @@ export const Compliance: React.FC = () => {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Due Date</label>
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('items.dueDateLabel')}</label>
             <input
               type="date"
               value={itemForm.dueDate}
@@ -455,31 +455,31 @@ export const Compliance: React.FC = () => {
             />
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <button onClick={() => setIsItemFormOpen(false)} className="px-4 py-2 text-sm text-text-muted-light hover:text-text-light">Cancel</button>
+            <button onClick={() => setIsItemFormOpen(false)} className="px-4 py-2 text-sm text-text-muted-light hover:text-text-light">{t('items.cancel')}</button>
             <button onClick={handleSaveItem} disabled={!itemForm.title} className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50">
-              {editingItem ? 'Update' : 'Create'}
+              {editingItem ? t('items.update') : t('items.create')}
             </button>
           </div>
         </div>
       </Modal>
 
       {/* Status Change Modal */}
-      <Modal isOpen={!!statusChangeItem} onClose={() => setStatusChangeItem(null)} title="Change Status" maxWidth="sm">
+      <Modal isOpen={!!statusChangeItem} onClose={() => setStatusChangeItem(null)} title={t('items.changeStatus')} maxWidth="sm">
         <div className="p-6 space-y-4">
           <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
-            Current: <span className={`font-medium ${statusColors[statusChangeItem?.status || ''] || ''} px-2 py-0.5 rounded`}>{statusChangeItem?.status}</span>
+            {t('items.currentStatus')}: <span className={`font-medium ${statusColors[statusChangeItem?.status || ''] || ''} px-2 py-0.5 rounded`}>{statusChangeItem?.status ? t(`items.status${statusChangeItem.status.replace(/\s/g, '')}`) : ''}</span>
           </p>
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">New Status</label>
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('items.newStatus')}</label>
             <Dropdown
               value={newStatus}
               onChange={(val) => setNewStatus(val)}
-              placeholder="Select..."
-              options={['Draft', 'Active', 'In Progress', 'Completed'].filter(s => s !== statusChangeItem?.status).map(s => ({ value: s, label: s }))}
+              placeholder={t('items.selectStatus')}
+              options={['Draft', 'Active', 'In Progress', 'Completed'].filter(s => s !== statusChangeItem?.status).map(s => ({ value: s, label: t(`items.status${s.replace(/\s/g, '')}`) }))}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Reason (Optional)</label>
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('items.reasonLabel')}</label>
             <textarea
               value={statusReason}
               onChange={(e) => setStatusReason(e.target.value)}
@@ -488,27 +488,27 @@ export const Compliance: React.FC = () => {
             />
           </div>
           <div className="flex justify-end gap-2">
-            <button onClick={() => setStatusChangeItem(null)} className="px-4 py-2 text-sm text-text-muted-light">Cancel</button>
+            <button onClick={() => setStatusChangeItem(null)} className="px-4 py-2 text-sm text-text-muted-light">{t('items.cancel')}</button>
             <button onClick={handleStatusChange} disabled={!newStatus} className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50">
-              Update Status
+              {t('items.updateStatus')}
             </button>
           </div>
         </div>
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal isOpen={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} title="Delete Compliance Item" maxWidth="sm">
+      <Modal isOpen={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} title={t('items.deleteItem')} maxWidth="sm">
         <div className="p-6 space-y-4">
           <p className="text-sm text-text-light dark:text-text-dark">
-            Are you sure you want to delete this compliance item? This action cannot be undone.
+            {t('items.deleteConfirm')}
           </p>
           <div className="flex justify-end gap-2">
-            <button onClick={() => setDeleteConfirmId(null)} className="px-4 py-2 text-sm text-text-muted-light hover:text-text-light">Cancel</button>
+            <button onClick={() => setDeleteConfirmId(null)} className="px-4 py-2 text-sm text-text-muted-light hover:text-text-light">{t('items.cancel')}</button>
             <button
               onClick={() => deleteConfirmId && handleDeleteItem(deleteConfirmId)}
               className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700"
             >
-              Delete
+              {t('items.delete')}
             </button>
           </div>
         </div>

@@ -61,6 +61,7 @@
     "passwordChanged": "Password changed successfully!",
     "incorrectCurrent": "The current password you entered is incorrect.",
     "changeFailed": "Failed to change password. Please try again.",
+    "samePassword": "New password must be different from your current password.",
     "fixErrors": "Please fix the errors in the form.",
     "currentRequired": "Current password is required",
     "newRequired": "New password is required",

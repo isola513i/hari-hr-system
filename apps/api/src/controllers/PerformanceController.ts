@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { query } from '../db';
+import NotificationService from '../services/NotificationService';
 
 class PerformanceController {
   // GET /api/performance/reviews
@@ -63,6 +64,18 @@ class PerformanceController {
         [employeeId, date, reviewer, userId, rating, notes || '']
       );
       const row = result.rows[0];
+
+      // Notify the reviewed employee
+      if (selfCheck.rows[0]?.user_id) {
+        NotificationService.create({
+          user_id: selfCheck.rows[0].user_id,
+          title: 'New Performance Review',
+          message: `${reviewer} has submitted a performance review for you with a rating of ${rating}.`,
+          type: 'info',
+          link: '/performance',
+        }).catch((err) => console.error('Failed to notify employee about review:', err));
+      }
+
       res.status(201).json({
         id: row.id,
         employeeId: row.employee_id,
@@ -118,6 +131,22 @@ class PerformanceController {
         return;
       }
       const row = result.rows[0];
+
+      // Notify the reviewed employee about the update
+      const empResult = await query(
+        `SELECT user_id FROM employees WHERE id = $1`,
+        [row.employee_id]
+      );
+      if (empResult.rows[0]?.user_id) {
+        NotificationService.create({
+          user_id: empResult.rows[0].user_id,
+          title: 'Performance Review Updated',
+          message: `Your performance review by ${row.reviewer} has been updated.`,
+          type: 'info',
+          link: '/performance',
+        }).catch((err) => console.error('Failed to notify employee about review update:', err));
+      }
+
       res.json({
         id: row.id,
         employeeId: row.employee_id,

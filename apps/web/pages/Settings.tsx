@@ -364,6 +364,8 @@ export const Settings: React.FC = () => {
       if (error.message) {
         if (error.message.includes('Incorrect current password')) {
           errorMessage = t('security.incorrectCurrent');
+        } else if (error.message.includes('must be different')) {
+          errorMessage = t('security.samePassword');
         } else {
           errorMessage = error.message;
         }

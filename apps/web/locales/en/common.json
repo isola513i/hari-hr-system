@@ -58,7 +58,11 @@
     "attendance": "Attendance",
     "payroll": "Payroll",
     "expenses": "Expenses",
-    "announcements": "Announcements"
+    "announcements": "Announcements",
+    "holidays": "Holidays",
+    "companyHolidays": "Company Holidays",
+    "training": "Training",
+    "performance": "Performance"
   },
   "sidebar": {
     "byAiya": "by AIYA",
@@ -104,7 +108,11 @@
     "completed": "Completed",
     "inProgress": "In Progress",
     "overdue": "Overdue",
-    "notStarted": "Not Started"
+    "notStarted": "Not Started",
+    "terminated": "Terminated",
+    "draft": "Draft",
+    "reimbursed": "Reimbursed",
+    "assigned": "Assigned"
   },
   "datePicker": {
     "today": "Today",

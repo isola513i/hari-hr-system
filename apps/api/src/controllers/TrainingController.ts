@@ -176,6 +176,25 @@ class TrainingController {
       const { status, score } = req.body;
       const record = await TrainingService.updateTraining(req.params.id, status, score);
       if (!record) { res.status(404).json({ error: 'Training record not found' }); return; }
+
+      // Notify admins when training is completed or scored
+      if (status === 'Completed' || score !== undefined) {
+        const empResult = await query(
+          'SELECT name FROM employees WHERE id = $1',
+          [record.employeeId]
+        );
+        const empName = empResult.rows[0]?.name || 'An employee';
+        const msg = score !== undefined
+          ? `${empName} scored ${score}% on training: ${record.title}`
+          : `${empName} has completed training: ${record.title}`;
+        notificationService.notifyAdmins({
+          title: 'Training Update',
+          message: msg,
+          type: 'info',
+          link: '/training',
+        }).catch((err) => console.error('Failed to notify admins about training update:', err));
+      }
+
       res.json(record);
     } catch (err) {
       res.status(500).json({ error: safeErrorMessage(err, 'Failed to update training') });

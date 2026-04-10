@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import SurveyService from "../services/SurveyService";
 import { SURVEY_CATEGORIES, SurveyCategory } from "../models/Survey";
+import NotificationService from "../services/NotificationService";
 
 export class SurveyController {
   /**
@@ -90,6 +91,14 @@ export class SurveyController {
         questions: normalizedQuestions,
         allowRetake: allowRetake === true,
       });
+
+      // Notify all employees about the new survey
+      NotificationService.notifyAll({
+        title: 'New Survey Available',
+        message: `A new survey "${title.trim()}" is now available. Please take a moment to respond.`,
+        type: 'info',
+        link: '/wellbeing',
+      }).catch((err) => console.error('Failed to notify employees about new survey:', err));
 
       res.status(201).json(result);
     } catch (error) {
