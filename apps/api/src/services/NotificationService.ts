@@ -131,13 +131,22 @@ export class NotificationService {
 
   // Create notification for all HR admins
   async notifyAdmins(
-    data: Omit<CreateNotificationRequest, "user_id">
+    data: Omit<CreateNotificationRequest, "user_id">,
+    lang?: string
   ): Promise<void> {
     const admins = await query(
-      `SELECT id FROM users WHERE role = 'HR_ADMIN'`
+      `SELECT id, email, email_notifications FROM users WHERE role = 'HR_ADMIN'`
     );
     const adminIds = admins.rows.map((row) => row.id);
     await this.createForMultipleUsers(adminIds, data);
+
+    // Send email to admins who have email notifications enabled
+    for (const admin of admins.rows) {
+      if (admin.email_notifications) {
+        EmailService.sendNotificationEmail(admin.email, data.title, data.message, data.link, lang)
+          .catch((err) => console.error("EmailService: Failed to send admin notification email:", err));
+      }
+    }
   }
 
   // Mark a notification as read
