@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { LeaveRequest } from '../types';
+import type { LeaveRequest, PublicHoliday } from '../types';
 import { useLeaveTypeConfig } from '../hooks/queries';
 import { buildLeaveColorMap, getShortLabel, translateLeaveType } from '../lib/leaveTypeConfig';
 
@@ -10,6 +10,7 @@ interface LeaveCalendarProps {
   teamLeaves: LeaveRequest[];
   isManager?: boolean;
   onLeaveClick?: (request: LeaveRequest) => void;
+  holidays?: PublicHoliday[];
 }
 
 // MONTH_NAMES and DAY_NAMES are defined inside the component to access translations
@@ -96,7 +97,7 @@ function buildDateTypeMap(leaves: LeaveRequest[], isManager: boolean): Map<strin
   return map;
 }
 
-export const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ userLeaves, teamLeaves, isManager = false, onLeaveClick }) => {
+export const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ userLeaves, teamLeaves, isManager = false, onLeaveClick, holidays = [] }) => {
   const { t } = useTranslation(['leave', 'common']);
   const { data: leaveConfigs = [] } = useLeaveTypeConfig();
 
@@ -120,6 +121,18 @@ export const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ userLeaves, teamLe
     }
     return result;
   }, [leaveConfigs]);
+
+  // Build holiday map: date string → holiday name
+  const holidayMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const h of holidays) {
+      const end = h.endDate ?? h.date;
+      for (const d of expandDateRange(h.date, end)) {
+        map.set(d, h.name);
+      }
+    }
+    return map;
+  }, [holidays]);
 
   const [displayMonth, setDisplayMonth] = useState(() => {
     const now = new Date();
@@ -169,7 +182,7 @@ export const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ userLeaves, teamLe
 
     const userEntries = userLeaveMap.get(key) || [];
     const teamEntries = teamLeaveMap.get(key) || [];
-    if (userEntries.length === 0 && teamEntries.length === 0) return;
+    if (userEntries.length === 0 && teamEntries.length === 0 && !holidayMap.get(key)) return;
 
     setHoveredDay(key);
     if (gridRef.current) {
@@ -274,6 +287,7 @@ export const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ userLeaves, teamLe
           const teamTypes = teamDateTypes.get(key);
           const isToday = key === todayKey;
           const hasLeave = userTypes || teamTypes;
+          const holidayName = holidayMap.get(key);
 
           // Pick primary user leave type for background color
           const primaryUserType = userTypes ? [...userTypes][0] : null;
@@ -298,12 +312,17 @@ export const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ userLeaves, teamLe
                 transition-all duration-150 select-none
                 ${hasLeave && isManager ? 'cursor-pointer' : 'cursor-default'}
                 ${userColor ? `${userColor.bg} ${userColor.text} font-medium` : ''}
-                ${!userColor && isToday ? 'ring-2 ring-primary font-semibold text-primary' : ''}
-                ${!userColor && !isToday ? 'text-text-light dark:text-text-dark' : ''}
-                ${hasLeave ? 'hover:scale-110 hover:shadow-md hover:z-10' : 'hover:bg-background-light dark:hover:bg-background-dark'}
+                ${!userColor && holidayName ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 font-medium' : ''}
+                ${!userColor && !holidayName && isToday ? 'ring-2 ring-primary font-semibold text-primary' : ''}
+                ${!userColor && !holidayName && !isToday ? 'text-text-light dark:text-text-dark' : ''}
+                ${hasLeave ? 'hover:scale-110 hover:shadow-md hover:z-10' : holidayName ? 'hover:bg-red-100 dark:hover:bg-red-900/30' : 'hover:bg-background-light dark:hover:bg-background-dark'}
               `}
             >
               {day}
+              {/* Holiday dot */}
+              {holidayName && !userColor && teamDots.length === 0 && (
+                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-red-400 dark:bg-red-500" />
+              )}
               {/* Team leave type dots */}
               {teamDots.length > 0 && !userColor && (
                 <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
@@ -333,6 +352,12 @@ export const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ userLeaves, teamLe
               <p className="text-[11px] font-medium text-text-muted-light dark:text-text-muted-dark mb-1.5">
                 {new Date(hoveredDay + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </p>
+              {holidayMap.get(hoveredDay) && (
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-red-400 dark:bg-red-500" />
+                  <span className="text-xs font-medium text-red-700 dark:text-red-300 truncate">{holidayMap.get(hoveredDay)}</span>
+                </div>
+              )}
               <div className="space-y-1">
                 {tooltipEntries.map((entry, i) => {
                   const isEntryClickable = isManager && !!onLeaveClick;
@@ -400,6 +425,12 @@ export const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ userLeaves, teamLe
             {isManager ? t('leave:calendar.team') : t('leave:calendar.teamOnLeave')}
           </span>
         </div>
+        {holidays.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded bg-red-50 dark:bg-red-900/20" />
+            <span className="text-xs text-text-muted-light dark:text-text-muted-dark">{t('leave:calendar.publicHoliday')}</span>
+          </div>
+        )}
       </div>
     </div>
   );

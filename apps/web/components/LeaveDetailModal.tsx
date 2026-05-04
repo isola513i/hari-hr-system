@@ -108,7 +108,7 @@ export const LeaveDetailModal: React.FC<LeaveDetailModalProps> = ({
           <DetailItem
             icon={<Clock size={16} />}
             label={t('leave:detail.duration')}
-            value={`${days} ${days === 1 ? t('common:time.day') : t('common:time.days')}`}
+            value={`${days} ${days === 1 ? t('common:time.day') : t('common:time.days')}${request.isHalfDay && request.halfDayPeriod ? ` (${t(`leave:halfDay.${request.halfDayPeriod}`)})` : ''}`}
           />
           {balance && (
             <DetailItem

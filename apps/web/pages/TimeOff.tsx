@@ -5,7 +5,7 @@ import { Calendar, Clock, AlertCircle, Plus, CheckCircle2, XCircle, Building2, B
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useLeave } from '../contexts/LeaveContext';
-import { useLeaveRequests, useLeaveBalance, useEmployeeDetail, useCancelLeaveRequest, useLeaveTypeConfig } from '../hooks/queries';
+import { useLeaveRequests, useLeaveBalance, useEmployeeDetail, useCancelLeaveRequest, useLeaveTypeConfig, useHolidays } from '../hooks/queries';
 import { getLeaveColor, translateLeaveType } from '../lib/leaveTypeConfig';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { LeaveCalendar } from '../components/LeaveCalendar';
@@ -114,6 +114,7 @@ export const TimeOff: React.FC = () => {
       });
   }, [leaveConfigs]);
   const { data: empDetail } = useEmployeeDetail(user?.employeeId);
+  const { data: holidays = [] } = useHolidays();
   const cancelMutation = useCancelLeaveRequest();
 
   const isManager = isAdminView;
@@ -295,7 +296,7 @@ export const TimeOff: React.FC = () => {
 
       {/* ========== Calendar + History ========== */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <LeaveCalendar userLeaves={myRequests} teamLeaves={teamRequests} isManager={isManager} onLeaveClick={setDetailRequest} />
+        <LeaveCalendar userLeaves={myRequests} teamLeaves={teamRequests} isManager={isManager} onLeaveClick={setDetailRequest} holidays={holidays} />
 
         {/* My Leave History */}
         <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">

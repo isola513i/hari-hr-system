@@ -48,7 +48,7 @@ export const Sidebar: React.FC = () => {
     // Employee Focused Tools
     { icon: <Clock size={20} />, label: t('nav.attendance'), path: '/attendance', allowed: !isAdminView },
     { icon: <Calendar size={20} />, label: t('nav.timeOff'), path: '/time-off', allowed: !isAdminView },
-    { icon: <Calendar size={20} />, label: t('nav.holidays'), path: '/company-holidays', allowed: !isAdminView },
+    { icon: <Calendar size={20} />, label: t('nav.holidays'), path: '/company-holidays', allowed: false },
     { icon: <DollarSign size={20} />, label: t('nav.payroll'), path: '/payroll', allowed: true },
     { icon: <FileText size={20} />, label: t('nav.expenses'), path: '/expenses', allowed: true },
     { icon: <MessageSquare size={20} />, label: t('nav.surveys'), path: '/surveys', allowed: true },

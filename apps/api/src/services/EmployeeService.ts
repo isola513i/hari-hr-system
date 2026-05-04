@@ -28,6 +28,7 @@ export class EmployeeService {
                     ELSE e.status
                 END AS effective_status
              FROM employees e
+             WHERE e.status != 'Terminated'
              ORDER BY name ASC`
         );
         return result.rows.map(this.mapRowToEmployee);
