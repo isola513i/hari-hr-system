@@ -284,7 +284,8 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
   return (
     <>
-      <header className="h-16 bg-card-light dark:bg-card-dark border-b border-border-light dark:border-border-dark flex items-center justify-between px-4 md:px-8 sticky top-0 z-20 shadow-sm">
+      <header className="bg-card-light dark:bg-card-dark border-b border-border-light dark:border-border-dark sticky top-0 z-20 shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <div className="h-16 flex items-center justify-between px-4 md:px-8">
         {/* Mobile Menu Button — 44px touch target */}
         <button
           onClick={onMenuClick}
@@ -423,6 +424,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             )}
           </div>
         </div>
+      </div>
       </header>
 
       {/* ============================================================ */}

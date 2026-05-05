@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { Breadcrumbs } from './Breadcrumbs';
@@ -14,11 +14,13 @@ export const Layout: React.FC = () => {
   useSocketQuerySync();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
 
-  // Auto-close mobile drawer on navigation
+  // Auto-close mobile drawer and scroll to top on every navigation
   useEffect(() => {
     setIsMobileMenuOpen(false);
-  }, [location.pathname]);
+    if (mainRef.current) mainRef.current.scrollTop = 0;
+  }, [location.key]);
 
   // Session timeout management (30 min timeout, warning at 25 min)
   const { showWarning, timeLeft, extendSession, logout } = useSessionTimeout({
@@ -52,7 +54,7 @@ export const Layout: React.FC = () => {
         <div className="flex flex-col flex-1 min-w-0">
           <Header onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
           {/* pb-20 on mobile to account for BottomNav (h-14 + safe area) */}
-          <main className="flex-1 overflow-y-auto p-4 pb-20 md:p-6 md:pb-6 lg:p-8 lg:pb-8">
+          <main ref={mainRef} className="flex-1 overflow-y-auto p-4 pb-20 md:p-6 md:pb-6 lg:p-8 lg:pb-8">
             <Breadcrumbs />
             <Outlet />
           </main>

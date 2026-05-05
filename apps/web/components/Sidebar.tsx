@@ -67,7 +67,7 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="w-64 flex-shrink-0 bg-primary-dark text-white flex flex-col h-full shadow-xl">
+    <aside className="w-64 flex-shrink-0 bg-primary-dark text-white flex flex-col h-full shadow-xl" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="p-6 pb-8 border-b border-white/10">
         <Link to="/" className="flex items-center gap-3 group">
           <div className="aspect-square w-10 h-10 rounded-lg overflow-hidden shadow-lg bg-white flex items-center justify-center group-hover:shadow-xl transition-shadow">
@@ -143,6 +143,7 @@ export const Sidebar: React.FC = () => {
             <span className="text-sm font-medium">{t('nav.signOut')}</span>
           </button>
         </div>
+        <div style={{ height: 'env(safe-area-inset-bottom)' }} />
       </div>
     </aside>
   );

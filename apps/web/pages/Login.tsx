@@ -23,6 +23,15 @@ const Login: React.FC = () => {
   const location = useLocation();
   const { t } = useTranslation('auth');
 
+  // Set html background to match gradient for iOS safe area
+  useEffect(() => {
+    const prevBg = document.documentElement.style.backgroundColor;
+    document.documentElement.style.backgroundColor = '#3498db';
+    return () => {
+      document.documentElement.style.backgroundColor = prevBg;
+    };
+  }, []);
+
   // Check for registration success message
   useEffect(() => {
     const state = location.state as LocationState;
@@ -87,7 +96,9 @@ const Login: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-background-light dark:bg-background-dark">
+    <div className="min-h-[100dvh] flex flex-col lg:flex-row bg-background-light dark:bg-background-dark" style={{ marginTop: 0 }}>
+      {/* White safe-area fill on login — keeps status bar icons readable on light bg */}
+      <div className="fixed inset-x-0 top-0 lg:hidden bg-white dark:bg-background-dark" style={{ height: 'env(safe-area-inset-top)', zIndex: 50 }} />
       {/* Left Panel - Branding */}
       <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative overflow-hidden bg-gradient-to-br from-primary via-primary-dark to-[#1a252f]">
         {/* Animated Background Elements */}
@@ -154,7 +165,7 @@ const Login: React.FC = () => {
       </div>
 
       {/* Mobile Gradient Header */}
-      <div className="lg:hidden relative overflow-hidden bg-gradient-to-br from-primary via-primary-dark to-[#1a252f]">
+      <div className="lg:hidden relative overflow-hidden bg-gradient-to-br from-primary via-primary-dark to-[#1a252f]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-20 -right-20 w-60 h-60 bg-white/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
@@ -254,7 +265,7 @@ const Login: React.FC = () => {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors"
                   >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
                 {fieldErrors.password && (
