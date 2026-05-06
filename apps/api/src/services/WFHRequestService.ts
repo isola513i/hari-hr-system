@@ -1,0 +1,166 @@
+import { query } from '../db';
+import { BusinessError } from '../utils/errorResponse';
+import NotificationService from './NotificationService';
+
+export interface WFHRequest {
+  id: string;
+  employeeId: string;
+  employeeName?: string;
+  employeeDepartment?: string;
+  employeeAvatar?: string | null;
+  date: string;
+  reason: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+}
+
+export interface CreateWFHRequestData {
+  employeeId: string;
+  date: string;
+  reason?: string;
+}
+
+export class WFHRequestService {
+  async create(data: CreateWFHRequestData): Promise<WFHRequest> {
+    const { employeeId, date, reason } = data;
+
+    const result = await query(
+      `INSERT INTO wfh_requests (employee_id, date, reason)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (employee_id, date) DO UPDATE
+         SET reason = EXCLUDED.reason, status = 'pending', updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [employeeId, date, reason ?? null]
+    );
+
+    try {
+      const empResult = await query('SELECT name FROM employees WHERE id = $1', [employeeId]);
+      const employeeName = empResult.rows[0]?.name ?? 'An employee';
+      const formattedDate = new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+      await NotificationService.notifyAdmins({
+        title: 'WFH Request Submitted',
+        message: `${employeeName} has submitted a WFH request for ${formattedDate}.`,
+        type: 'info',
+        link: '/admin-attendance',
+      });
+    } catch (err) {
+      console.error('Failed to notify admins about WFH request:', err);
+    }
+
+    return this.mapRow(result.rows[0]);
+  }
+
+  async approve(requestId: string, reviewedById: string): Promise<WFHRequest> {
+    const result = await query(
+      `UPDATE wfh_requests
+       SET status = 'approved', reviewed_by = $1, reviewed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2
+       RETURNING *`,
+      [reviewedById, requestId]
+    );
+
+    if (result.rows.length === 0) throw new BusinessError('WFH request not found');
+    const wfh = this.mapRow(result.rows[0]);
+    this.notifyEmployee(wfh.employeeId, wfh.date, 'approved');
+    return wfh;
+  }
+
+  async reject(requestId: string, reviewedById: string): Promise<WFHRequest> {
+    const result = await query(
+      `UPDATE wfh_requests
+       SET status = 'rejected', reviewed_by = $1, reviewed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2
+       RETURNING *`,
+      [reviewedById, requestId]
+    );
+
+    if (result.rows.length === 0) throw new BusinessError('WFH request not found');
+    const wfh = this.mapRow(result.rows[0]);
+    this.notifyEmployee(wfh.employeeId, wfh.date, 'rejected');
+    return wfh;
+  }
+
+  private notifyEmployee(employeeId: string, date: string, status: 'approved' | 'rejected'): void {
+    query('SELECT user_id FROM employees WHERE id = $1', [employeeId])
+      .then(({ rows }) => {
+        if (!rows[0]?.user_id) return;
+        const formattedDate = new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+        return NotificationService.create({
+          user_id: rows[0].user_id,
+          title: `WFH Request ${status === 'approved' ? 'Approved' : 'Rejected'}`,
+          message: `Your WFH request for ${formattedDate} has been ${status}.`,
+          type: status === 'approved' ? 'success' : 'warning',
+          link: '/check-in',
+        });
+      })
+      .catch((err) => console.error('Failed to notify employee about WFH status:', err));
+  }
+
+  async getMyRequests(employeeId: string): Promise<WFHRequest[]> {
+    const result = await query(
+      `SELECT * FROM wfh_requests WHERE employee_id = $1 ORDER BY date DESC`,
+      [employeeId]
+    );
+
+    return result.rows.map(this.mapRow);
+  }
+
+  async getAll(filters: { status?: string; date?: string } = {}): Promise<WFHRequest[]> {
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+    let i = 1;
+
+    if (filters.status) {
+      conditions.push(`wr.status = $${i++}`);
+      params.push(filters.status);
+    }
+    if (filters.date) {
+      conditions.push(`wr.date = $${i++}`);
+      params.push(filters.date);
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const result = await query(
+      `SELECT wr.*, e.name AS employee_name, e.department AS employee_department, e.avatar AS employee_avatar
+       FROM wfh_requests wr
+       JOIN employees e ON wr.employee_id = e.id
+       ${where}
+       ORDER BY wr.date DESC, wr.created_at DESC`,
+      params
+    );
+
+    return result.rows.map((row) => ({
+      ...this.mapRow(row),
+      employeeName: row.employee_name,
+      employeeDepartment: row.employee_department,
+      employeeAvatar: row.employee_avatar,
+    }));
+  }
+
+  async hasApprovedWFH(employeeId: string, date: string): Promise<boolean> {
+    const result = await query(
+      `SELECT 1 FROM wfh_requests WHERE employee_id = $1 AND date = $2 AND status = 'approved'`,
+      [employeeId, date]
+    );
+
+    return result.rows.length > 0;
+  }
+
+  private mapRow(row: Record<string, unknown>): WFHRequest {
+    return {
+      id: row.id as string,
+      employeeId: row.employee_id as string,
+      date: row.date as string,
+      reason: row.reason as string | null,
+      status: row.status as WFHRequest['status'],
+      reviewedBy: row.reviewed_by as string | null,
+      reviewedAt: row.reviewed_at as string | null,
+      createdAt: row.created_at as string,
+    };
+  }
+}
+
+export default new WFHRequestService();
