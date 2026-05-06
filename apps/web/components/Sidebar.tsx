@@ -20,7 +20,7 @@ import {
   GraduationCap,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useLeaveRequests, useExpenseClaims } from '../hooks/queries';
+import { useLeaveRequests, useExpenseClaims, useAdminWFHRequests } from '../hooks/queries';
 
 export const Sidebar: React.FC = () => {
   const { t } = useTranslation('common');
@@ -35,6 +35,8 @@ export const Sidebar: React.FC = () => {
   const hasPendingExpenses = isAdminView && Array.isArray(expenseClaims) && expenseClaims.some(
     (c) => c.status === 'Pending',
   );
+  const { data: wfhRequests = [] } = useAdminWFHRequests(isAdminView && (isHrAdmin || isManager) ? {} : false);
+  const hasPendingWFH = isAdminView && (wfhRequests as { status: string }[]).some((r) => r.status === 'pending');
 
   // Define nav items based on role
   const navItems = [
@@ -103,6 +105,9 @@ export const Sidebar: React.FC = () => {
               <span className="w-2 h-2 rounded-full bg-red-500 ml-auto shrink-0" />
             )}
             {item.path === '/expenses' && hasPendingExpenses && (
+              <span className="w-2 h-2 rounded-full bg-red-500 ml-auto shrink-0" />
+            )}
+            {item.path === '/admin-attendance' && hasPendingWFH && (
               <span className="w-2 h-2 rounded-full bg-red-500 ml-auto shrink-0" />
             )}
           </NavLink>

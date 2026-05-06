@@ -238,6 +238,27 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                                 />
                             </div>
 
+                            {canEditSensitiveInfo && (
+                                <div>
+                                    <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                                        Work Type
+                                    </label>
+                                    <Dropdown
+                                        value={(editForm as Record<string, unknown>).workType as string || 'office'}
+                                        onChange={(val) => onProfileChange('workType', val)}
+                                        placeholder="Select work type"
+                                        options={[
+                                            { value: 'office', label: 'Office' },
+                                            { value: 'remote', label: 'Remote' },
+                                            { value: 'hybrid', label: 'Hybrid' },
+                                        ]}
+                                    />
+                                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">
+                                        Remote/Hybrid employees bypass GPS geofence
+                                    </p>
+                                </div>
+                            )}
+
                             <div>
                                 <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                                     {t('employees:modals.joinDate')}

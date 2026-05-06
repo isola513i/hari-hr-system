@@ -36,6 +36,31 @@ export class HolidayController {
         }
     }
 
+    async bulkCreateHolidays(req: Request, res: Response): Promise<void> {
+        try {
+            const { holidays } = req.body;
+            if (!Array.isArray(holidays) || holidays.length === 0) {
+                res.status(400).json({ error: 'holidays array required' });
+                return;
+            }
+            const results = await Promise.allSettled(
+                holidays.map((h: any) =>
+                    HolidayService.createHoliday({
+                        date: h.date,
+                        endDate: h.endDate ?? null,
+                        name: h.name,
+                        isRecurring: h.isRecurring ?? false,
+                    })
+                )
+            );
+            const created = results.filter((r) => r.status === 'fulfilled').length;
+            const failed = results.filter((r) => r.status === 'rejected').length;
+            res.status(201).json({ created, failed });
+        } catch (error: any) {
+            res.status(500).json({ error: error.message || 'Failed to bulk create holidays' });
+        }
+    }
+
     async updateHoliday(req: Request, res: Response): Promise<void> {
         try {
             const { id } = req.params;

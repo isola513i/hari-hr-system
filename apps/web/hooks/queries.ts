@@ -25,6 +25,7 @@ import type {
   AdminAttendanceSnapshotV2,
   AdminAttendanceUpsertData,
   AdminAttendanceFilters,
+  AttendanceAnalytics,
   SurveyListItem,
   SurveyDetail,
   SentimentOverview,
@@ -215,6 +216,9 @@ interface AttendanceStatus {
   clockOut?: string;
   status?: string;
   autoCheckout?: boolean;
+  checkInType?: string;
+  clockInLat?: number | null;
+  clockInLng?: number | null;
 }
 
 export const useAttendanceToday = (enabled: boolean) => {
@@ -875,7 +879,8 @@ export const useDeleteNotification = () => {
 export const useClockIn = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => api.post('/attendance/clock-in', {}),
+    mutationFn: (payload?: { latitude?: number; longitude?: number; accuracy?: number; notes?: string }) =>
+      api.post('/attendance/clock-in', payload ?? {}),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.attendance.all });
     },
@@ -888,6 +893,59 @@ export const useClockOut = () => {
     mutationFn: () => api.post('/attendance/clock-out', {}),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.attendance.all });
+    },
+  });
+};
+
+// ---------------------------------------------------------------------------
+// WFH Requests
+// ---------------------------------------------------------------------------
+
+export const useMyWFHRequests = () =>
+  useQuery({
+    queryKey: ['wfh-requests', 'my'],
+    queryFn: () => api.get<unknown[]>('/wfh-requests/my'),
+  });
+
+export const useAdminWFHRequests = (filters?: { status?: string; date?: string } | false) => {
+  const enabled = filters !== false;
+  const f = enabled ? filters : undefined;
+  const qs = f && Object.keys(f).length > 0
+    ? '?' + new URLSearchParams(f as Record<string, string>).toString()
+    : '';
+  return useQuery({
+    queryKey: ['wfh-requests', 'admin', f],
+    queryFn: () => api.get<unknown[]>(`/wfh-requests/admin${qs}`),
+    enabled,
+  });
+};
+
+export const useCreateWFHRequest = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { date: string; reason?: string }) => api.post('/wfh-requests', data as Record<string, unknown>),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['wfh-requests'] });
+    },
+  });
+};
+
+export const useApproveWFH = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.put(`/wfh-requests/${id}/approve`, {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['wfh-requests'] });
+    },
+  });
+};
+
+export const useRejectWFH = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.put(`/wfh-requests/${id}/reject`, {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['wfh-requests'] });
     },
   });
 };
@@ -1087,7 +1145,7 @@ export const useAdminAttendanceCalendar = (startDate: string, endDate: string, e
   });
 };
 
-export const useAdminAttendanceRecords = (filters: AdminAttendanceFilters) => {
+export const useAdminAttendanceRecords = (filters: AdminAttendanceFilters, options?: { refetchInterval?: number | false }) => {
   return useQuery({
     queryKey: queryKeys.adminAttendance.records(filters as Record<string, unknown>),
     queryFn: async () => {
@@ -1114,6 +1172,15 @@ export const useAdminAttendanceRecords = (filters: AdminAttendanceFilters) => {
         })),
       };
     },
+    refetchInterval: options?.refetchInterval,
+  });
+};
+
+export const useAttendanceAnalytics = (days: number = 14) => {
+  return useQuery({
+    queryKey: [...queryKeys.adminAttendance.all, 'analytics', days],
+    queryFn: () => api.get<AttendanceAnalytics>(`/admin/attendance/analytics?days=${days}`),
+    staleTime: 5 * 60_000,
   });
 };
 
@@ -1752,6 +1819,17 @@ export const useHolidays = () => {
   });
 };
 
+export const useBulkCreateHolidays = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (holidays: { date: string; endDate?: string | null; name: string; isRecurring?: boolean }[]) =>
+      api.post<{ created: number; failed: number }>('/holidays/bulk', { holidays }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.holidays.all });
+    },
+  });
+};
+
 export const useCreateHoliday = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -1780,6 +1858,53 @@ export const useDeleteHoliday = () => {
     mutationFn: (id: string) => api.delete(`/holidays/${id}`),
     onSettled: () => {
       qc.invalidateQueries({ queryKey: queryKeys.holidays.all });
+    },
+  });
+};
+
+// ---------------------------------------------------------------------------
+// Attendance GPS Config
+// ---------------------------------------------------------------------------
+
+export interface GPSConfig {
+  officeLat: string;
+  officeLng: string;
+  geofenceRadius: string;
+  gpsRequired: string;
+  officeIp: string;
+}
+
+export const useAttendanceGPSConfig = () =>
+  useQuery({
+    queryKey: ['configs', 'attendance-gps'],
+    queryFn: async () => {
+      const configs = await api.get<{ key: string; value: string }[]>('/configs/attendance');
+      const map: Record<string, string> = {};
+      for (const c of configs) map[c.key] = c.value;
+      return {
+        officeLat: map['office_lat'] ?? '',
+        officeLng: map['office_lng'] ?? '',
+        geofenceRadius: map['geofence_radius'] ?? '200',
+        gpsRequired: map['gps_required'] ?? 'false',
+        officeIp: map['office_ip'] ?? '',
+      } as GPSConfig;
+    },
+  });
+
+export const useUpdateGPSConfig = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (config: GPSConfig) => {
+      await Promise.all([
+        api.put('/configs/attendance/office_lat',      { value: config.officeLat } as unknown as Record<string, unknown>),
+        api.put('/configs/attendance/office_lng',      { value: config.officeLng } as unknown as Record<string, unknown>),
+        api.put('/configs/attendance/geofence_radius', { value: config.geofenceRadius } as unknown as Record<string, unknown>),
+        api.put('/configs/attendance/gps_required',    { value: config.gpsRequired } as unknown as Record<string, unknown>),
+        api.put('/configs/attendance/office_ip',       { value: config.officeIp } as unknown as Record<string, unknown>),
+      ]);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['configs', 'attendance-gps'] });
     },
   });
 };

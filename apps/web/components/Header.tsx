@@ -402,15 +402,15 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                   className="absolute -bottom-0.5 -right-0.5"
                 />
               </div>
-              <div className="text-left hidden sm:block">
-                <p className="text-sm font-semibold text-text-light dark:text-text-dark leading-none">
+              <div className="text-left hidden sm:block min-w-0 max-w-[130px]">
+                <p className="text-sm font-semibold text-text-light dark:text-text-dark leading-none truncate">
                   {user?.name}
                 </p>
-                <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1 flex items-center gap-1">
+                <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1 flex items-center gap-1 min-w-0">
                   {isAdminView && (
-                    <Shield size={10} className="text-primary" />
+                    <Shield size={10} className="text-primary shrink-0" />
                   )}
-                  {user?.jobTitle}
+                  <span className="truncate">{user?.jobTitle}</span>
                 </p>
               </div>
               <ChevronDown size={14} className="text-text-muted-light hidden sm:block" />

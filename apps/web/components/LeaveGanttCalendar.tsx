@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Calendar, CalendarDays, RotateCw } from 'lucide-react';
 import type { LeaveRequest, Employee } from '../types';
 import { useLeaveTypeConfig, useAdminAttendanceCalendar, useHolidays } from '../hooks/queries';
 import { buildLeaveColorMap, getShortLabel, translateLeaveType } from '../lib/leaveTypeConfig';
@@ -133,21 +134,33 @@ export const LeaveGanttCalendar: React.FC<LeaveCalendarProps> = ({
     return set;
   }, [holidays]);
 
-  // Build a lookup: dateKey -> holiday name
-  const holidayNameMap = useMemo(() => {
-    const map = new Map<string, string>();
+  // Build a lookup: dateKey -> holiday object
+  const holidayMap = useMemo(() => {
+    const map = new Map<string, typeof holidays[number]>();
     for (const h of holidays) {
-      const start = h.date;
-      const end = h.endDate || h.date;
-      const cur = new Date(start + 'T00:00:00');
-      const last = new Date(end + 'T00:00:00');
+      const cur = new Date(h.date + 'T00:00:00');
+      const last = new Date((h.endDate || h.date) + 'T00:00:00');
       while (cur <= last) {
-        map.set(toDateKey(cur), h.name);
+        map.set(toDateKey(cur), h);
         cur.setDate(cur.getDate() + 1);
       }
     }
     return map;
   }, [holidays]);
+  // Tooltip state
+  const [holidayTooltip, setHolidayTooltip] = useState<{ holiday: typeof holidays[number]; x: number; y: number } | null>(null);
+  const tooltipTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showHolidayTooltip = useCallback((holiday: typeof holidays[number], e: React.MouseEvent) => {
+    if (tooltipTimeout.current) clearTimeout(tooltipTimeout.current);
+    setHolidayTooltip({ holiday, x: e.clientX, y: e.clientY });
+  }, []);
+
+  const hideHolidayTooltip = useCallback(() => {
+    tooltipTimeout.current = setTimeout(() => setHolidayTooltip(null), 80);
+  }, []);
+
+  useEffect(() => () => { if (tooltipTimeout.current) clearTimeout(tooltipTimeout.current); }, []);
 
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [anchor, setAnchor] = useState(() => new Date());
@@ -589,15 +602,16 @@ export const LeaveGanttCalendar: React.FC<LeaveCalendarProps> = ({
             const key = toDateKey(date);
             const isToday = key === todayKey;
             const isHoliday = holidayDateSet.has(key);
-            const holidayName = holidayNameMap.get(key);
+            const holiday = holidayMap.get(key);
             return (
               <div
                 key={key}
                 className={`text-center py-1.5 text-[10px] leading-tight border-b border-border-light dark:border-border-dark select-none ${
-                  isHoliday ? 'bg-red-50 dark:bg-red-900/20' : isToday ? 'bg-primary/5 dark:bg-primary/10' : ''
+                  isHoliday ? 'bg-red-50 dark:bg-red-900/20 cursor-help' : isToday ? 'bg-primary/5 dark:bg-primary/10' : ''
                 }`}
                 style={{ gridRow: 1, gridColumn: i + 2 }}
-                title={holidayName || undefined}
+                onMouseEnter={holiday ? (e) => showHolidayTooltip(holiday, e) : undefined}
+                onMouseLeave={holiday ? hideHolidayTooltip : undefined}
               >
                 <div className={`font-medium ${
                   isHoliday ? 'text-red-500 dark:text-red-400' : isToday ? 'text-primary' : 'text-text-muted-light dark:text-text-muted-dark'
@@ -628,15 +642,14 @@ export const LeaveGanttCalendar: React.FC<LeaveCalendarProps> = ({
                 const key = toDateKey(date);
                 const isToday = key === todayKey;
                 const isHoliday = holidayDateSet.has(key);
+                const holiday = holidayMap.get(key);
                 const stats = attendancePerDay[i];
                 const present = stats?.present ?? 0;
                 const total = stats?.total ?? 0;
                 const ratio = total > 0 ? present / total : 0;
-                // Color: green if most present, amber if some, red if few
                 let countColor = 'text-emerald-600 dark:text-emerald-400';
                 if (ratio < 0.75) countColor = 'text-amber-600 dark:text-amber-400';
                 if (ratio < 0.5) countColor = 'text-red-600 dark:text-red-400';
-                // Future dates or holidays: gray
                 if (key > todayKey || isHoliday) {
                   countColor = 'text-text-muted-light dark:text-text-muted-dark';
                 }
@@ -645,10 +658,11 @@ export const LeaveGanttCalendar: React.FC<LeaveCalendarProps> = ({
                   <div
                     key={`summary-${key}`}
                     className={`flex flex-col items-center justify-center border-b-2 border-border-light dark:border-border-dark ${
-                      isHoliday ? 'bg-red-50 dark:bg-red-900/20' : isToday ? 'bg-primary/5 dark:bg-primary/10' : ''
+                      isHoliday ? 'bg-red-50 dark:bg-red-900/20 cursor-help' : isToday ? 'bg-primary/5 dark:bg-primary/10' : ''
                     }`}
                     style={{ gridRow: summaryRowIdx, gridColumn: i + 2 }}
-                    title={isHoliday ? holidayNameMap.get(key) : stats ? `${present}/${total} ${t('leave:calendar.checkedIn')}` : ''}
+                    onMouseEnter={holiday ? (e) => showHolidayTooltip(holiday, e) : undefined}
+                    onMouseLeave={holiday ? hideHolidayTooltip : undefined}
                   >
                     <span className={`text-xs font-bold ${countColor}`}>
                       {isHoliday ? '-' : key > todayKey ? '-' : present}
@@ -698,14 +712,17 @@ export const LeaveGanttCalendar: React.FC<LeaveCalendarProps> = ({
                   const isToday = dateKey === todayKey;
                   const isFuture = dateKey > todayKey;
                   const isHoliday = holidayDateSet.has(dateKey);
+                  const holidayForCell = holidayMap.get(dateKey);
                   const checkedIn = showAvailability && attendanceByDate.get(dateKey)?.has(person.employeeId);
 
                   return (
                     <div
                       key={`${person.employeeId}-${dateKey}`}
                       className={`flex items-center justify-center border-b border-border-light dark:border-border-dark ${isToday ? 'border-l-2 border-l-primary/40' : ''}
-                      ${isHoliday ? 'bg-red-50 dark:bg-red-900/20' : showAvailability && checkedIn ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
+                      ${isHoliday ? 'bg-red-50 dark:bg-red-900/20 cursor-help' : showAvailability && checkedIn ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
                       style={{ gridRow, gridColumn: i + 2 }}
+                      onMouseEnter={holidayForCell ? (e) => showHolidayTooltip(holidayForCell, e) : undefined}
+                      onMouseLeave={holidayForCell ? hideHolidayTooltip : undefined}
                     >
                       {showAvailability && !isFuture && !isHoliday && (
                         checkedIn ? (
@@ -803,6 +820,62 @@ export const LeaveGanttCalendar: React.FC<LeaveCalendarProps> = ({
         )}
 
       </div>
+
+      {/* Holiday tooltip portal */}
+      {holidayTooltip && createPortal(
+        (() => {
+          const h = holidayTooltip.holiday;
+          const TW = 248;
+          const TH = 110;
+          const left = Math.max(8, Math.min(holidayTooltip.x - TW / 2, window.innerWidth - TW - 8));
+          const showBelow = holidayTooltip.y < TH + 30;
+          const top = showBelow ? holidayTooltip.y + 20 : holidayTooltip.y - TH - 10;
+          const startDate = new Date(h.date + 'T00:00:00');
+          const endDate = h.endDate ? new Date(h.endDate + 'T00:00:00') : null;
+          const fmt = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+          const dateDisplay = endDate ? `${fmt(startDate)} – ${fmt(endDate)}` : startDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+          const todayStr = toDateKey(new Date());
+          const isToday = todayStr >= h.date && todayStr <= (h.endDate || h.date);
+          return (
+            <div
+              style={{ position: 'fixed', left, top, width: TW, zIndex: 9999, pointerEvents: 'none' }}
+              className="rounded-xl bg-white dark:bg-gray-800 shadow-2xl border border-red-100 dark:border-red-900/40 overflow-hidden"
+            >
+              <div className="h-1 bg-gradient-to-r from-red-400 to-rose-500" />
+              <div className="p-3">
+                <div className="flex items-start gap-2.5">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/30 flex items-center justify-center mt-0.5">
+                    <CalendarDays size={16} className="text-red-500 dark:text-red-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-tight">{h.name}</p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{dateDisplay}</p>
+                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                      {h.isRecurring && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 text-[10px] font-medium rounded-full">
+                          <RotateCw size={9} />
+                          Annual
+                        </span>
+                      )}
+                      {endDate && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 text-[10px] font-medium rounded-full">
+                          Multi-day
+                        </span>
+                      )}
+                      {isToday && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-300 text-[10px] font-medium rounded-full">
+                          Today
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })(),
+        document.body
+      )}
     </div>
   );
 };

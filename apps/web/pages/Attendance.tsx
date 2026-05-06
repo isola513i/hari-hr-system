@@ -98,96 +98,25 @@ const Attendance: React.FC = () => {
 
       {/* Summary Cards */}
       {summary && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
-          {/* Total Working Days */}
-          <div className="p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
-                <Briefcase size={20} />
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+          {([
+            { icon: <Briefcase size={16} />, bg: 'bg-blue-100 dark:bg-blue-900/30', color: 'text-blue-600 dark:text-blue-400', label: t('attendance:employee.workingDays'), value: String(summary.totalDays) },
+            { icon: <CheckCircle2 size={16} />, bg: 'bg-green-100 dark:bg-green-900/30', color: 'text-green-600 dark:text-green-400', label: t('attendance:employee.onTimeDays'), value: String(summary.presentDays) },
+            { icon: <AlertCircle size={16} />, bg: 'bg-orange-100 dark:bg-orange-900/30', color: 'text-orange-600 dark:text-orange-400', label: t('attendance:employee.lateDays'), value: String(summary.lateDays) },
+            { icon: <Clock size={16} />, bg: 'bg-purple-100 dark:bg-purple-900/30', color: 'text-purple-600 dark:text-purple-400', label: t('attendance:employee.totalHours'), value: `${Number(summary.totalHours || 0).toFixed(1)}h` },
+            { icon: <TrendingUp size={16} />, bg: 'bg-teal-100 dark:bg-teal-900/30', color: 'text-teal-600 dark:text-teal-400', label: t('attendance:employee.avgHoursDay'), value: `${summary.totalDays > 0 ? (Number(summary.totalHours || 0) / summary.totalDays).toFixed(1) : '0'}h` },
+            { icon: <Timer size={16} />, bg: 'bg-amber-100 dark:bg-amber-900/30', color: 'text-amber-600 dark:text-amber-400', label: t('attendance:employee.overtime'), value: `${Number(summary.overtimeHours || 0).toFixed(1)}h` },
+          ] as const).map(({ icon, bg, color, label, value }) => (
+            <div key={label} className="p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl hover:shadow-md transition-shadow flex flex-col gap-2">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bg} ${color}`}>
+                {icon}
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark">{t('attendance:employee.workingDays')}</p>
-                <p className="text-2xl font-bold text-text-light dark:text-text-dark">
-                  {summary.totalDays}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* On-Time Days */}
-          <div className="p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg">
-                <CheckCircle2 size={20} />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark">{t('attendance:employee.onTimeDays')}</p>
-                <p className="text-2xl font-bold text-text-light dark:text-text-dark">
-                  {summary.presentDays}
-                </p>
+              <div>
+                <p className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark leading-tight">{label}</p>
+                <p className="text-2xl font-bold text-text-light dark:text-text-dark mt-0.5 leading-none">{value}</p>
               </div>
             </div>
-          </div>
-
-          {/* Late Days */}
-          <div className="p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-lg">
-                <AlertCircle size={20} />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark">{t('attendance:employee.lateDays')}</p>
-                <p className="text-2xl font-bold text-text-light dark:text-text-dark">
-                  {summary.lateDays}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Hours */}
-          <div className="p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg">
-                <Clock size={20} />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark">{t('attendance:employee.totalHours')}</p>
-                <p className="text-2xl font-bold text-text-light dark:text-text-dark">
-                  {Number(summary.totalHours || 0).toFixed(1)}h
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Average Hours per Day */}
-          <div className="p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 rounded-lg">
-                <TrendingUp size={20} />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark">{t('attendance:employee.avgHoursDay')}</p>
-                <p className="text-2xl font-bold text-text-light dark:text-text-dark">
-                  {summary.totalDays > 0 ? (Number(summary.totalHours || 0) / summary.totalDays).toFixed(1) : '0'}h
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Overtime */}
-          <div className="p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg">
-                <Timer size={20} />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark">{t('attendance:employee.overtime')}</p>
-                <p className="text-2xl font-bold text-text-light dark:text-text-dark">
-                  {Number(summary.overtimeHours || 0).toFixed(1)}h
-                </p>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       )}
 

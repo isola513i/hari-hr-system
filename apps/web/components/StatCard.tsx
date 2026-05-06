@@ -2,7 +2,7 @@ import React from 'react';
 import { StatCardProps } from '../types';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
-export const StatCard: React.FC<StatCardProps> = React.memo(({ title, value, trend, icon, color }) => {
+export const StatCard: React.FC<StatCardProps> = React.memo(({ title, value, trend, icon, color, invertTrend = false }) => {
   const colorClasses = {
     primary: 'bg-primary/10 text-primary',
     green: 'bg-accent-green/10 text-accent-green',
@@ -21,9 +21,11 @@ export const StatCard: React.FC<StatCardProps> = React.memo(({ title, value, tre
       </div>
       <div className="flex items-end justify-between">
         <p className="text-text-light dark:text-text-dark tracking-tight text-3xl font-bold">{value}</p>
-        {trend !== undefined && (
-          <div className={`flex items-center text-sm font-semibold ${trend >= 0 ? 'text-accent-green' : 'text-accent-red'}`}>
-            {trend >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+        {trend !== undefined && trend !== 0 && (
+          <div className={`flex items-center text-sm font-semibold ${
+            (trend > 0) !== invertTrend ? 'text-accent-green' : 'text-accent-red'
+          }`}>
+            {trend > 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
             <span className="ml-1">{Math.abs(trend)}%</span>
           </div>
         )}

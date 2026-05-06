@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import SystemConfigService from '../services/SystemConfigService';
+import { clearGPSConfigCache } from '../services/AttendanceService';
 
 export class SystemConfigController {
     /**
@@ -97,6 +98,10 @@ export class SystemConfigController {
                 value,
                 description,
             });
+
+            if (category === 'attendance') {
+              clearGPSConfigCache();
+            }
 
             res.json(config);
         } catch (error: any) {

@@ -35,6 +35,7 @@ import announcementsRoutes from "./routes/announcementsRoutes";
 import analyticsRoutes from "./routes/analyticsRoutes";
 import adminAttendanceRoutes from "./routes/adminAttendanceRoutes";
 import surveyRoutes from "./routes/surveyRoutes";
+import wfhRequestRoutes from "./routes/wfhRequestRoutes";
 import complianceRoutes from "./routes/complianceRoutes";
 import expenseClaimRoutes from "./routes/expenseClaimRoutes";
 import holidayRoutes from "./routes/holidayRoutes";
@@ -83,7 +84,8 @@ const corsOptions = {
       return;
     }
     // Check if origin is allowed
-    if (allowedOrigins.some(allowed => origin.startsWith(allowed.replace(/\/$/, '')))) {
+    const isNgrok = /\.ngrok(-free)?\.(app|dev|io)$/.test(origin);
+    if (isNgrok || allowedOrigins.some(allowed => origin.startsWith(allowed.replace(/\/$/, '')))) {
       callback(null, true);
     } else {
       console.warn(`CORS blocked origin: ${origin}`);
@@ -161,6 +163,7 @@ app.use("/api/events", eventsRoutes);
 app.use("/api/announcements", announcementsRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/admin/attendance", adminAttendanceRoutes);
+app.use("/api/wfh-requests", wfhRequestRoutes);
 app.use("/api/surveys", surveyRoutes);
 app.use("/api/compliance", complianceRoutes);
 app.use("/api/expense-claims", expenseClaimRoutes);

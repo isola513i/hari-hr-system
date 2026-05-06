@@ -99,6 +99,7 @@ CREATE TABLE employees (
     salary DECIMAL(12,2),
     daily_rate DECIMAL(12,2),
     manager_id UUID,
+    work_type VARCHAR(20) DEFAULT 'office',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -436,10 +437,31 @@ CREATE TABLE attendance_records (
     total_hours DECIMAL(5,2),
     status VARCHAR(20) DEFAULT 'On-time', -- On-time, Late, Absent, On-leave
     notes TEXT,
+    clock_in_lat DECIMAL(10, 8),
+    clock_in_lng DECIMAL(11, 8),
+    clock_in_accuracy FLOAT,
+    check_in_type VARCHAR(20) DEFAULT 'office',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT unique_attendance UNIQUE (employee_id, date)
 );
+
+-- 18a. WFH Requests
+CREATE TABLE wfh_requests (
+    id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    date        DATE NOT NULL,
+    reason      TEXT,
+    status      VARCHAR(20) DEFAULT 'pending',
+    reviewed_by UUID REFERENCES employees(id),
+    reviewed_at TIMESTAMP WITH TIME ZONE,
+    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_wfh_request UNIQUE (employee_id, date)
+);
+CREATE INDEX idx_wfh_requests_employee ON wfh_requests(employee_id);
+CREATE INDEX idx_wfh_requests_date ON wfh_requests(date);
+CREATE INDEX idx_wfh_requests_status ON wfh_requests(status);
 
 -- 18. Payroll Records
 CREATE TABLE payroll_records (

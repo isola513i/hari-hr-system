@@ -70,9 +70,9 @@ class PerformanceController {
         NotificationService.create({
           user_id: selfCheck.rows[0].user_id,
           title: 'New Performance Review',
-          message: `${reviewer} has submitted a performance review for you with a rating of ${rating}.`,
+          message: `${reviewer} has submitted a performance review for you with a rating of ${rating}/5.`,
           type: 'info',
-          link: '/performance',
+          link: `/employees/${employeeId}?tab=performance`,
         }).catch((err) => console.error('Failed to notify employee about review:', err));
       }
 
@@ -141,9 +141,9 @@ class PerformanceController {
         NotificationService.create({
           user_id: empResult.rows[0].user_id,
           title: 'Performance Review Updated',
-          message: `Your performance review by ${row.reviewer} has been updated.`,
+          message: `Your performance review by ${row.reviewer} has been updated to ${row.rating}/5.`,
           type: 'info',
-          link: '/performance',
+          link: `/employees/${row.employee_id}?tab=performance`,
         }).catch((err) => console.error('Failed to notify employee about review update:', err));
       }
 

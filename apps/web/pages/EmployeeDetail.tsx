@@ -118,11 +118,16 @@ export const EmployeeDetail: React.FC = () => {
     }, [docsQ.data, employee]);
     useEffect(() => { if (employee?.skills) setCurrentSkills(employee.skills); }, [employee?.skills]);
 
-    // Auto-open edit modal from ?edit=true query param
+    // Auto-open edit modal from ?edit=true, or jump to a tab via ?tab=<name>
     useEffect(() => {
         if (searchParams.get('edit') === 'true' && isAdmin && employee && !isEditProfileOpen) {
             setEditForm({ ...employee });
             setIsEditProfileOpen(true);
+            setSearchParams({}, { replace: true });
+        }
+        const tabParam = searchParams.get('tab') as EmployeeTab | null;
+        if (tabParam) {
+            setActiveTab(tabParam);
             setSearchParams({}, { replace: true });
         }
     }, [searchParams, isAdmin, employee]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -181,6 +186,7 @@ export const EmployeeDetail: React.FC = () => {
                 slack: editForm.slack,
                 emergencyContact: editForm.emergencyContact,
                 address: editForm.address,
+                workType: editForm.workType,
             });
 
             if (isOwnProfile && updateUser) {
@@ -815,7 +821,7 @@ export const EmployeeDetail: React.FC = () => {
                                 <PerformanceTab
                                     isAdmin={isAdmin}
                                     canAddReview={isAdmin || !isOwnProfile}
-                                    currentUserId={user?.id}
+                                    currentUserId={user?.userId || user?.id}
                                     reviewsList={reviewsList}
                                     onAddReview={handleAddReview}
                                     onEditReview={handleEditReview}

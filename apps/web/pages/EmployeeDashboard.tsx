@@ -44,7 +44,10 @@ import {
   useClockOut,
   useUpcomingEvents,
   useExpenseClaims,
+  useAttendanceGPSConfig,
 } from '../hooks/queries';
+import { WFHRequestModal } from '../components/WFHRequestModal';
+import { LocationPermissionModal } from '../components/LocationPermissionModal';
 import { queryKeys } from '../lib/queryKeys';
 import { translateLeaveType } from '../lib/leaveTypeConfig';
 
@@ -107,6 +110,7 @@ export const EmployeeDashboard: React.FC = () => {
   const { data: eventsData = [] } = useUpcomingEvents();
   const clockInMutation = useClockIn();
   const clockOutMutation = useClockOut();
+  const { data: gpsConfig } = useAttendanceGPSConfig();
   const addNoteMutation = useAddNote();
   const deleteNoteMutation = useDeleteNote();
   const togglePinMutation = useToggleNotePin();
@@ -120,6 +124,8 @@ export const EmployeeDashboard: React.FC = () => {
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
   const [isClockingIn, setIsClockingIn] = useState(false);
+  const [locationModal, setLocationModal] = useState<{ show: boolean; mode: 'request' | 'denied' }>({ show: false, mode: 'request' });
+  const [showWFHModal, setShowWFHModal] = useState(false);
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
     show: false,
     message: '',
@@ -169,21 +175,16 @@ export const EmployeeDashboard: React.FC = () => {
   }, [eventsData]);
 
   // ----- HANDLERS -----
-  const handleClockAction = async () => {
-    setIsClockingIn(true);
+  const doClockIn = async (position?: GeolocationPosition) => {
     try {
-      const isClockedIn = attendanceStatus?.clockIn && !attendanceStatus?.clockOut;
-
-      if (isClockedIn) {
-        await clockOutMutation.mutateAsync();
-        showToast(t('dashboard:employee.checkedOut'), 'success');
-      } else {
-        await clockInMutation.mutateAsync();
-        showToast(t('dashboard:employee.checkedIn'), 'success');
-      }
+      await clockInMutation.mutateAsync({
+        latitude: position?.coords.latitude,
+        longitude: position?.coords.longitude,
+        accuracy: position?.coords.accuracy,
+      });
+      showToast(t('dashboard:employee.checkedIn'), 'success');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'An error occurred';
-
       if (message.includes('Already clocked in') || message.includes('already checked in')) {
         showToast(t('dashboard:employee.alreadyCheckedIn'), 'info');
         queryClient.invalidateQueries({ queryKey: queryKeys.attendance.today() });
@@ -193,6 +194,97 @@ export const EmployeeDashboard: React.FC = () => {
     } finally {
       setIsClockingIn(false);
     }
+  };
+
+  const executeGetPosition = () => {
+    setIsClockingIn(true);
+    navigator.geolocation.getCurrentPosition(
+      doClockIn,
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) {
+          setIsClockingIn(false);
+          setLocationModal({ show: true, mode: 'denied' });
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          // No GPS hardware (desktop/PC) — let backend validate via office IP allowlist
+          doClockIn(undefined);
+        } else {
+          // TIMEOUT — retry once with cached position allowed
+          navigator.geolocation.getCurrentPosition(
+            doClockIn,
+            () => {
+              showToast('Could not get your location. Please try again.', 'error');
+              setIsClockingIn(false);
+            },
+            { timeout: 8000, maximumAge: 60000, enableHighAccuracy: false }
+          );
+        }
+      },
+      { timeout: 8000, maximumAge: 0, enableHighAccuracy: false }
+    );
+  };
+
+  const handleClockAction = async () => {
+    const isClockedIn = attendanceStatus?.clockIn && !attendanceStatus?.clockOut;
+
+    if (isClockedIn) {
+      setIsClockingIn(true);
+      try {
+        await clockOutMutation.mutateAsync();
+        showToast(t('dashboard:employee.checkedOut'), 'success');
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'An error occurred';
+        showToast(message, 'error');
+      } finally {
+        setIsClockingIn(false);
+      }
+      return;
+    }
+
+    const gpsRequired = gpsConfig?.gpsRequired === 'true';
+
+    if (!gpsRequired) {
+      setIsClockingIn(true);
+      try {
+        await clockInMutation.mutateAsync({});
+        showToast(t('dashboard:employee.checkedIn'), 'success');
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'An error occurred';
+        if (message.includes('Already clocked in') || message.includes('already checked in')) {
+          showToast(t('dashboard:employee.alreadyCheckedIn'), 'info');
+          queryClient.invalidateQueries({ queryKey: queryKeys.attendance.today() });
+        } else {
+          showToast(message, 'error');
+        }
+      } finally {
+        setIsClockingIn(false);
+      }
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      showToast('GPS is not supported on this device', 'error');
+      return;
+    }
+
+    // Check current permission state without triggering native prompt
+    if ('permissions' in navigator) {
+      try {
+        const status = await navigator.permissions.query({ name: 'geolocation' });
+        if (status.state === 'denied') {
+          setLocationModal({ show: true, mode: 'denied' });
+          return;
+        }
+        if (status.state === 'prompt') {
+          setLocationModal({ show: true, mode: 'request' });
+          return;
+        }
+        // 'granted' — proceed directly, no dialog needed
+      } catch {
+        // permissions API unavailable — fall through to native prompt
+      }
+    }
+
+    executeGetPosition();
   };
 
   const handleSaveNote = async () => {
@@ -243,6 +335,24 @@ export const EmployeeDashboard: React.FC = () => {
         />
       )}
 
+      {showWFHModal && (
+        <WFHRequestModal
+          onClose={() => setShowWFHModal(false)}
+          onSuccess={(msg) => { showToast(msg, 'success'); setShowWFHModal(false); }}
+        />
+      )}
+
+      {locationModal.show && (
+        <LocationPermissionModal
+          mode={locationModal.mode}
+          onAllow={() => {
+            setLocationModal({ show: false, mode: 'request' });
+            executeGetPosition();
+          }}
+          onDismiss={() => setLocationModal({ show: false, mode: 'request' })}
+        />
+      )}
+
       <div className="space-y-6 animate-fade-in pb-8">
         {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -253,7 +363,7 @@ export const EmployeeDashboard: React.FC = () => {
         <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto">
           {/* Attendance Status Badge */}
           {attendanceStatus?.clockIn && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap justify-end">
               <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
                 attendanceStatus.clockOut
                   ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
@@ -276,30 +386,50 @@ export const EmployeeDashboard: React.FC = () => {
                     : t('dashboard:employee.working')}
                 </span>
               </div>
+              {attendanceStatus.checkInType && attendanceStatus.checkInType !== 'office' && (
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                  attendanceStatus.checkInType === 'wfh'
+                    ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+                    : 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400'
+                }`}>
+                  {attendanceStatus.checkInType === 'wfh' ? 'WFH' : 'Remote'}
+                </span>
+              )}
             </div>
           )}
 
-          {/* Check In/Out Button */}
-          <button
-            onClick={handleClockAction}
-            disabled={isClockingIn || !!(attendanceStatus?.clockIn && attendanceStatus?.clockOut)}
-            className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg text-sm shadow-sm transition-all ${
-              attendanceStatus?.clockIn && !attendanceStatus?.clockOut
-                ? 'bg-accent-orange text-white hover:bg-accent-orange/90 hover:shadow-md'
+          {/* Check In/Out + WFH request buttons */}
+          <div className="flex items-center gap-2">
+            {!attendanceStatus?.clockIn && (
+              <button
+                onClick={() => setShowWFHModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-muted-light dark:text-text-muted-dark border border-border-light dark:border-border-dark rounded-lg hover:border-purple-400 hover:text-purple-600 dark:hover:text-purple-400 transition-all"
+              >
+                <Building2 size={15} />
+                WFH
+              </button>
+            )}
+            <button
+              onClick={handleClockAction}
+              disabled={isClockingIn || !!(attendanceStatus?.clockIn && attendanceStatus?.clockOut)}
+              className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg text-sm shadow-sm transition-all ${
+                attendanceStatus?.clockIn && !attendanceStatus?.clockOut
+                  ? 'bg-accent-orange text-white hover:bg-accent-orange/90 hover:shadow-md'
+                  : attendanceStatus?.clockOut
+                  ? 'bg-gray-400 text-white cursor-not-allowed'
+                  : 'bg-primary text-white hover:bg-primary/90 hover:shadow-md'
+              } ${isClockingIn ? 'opacity-70 cursor-wait' : ''}`}
+            >
+              <Clock size={18} />
+              {isClockingIn
+                ? (attendanceStatus?.clockIn ? t('common:buttons.loading') : 'Getting GPS...')
+                : attendanceStatus?.clockIn && !attendanceStatus?.clockOut
+                ? t('dashboard:employee.checkOut')
                 : attendanceStatus?.clockOut
-                ? 'bg-gray-400 text-white cursor-not-allowed'
-                : 'bg-primary text-white hover:bg-primary/90 hover:shadow-md'
-            } ${isClockingIn ? 'opacity-70 cursor-wait' : ''}`}
-          >
-            <Clock size={18} />
-            {isClockingIn
-              ? t('common:buttons.loading')
-              : attendanceStatus?.clockIn && !attendanceStatus?.clockOut
-              ? t('dashboard:employee.checkOut')
-              : attendanceStatus?.clockOut
-              ? t('dashboard:employee.doneForToday')
-              : t('dashboard:employee.checkIn')}
-          </button>
+                ? t('dashboard:employee.doneForToday')
+                : t('dashboard:employee.checkIn')}
+            </button>
+          </div>
         </div>
       </div>
 

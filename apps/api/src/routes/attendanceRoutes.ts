@@ -21,9 +21,21 @@ router.post('/clock-in', apiLimiter, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Employee ID not found' });
     }
 
+    // Extract real client IP (handles reverse proxies / load balancers)
+    const clientIp = (
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      req.headers['x-real-ip'] as string ||
+      req.socket.remoteAddress ||
+      ''
+    ).replace(/^::ffff:/, ''); // normalise IPv4-mapped IPv6
+
     const attendance = await AttendanceService.clockIn({
       employeeId,
       notes: req.body.notes,
+      latitude: req.body.latitude != null ? parseFloat(req.body.latitude) : undefined,
+      longitude: req.body.longitude != null ? parseFloat(req.body.longitude) : undefined,
+      accuracy: req.body.accuracy != null ? parseFloat(req.body.accuracy) : undefined,
+      clientIp,
     });
 
     emitAttendanceUpdated(attendance);

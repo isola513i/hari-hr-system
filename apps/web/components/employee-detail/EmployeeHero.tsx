@@ -115,73 +115,49 @@ export const EmployeeHero: React.FC<EmployeeHeroProps> = ({
                     </div>
                 )}
             </div>
-            <div className="px-6 pb-6 pt-2 relative z-10">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end -mt-14 mb-2">
-                    <div className="flex items-end gap-4">
-                        <div className="relative group cursor-pointer">
-                            {!imgError && avatar ? (
-                                <img
-                                    src={avatar}
-                                    alt={employee.name}
-                                    onError={() => setImgError(true)}
-                                    className="w-24 h-24 rounded-xl object-cover border-4 border-white dark:border-card-dark shadow-md bg-white dark:bg-gray-800"
-                                />
-                            ) : (
-                                <div className="w-24 h-24 rounded-xl border-4 border-white dark:border-card-dark shadow-md bg-primary/10 flex items-center justify-center">
-                                    <span className="text-2xl font-bold text-primary">
-                                        {employee.name.split(' ').map(p => p.charAt(0)).join('').toUpperCase().slice(0, 2)}
-                                    </span>
-                                </div>
-                            )}
-                            {canEditBasicInfo && (
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-xl transition-opacity">
-                                    <label htmlFor="avatar-upload" className="cursor-pointer text-white flex flex-col items-center">
-                                        <Camera size={24} />
-                                        <span className="text-xs mt-1">Change</span>
-                                    </label>
-                                    <input
-                                        id="avatar-upload"
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={onAvatarChange}
-                                    />
-                                </div>
-                            )}
-                            <StatusIndicator
-                                status={availabilityStatus}
-                                statusMessage={availabilityMessage}
-                                showTooltip
-                                size="lg"
-                                className="absolute -bottom-1 -right-1 z-10"
+            <div className="px-6 pb-5 relative z-10">
+                {/* Row 1: Avatar (overlapping banner) + action buttons — both aligned to avatar bottom */}
+                <div className="flex justify-between items-end -mt-12 mb-4">
+                    <div className="relative group cursor-pointer">
+                        {!imgError && avatar ? (
+                            <img
+                                src={avatar}
+                                alt={employee.name}
+                                onError={() => setImgError(true)}
+                                className="w-24 h-24 rounded-xl object-cover border-4 border-white dark:border-card-dark shadow-md bg-white dark:bg-gray-800"
                             />
-                        </div>
-                        <div className="mb-1 flex flex-col">
-                            <h1 className="text-2xl font-bold text-text-light dark:text-text-dark leading-[1.2]">{employee.name}</h1>
-                            <p className="text-text-muted-light dark:text-text-muted-dark font-medium mt-1 leading-normal">
-                                {employee.role} | {employee.department}
-                            </p>
-                            <div className="flex items-center gap-3 mt-1">
-                                {employee.employeeCode && (
-                                    <span className="text-xs text-text-muted-light dark:text-text-muted-dark font-mono">
-                                        {employee.employeeCode}
-                                    </span>
-                                )}
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${employee.status === 'Active'
-                                    ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900'
-                                    : employee.status === 'Terminated'
-                                        ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900'
-                                        : 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-900'
-                                    }`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${employee.status === 'Active' ? 'bg-green-500' : employee.status === 'Terminated' ? 'bg-red-500' : 'bg-yellow-500'
-                                        }`}></span>
-                                    {t(`common:status.${employee.status.toLowerCase()}`, { defaultValue: employee.status })}
+                        ) : (
+                            <div className="w-24 h-24 rounded-xl border-4 border-white dark:border-card-dark shadow-md bg-primary/10 flex items-center justify-center">
+                                <span className="text-2xl font-bold text-primary">
+                                    {employee.name.split(' ').map(p => p.charAt(0)).join('').toUpperCase().slice(0, 2)}
                                 </span>
                             </div>
-                        </div>
+                        )}
+                        {canEditBasicInfo && (
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-xl transition-opacity">
+                                <label htmlFor="avatar-upload" className="cursor-pointer text-white flex flex-col items-center">
+                                    <Camera size={24} />
+                                    <span className="text-xs mt-1">Change</span>
+                                </label>
+                                <input
+                                    id="avatar-upload"
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={onAvatarChange}
+                                />
+                            </div>
+                        )}
+                        <StatusIndicator
+                            status={availabilityStatus}
+                            statusMessage={availabilityMessage}
+                            showTooltip
+                            size="lg"
+                            className="absolute -bottom-1 -right-1 z-10"
+                        />
                     </div>
 
-                    <div className="flex items-center gap-3 mt-4 md:mt-0">
+                    <div className="flex items-center gap-3">
                         {canEditBasicInfo && (
                             <button
                                 onClick={onEditProfileClick}
@@ -222,6 +198,30 @@ export const EmployeeHero: React.FC<EmployeeHeroProps> = ({
                                 )}
                             </div>
                         )}
+                    </div>
+                </div>
+
+                {/* Row 2: Employee info — fully below the banner, no overlap */}
+                <div>
+                    <h1 className="text-2xl font-bold text-text-light dark:text-text-dark leading-tight">{employee.name}</h1>
+                    <p className="text-text-muted-light dark:text-text-muted-dark font-medium mt-1">
+                        {employee.role} | {employee.department}
+                    </p>
+                    <div className="flex items-center gap-3 mt-2">
+                        {employee.employeeCode && (
+                            <span className="text-xs text-text-muted-light dark:text-text-muted-dark font-mono">
+                                {employee.employeeCode}
+                            </span>
+                        )}
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${employee.status === 'Active'
+                            ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900'
+                            : employee.status === 'Terminated'
+                                ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900'
+                                : 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-900'
+                            }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${employee.status === 'Active' ? 'bg-green-500' : employee.status === 'Terminated' ? 'bg-red-500' : 'bg-yellow-500'}`}></span>
+                            {t(`common:status.${employee.status.toLowerCase()}`, { defaultValue: employee.status })}
+                        </span>
                     </div>
                 </div>
             </div>

@@ -29,6 +29,7 @@ export interface Employee {
     onboardingStatus?: string;
     onboardingPercentage?: number;
     bannerColor?: string | null;
+    workType?: 'office' | 'remote' | 'hybrid';
 }
 
 export interface CreateEmployeeDTO {
@@ -55,4 +56,5 @@ export interface UpdateEmployeeDTO extends Partial<CreateEmployeeDTO> {
     employeeCode?: string;
     address?: EmployeeAddress | null;
     bannerColor?: string | null;
+    workType?: 'office' | 'remote' | 'hybrid';
 }

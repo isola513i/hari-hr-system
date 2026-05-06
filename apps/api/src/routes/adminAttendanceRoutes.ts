@@ -115,4 +115,19 @@ router.delete('/records/:id', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /api/admin/attendance/analytics
+ * Get attendance trend and late arrivals analytics
+ */
+router.get('/analytics', async (req: Request, res: Response) => {
+  try {
+    const days = req.query.days ? parseInt(req.query.days as string, 10) : 14;
+    const data = await AttendanceService.getAnalytics(Math.min(Math.max(days, 7), 90));
+    res.json(data);
+  } catch (error: unknown) {
+    console.error('Error getting attendance analytics:', error);
+    res.status(500).json({ error: 'Failed to get analytics' });
+  }
+});
+
 export default router;

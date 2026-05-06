@@ -75,6 +75,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const userObj: User = {
         id: data.user.employeeId || data.user.userId,
+        userId: data.user.userId,
         employeeId: data.user.employeeId,
         email: data.user.email,
         name: data.user.name || 'User',

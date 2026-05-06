@@ -262,6 +262,10 @@ export class EmployeeService {
             updates.push(`banner_color = $${paramIndex++}`);
             values.push(data.bannerColor || null);
         }
+        if (data.workType !== undefined) {
+            updates.push(`work_type = $${paramIndex++}`);
+            values.push(data.workType);
+        }
 
         if (updates.length === 0) {
             return existing;
@@ -366,6 +370,7 @@ export class EmployeeService {
             onboardingStatus: row.onboarding_status || 'Not Started',
             onboardingPercentage: row.onboarding_percentage || 0,
             bannerColor: row.banner_color || null,
+            workType: row.work_type || 'office',
         };
     }
 

@@ -397,6 +397,7 @@ export const AdminDashboard: React.FC = () => {
             trend={turnoverTrend}
             icon={<TrendingUp size={22} />}
             color="red"
+            invertTrend
           />
         </div>
       </div>

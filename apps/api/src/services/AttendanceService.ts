@@ -1,5 +1,7 @@
 import { query } from '../db';
 import { BusinessError } from '../utils/errorResponse';
+import { isWithinGeofence, haversineDistance } from '../utils/geoUtils';
+import WFHRequestService from './WFHRequestService';
 
 // ---------------------------------------------------------------------------
 // Work Schedule Config (cached)
@@ -39,6 +41,50 @@ async function getWorkSchedule(): Promise<WorkScheduleConfig> {
 }
 
 // ---------------------------------------------------------------------------
+// GPS / Geofence Config (cached)
+// ---------------------------------------------------------------------------
+
+interface GPSConfig {
+  officeLat: number | null;
+  officeLng: number | null;
+  geofenceRadius: number;
+  gpsRequired: boolean;
+  officeIps: string[]; // trusted office public IPs — allows desktop check-in without GPS
+}
+
+let gpsConfigCache: { data: GPSConfig; fetchedAt: number } | null = null;
+
+export function clearGPSConfigCache(): void {
+  gpsConfigCache = null;
+}
+
+async function getGPSConfig(): Promise<GPSConfig> {
+  if (gpsConfigCache && Date.now() - gpsConfigCache.fetchedAt < CONFIG_CACHE_TTL) {
+    return gpsConfigCache.data;
+  }
+
+  const result = await query(
+    `SELECT key, value FROM system_configs WHERE category = 'attendance' AND key IN ('office_lat','office_lng','geofence_radius','gps_required','office_ip')`
+  );
+
+  const map: Record<string, string> = {};
+  for (const row of result.rows) {
+    map[row.key] = row.value;
+  }
+
+  const data: GPSConfig = {
+    officeLat: map['office_lat'] ? parseFloat(map['office_lat']) : null,
+    officeLng: map['office_lng'] ? parseFloat(map['office_lng']) : null,
+    geofenceRadius: parseFloat(map['geofence_radius'] || '200'),
+    gpsRequired: map['gps_required'] === 'true',
+    officeIps: map['office_ip'] ? map['office_ip'].split(',').map(ip => ip.trim()).filter(Boolean) : [],
+  };
+
+  gpsConfigCache = { data, fetchedAt: Date.now() };
+  return data;
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -57,6 +103,10 @@ export interface AttendanceRecord {
   autoCheckout: boolean;
   earlyDeparture: boolean;
   overtimeHours: number | null;
+  clockInLat: number | null;
+  clockInLng: number | null;
+  clockInAccuracy: number | null;
+  checkInType: string;
 }
 
 export interface AdminAttendanceFilters {
@@ -100,6 +150,10 @@ export interface AdminUpsertData {
 export interface ClockInData {
   employeeId: string;
   notes?: string;
+  latitude?: number;
+  longitude?: number;
+  accuracy?: number;
+  clientIp?: string; // used to allow desktop check-in via office IP allowlist
 }
 
 export interface ClockOutData {
@@ -112,11 +166,9 @@ export class AttendanceService {
    * Clock in for an employee
    */
   async clockIn(data: ClockInData): Promise<AttendanceRecord> {
-    const { employeeId, notes } = data;
+    const { employeeId, notes, latitude, longitude, accuracy, clientIp } = data;
 
-    // Current moment in correct UTC
     const now = new Date();
-    // Today's date in Bangkok timezone (YYYY-MM-DD) for the DB date column
     const today = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
 
     // Check if already clocked in today
@@ -125,33 +177,84 @@ export class AttendanceService {
       [employeeId, today]
     );
 
-    if (existing.rows.length > 0 && existing.rows[0].clock_in) {
+    if (existing.rows.length > 0 && existing.rows[0].clock_in && !existing.rows[0].clock_out) {
       throw new BusinessError('Already clocked in for today');
     }
 
-    // Determine if late using configurable threshold
+    // GPS / Geofence validation
+    const gpsConfig = await getGPSConfig();
+    let checkInType = 'office';
+
+    if (gpsConfig.gpsRequired) {
+      // Determine if employee bypasses geofence (remote/hybrid or approved WFH)
+      const empResult = await query('SELECT work_type FROM employees WHERE id = $1', [employeeId]);
+      const workType: string = empResult.rows[0]?.work_type || 'office';
+
+      if (workType === 'remote' || workType === 'hybrid') {
+        checkInType = 'remote';
+      } else {
+        const hasWFH = await WFHRequestService.hasApprovedWFH(employeeId, today);
+        if (hasWFH) {
+          checkInType = 'wfh';
+        } else {
+          // Office employee: validate via GPS or office IP allowlist
+          const hasGps = latitude != null && longitude != null;
+          const isOfficeIp = clientIp != null && gpsConfig.officeIps.length > 0 && gpsConfig.officeIps.includes(clientIp);
+
+          if (!hasGps && !isOfficeIp) {
+            if (gpsConfig.officeIps.length > 0) {
+              throw new BusinessError('GPS location is required. If you are at the office, make sure you are connected to the office network.');
+            }
+            throw new BusinessError('GPS location is required to clock in. If you are on a desktop/laptop, please ask your admin to configure the Office IP in GPS settings.');
+          }
+
+          if (hasGps) {
+            if (gpsConfig.officeLat == null || gpsConfig.officeLng == null) {
+              throw new BusinessError('Office location is not configured. Please contact HR admin');
+            }
+            if (!isWithinGeofence(latitude!, longitude!, gpsConfig.officeLat, gpsConfig.officeLng, gpsConfig.geofenceRadius)) {
+              if (isOfficeIp) {
+                // On office network but GPS is inaccurate — trust the network
+                checkInType = 'office';
+              } else {
+                const dist = Math.round(haversineDistance(latitude!, longitude!, gpsConfig.officeLat, gpsConfig.officeLng));
+                throw new BusinessError(`You are ${dist}m from the office (allowed: ${gpsConfig.geofenceRadius}m). Please check in from the office or submit a WFH request`);
+              }
+            } else {
+              checkInType = 'office';
+            }
+          } else {
+            // No GPS but on office network — allowed
+            checkInType = 'office';
+          }
+        }
+      }
+    }
+
+    // Determine late status
     const config = await getWorkSchedule();
     const lateThreshold = new Date(`${today}T${config.lateThreshold}:00+07:00`);
     const status = now > lateThreshold ? 'Late' : 'On-time';
 
     if (existing.rows.length > 0) {
-      // Update existing record
       const result = await query(
         `UPDATE attendance_records
-         SET clock_in = $1, status = $2, notes = COALESCE($3, notes), updated_at = CURRENT_TIMESTAMP
-         WHERE id = $4
+         SET clock_in = $1, status = $2, notes = COALESCE($3, notes),
+             clock_in_lat = $4, clock_in_lng = $5, clock_in_accuracy = $6, check_in_type = $7,
+             clock_out = NULL, total_hours = NULL, overtime_hours = NULL, early_departure = FALSE,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $8
          RETURNING *`,
-        [now, status, notes, existing.rows[0].id]
+        [now, status, notes, latitude ?? null, longitude ?? null, accuracy ?? null, checkInType, existing.rows[0].id]
       );
       return this.mapRowToAttendance(result.rows[0]);
     }
 
-    // Create new record
     const result = await query(
-      `INSERT INTO attendance_records (employee_id, date, clock_in, status, notes)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO attendance_records (employee_id, date, clock_in, status, notes, clock_in_lat, clock_in_lng, clock_in_accuracy, check_in_type)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [employeeId, today, now, status, notes]
+      [employeeId, today, now, status, notes, latitude ?? null, longitude ?? null, accuracy ?? null, checkInType]
     );
 
     return this.mapRowToAttendance(result.rows[0]);
@@ -472,6 +575,10 @@ export class AttendanceService {
         autoCheckout: row.auto_checkout === true,
         earlyDeparture: row.early_departure === true,
         overtimeHours: row.overtime_hours != null ? parseFloat(row.overtime_hours as string) : null,
+        clockInLat: row.clock_in_lat != null ? parseFloat(row.clock_in_lat as string) : null,
+        clockInLng: row.clock_in_lng != null ? parseFloat(row.clock_in_lng as string) : null,
+        clockInAccuracy: row.clock_in_accuracy != null ? parseFloat(row.clock_in_accuracy as string) : null,
+        checkInType: (row.check_in_type as string) || 'office',
       };
     });
 
@@ -551,6 +658,10 @@ export class AttendanceService {
       autoCheckout: row.auto_checkout === true,
       earlyDeparture: row.early_departure === true,
       overtimeHours: row.overtime_hours != null ? parseFloat(row.overtime_hours as string) : null,
+      clockInLat: row.clock_in_lat != null ? parseFloat(row.clock_in_lat as string) : null,
+      clockInLng: row.clock_in_lng != null ? parseFloat(row.clock_in_lng as string) : null,
+      clockInAccuracy: row.clock_in_accuracy != null ? parseFloat(row.clock_in_accuracy as string) : null,
+      checkInType: (row.check_in_type as string) || 'office',
     };
   }
   /**
@@ -574,6 +685,63 @@ export class AttendanceService {
       employeeId: row.employee_id as string,
       date: row.date as string,
     }));
+  }
+
+  async getAnalytics(days: number = 14): Promise<{
+    dailyRate: { date: string; present: number; total: number; rate: number; late: number }[];
+    topLate: { employeeId: string; name: string; avatar: string | null; lateCount: number }[];
+  }> {
+    const nowBKK = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+    const start = new Date(Date.now() - (days - 1) * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+      .toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+
+    const [totalResult, dailyResult, lateResult] = await Promise.all([
+      query(`SELECT COUNT(*) AS total FROM employees WHERE status = 'Active'`),
+      query(
+        `SELECT
+           ds.date::text,
+           COUNT(ar.id) FILTER (WHERE ar.clock_in IS NOT NULL AND ar.status NOT IN ('On-leave','Absent')) AS present,
+           COUNT(ar.id) FILTER (WHERE ar.status = 'Late') AS late
+         FROM generate_series($1::date, $2::date, '1 day'::interval) AS ds(date)
+         LEFT JOIN attendance_records ar ON ar.date = ds.date
+         GROUP BY ds.date
+         ORDER BY ds.date ASC`,
+        [start, nowBKK]
+      ),
+      query(
+        `SELECT e.id AS employee_id, e.name, e.avatar, COUNT(*) AS late_count
+         FROM attendance_records ar
+         JOIN employees e ON ar.employee_id = e.id
+         WHERE ar.status = 'Late' AND ar.date >= $1
+         GROUP BY e.id, e.name, e.avatar
+         ORDER BY late_count DESC
+         LIMIT 5`,
+        [monthStart]
+      ),
+    ]);
+
+    const total = parseInt(totalResult.rows[0].total, 10);
+
+    const dailyRate = dailyResult.rows.map((row) => {
+      const present = parseInt(row.present, 10);
+      return {
+        date: row.date as string,
+        present,
+        total,
+        rate: total > 0 ? Math.round((present / total) * 100) : 0,
+        late: parseInt(row.late, 10),
+      };
+    });
+
+    const topLate = lateResult.rows.map((row) => ({
+      employeeId: row.employee_id as string,
+      name: row.name as string,
+      avatar: row.avatar as string | null,
+      lateCount: parseInt(row.late_count, 10),
+    }));
+
+    return { dailyRate, topLate };
   }
 }
 

@@ -18,6 +18,9 @@ router.get('/calculate-days', HolidayController.calculateBusinessDays.bind(Holid
 // POST /api/holidays - Create holiday (admin only)
 router.post('/', requireAdmin, apiLimiter, HolidayController.createHoliday.bind(HolidayController));
 
+// POST /api/holidays/bulk - Bulk create holidays (admin only)
+router.post('/bulk', requireAdmin, apiLimiter, HolidayController.bulkCreateHolidays.bind(HolidayController));
+
 // PUT /api/holidays/:id - Update holiday (admin only)
 router.put('/:id', requireAdmin, apiLimiter, HolidayController.updateHoliday.bind(HolidayController));
 

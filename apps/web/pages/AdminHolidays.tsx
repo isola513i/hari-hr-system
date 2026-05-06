@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Calendar, Plus, Pencil, Trash2, RotateCw } from 'lucide-react';
+import { Calendar, Plus, Pencil, Trash2, RotateCw, Upload } from 'lucide-react';
+import { HolidayImportModal } from '../components/HolidayImportModal';
 import { useHolidays, useCreateHoliday, useUpdateHoliday, useDeleteHoliday } from '../hooks/queries';
 import { useToast } from '../contexts/ToastContext';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -27,6 +28,7 @@ export const AdminHolidays: React.FC = () => {
   const deleteHoliday = useDeleteHoliday();
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<HolidayFormState>(emptyForm);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -101,13 +103,22 @@ export const AdminHolidays: React.FC = () => {
             {t('leave:holidays.subtitle')}
           </p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
-        >
-          <Plus size={18} />
-          {t('leave:holidays.addHoliday')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setImportOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-text-light dark:text-text-dark rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm"
+          >
+            <Upload size={16} />
+            Import
+          </button>
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm"
+          >
+            <Plus size={16} />
+            {t('leave:holidays.addHoliday')}
+          </button>
+        </div>
       </div>
 
       {/* Table */}
@@ -282,6 +293,14 @@ export const AdminHolidays: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Import Modal */}
+      {importOpen && (
+        <HolidayImportModal
+          onClose={() => setImportOpen(false)}
+          onSuccess={(msg) => { showToast(msg, 'success'); setImportOpen(false); }}
+        />
+      )}
 
       {/* Delete Confirm Modal */}
       <Modal isOpen={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} title={t('leave:holidays.deleteHoliday')} maxWidth="sm">

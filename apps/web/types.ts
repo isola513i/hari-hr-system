@@ -61,6 +61,7 @@ export type JobTitle = (typeof JOB_TITLES)[number];
 
 export interface User {
   id: string;
+  userId?: string;      // users-table UUID (used for reviewer_user_id comparison)
   employeeId?: string;
   email?: string;
   name: string;
@@ -102,6 +103,7 @@ export interface Employee {
   employeeCode?: string;
   address?: EmployeeAddress | null;
   bannerColor?: string;
+  workType?: 'office' | 'remote' | 'hybrid';
 }
 
 export interface StatCardProps {
@@ -110,6 +112,7 @@ export interface StatCardProps {
   trend?: number;
   icon: React.ReactNode;
   color: 'primary' | 'green' | 'orange' | 'red' | 'teal';
+  invertTrend?: boolean;
 }
 
 export interface DocumentItem {
@@ -608,6 +611,7 @@ export interface AdminAttendanceRecord {
   autoCheckout: boolean;
   earlyDeparture: boolean;
   overtimeHours: number | null;
+  checkInType?: string;
 }
 
 export interface AttendanceSnapshot {
@@ -625,6 +629,11 @@ export interface AdminAttendanceSnapshotV2 {
   checkedOut: number;
   absentOrLeave: number;
   onLeave: number;
+}
+
+export interface AttendanceAnalytics {
+  dailyRate: { date: string; present: number; total: number; rate: number; late: number }[];
+  topLate: { employeeId: string; name: string; avatar: string | null; lateCount: number }[];
 }
 
 export interface AdminAttendanceUpsertData {

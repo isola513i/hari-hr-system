@@ -148,6 +148,42 @@ async function createSystemConfigsTable() {
                 data_type: 'number',
                 description: 'Default daily rate for interns (THB). Used when employee has no daily_rate set.'
             },
+            // Attendance / GPS settings
+            {
+                category: 'attendance',
+                key: 'office_lat',
+                value: '13.78',
+                data_type: 'string',
+                description: 'Office latitude (Vanit Place Aree)'
+            },
+            {
+                category: 'attendance',
+                key: 'office_lng',
+                value: '100.5427',
+                data_type: 'string',
+                description: 'Office longitude (Vanit Place Aree)'
+            },
+            {
+                category: 'attendance',
+                key: 'geofence_radius',
+                value: '200',
+                data_type: 'number',
+                description: 'Allowed check-in radius in meters'
+            },
+            {
+                category: 'attendance',
+                key: 'gps_required',
+                value: 'false',
+                data_type: 'boolean',
+                description: 'Require GPS for clock-in'
+            },
+            {
+                category: 'attendance',
+                key: 'office_ip',
+                value: '',
+                data_type: 'string',
+                description: 'Comma-separated office public IPs for desktop check-in'
+            },
             // System settings
             {
                 category: 'system',

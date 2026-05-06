@@ -6,7 +6,7 @@ import { Announcement, UpcomingEvent } from '../types';
 import { Toast } from '../components/Toast';
 import { Dropdown } from '../components/Dropdown';
 import { DatePicker } from '../components/DatePicker';
-import { useAnnouncements, useUpcomingEvents, useAddAnnouncement, useUpdateAnnouncement, useDeleteAnnouncement, useAddEvent, useDeleteEvent, useSentimentOverview } from '../hooks/queries';
+import { useAnnouncements, useUpcomingEvents, useAddAnnouncement, useUpdateAnnouncement, useDeleteAnnouncement, useAddEvent, useDeleteEvent, useSentimentOverview, useHolidays, useLeaveRequests } from '../hooks/queries';
 import { useAuth } from '../contexts/AuthContext';
 
 export const Wellbeing: React.FC = () => {
@@ -20,6 +20,8 @@ export const Wellbeing: React.FC = () => {
   const deleteAnnouncementMutation = useDeleteAnnouncement();
   const addEventMutation = useAddEvent();
   const deleteEventMutation = useDeleteEvent();
+  const { data: holidays = [] } = useHolidays();
+  const { data: leaveRequests = [] } = useLeaveRequests();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
@@ -44,15 +46,37 @@ export const Wellbeing: React.FC = () => {
     setToast({ show: true, message, type });
   };
 
-  // Helper function to get days in a month
-  const getDaysInMonth = (year: number, month: number) => {
-    return new Date(year, month + 1, 0).getDate();
-  };
+  const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
+  const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
+  const toYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
-  // Helper function to get first day of month (0 = Sunday, 6 = Saturday)
-  const getFirstDayOfMonth = (year: number, month: number) => {
-    return new Date(year, month, 1).getDay();
-  };
+  // Build holiday lookup: dateKey -> name (handles multi-day ranges)
+  const calHolidayMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const h of holidays) {
+      const cur = new Date(h.date + 'T00:00:00');
+      const last = new Date((h.endDate || h.date) + 'T00:00:00');
+      while (cur <= last) { map.set(toYMD(cur), h.name); cur.setDate(cur.getDate() + 1); }
+    }
+    return map;
+  }, [holidays]);
+
+  // Count approved leaves per date in visible month (admin only)
+  const calLeaveCounts = useMemo(() => {
+    if (!isAdminView) return new Map<string, number>();
+    const map = new Map<string, number>();
+    const monthStart = new Date(currentYear, currentMonth, 1);
+    const monthEnd = new Date(currentYear, currentMonth + 1, 0);
+    for (const leave of leaveRequests) {
+      if (leave.status !== 'Approved' || !leave.startDate || !leave.endDate) continue;
+      const start = new Date(leave.startDate.slice(0, 10) + 'T00:00:00');
+      const end = new Date(leave.endDate.slice(0, 10) + 'T00:00:00');
+      const cur = new Date(Math.max(start.getTime(), monthStart.getTime()));
+      const last = new Date(Math.min(end.getTime(), monthEnd.getTime()));
+      while (cur <= last) { const k = toYMD(cur); map.set(k, (map.get(k) || 0) + 1); cur.setDate(cur.getDate() + 1); }
+    }
+    return map;
+  }, [isAdminView, leaveRequests, currentYear, currentMonth]);
 
   // Generate calendar days
   const calendarDays = useMemo(() => {
@@ -61,51 +85,38 @@ export const Wellbeing: React.FC = () => {
     const prevMonthDays = getDaysInMonth(currentYear, currentMonth - 1);
 
     const days: Array<{
-      day: number;
-      isCurrentMonth: boolean;
-      isToday: boolean;
-      hasEvent: boolean;
-      date: Date;
+      day: number; isCurrentMonth: boolean; isToday: boolean; isWeekend: boolean;
+      isHoliday: boolean; holidayName: string; hasEvent: boolean; leaveCount: number; date: Date;
     }> = [];
 
-    // Add previous month's trailing days
     for (let i = firstDay - 1; i >= 0; i--) {
       const day = prevMonthDays - i;
       const date = new Date(currentYear, currentMonth - 1, day);
-      days.push({ day, isCurrentMonth: false, isToday: false, hasEvent: false, date });
+      days.push({ day, isCurrentMonth: false, isToday: false, isWeekend: [0,6].includes(date.getDay()), isHoliday: false, holidayName: '', hasEvent: false, leaveCount: 0, date });
     }
 
-    // Add current month's days
     const today = new Date();
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(currentYear, currentMonth, day);
-      const isToday =
-        date.getDate() === today.getDate() &&
-        date.getMonth() === today.getMonth() &&
-        date.getFullYear() === today.getFullYear();
-
-      // Check if this date has any events
-      const hasEvent = upcomingEvents.some(event => {
-        const eventDate = new Date(event.date);
-        return eventDate.getDate() === day &&
-               eventDate.getMonth() === currentMonth &&
-               eventDate.getFullYear() === currentYear;
-      });
-
-      days.push({ day, isCurrentMonth: true, isToday, hasEvent, date });
+      const isToday = date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+      const isWeekend = [0, 6].includes(date.getDay());
+      const dateKey = toYMD(date);
+      const isHoliday = calHolidayMap.has(dateKey);
+      const holidayName = calHolidayMap.get(dateKey) || '';
+      const hasEvent = upcomingEvents.some(e => { const d = new Date(e.date); return d.getDate() === day && d.getMonth() === currentMonth && d.getFullYear() === currentYear; });
+      const leaveCount = calLeaveCounts.get(dateKey) || 0;
+      days.push({ day, isCurrentMonth: true, isToday, isWeekend, isHoliday, holidayName, hasEvent, leaveCount, date });
     }
 
-    // Add next month's leading days to complete the grid
     const remainingDays = 7 - (days.length % 7);
     if (remainingDays < 7) {
       for (let day = 1; day <= remainingDays; day++) {
         const date = new Date(currentYear, currentMonth + 1, day);
-        days.push({ day, isCurrentMonth: false, isToday: false, hasEvent: false, date });
+        days.push({ day, isCurrentMonth: false, isToday: false, isWeekend: [0,6].includes(date.getDay()), isHoliday: false, holidayName: '', hasEvent: false, leaveCount: 0, date });
       }
     }
-
     return days;
-  }, [currentYear, currentMonth, upcomingEvents]);
+  }, [currentYear, currentMonth, upcomingEvents, calHolidayMap, calLeaveCounts]);
 
   // Get upcoming events (next 3 events from today)
   const nextUpcomingEvents = useMemo(() => {
@@ -515,83 +526,145 @@ export const Wellbeing: React.FC = () => {
         </div>
 
         <div className="lg:col-span-1">
-          {/* Team Calendar */}
-          <section className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 h-full flex flex-col">
-            <div className="flex flex-col gap-4 mb-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-text-light dark:text-text-dark text-xl font-bold tracking-tight">{t('calendar.teamCalendar')}</h2>
-                <div className="flex items-center gap-2">
-                  <button onClick={handlePrevMonth} className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark rounded-md"><ChevronLeft size={18} /></button>
-                  <button onClick={handleNextMonth} className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark rounded-md"><ChevronRight size={18} /></button>
+          {isAdminView ? (
+            /* ---- Admin: Enhanced Team Calendar ---- */
+            <section className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-5 h-full flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-base font-bold text-text-light dark:text-text-dark">{t('calendar.teamCalendar')}</h2>
+                <div className="flex items-center gap-1">
+                  <button onClick={handlePrevMonth} className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark rounded-md transition-colors"><ChevronLeft size={16} /></button>
+                  <span className="text-sm font-semibold text-text-light dark:text-text-dark min-w-[100px] text-center">
+                    {monthNames[currentMonth]} {currentYear}
+                  </span>
+                  <button onClick={handleNextMonth} className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark rounded-md transition-colors"><ChevronRight size={16} /></button>
                 </div>
               </div>
+
               <button
                 onClick={() => setIsEventModalOpen(true)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white font-medium rounded-lg text-sm shadow-sm hover:bg-primary/90 transition-all hover:shadow-md"
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-primary text-white font-medium rounded-lg text-sm hover:bg-primary/90 transition-colors mb-4"
               >
-                <Plus size={18} />
+                <Plus size={15} />
                 {t('calendar.addEvent')}
               </button>
-            </div>
 
-            <div className="flex justify-between items-center mb-4">
-              <p className="font-semibold text-text-light dark:text-text-dark">
-                {monthNames[currentMonth]} {currentYear}
-              </p>
-            </div>
+              {/* Day headers */}
+              <div className="grid grid-cols-7 text-center text-[11px] font-semibold mb-1">
+                <span className="py-1 text-red-400 dark:text-red-500">{t('common:weekdays.su')}</span>
+                <span className="py-1 text-text-muted-light dark:text-text-muted-dark">{t('common:weekdays.mo')}</span>
+                <span className="py-1 text-text-muted-light dark:text-text-muted-dark">{t('common:weekdays.tu')}</span>
+                <span className="py-1 text-text-muted-light dark:text-text-muted-dark">{t('common:weekdays.we')}</span>
+                <span className="py-1 text-text-muted-light dark:text-text-muted-dark">{t('common:weekdays.th')}</span>
+                <span className="py-1 text-text-muted-light dark:text-text-muted-dark">{t('common:weekdays.fr')}</span>
+                <span className="py-1 text-red-400 dark:text-red-500">{t('common:weekdays.sa')}</span>
+              </div>
 
-            {/* Calendar Grid */}
-            <div className="grid grid-cols-7 text-center text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-3">
-              <span className="py-2">{t('common:weekdays.su')}</span><span className="py-2">{t('common:weekdays.mo')}</span><span className="py-2">{t('common:weekdays.tu')}</span><span className="py-2">{t('common:weekdays.we')}</span><span className="py-2">{t('common:weekdays.th')}</span><span className="py-2">{t('common:weekdays.fr')}</span><span className="py-2">{t('common:weekdays.sa')}</span>
-            </div>
-            <div className="grid grid-cols-7 text-center text-sm gap-y-4 flex-grow">
-              {calendarDays.map((dayInfo, index) => (
-                <div
-                  key={index}
-                  className={`relative flex items-center justify-center min-h-[40px] ${!dayInfo.isCurrentMonth ? 'text-text-muted-light opacity-50' : 'text-text-light dark:text-text-dark'}`}
-                >
-                  {dayInfo.isToday ? (
-                    <span className="w-9 h-9 flex items-center justify-center bg-primary text-white rounded-full font-bold shadow-md">
-                      {dayInfo.day}
-                    </span>
-                  ) : (
-                    <>
-                      {dayInfo.day}
-                      {dayInfo.hasEvent && dayInfo.isCurrentMonth && (
-                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-accent-teal rounded-full"></div>
+              {/* Calendar grid */}
+              <div className="grid grid-cols-7 gap-0.5 flex-grow">
+                {calendarDays.map((d, i) => {
+                  const cellBg = d.isCurrentMonth
+                    ? d.isHoliday ? 'bg-red-50 dark:bg-red-900/20'
+                    : d.isWeekend ? 'bg-gray-50 dark:bg-gray-800/30'
+                    : ''
+                    : '';
+                  const numColor = !d.isCurrentMonth
+                    ? 'text-text-muted-light dark:text-text-muted-dark opacity-40'
+                    : d.isHoliday ? 'text-red-500 dark:text-red-400 font-semibold'
+                    : d.isWeekend ? 'text-text-muted-light dark:text-text-muted-dark'
+                    : 'text-text-light dark:text-text-dark';
+                  return (
+                    <div
+                      key={i}
+                      title={d.isHoliday && d.isCurrentMonth ? d.holidayName : undefined}
+                      className={`relative flex flex-col items-center justify-center py-1 min-h-[40px] rounded-md ${cellBg}`}
+                    >
+                      {d.isToday ? (
+                        <span className="w-7 h-7 flex items-center justify-center bg-primary text-white rounded-full text-xs font-bold shadow-sm">
+                          {d.day}
+                        </span>
+                      ) : (
+                        <span className={`text-xs leading-none ${numColor}`}>{d.day}</span>
                       )}
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-auto pt-6 border-t border-border-light dark:border-border-dark">
-              <h3 className="font-semibold text-text-light dark:text-text-dark mb-4">{t('calendar.upcomingEvents')}</h3>
-              {nextUpcomingEvents.length > 0 ? (
-                <div className="space-y-4">
-                  {nextUpcomingEvents.map((event) => (
-                    <div key={event.id} className="flex items-center gap-3 group">
-                      <div className={`w-1 h-8 rounded-full ${getEventColorClass(event.type)}`}></div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-text-light dark:text-text-dark truncate">{event.title}</p>
-                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{formatEventDate(event.date)}</p>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteEvent(event.id)}
-                        className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 text-text-muted-light hover:text-red-500 transition-all"
-                        title="Delete event"
-                      >
-                        <X size={14} />
-                      </button>
+                      {d.isCurrentMonth && !d.isToday && (d.isHoliday || d.hasEvent || d.leaveCount > 0) && (
+                        <div className="flex items-center gap-0.5 mt-0.5">
+                          {d.isHoliday && <span className="w-1 h-1 rounded-full bg-red-400 dark:bg-red-500" />}
+                          {d.hasEvent && <span className="w-1 h-1 rounded-full bg-accent-teal" />}
+                          {d.leaveCount > 0 && (
+                            <span className="text-[8px] font-bold text-amber-500 dark:text-amber-400 leading-none">{d.leaveCount}</span>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  ))}
+                  );
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="flex flex-wrap gap-x-3 gap-y-1 pt-3 mt-3 border-t border-border-light dark:border-border-dark">
+                <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-400" /><span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">Holiday</span></div>
+                <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-accent-teal" /><span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">Event</span></div>
+                <div className="flex items-center gap-1"><span className="text-[10px] font-bold text-amber-500">3</span><span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">on leave</span></div>
+                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600" /><span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">Weekend</span></div>
+              </div>
+
+              {/* Upcoming events */}
+              <div className="mt-4 pt-4 border-t border-border-light dark:border-border-dark">
+                <h3 className="text-sm font-semibold text-text-light dark:text-text-dark mb-3">{t('calendar.upcomingEvents')}</h3>
+                {nextUpcomingEvents.length > 0 ? (
+                  <div className="space-y-3">
+                    {nextUpcomingEvents.map((event) => (
+                      <div key={event.id} className="flex items-center gap-2.5 group">
+                        <div className={`w-1 h-8 rounded-full flex-shrink-0 ${getEventColorClass(event.type)}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-text-light dark:text-text-dark truncate">{event.title}</p>
+                          <p className="text-[11px] text-text-muted-light dark:text-text-muted-dark">{formatEventDate(event.date)}</p>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteEvent(event.id)}
+                          className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-text-muted-light hover:text-red-500 transition-all flex-shrink-0"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{t('calendar.noUpcoming')}</p>
+                )}
+              </div>
+            </section>
+          ) : (
+            /* ---- Employee: Upcoming Team Events only ---- */
+            <section className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6">
+              <h2 className="text-lg font-bold text-text-light dark:text-text-dark mb-4">{t('calendar.upcomingEvents')}</h2>
+              {nextUpcomingEvents.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <div className="w-12 h-12 rounded-full bg-background-light dark:bg-background-dark flex items-center justify-center mb-3">
+                    <Calendar size={22} className="text-text-muted-light dark:text-text-muted-dark opacity-50" />
+                  </div>
+                  <p className="text-sm text-text-muted-light dark:text-text-muted-dark">{t('calendar.noUpcoming')}</p>
                 </div>
               ) : (
-                <p className="text-sm text-text-muted-light dark:text-text-muted-dark">{t('calendar.noUpcoming')}</p>
+                <div className="space-y-3">
+                  {upcomingEvents
+                    .filter(e => new Date(e.date) >= new Date(new Date().setHours(0,0,0,0)))
+                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                    .slice(0, 6)
+                    .map((event) => (
+                      <div key={event.id} className="flex items-center gap-3 p-3 rounded-lg bg-background-light dark:bg-background-dark">
+                        <div className={`w-1.5 h-10 rounded-full flex-shrink-0 ${getEventColorClass(event.type)}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-text-light dark:text-text-dark truncate">{event.title}</p>
+                          <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">{formatEventDate(event.date)}</p>
+                        </div>
+                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${getEventColorClass(event.type)}`} />
+                      </div>
+                    ))}
+                </div>
               )}
-            </div>
-          </section>
+            </section>
+          )}
         </div>
       </div>
 

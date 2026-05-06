@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Users,
@@ -12,11 +12,19 @@ import {
   Search,
   MoreVertical,
   Download,
+  Home,
+  CheckCircle2,
+  XCircle,
+  Clock,
 } from 'lucide-react';
+import { AttendanceAnalyticsPanel } from '../components/AttendanceAnalyticsPanel';
+import { Avatar } from '../components/Avatar';
 import { Dropdown, DropdownOption } from '../components/Dropdown';
+import { FilterToolbar } from '../components/FilterToolbar';
 import { DatePicker } from '../components/DatePicker';
 import { Pagination } from '../components/Pagination';
 import { UpsertAttendanceModal } from '../components/UpsertAttendanceModal';
+import { LeaveActionBar } from '../components/LeaveActionBar';
 import { useToast } from '../contexts/ToastContext';
 import {
   useAdminAttendanceSnapshot,
@@ -24,9 +32,29 @@ import {
   useAdminUpsertAttendance,
   useAdminDeleteAttendance,
   useAllEmployees,
+  useAdminWFHRequests,
+  useApproveWFH,
+  useRejectWFH,
+  useAttendanceAnalytics,
+  useHolidays,
 } from '../hooks/queries';
-import { formatTimeTH } from '../lib/date';
+import { formatTimeTH, formatDate, dayjs } from '../lib/date';
 import type { AdminAttendanceRecord, AdminAttendanceFilters, AdminDisplayStatus, AttendanceStatus } from '../types';
+
+type WFHItem = { id: string; date: string; reason: string | null; status: string; employeeName?: string; employeeDepartment?: string; employeeAvatar?: string | null };
+
+const WFH_STATUS_OPTIONS: DropdownOption[] = [
+  { value: 'pending',  label: 'All Pending' },
+  { value: 'all',      label: 'All Requests' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'rejected', label: 'Rejected' },
+];
+
+const WFH_SORT_OPTIONS: DropdownOption[] = [
+  { value: 'date_desc', label: 'Date Requested' },
+  { value: 'date_asc',  label: 'Oldest First' },
+  { value: 'name_asc',  label: 'Name A–Z' },
+];
 
 const ITEMS_PER_PAGE = 20;
 
@@ -48,6 +76,22 @@ const getStatusStyle = (status: AdminDisplayStatus | string): { dot: string; bad
 };
 
 const formatTime = formatTimeTH;
+
+const CHECK_IN_TYPE_CONFIG: Record<string, { label: string; cls: string }> = {
+  office:  { label: 'Office',  cls: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+  wfh:     { label: 'WFH',     cls: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+  remote:  { label: 'Remote',  cls: 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+};
+
+const CheckInTypeBadge: React.FC<{ type?: string }> = ({ type }) => {
+  if (!type) return null;
+  const config = CHECK_IN_TYPE_CONFIG[type] ?? { label: type, cls: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' };
+  return (
+    <span className={`px-1.5 py-0.5 text-[10px] font-semibold rounded uppercase tracking-wide ${config.cls}`}>
+      {config.label}
+    </span>
+  );
+};
 
 const AdminAttendance: React.FC = () => {
   const { t } = useTranslation(['attendance', 'common']);
@@ -76,6 +120,14 @@ const AdminAttendance: React.FC = () => {
     { value: 'Checked Out', label: t('attendance:filters.checkedOut') },
     { value: 'Not In', label: t('attendance:filters.notInOnLeave') },
   ];
+
+  // Main tab
+  const [mainTab, setMainTab] = useState<'records' | 'wfh'>('records');
+
+  // WFH filters
+  const [wfhStatusFilter, setWfhStatusFilter] = useState<string>('pending');
+  const [wfhSearch, setWfhSearch] = useState('');
+  const [wfhSort, setWfhSort] = useState<string>('date_desc');
 
   // Filters
   const [searchInput, setSearchInput] = useState('');
@@ -115,12 +167,22 @@ const AdminAttendance: React.FC = () => {
     limit: ITEMS_PER_PAGE,
   };
 
+  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const isToday = selectedDate === todayStr;
+  const recordsRef = useRef<HTMLDivElement>(null);
+  const { data: analyticsData } = useAttendanceAnalytics(7);
+  const { data: holidays = [] } = useHolidays();
+
   // Queries
   const { data: snapshot } = useAdminAttendanceSnapshot();
-  const { data: recordsResponse, isPending: loading } = useAdminAttendanceRecords(filters);
+  const { data: recordsResponse, isPending: loading } = useAdminAttendanceRecords(filters, { refetchInterval: isToday ? 60_000 : false });
   const { data: allEmployees = [] } = useAllEmployees();
   const upsertMutation = useAdminUpsertAttendance();
   const deleteMutation = useAdminDeleteAttendance();
+  const { data: wfhRequests = [], isPending: wfhLoading } = useAdminWFHRequests();
+  const approveMutation = useApproveWFH();
+  const rejectMutation = useRejectWFH();
+  const [wfhActionId, setWfhActionId] = useState<string | null>(null);
 
   const records = recordsResponse?.data || [];
   const totalPages = recordsResponse?.totalPages || 1;
@@ -180,7 +242,57 @@ const AdminAttendance: React.FC = () => {
 
   const handleCardClick = useCallback((filterValue: string) => {
     setStatus(filterValue);
+    setTimeout(() => recordsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   }, []);
+
+  const allWFH = useMemo(() => wfhRequests as WFHItem[], [wfhRequests]);
+
+  const wfhStats = useMemo(() => {
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+    return allWFH.reduce(
+      (acc, r) => {
+        if (r.status === 'pending') { acc.pending++; return acc; }
+        const d = new Date(r.date);
+        if (d.getMonth() !== thisMonth || d.getFullYear() !== thisYear) return acc;
+        if (r.status === 'approved') acc.approvedThisMonth++;
+        else if (r.status === 'rejected') acc.rejectedThisMonth++;
+        return acc;
+      },
+      { pending: 0, approvedThisMonth: 0, rejectedThisMonth: 0 }
+    );
+  }, [allWFH]);
+
+  const filteredWFH = useMemo(() => allWFH
+    .filter(r => {
+      if (wfhStatusFilter !== 'all' && r.status !== wfhStatusFilter) return false;
+      if (wfhSearch && !r.employeeName?.toLowerCase().includes(wfhSearch.toLowerCase())) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (wfhSort === 'date_asc') return a.date.localeCompare(b.date);
+      if (wfhSort === 'name_asc') return (a.employeeName ?? '').localeCompare(b.employeeName ?? '');
+      return b.date.localeCompare(a.date);
+    }), [allWFH, wfhStatusFilter, wfhSearch, wfhSort]);
+
+  const handleWFHApprove = useCallback((id: string) => {
+    setWfhActionId(id);
+    approveMutation.mutate(id, {
+      onSuccess: () => showToast('Approved', 'success'),
+      onError: () => showToast('Failed to approve', 'error'),
+      onSettled: () => setWfhActionId(null),
+    });
+  }, [approveMutation, showToast]);
+
+  const handleWFHReject = useCallback((id: string) => {
+    setWfhActionId(id);
+    rejectMutation.mutate(id, {
+      onSuccess: () => showToast('Rejected', 'success'),
+      onError: () => showToast('Failed to reject', 'error'),
+      onSettled: () => setWfhActionId(null),
+    });
+  }, [rejectMutation, showToast]);
 
   const exportToCSV = useCallback(() => {
     if (records.length === 0) {
@@ -240,15 +352,211 @@ const AdminAttendance: React.FC = () => {
             {t('attendance:admin.subtitle')}
           </p>
         </div>
+        {mainTab === 'records' && (
+          <button
+            onClick={handleOpenAdd}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm font-medium shadow-sm"
+          >
+            <Plus size={18} />
+            <span>{t('attendance:admin.addRecord')}</span>
+          </button>
+        )}
+      </div>
+
+      {/* Main Tabs */}
+      <div className="flex border-b border-border-light dark:border-border-dark">
         <button
-          onClick={handleOpenAdd}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm font-medium shadow-sm"
+          onClick={() => setMainTab('records')}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            mainTab === 'records'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark'
+          }`}
         >
-          <Plus size={18} />
-          <span>{t('attendance:admin.addRecord')}</span>
+          {t('attendance:admin.title')}
+        </button>
+        <button
+          onClick={() => setMainTab('wfh')}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            mainTab === 'wfh'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark'
+          }`}
+        >
+          <Home size={14} />
+          WFH Requests
+          {wfhStats.pending > 0 && mainTab !== 'wfh' && (
+            <span className="ml-1 px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">
+              {wfhStats.pending}
+            </span>
+          )}
         </button>
       </div>
 
+      {mainTab === 'wfh' && (
+          <div className="space-y-5">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+              {[
+                { label: 'Pending Requests', value: wfhStats.pending, subtitle: 'Awaiting review', icon: <Clock size={20} />, iconColor: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400', filter: 'pending' },
+                { label: 'Approved This Month', value: wfhStats.approvedThisMonth, subtitle: 'WFH days approved', icon: <CheckCircle2 size={20} />, iconColor: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400', filter: 'approved' },
+                { label: 'Rejected This Month', value: wfhStats.rejectedThisMonth, subtitle: 'WFH days rejected', icon: <XCircle size={20} />, iconColor: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400', filter: 'rejected' },
+              ].map(({ label, value, subtitle, icon, iconColor, filter }) => (
+                <button
+                  key={filter}
+                  onClick={() => setWfhStatusFilter(wfhStatusFilter === filter ? 'all' : filter)}
+                  className={`p-4 rounded-xl transition-all text-left w-full cursor-pointer border ${
+                    wfhStatusFilter === filter
+                      ? 'bg-primary/5 dark:bg-primary/10 border-primary/40 shadow-sm'
+                      : 'bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${iconColor}`}>{icon}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark truncate">{label}</p>
+                      <p className="text-xl font-bold text-text-light dark:text-text-dark">{value}</p>
+                      <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">{subtitle}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Table Card */}
+            <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm overflow-hidden">
+              {/* Toolbar */}
+              <FilterToolbar
+                trailing={
+                  <>
+                    <span className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark whitespace-nowrap">Sort by:</span>
+                    <Dropdown options={WFH_SORT_OPTIONS} value={wfhSort} onChange={setWfhSort} width="w-auto" />
+                  </>
+                }
+              >
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark" size={16} />
+                  <input
+                    type="text"
+                    value={wfhSearch}
+                    onChange={(e) => setWfhSearch(e.target.value)}
+                    placeholder="Search employee..."
+                    className="pl-9 pr-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition-all w-48"
+                  />
+                </div>
+                <Dropdown options={WFH_STATUS_OPTIONS} value={wfhStatusFilter} onChange={setWfhStatusFilter} width="w-auto" />
+              </FilterToolbar>
+
+              {/* Desktop Table */}
+              {wfhLoading ? (
+                <div className="flex items-center justify-center h-32 text-text-muted-light dark:text-text-muted-dark text-sm">Loading...</div>
+              ) : filteredWFH.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-32 gap-2 text-text-muted-light dark:text-text-muted-dark">
+                  <Home size={24} />
+                  <p className="text-sm">No WFH requests found</p>
+                </div>
+              ) : (
+                <>
+                  {/* Desktop */}
+                  <div className="overflow-x-auto hidden md:block">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 dark:bg-gray-800 border-b border-border-light dark:border-border-dark">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Employee</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Reason</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border-light dark:divide-border-dark">
+                        {filteredWFH.map((req) => (
+                          <tr key={req.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-3">
+                                <Avatar src={req.employeeAvatar ?? null} name={req.employeeName ?? '?'} size="lg" />
+                                <div>
+                                  <p className="text-sm font-medium text-text-light dark:text-text-dark">{req.employeeName ?? '—'}</p>
+                                  <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.employeeDepartment}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <p className="text-sm text-text-light dark:text-text-dark">{formatDate(req.date)}</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="text-sm text-text-light dark:text-text-dark truncate max-w-xs">{req.reason || <span className="text-text-muted-light dark:text-text-muted-dark">—</span>}</p>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                {req.status === 'pending' ? (
+                                  <LeaveActionBar
+                                    employeeName={req.employeeName}
+                                    compact
+                                    disabled={wfhActionId === req.id}
+                                    onApprove={() => handleWFHApprove(req.id)}
+                                    onReject={() => handleWFHReject(req.id)}
+                                  />
+                                ) : (
+                                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full ${
+                                    req.status === 'approved'
+                                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-200'
+                                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-200'
+                                  }`}>
+                                    {req.status === 'approved' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                                    {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Cards */}
+                  <div className="md:hidden divide-y divide-border-light dark:divide-border-dark">
+                    {filteredWFH.map((req) => (
+                      <div key={req.id} className="p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Avatar src={req.employeeAvatar ?? null} name={req.employeeName ?? '?'} size="lg" />
+                            <div>
+                              <p className="text-sm font-medium text-text-light dark:text-text-dark">{req.employeeName ?? '—'}</p>
+                              <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.employeeDepartment}</p>
+                            </div>
+                          </div>
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
+                            req.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                            : req.status === 'approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                          }`}>
+                            {req.status}
+                          </span>
+                        </div>
+                        <div className="text-sm text-text-muted-light dark:text-text-muted-dark space-y-0.5">
+                          <p><span className="font-medium">Date:</span> {formatDate(req.date)}</p>
+                          {req.reason && <p><span className="font-medium">Reason:</span> {req.reason}</p>}
+                        </div>
+                        {req.status === 'pending' && (
+                          <LeaveActionBar
+                            employeeName={req.employeeName}
+                            compact
+                            disabled={wfhActionId === req.id}
+                            onApprove={() => handleWFHApprove(req.id)}
+                            onReject={() => handleWFHReject(req.id)}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+      )}
+
+      {mainTab === 'records' && <>
       {/* Snapshot Cards — click to filter */}
       {snapshot && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
@@ -269,6 +577,7 @@ const AdminAttendance: React.FC = () => {
             filterValue="Present"
             activeFilter={status}
             onClick={handleCardClick}
+            subtitle={snapshot.total > 0 ? `${Math.round((snapshot.presentToday / snapshot.total) * 100)}% attendance` : undefined}
           />
           <SnapshotCard
             icon={<Activity size={20} />}
@@ -300,8 +609,13 @@ const AdminAttendance: React.FC = () => {
         </div>
       )}
 
+      {/* Analytics Panel */}
+      {analyticsData && (
+        <AttendanceAnalyticsPanel data={analyticsData} holidays={holidays} />
+      )}
+
       {/* Records Table */}
-      <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm overflow-hidden">
+      <div ref={recordsRef} className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm overflow-hidden">
         {/* Toolbar: Search + Filters | Date + Export */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 px-6 py-4 border-b border-border-light dark:border-border-dark">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -365,6 +679,9 @@ const AdminAttendance: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
                   {t('attendance:admin.ot')}
                 </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
+                  Type
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
                   {t('attendance:admin.status')}
                 </th>
@@ -376,13 +693,13 @@ const AdminAttendance: React.FC = () => {
             <tbody className="divide-y divide-border-light dark:divide-border-dark">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-text-muted-light dark:text-text-muted-dark">
+                  <td colSpan={9} className="px-6 py-8 text-center text-text-muted-light dark:text-text-muted-dark">
                     {t('attendance:admin.loading')}
                   </td>
                 </tr>
               ) : records.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-text-muted-light dark:text-text-muted-dark">
+                  <td colSpan={9} className="px-6 py-8 text-center text-text-muted-light dark:text-text-muted-dark">
                     {t('attendance:admin.noRecords')}
                   </td>
                 </tr>
@@ -391,17 +708,22 @@ const AdminAttendance: React.FC = () => {
                   <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
-                        {record.employeeAvatar ? (
-                          <img
-                            src={record.employeeAvatar}
-                            alt={record.employeeName}
-                            className="w-8 h-8 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
-                            {record.employeeName.charAt(0)}
-                          </div>
-                        )}
+                        <div className="relative shrink-0">
+                          {record.employeeAvatar ? (
+                            <img
+                              src={record.employeeAvatar}
+                              alt={record.employeeName}
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
+                              {record.employeeName.charAt(0)}
+                            </div>
+                          )}
+                          {record.status === 'Late' && record.clockIn && (
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-orange-500 ring-2 ring-card-light dark:ring-card-dark" title="Late" />
+                          )}
+                        </div>
                         <span className="text-sm font-medium text-text-light dark:text-text-dark">
                           {record.employeeName}
                         </span>
@@ -425,6 +747,11 @@ const AdminAttendance: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {record.overtimeHours != null && record.overtimeHours > 0
                         ? <span className="text-amber-600 dark:text-amber-400 font-medium">{Number(record.overtimeHours).toFixed(1)}h</span>
+                        : <span className="text-text-muted-light dark:text-text-muted-dark">-</span>}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      {record.clockIn
+                        ? <CheckInTypeBadge type={record.checkInType ?? 'office'} />
                         : <span className="text-text-muted-light dark:text-text-muted-dark">-</span>}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -518,17 +845,22 @@ const AdminAttendance: React.FC = () => {
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      {record.employeeAvatar ? (
-                        <img
-                          src={record.employeeAvatar}
-                          alt={record.employeeName}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
-                          {record.employeeName.charAt(0)}
-                        </div>
-                      )}
+                      <div className="relative shrink-0">
+                        {record.employeeAvatar ? (
+                          <img
+                            src={record.employeeAvatar}
+                            alt={record.employeeName}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
+                            {record.employeeName.charAt(0)}
+                          </div>
+                        )}
+                        {record.status === 'Late' && record.clockIn && (
+                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-orange-500 ring-2 ring-card-light dark:ring-card-dark" title="Late" />
+                        )}
+                      </div>
                       <div>
                         <p className="text-sm font-medium text-text-light dark:text-text-dark">
                           {record.employeeName}
@@ -562,6 +894,7 @@ const AdminAttendance: React.FC = () => {
                     <div>
                       <p className="text-text-muted-light dark:text-text-muted-dark">{t('attendance:admin.checkIn')}</p>
                       <p className="font-medium text-text-light dark:text-text-dark">{formatTime(record.clockIn)}</p>
+                      {record.clockIn && <CheckInTypeBadge type={record.checkInType ?? 'office'} />}
                     </div>
                     <div>
                       <p className="text-text-muted-light dark:text-text-muted-dark">{t('attendance:admin.checkOut')}</p>
@@ -631,6 +964,8 @@ const AdminAttendance: React.FC = () => {
           </div>
         )}
       </div>
+
+      </>}
 
       {/* Upsert Modal */}
       <UpsertAttendanceModal

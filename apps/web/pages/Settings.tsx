@@ -16,6 +16,7 @@ import {
   Tag,
   Check,
   X,
+  MapPin,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Toast } from '../components/Toast';
@@ -24,6 +25,7 @@ import { api, API_HOST, BASE_URL, getAuthToken } from '../lib/api';
 import { queryKeys } from '../lib/queryKeys';
 import { LeaveTypesTab } from '../components/settings/LeaveTypesTab';
 import { PHONE_COUNTRY_CODES, parsePhoneNumber } from '../lib/phoneUtils';
+import { useAttendanceGPSConfig, useUpdateGPSConfig } from '../hooks/queries';
 
 export const Settings: React.FC = () => {
   const { t, i18n } = useTranslation('settings');
@@ -32,12 +34,12 @@ export const Settings: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = useState<
-    'general' | 'notifications' | 'security' | 'appearance' | 'leaveTypes'
+    'general' | 'notifications' | 'security' | 'appearance' | 'leaveTypes' | 'attendance'
   >('general');
 
   // Reset to general tab if user switches to employee view while on admin-only tab
   useEffect(() => {
-    if (!isAdminView && activeTab === 'leaveTypes') {
+    if (!isAdminView && (activeTab === 'leaveTypes' || activeTab === 'attendance')) {
       setActiveTab('general');
     }
   }, [isAdminView, activeTab]);
@@ -468,6 +470,19 @@ export const Settings: React.FC = () => {
                 {t('tabs.leaveTypes')}
               </button>
             )}
+            {isAdminView && (
+              <button
+                onClick={() => setActiveTab('attendance')}
+                className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 lg:w-full ${
+                  activeTab === 'attendance'
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                <MapPin size={18} />
+                GPS & Attendance
+              </button>
+            )}
           </div>
         </nav>
 
@@ -891,6 +906,9 @@ export const Settings: React.FC = () => {
 
           {/* Leave Types Tab (Admin only) */}
           {activeTab === 'leaveTypes' && isAdminView && <LeaveTypesTab showToast={showToast} />}
+
+          {/* GPS & Attendance Tab (Admin only) */}
+          {activeTab === 'attendance' && isAdminView && <GPSSettingsTab showToast={showToast} />}
         </div>
       </div>
 
@@ -905,3 +923,167 @@ export const Settings: React.FC = () => {
     </div>
   );
 };
+
+// ---------------------------------------------------------------------------
+// GPS Settings Tab
+// ---------------------------------------------------------------------------
+
+function GPSSettingsTab({ showToast }: { showToast: (msg: string, type: 'success' | 'error') => void }) {
+  const { data: cfg } = useAttendanceGPSConfig();
+  const updateMutation = useUpdateGPSConfig();
+
+  const [officeLat, setOfficeLat] = useState('');
+  const [officeLng, setOfficeLng] = useState('');
+  const [geofenceRadius, setGeofenceRadius] = useState('200');
+  const [gpsRequired, setGpsRequired] = useState(false);
+  const [officeIp, setOfficeIp] = useState('');
+
+  useEffect(() => {
+    if (cfg) {
+      setOfficeLat(cfg.officeLat);
+      setOfficeLng(cfg.officeLng);
+      setGeofenceRadius(cfg.geofenceRadius);
+      setGpsRequired(cfg.gpsRequired === 'true');
+      setOfficeIp(cfg.officeIp);
+    }
+  }, [cfg]);
+
+  const handleSave = async () => {
+    try {
+      await updateMutation.mutateAsync({
+        officeLat,
+        officeLng,
+        geofenceRadius,
+        gpsRequired: String(gpsRequired),
+        officeIp,
+      });
+      showToast('GPS settings saved', 'success');
+    } catch {
+      showToast('Failed to save GPS settings', 'error');
+    }
+  };
+
+  return (
+    <div className="p-6 space-y-6 animate-fade-in">
+      <div className="border-b border-border-light dark:border-border-dark pb-4">
+        <h2 className="text-xl font-bold text-text-light dark:text-text-dark">GPS & Attendance Settings</h2>
+        <p className="text-sm text-text-muted-light dark:text-text-muted-dark mt-1">
+          Configure office location and geofence for employee check-in
+        </p>
+      </div>
+
+      {/* GPS Required Toggle */}
+      <div className="flex items-center justify-between py-3 border-b border-border-light dark:border-border-dark">
+        <div>
+          <p className="text-sm font-medium text-text-light dark:text-text-dark">Require GPS for Check-in</p>
+          <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">
+            When enabled, employees must be within the geofence to clock in (unless Remote/WFH)
+          </p>
+        </div>
+        <button
+          onClick={() => setGpsRequired((v) => !v)}
+          className={`relative w-11 h-6 rounded-full transition-colors ${gpsRequired ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${gpsRequired ? 'translate-x-5' : ''}`} />
+        </button>
+      </div>
+
+      {/* Office Coordinates */}
+      <div className="space-y-4">
+        <h3 className="text-sm font-semibold text-text-light dark:text-text-dark flex items-center gap-2">
+          <MapPin size={15} /> Office Location
+        </h3>
+        <p className="text-xs text-text-muted-light dark:text-text-muted-dark -mt-2">
+          Current default: Vanit Place Aree, 304 Phahonyothin Rd, Bangkok
+          {' · '}
+          <a
+            href="https://maps.google.com/?q=Vanit+Place+Aree+Bangkok"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline"
+          >
+            View on map
+          </a>
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">Latitude</label>
+            <input
+              type="number"
+              step="0.000001"
+              value={officeLat}
+              onChange={(e) => setOfficeLat(e.target.value)}
+              placeholder="13.78"
+              className="w-full px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">Longitude</label>
+            <input
+              type="number"
+              step="0.000001"
+              value={officeLng}
+              onChange={(e) => setOfficeLng(e.target.value)}
+              placeholder="100.5427"
+              className="w-full px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">
+            Geofence Radius (meters)
+          </label>
+          <input
+            type="number"
+            min="50"
+            max="5000"
+            value={geofenceRadius}
+            onChange={(e) => setGeofenceRadius(e.target.value)}
+            className="w-full sm:w-48 px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+          <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
+            Employees must be within this distance from the office to clock in
+          </p>
+        </div>
+      </div>
+
+      {/* Office IP Allowlist */}
+      <div className="space-y-3 pt-2 border-t border-border-light dark:border-border-dark">
+        <div>
+          <h3 className="text-sm font-semibold text-text-light dark:text-text-dark">Office IP Allowlist</h3>
+          <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">
+            PC / laptop users on this network can clock in without GPS. Separate multiple IPs with commas.
+          </p>
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">
+            Office Public IP(s)
+          </label>
+          <input
+            type="text"
+            value={officeIp}
+            onChange={(e) => setOfficeIp(e.target.value)}
+            placeholder="e.g. 203.0.113.10, 203.0.113.11"
+            className="w-full px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+          <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
+            Leave blank to disable IP-based check-in.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex justify-end pt-2">
+        <button
+          onClick={handleSave}
+          disabled={updateMutation.isPending}
+          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50"
+        >
+          <Save size={15} />
+          {updateMutation.isPending ? 'Saving...' : 'Save GPS Settings'}
+        </button>
+      </div>
+    </div>
+  );
+}
