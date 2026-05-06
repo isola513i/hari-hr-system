@@ -58,6 +58,10 @@ export function clearGPSConfigCache(): void {
   gpsConfigCache = null;
 }
 
+export function clearWorkScheduleCache(): void {
+  configCache = null;
+}
+
 async function getGPSConfig(): Promise<GPSConfig> {
   if (gpsConfigCache && Date.now() - gpsConfigCache.fetchedAt < CONFIG_CACHE_TTL) {
     return gpsConfigCache.data;
@@ -190,8 +194,21 @@ export class AttendanceService {
       const empResult = await query('SELECT work_type FROM employees WHERE id = $1', [employeeId]);
       const workType: string = empResult.rows[0]?.work_type || 'office';
 
-      if (workType === 'remote' || workType === 'hybrid') {
+      if (workType === 'remote') {
         checkInType = 'remote';
+      } else if (workType === 'hybrid') {
+        // Hybrid: attempt geofence — record 'office' if within range, 'remote' if outside
+        const hasGps = latitude != null && longitude != null;
+        const isOfficeIp = clientIp != null && gpsConfig.officeIps.length > 0 && gpsConfig.officeIps.includes(clientIp);
+        if (hasGps && gpsConfig.officeLat != null && gpsConfig.officeLng != null) {
+          checkInType = isWithinGeofence(latitude!, longitude!, gpsConfig.officeLat, gpsConfig.officeLng, gpsConfig.geofenceRadius) || isOfficeIp
+            ? 'office'
+            : 'remote';
+        } else if (isOfficeIp) {
+          checkInType = 'office';
+        } else {
+          checkInType = 'remote';
+        }
       } else {
         const hasWFH = await WFHRequestService.hasApprovedWFH(employeeId, today);
         if (hasWFH) {
