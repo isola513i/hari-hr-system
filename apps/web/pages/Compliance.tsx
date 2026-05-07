@@ -419,7 +419,7 @@ export const Compliance: React.FC = () => {
               className="w-full px-3 py-2 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
             />
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-text-light dark:text-text-dark mb-1">{t('items.categoryLabel')}</label>
               <Dropdown

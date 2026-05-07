@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Clock, TrendingUp, AlertCircle, CheckCircle2, Briefcase, Timer } from 'lucide-react';
+import { Clock, TrendingUp, AlertCircle, CheckCircle2, Briefcase, Timer, ChevronDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAttendanceRecords, useAttendanceSummary } from '../hooks/queries';
 import { formatTimeTH } from '../lib/date';
@@ -20,6 +20,7 @@ const Attendance: React.FC = () => {
   const { user } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [statsExpanded, setStatsExpanded] = useState(false);
 
   const { data: records = [], isPending: loading } = useAttendanceRecords(
     user?.employeeId,
@@ -34,13 +35,10 @@ const Attendance: React.FC = () => {
 
   const formatTime = formatTimeTH;
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  const statusKey = (status: string) => status.toLowerCase().replace(/-/g, '').replace(/ /g, '');
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -56,6 +54,27 @@ const Attendance: React.FC = () => {
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
     }
   };
+
+  const statCards = summary ? [
+    { key: 'workingDays',  icon: <Briefcase size={14} />,   bg: 'bg-blue-100 dark:bg-blue-900/30',   color: 'text-blue-600 dark:text-blue-400',   label: t('attendance:employee.workingDays'), value: String(summary.totalDays) },
+    { key: 'onTimeDays',   icon: <CheckCircle2 size={14} />, bg: 'bg-green-100 dark:bg-green-900/30',  color: 'text-green-600 dark:text-green-400',  label: t('attendance:employee.onTimeDays'),  value: String(summary.presentDays) },
+    { key: 'lateDays',     icon: <AlertCircle size={14} />,  bg: 'bg-orange-100 dark:bg-orange-900/30',color: 'text-orange-600 dark:text-orange-400', label: t('attendance:employee.lateDays'),    value: String(summary.lateDays) },
+    { key: 'totalHours',   icon: <Clock size={14} />,        bg: 'bg-purple-100 dark:bg-purple-900/30',color: 'text-purple-600 dark:text-purple-400', label: t('attendance:employee.totalHours'),  value: `${Number(summary.totalHours || 0).toFixed(1)}h` },
+    { key: 'avgHoursDay',  icon: <TrendingUp size={14} />,   bg: 'bg-teal-100 dark:bg-teal-900/30',   color: 'text-teal-600 dark:text-teal-400',   label: t('attendance:employee.avgHoursDay'), value: `${summary.totalDays > 0 ? (Number(summary.totalHours || 0) / summary.totalDays).toFixed(1) : '0'}h` },
+    { key: 'overtime',     icon: <Timer size={14} />,        bg: 'bg-amber-100 dark:bg-amber-900/30',  color: 'text-amber-600 dark:text-amber-400',  label: t('attendance:employee.overtime'),    value: `${Number(summary.overtimeHours || 0).toFixed(1)}h` },
+  ] : [];
+
+  const renderStatCard = ({ key, icon, bg, color, label, value }: typeof statCards[0]) => (
+    <div key={key} className="p-2.5 sm:p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl hover:shadow-md transition-shadow flex flex-col gap-1.5 sm:gap-2">
+      <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bg} ${color}`}>
+        {icon}
+      </div>
+      <div>
+        <p className="text-[10px] sm:text-xs font-medium text-text-muted-light dark:text-text-muted-dark leading-tight">{label}</p>
+        <p className="text-base sm:text-2xl font-bold text-text-light dark:text-text-dark mt-0.5 leading-none">{value}</p>
+      </div>
+    </div>
+  );
 
   const monthNames = ['january','february','march','april','may','june','july','august','september','october','november','december'].map(m => t('common:months.' + m));
   const monthOptions: DropdownOption[] = monthNames.map((label, i) => ({ value: String(i), label }));
@@ -97,26 +116,26 @@ const Attendance: React.FC = () => {
       </div>
 
       {/* Summary Cards */}
-      {summary && (
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-          {([
-            { icon: <Briefcase size={16} />, bg: 'bg-blue-100 dark:bg-blue-900/30', color: 'text-blue-600 dark:text-blue-400', label: t('attendance:employee.workingDays'), value: String(summary.totalDays) },
-            { icon: <CheckCircle2 size={16} />, bg: 'bg-green-100 dark:bg-green-900/30', color: 'text-green-600 dark:text-green-400', label: t('attendance:employee.onTimeDays'), value: String(summary.presentDays) },
-            { icon: <AlertCircle size={16} />, bg: 'bg-orange-100 dark:bg-orange-900/30', color: 'text-orange-600 dark:text-orange-400', label: t('attendance:employee.lateDays'), value: String(summary.lateDays) },
-            { icon: <Clock size={16} />, bg: 'bg-purple-100 dark:bg-purple-900/30', color: 'text-purple-600 dark:text-purple-400', label: t('attendance:employee.totalHours'), value: `${Number(summary.totalHours || 0).toFixed(1)}h` },
-            { icon: <TrendingUp size={16} />, bg: 'bg-teal-100 dark:bg-teal-900/30', color: 'text-teal-600 dark:text-teal-400', label: t('attendance:employee.avgHoursDay'), value: `${summary.totalDays > 0 ? (Number(summary.totalHours || 0) / summary.totalDays).toFixed(1) : '0'}h` },
-            { icon: <Timer size={16} />, bg: 'bg-amber-100 dark:bg-amber-900/30', color: 'text-amber-600 dark:text-amber-400', label: t('attendance:employee.overtime'), value: `${Number(summary.overtimeHours || 0).toFixed(1)}h` },
-          ] as const).map(({ icon, bg, color, label, value }) => (
-            <div key={label} className="p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl hover:shadow-md transition-shadow flex flex-col gap-2">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bg} ${color}`}>
-                {icon}
-              </div>
-              <div>
-                <p className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark leading-tight">{label}</p>
-                <p className="text-2xl font-bold text-text-light dark:text-text-dark mt-0.5 leading-none">{value}</p>
-              </div>
+      {statCards.length > 0 && (
+        <div>
+          <div className="hidden sm:grid sm:grid-cols-6 gap-3">
+            {statCards.map(renderStatCard)}
+          </div>
+          <div className="sm:hidden">
+            <div className="grid grid-cols-3 gap-2">
+              {statCards.slice(0, 3).map(renderStatCard)}
             </div>
-          ))}
+            <div className={`grid grid-cols-3 gap-2 mt-2 overflow-hidden transition-all duration-300 ${statsExpanded ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'}`}>
+              {statCards.slice(3).map(renderStatCard)}
+            </div>
+            <button
+              onClick={() => setStatsExpanded(p => !p)}
+              className="mt-2 w-full flex items-center justify-center gap-1 py-1.5 text-xs font-medium text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors"
+            >
+              {statsExpanded ? t('common:showLess', { defaultValue: 'ดูน้อยลง' }) : t('common:showMore', { defaultValue: 'ดูเพิ่มเติม' })}
+              <ChevronDown size={14} className={`transition-transform duration-300 ${statsExpanded ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
         </div>
       )}
 
@@ -163,7 +182,7 @@ const Attendance: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
-                        <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(record.status)}`}>{t('common:status.' + record.status.toLowerCase().replace(/-/g, '').replace(/ /g, ''), { defaultValue: record.status })}</span>
+                        <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(record.status)}`}>{t('common:status.' + statusKey(record.status), { defaultValue: record.status })}</span>
                         {record.earlyDeparture && (
                           <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">{t('common:status.early')}</span>
                         )}
@@ -177,50 +196,50 @@ const Attendance: React.FC = () => {
         </div>
 
         {/* Mobile Card View */}
-        <div className="md:hidden p-4">
+        <div className="md:hidden divide-y divide-border-light dark:divide-border-dark">
           {loading ? (
             <div className="py-8 text-center text-text-muted-light dark:text-text-muted-dark">{t('attendance:employee.loading')}</div>
           ) : records.length === 0 ? (
             <div className="py-8 text-center text-text-muted-light dark:text-text-muted-dark">{t('attendance:employee.noRecords')}</div>
           ) : (
-            <div className="space-y-3">
-              {records.map((record) => (
-                <div key={record.id} className="p-3 bg-background-light dark:bg-background-dark rounded-lg border border-border-light dark:border-border-dark">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-text-light dark:text-text-dark">{formatDate(record.date)}</p>
-                    <div className="flex items-center gap-1">
-                      <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${getStatusColor(record.status)}`}>{t('common:status.' + record.status.toLowerCase().replace(/-/g, '').replace(/ /g, ''), { defaultValue: record.status })}</span>
-                      {record.autoCheckout && (
-                        <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">{t('common:auto')}</span>
-                      )}
-                      {record.earlyDeparture && (
-                        <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">{t('common:status.early')}</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-4 gap-2 text-xs">
-                    <div>
-                      <p className="text-text-muted-light dark:text-text-muted-dark">{t('attendance:employee.in')}</p>
-                      <p className="font-medium text-text-light dark:text-text-dark">{formatTime(record.clockIn)}</p>
-                    </div>
-                    <div>
-                      <p className="text-text-muted-light dark:text-text-muted-dark">{t('attendance:employee.out')}</p>
-                      <p className="font-medium text-text-light dark:text-text-dark">{formatTime(record.clockOut)}</p>
-                    </div>
-                    <div>
-                      <p className="text-text-muted-light dark:text-text-muted-dark">{t('common:time.hours')}</p>
-                      <p className="font-medium text-text-light dark:text-text-dark">{record.totalHours != null ? `${Number(record.totalHours).toFixed(1)}h` : '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-text-muted-light dark:text-text-muted-dark">{t('attendance:employee.ot')}</p>
-                      <p className="font-medium text-amber-600 dark:text-amber-400">
-                        {record.overtimeHours != null && record.overtimeHours > 0 ? `${Number(record.overtimeHours).toFixed(1)}h` : '-'}
-                      </p>
-                    </div>
+            records.map((record) => (
+              <div key={record.id} className="px-4 py-3.5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-semibold text-text-light dark:text-text-dark">{formatDate(record.date)}</p>
+                  <div className="flex items-center gap-1">
+                    <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${getStatusColor(record.status)}`}>
+                      {t('common:status.' + statusKey(record.status), { defaultValue: record.status })}
+                    </span>
+                    {record.autoCheckout && (
+                      <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">{t('common:auto')}</span>
+                    )}
+                    {record.earlyDeparture && (
+                      <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">{t('common:status.early')}</span>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xs text-text-muted-light dark:text-text-muted-dark w-10 shrink-0">{t('attendance:employee.in')}</span>
+                    <span className="text-sm font-medium text-text-light dark:text-text-dark">{formatTime(record.clockIn)}</span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xs text-text-muted-light dark:text-text-muted-dark w-10 shrink-0">{t('attendance:employee.out')}</span>
+                    <span className="text-sm font-medium text-text-light dark:text-text-dark">{formatTime(record.clockOut)}</span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xs text-text-muted-light dark:text-text-muted-dark w-10 shrink-0">{t('common:time.hours')}</span>
+                    <span className="text-sm font-medium text-text-light dark:text-text-dark">{record.totalHours != null ? `${Number(record.totalHours).toFixed(1)}h` : '-'}</span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xs text-text-muted-light dark:text-text-muted-dark w-10 shrink-0">{t('attendance:employee.ot')}</span>
+                    <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                      {record.overtimeHours != null && record.overtimeHours > 0 ? `${Number(record.overtimeHours).toFixed(1)}h` : '-'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))
           )}
         </div>
       </div>

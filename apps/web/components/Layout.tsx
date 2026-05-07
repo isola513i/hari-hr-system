@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { Breadcrumbs } from './Breadcrumbs';
@@ -16,11 +16,16 @@ export const Layout: React.FC = () => {
   const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
 
-  // Auto-close mobile drawer and scroll to top on every navigation
-  useEffect(() => {
+  // Auto-close mobile drawer and scroll to top on every navigation.
+  // Two-pass reset: immediate (before paint) + rAF (after iOS Safari restores overflow scroll).
+  useLayoutEffect(() => {
     setIsMobileMenuOpen(false);
     if (mainRef.current) mainRef.current.scrollTop = 0;
-  }, [location.key]);
+    const raf = requestAnimationFrame(() => {
+      if (mainRef.current) mainRef.current.scrollTop = 0;
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [location.pathname]);
 
   // Session timeout management (30 min timeout, warning at 25 min)
   const { showWarning, timeLeft, extendSession, logout } = useSessionTimeout({

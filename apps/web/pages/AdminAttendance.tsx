@@ -20,7 +20,6 @@ import {
 import { AttendanceAnalyticsPanel } from '../components/AttendanceAnalyticsPanel';
 import { Avatar } from '../components/Avatar';
 import { Dropdown, DropdownOption } from '../components/Dropdown';
-import { FilterToolbar } from '../components/FilterToolbar';
 import { DatePicker } from '../components/DatePicker';
 import { Pagination } from '../components/Pagination';
 import { UpsertAttendanceModal } from '../components/UpsertAttendanceModal';
@@ -396,22 +395,27 @@ const AdminAttendance: React.FC = () => {
       {mainTab === 'wfh' && (
           <div className="space-y-5">
             {/* Stats Cards */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
               {[
-                { label: 'Pending Requests', value: wfhStats.pending, subtitle: 'Awaiting review', icon: <Clock size={20} />, iconColor: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400', filter: 'pending' },
-                { label: 'Approved This Month', value: wfhStats.approvedThisMonth, subtitle: 'WFH days approved', icon: <CheckCircle2 size={20} />, iconColor: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400', filter: 'approved' },
-                { label: 'Rejected This Month', value: wfhStats.rejectedThisMonth, subtitle: 'WFH days rejected', icon: <XCircle size={20} />, iconColor: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400', filter: 'rejected' },
-              ].map(({ label, value, subtitle, icon, iconColor, filter }) => (
+                { label: 'Pending Requests', mobileLabel: 'Pending', value: wfhStats.pending, subtitle: 'Awaiting review', icon: <Clock size={20} />, iconColor: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400', filter: 'pending' },
+                { label: 'Approved This Month', mobileLabel: 'Approved', value: wfhStats.approvedThisMonth, subtitle: 'WFH days approved', icon: <CheckCircle2 size={20} />, iconColor: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400', filter: 'approved' },
+                { label: 'Rejected This Month', mobileLabel: 'Rejected', value: wfhStats.rejectedThisMonth, subtitle: 'WFH days rejected', icon: <XCircle size={20} />, iconColor: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400', filter: 'rejected' },
+              ].map(({ label, mobileLabel, value, subtitle, icon, iconColor, filter }) => (
                 <button
                   key={filter}
                   onClick={() => setWfhStatusFilter(wfhStatusFilter === filter ? 'all' : filter)}
-                  className={`p-4 rounded-xl transition-all text-left w-full cursor-pointer border ${
+                  className={`p-3 sm:p-4 rounded-xl transition-all text-left w-full cursor-pointer border ${
                     wfhStatusFilter === filter
                       ? 'bg-primary/5 dark:bg-primary/10 border-primary/40 shadow-sm'
                       : 'bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark hover:shadow-md'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col items-start gap-1.5 sm:hidden">
+                    <div className={`p-1.5 rounded-lg ${iconColor}`}>{icon}</div>
+                    <p className="text-2xl font-bold text-text-light dark:text-text-dark leading-none">{value}</p>
+                    <p className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">{mobileLabel}</p>
+                  </div>
+                  <div className="hidden sm:flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${iconColor}`}>{icon}</div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark truncate">{label}</p>
@@ -426,26 +430,25 @@ const AdminAttendance: React.FC = () => {
             {/* Table Card */}
             <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm overflow-hidden">
               {/* Toolbar */}
-              <FilterToolbar
-                trailing={
-                  <>
-                    <span className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark whitespace-nowrap">Sort by:</span>
-                    <Dropdown options={WFH_SORT_OPTIONS} value={wfhSort} onChange={setWfhSort} width="w-auto" />
-                  </>
-                }
-              >
-                <div className="relative">
+              <div className="p-4 border-b border-border-light dark:border-border-dark bg-gray-50/50 dark:bg-gray-800/20 flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
+                <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark" size={16} />
                   <input
                     type="text"
                     value={wfhSearch}
                     onChange={(e) => setWfhSearch(e.target.value)}
                     placeholder="Search employee..."
-                    className="pl-9 pr-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition-all w-48"
+                    className="pl-9 pr-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition-all w-full"
                   />
                 </div>
-                <Dropdown options={WFH_STATUS_OPTIONS} value={wfhStatusFilter} onChange={setWfhStatusFilter} width="w-auto" />
-              </FilterToolbar>
+                <div className="flex items-center gap-3">
+                  <Dropdown options={WFH_STATUS_OPTIONS} value={wfhStatusFilter} onChange={setWfhStatusFilter} width="flex-1 md:w-auto" />
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="hidden md:inline text-sm font-medium text-text-muted-light dark:text-text-muted-dark whitespace-nowrap">Sort by:</span>
+                    <Dropdown options={WFH_SORT_OPTIONS} value={wfhSort} onChange={setWfhSort} width="w-auto" />
+                  </div>
+                </div>
+              </div>
 
               {/* Desktop Table */}
               {wfhLoading ? (

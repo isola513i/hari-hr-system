@@ -150,38 +150,38 @@ export const Holidays: React.FC = () => {
       </div>
 
       {/* KPI row */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-1">
-            <CalendarDays size={16} className="text-primary" />
-            <p className="text-xs text-text-muted-light dark:text-text-muted-dark">Total {thisYear}</p>
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-3 sm:p-4 shadow-sm">
+          <div className="flex items-center gap-1.5 mb-1">
+            <CalendarDays size={14} className="text-primary shrink-0" />
+            <p className="text-xs text-text-muted-light dark:text-text-muted-dark truncate">Total {thisYear}</p>
           </div>
-          <p className="text-2xl font-bold text-text-light dark:text-text-dark">{yearHolidays.length}</p>
+          <p className="text-xl sm:text-2xl font-bold text-text-light dark:text-text-dark">{yearHolidays.length}</p>
           <p className="text-xs text-text-muted-light dark:text-text-muted-dark">holidays</p>
         </div>
-        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-1">
-            <PartyPopper size={16} className="text-green-500" />
-            <p className="text-xs text-text-muted-light dark:text-text-muted-dark">Next Holiday</p>
+        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-3 sm:p-4 shadow-sm">
+          <div className="flex items-center gap-1.5 mb-1">
+            <PartyPopper size={14} className="text-green-500 shrink-0" />
+            <p className="text-xs text-text-muted-light dark:text-text-muted-dark truncate">Next</p>
           </div>
           {nextHoliday ? (
             <>
-              <p className="text-sm font-bold text-text-light dark:text-text-dark truncate">{nextHoliday.name}</p>
-              <p className="text-xs text-green-600 dark:text-green-400 font-medium">
-                {getDaysUntil(nextHoliday.date) === 0 ? 'Today!' : `in ${getDaysUntil(nextHoliday.date)} days`}
+              <p className="text-xs sm:text-sm font-bold text-text-light dark:text-text-dark truncate">{nextHoliday.name}</p>
+              <p className="text-xs text-green-600 dark:text-green-400 font-medium truncate">
+                {getDaysUntil(nextHoliday.date) === 0 ? 'Today!' : `in ${getDaysUntil(nextHoliday.date)}d`}
               </p>
             </>
           ) : (
-            <p className="text-sm text-text-muted-light dark:text-text-muted-dark">None upcoming</p>
+            <p className="text-xs text-text-muted-light dark:text-text-muted-dark">None</p>
           )}
         </div>
-        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-1">
-            <CheckCheck size={16} className="text-text-muted-light dark:text-text-muted-dark" />
-            <p className="text-xs text-text-muted-light dark:text-text-muted-dark">Passed</p>
+        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-3 sm:p-4 shadow-sm">
+          <div className="flex items-center gap-1.5 mb-1">
+            <CheckCheck size={14} className="text-text-muted-light dark:text-text-muted-dark shrink-0" />
+            <p className="text-xs text-text-muted-light dark:text-text-muted-dark truncate">Passed</p>
           </div>
-          <p className="text-2xl font-bold text-text-light dark:text-text-dark">{past.length}</p>
-          <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{upcoming.length} remaining</p>
+          <p className="text-xl sm:text-2xl font-bold text-text-light dark:text-text-dark">{past.length}</p>
+          <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{upcoming.length} left</p>
         </div>
       </div>
 

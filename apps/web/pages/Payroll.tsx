@@ -107,7 +107,7 @@ export const Payroll: React.FC = () => {
           <p className="text-text-muted-light dark:text-text-muted-dark text-base mt-1">{t('subtitle')}</p>
         </div>
         {isAdminView && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={openSettings}
               className="flex items-center gap-2 px-4 py-2.5 border border-border-light dark:border-border-dark text-text-light dark:text-text-dark font-medium rounded-lg text-sm hover:bg-background-light dark:hover:bg-background-dark transition-colors"

@@ -93,27 +93,27 @@ export const AdminHolidays: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-text-primary-light dark:text-text-primary-dark flex items-center gap-2">
-            <Calendar className="text-primary" size={28} />
+            <Calendar className="text-primary shrink-0" size={28} />
             {t('leave:holidays.title')}
           </h1>
           <p className="text-text-muted-light dark:text-text-muted-dark mt-1">
             {t('leave:holidays.subtitle')}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => setImportOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-text-light dark:text-text-dark rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm"
+            className="flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-text-light dark:text-text-dark rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm whitespace-nowrap"
           >
             <Upload size={16} />
             Import
           </button>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm whitespace-nowrap"
           >
             <Plus size={16} />
             {t('leave:holidays.addHoliday')}
@@ -133,66 +133,107 @@ export const AdminHolidays: React.FC = () => {
             </p>
           </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800/50">
-                <th className="text-left px-6 py-3 text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
-                  {t('leave:holidays.date')}
-                </th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
-                  {t('leave:holidays.name')}
-                </th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
-                  {t('leave:holidays.recurring')}
-                </th>
-                <th className="text-right px-6 py-3 text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
-                  {t('leave:admin.actions')}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border-light dark:divide-border-dark">
+          <>
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800/50">
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
+                      {t('leave:holidays.date')}
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
+                      {t('leave:holidays.name')}
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
+                      {t('leave:holidays.recurring')}
+                    </th>
+                    <th className="text-right px-6 py-3 text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
+                      {t('leave:admin.actions')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-light dark:divide-border-dark">
+                  {holidays.map((h) => (
+                    <tr key={h.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                      <td className="px-6 py-4 text-sm text-text-primary-light dark:text-text-primary-dark font-medium">
+                        {h.endDate ? `${formatDate(h.date)} – ${formatDate(h.endDate)}` : formatDate(h.date)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-text-primary-light dark:text-text-primary-dark">
+                        {h.name}
+                      </td>
+                      <td className="px-6 py-4">
+                        {h.isRecurring ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full">
+                            <RotateCw size={12} />
+                            {t('leave:holidays.recurringYes')}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-text-muted-light dark:text-text-muted-dark">
+                            {t('leave:holidays.recurringNo')}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => openEdit(h)}
+                            className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors"
+                            title={t('leave:holidays.editHoliday')}
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirmId(h.id)}
+                            className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:text-red-500 transition-colors"
+                            title={t('leave:holidays.deleteHoliday')}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile card list */}
+            <div className="md:hidden divide-y divide-border-light dark:divide-border-dark">
               {holidays.map((h) => (
-                <tr key={h.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                  <td className="px-6 py-4 text-sm text-text-primary-light dark:text-text-primary-dark font-medium">
-                    {h.endDate ? `${formatDate(h.date)} – ${formatDate(h.endDate)}` : formatDate(h.date)}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-text-primary-light dark:text-text-primary-dark">
-                    {h.name}
-                  </td>
-                  <td className="px-6 py-4">
-                    {h.isRecurring ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full">
-                        <RotateCw size={12} />
+                <div key={h.id} className="p-4 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-text-light dark:text-text-dark">{h.name}</p>
+                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">
+                      {h.endDate ? `${formatDate(h.date)} – ${formatDate(h.endDate)}` : formatDate(h.date)}
+                    </p>
+                    {h.isRecurring && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full mt-1.5">
+                        <RotateCw size={10} />
                         {t('leave:holidays.recurringYes')}
                       </span>
-                    ) : (
-                      <span className="text-xs text-text-muted-light dark:text-text-muted-dark">
-                        {t('leave:holidays.recurringNo')}
-                      </span>
                     )}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => openEdit(h)}
-                        className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors"
-                        title={t('leave:holidays.editHoliday')}
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirmId(h.id)}
-                        className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:text-red-500 transition-colors"
-                        title={t('leave:holidays.deleteHoliday')}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => openEdit(h)}
+                      className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors"
+                      title={t('leave:holidays.editHoliday')}
+                    >
+                      <Pencil size={16} />
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirmId(h.id)}
+                      className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:text-red-500 transition-colors"
+                      title={t('leave:holidays.deleteHoliday')}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
 

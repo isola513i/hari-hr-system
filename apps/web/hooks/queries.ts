@@ -1874,9 +1874,10 @@ export interface GPSConfig {
   officeIp: string;
 }
 
-export const useAttendanceGPSConfig = () =>
+export const useAttendanceGPSConfig = (enabled = true) =>
   useQuery({
     queryKey: ['configs', 'attendance-gps'],
+    enabled,
     queryFn: async () => {
       const configs = await api.get<{ key: string; value: string }[]>('/configs/attendance');
       const map: Record<string, string> = {};

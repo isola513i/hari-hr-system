@@ -686,27 +686,27 @@ export const Settings: React.FC = () => {
                 <h3 className="font-medium text-text-light dark:text-text-dark mb-4">
                   {t('appearance.themePreference')}
                 </h3>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-2 sm:gap-4">
                   <button
                     onClick={() => handleThemeChange('light')}
-                    className={`p-4 border rounded-xl flex flex-col items-center gap-3 transition-all ${theme === 'light' ? 'border-primary bg-primary/5 text-primary' : 'border-border-light dark:border-border-dark hover:border-primary/50'}`}
+                    className={`p-3 sm:p-4 border rounded-xl flex flex-col items-center gap-2 sm:gap-3 transition-all ${theme === 'light' ? 'border-primary bg-primary/5 text-primary' : 'border-border-light dark:border-border-dark hover:border-primary/50'}`}
                   >
-                    <Sun size={24} />
-                    <span className="text-sm font-medium">{t('appearance.light')}</span>
+                    <Sun size={20} />
+                    <span className="text-xs sm:text-sm font-medium">{t('appearance.light')}</span>
                   </button>
                   <button
                     onClick={() => handleThemeChange('dark')}
-                    className={`p-4 border rounded-xl flex flex-col items-center gap-3 transition-all ${theme === 'dark' ? 'border-primary bg-primary/5 text-primary' : 'border-border-light dark:border-border-dark hover:border-primary/50'}`}
+                    className={`p-3 sm:p-4 border rounded-xl flex flex-col items-center gap-2 sm:gap-3 transition-all ${theme === 'dark' ? 'border-primary bg-primary/5 text-primary' : 'border-border-light dark:border-border-dark hover:border-primary/50'}`}
                   >
-                    <Moon size={24} />
-                    <span className="text-sm font-medium">{t('appearance.dark')}</span>
+                    <Moon size={20} />
+                    <span className="text-xs sm:text-sm font-medium">{t('appearance.dark')}</span>
                   </button>
                   <button
                     onClick={() => handleThemeChange('system')}
-                    className={`p-4 border rounded-xl flex flex-col items-center gap-3 transition-all ${theme === 'system' ? 'border-primary bg-primary/5 text-primary' : 'border-border-light dark:border-border-dark hover:border-primary/50'}`}
+                    className={`p-3 sm:p-4 border rounded-xl flex flex-col items-center gap-2 sm:gap-3 transition-all ${theme === 'system' ? 'border-primary bg-primary/5 text-primary' : 'border-border-light dark:border-border-dark hover:border-primary/50'}`}
                   >
-                    <Monitor size={24} />
-                    <span className="text-sm font-medium">{t('appearance.system')}</span>
+                    <Monitor size={20} />
+                    <span className="text-xs sm:text-sm font-medium">{t('appearance.system')}</span>
                   </button>
                 </div>
               </div>
