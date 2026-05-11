@@ -80,15 +80,13 @@ class ErrorLoggingService {
    */
   private async sendToBackend(data: any): Promise<void> {
     try {
-      // Optional: Send to backend logging endpoint
-      // await fetch('/api/logs/error', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(data),
-      // });
-    } catch (error) {
-      // Silently fail - don't let logging errors break the app
-      console.error('Failed to send error log:', error);
+      await fetch('/api/logs/client-error', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    } catch {
+      // Silently fail — don't let logging errors break the app
     }
   }
 
