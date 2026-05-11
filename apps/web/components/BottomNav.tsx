@@ -13,6 +13,7 @@ import {
 } from '../hooks/queries';
 import { queryClient } from '../lib/queryClient';
 import { queryKeys } from '../lib/queryKeys';
+import { LocationPermissionModal } from './LocationPermissionModal';
 
 export const BottomNav: React.FC = () => {
   const { t } = useTranslation('common');
@@ -25,6 +26,7 @@ export const BottomNav: React.FC = () => {
   const clockInMutation = useClockIn();
   const clockOutMutation = useClockOut();
   const [isClocking, setIsClocking] = useState(false);
+  const [locationModal, setLocationModal] = useState<{ show: boolean; mode: 'request' | 'denied' }>({ show: false, mode: 'request' });
 
   const isClockedIn = !isAdminView && !!attendanceStatus?.clockIn && !attendanceStatus?.clockOut;
   const isClockedOut = !isAdminView && !!attendanceStatus?.clockOut;
@@ -59,6 +61,31 @@ export const BottomNav: React.FC = () => {
     }
   };
 
+  const executeGetPosition = () => {
+    setIsClocking(true);
+    navigator.geolocation.getCurrentPosition(
+      doClockIn,
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) {
+          setIsClocking(false);
+          setLocationModal({ show: true, mode: 'denied' });
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          doClockIn(undefined);
+        } else {
+          navigator.geolocation.getCurrentPosition(
+            doClockIn,
+            () => {
+              showToast('Could not get your location. Please try again.', 'error');
+              setIsClocking(false);
+            },
+            { timeout: 8000, maximumAge: 60000, enableHighAccuracy: false }
+          );
+        }
+      },
+      { timeout: 8000, maximumAge: 0, enableHighAccuracy: false }
+    );
+  };
+
   const handleClockAction = async () => {
     if (isClocking || isClockedOut) return;
 
@@ -88,19 +115,23 @@ export const BottomNav: React.FC = () => {
       return;
     }
 
-    setIsClocking(true);
-    navigator.geolocation.getCurrentPosition(
-      doClockIn,
-      (err) => {
-        if (err.code === err.PERMISSION_DENIED) {
-          setIsClocking(false);
-          showToast('กรุณาอนุญาตการเข้าถึงตำแหน่งเพื่อลงเวลาเข้างาน', 'error');
-        } else {
-          doClockIn(undefined);
+    if ('permissions' in navigator) {
+      try {
+        const status = await navigator.permissions.query({ name: 'geolocation' });
+        if (status.state === 'denied') {
+          setLocationModal({ show: true, mode: 'denied' });
+          return;
         }
-      },
-      { timeout: 8000, maximumAge: 0, enableHighAccuracy: false }
-    );
+        if (status.state === 'prompt') {
+          setLocationModal({ show: true, mode: 'request' });
+          return;
+        }
+      } catch {
+        // permissions API unavailable — fall through to native prompt
+      }
+    }
+
+    executeGetPosition();
   };
 
   const leftItems = [
@@ -122,6 +153,17 @@ export const BottomNav: React.FC = () => {
     }`;
 
   return (
+    <>
+    {locationModal.show && (
+      <LocationPermissionModal
+        mode={locationModal.mode}
+        onAllow={() => {
+          setLocationModal({ show: false, mode: 'request' });
+          executeGetPosition();
+        }}
+        onDismiss={() => setLocationModal({ show: false, mode: 'request' })}
+      />
+    )}
     <nav className="fixed bottom-0 left-0 right-0 z-30 bg-card-light dark:bg-card-dark border-t border-border-light dark:border-border-dark md:hidden pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-center justify-around h-16">
         {leftItems.map((item) => (
@@ -163,5 +205,6 @@ export const BottomNav: React.FC = () => {
         ))}
       </div>
     </nav>
+    </>
   );
 };

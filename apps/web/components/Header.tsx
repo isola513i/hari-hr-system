@@ -465,12 +465,18 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           </div>
 
           {/* Search Results — fills remaining space */}
-          <div className="flex-1 overflow-y-auto">
-            {renderSearchResults()}
-            {!searchQuery.trim() && (
-              <div className="flex flex-col items-center justify-center h-40 text-text-muted-light dark:text-text-muted-dark">
-                <Search size={32} className="mb-2 opacity-20" />
-                <p className="text-sm">{t('header.searchPlaceholderMobile')}</p>
+          <div className="flex-1 overflow-y-auto flex flex-col">
+            {searchQuery.trim() ? (
+              renderSearchResults()
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center gap-4 px-8 text-text-muted-light dark:text-text-muted-dark">
+                <div className="w-16 h-16 rounded-2xl bg-background-light dark:bg-background-dark flex items-center justify-center">
+                  <Search size={26} className="opacity-30" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium">{t('header.searchPlaceholderMobile')}</p>
+                  <p className="text-xs mt-1 opacity-60">{t('header.searchHint', { defaultValue: 'ชื่อ · ตำแหน่ง · แผนก' })}</p>
+                </div>
               </div>
             )}
           </div>
