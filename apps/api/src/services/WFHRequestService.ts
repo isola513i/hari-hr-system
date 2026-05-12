@@ -38,26 +38,27 @@ export class WFHRequestService {
     );
 
     try {
-      const empResult = await query('SELECT name FROM employees WHERE id = $1', [employeeId]);
-      const employeeName = empResult.rows[0]?.name ?? 'An employee';
+      const empRow = await query(
+        `SELECT e.name, u.id AS manager_user_id
+         FROM employees e
+         LEFT JOIN employees mgr ON mgr.id = e.manager_id
+         LEFT JOIN users u ON u.id = mgr.user_id
+         WHERE e.id = $1`,
+        [employeeId]
+      );
+      const employeeName = empRow.rows[0]?.name ?? 'An employee';
       const formattedDate = new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-      await NotificationService.notifyAdmins({
+
+      NotificationService.notifyAdmins({
         title: 'WFH Request Submitted',
         message: `${employeeName} has submitted a WFH request for ${formattedDate}.`,
         type: 'info',
         link: '/admin-attendance',
-      });
-      // Notify direct manager if employee has one
-      const managerRow = await query(
-        `SELECT u.id AS user_id FROM employees e
-         JOIN employees mgr ON mgr.id = e.manager_id
-         JOIN users u ON u.id = mgr.user_id
-         WHERE e.id = $1`,
-        [employeeId]
-      );
-      if (managerRow.rows[0]?.user_id) {
+      }).catch(() => {});
+
+      if (empRow.rows[0]?.manager_user_id) {
         await NotificationService.create({
-          user_id: managerRow.rows[0].user_id,
+          user_id: empRow.rows[0].manager_user_id,
           title: 'WFH Request Needs Your Approval',
           message: `${employeeName} has submitted a WFH request for ${formattedDate}.`,
           type: 'info',
@@ -72,7 +73,10 @@ export class WFHRequestService {
   }
 
   async managerApprove(requestId: string, managerEmployeeId: string): Promise<WFHRequest> {
-    const reqResult = await query('SELECT * FROM wfh_requests WHERE id = $1', [requestId]);
+    const reqResult = await query(
+      'SELECT employee_id, status, date FROM wfh_requests WHERE id = $1',
+      [requestId]
+    );
     if (!reqResult.rows[0]) throw new BusinessError('WFH request not found');
     const wfhRow = reqResult.rows[0];
 
@@ -80,7 +84,7 @@ export class WFHRequestService {
       throw new BusinessError('WFH request is not in pending state');
     }
 
-    const empResult = await query('SELECT manager_id FROM employees WHERE id = $1', [wfhRow.employee_id]);
+    const empResult = await query('SELECT manager_id, name FROM employees WHERE id = $1', [wfhRow.employee_id]);
     if (empResult.rows[0]?.manager_id !== managerEmployeeId) {
       throw new BusinessError('You can only approve requests from your direct reports');
     }
@@ -95,9 +99,7 @@ export class WFHRequestService {
 
     const wfh = this.mapRow(result.rows[0]);
 
-    // Notify HR admins for final approval
-    const empNameResult = await query('SELECT name FROM employees WHERE id = $1', [wfhRow.employee_id]).catch(() => ({ rows: [] }));
-    const empName = (empNameResult.rows[0] as any)?.name ?? 'An employee';
+    const empName = (empResult.rows[0] as { name?: string })?.name ?? 'An employee';
     const formattedDate = new Date(wfhRow.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
     NotificationService.notifyAdmins({
       title: 'WFH Request Ready for Final Approval',

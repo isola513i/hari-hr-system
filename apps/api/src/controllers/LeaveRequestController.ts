@@ -156,12 +156,11 @@ export class LeaveRequestController {
                 return;
             }
 
-            const approverEmployeeId = user?.employeeId || undefined;
+            const approverEmployeeId = user?.employeeId;
             let effectiveStatus = status;
             let managerApprovedBy: string | undefined;
             let managerApprovedAt: Date | undefined;
 
-            // MANAGER: validate direct report + redirect 'Approved' → 'Manager Approved'
             if (user?.role === 'MANAGER' && user.employeeId) {
                 const leaveReq = await LeaveRequestService.getLeaveRequestById(id);
                 if (leaveReq) {
