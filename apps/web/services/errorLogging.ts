@@ -1,4 +1,5 @@
 import { captureError, addBreadcrumb } from '../config/sentry';
+import { trackEvent } from '../lib/analytics';
 
 /**
  * Error logging service
@@ -101,7 +102,8 @@ class ErrorLoggingService {
     // Add breadcrumb to Sentry for context
     addBreadcrumb(action, properties);
 
-    // TODO: Integrate with analytics service (Google Analytics, Mixpanel, etc.)
+    // Send to Google Analytics (no-op if VITE_GA_MEASUREMENT_ID is not set)
+    trackEvent(action, properties);
   }
 }
 

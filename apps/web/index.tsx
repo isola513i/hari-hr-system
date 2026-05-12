@@ -1,9 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './lib/i18n';
+import { initAnalytics } from './lib/analytics';
 import App from './App';
 import './src/fonts.css';
 import './index.css';
+
+initAnalytics();
 
 // Prevent browser/PWA from restoring scroll position between sessions
 if ('scrollRestoration' in history) {
