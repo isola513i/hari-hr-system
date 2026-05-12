@@ -3,43 +3,45 @@ import helmet from 'helmet';
 import { body, validationResult } from 'express-validator';
 import { Request, Response, NextFunction } from 'express';
 
-// Check if running in development mode
-const isDevelopment = process.env.NODE_ENV === 'development';
+// Rate limit values — override per environment via .env
+// Defaults are production-safe; raise in .env for local dev if needed.
+const env = {
+  generalMax:          parseInt(process.env.RATE_LIMIT_GENERAL_MAX          || '500'),
+  authMax:             parseInt(process.env.RATE_LIMIT_AUTH_MAX             || '30'),
+  authWindowMs:        parseInt(process.env.RATE_LIMIT_AUTH_WINDOW_MS       || String(5 * 60 * 1000)),
+  forgotPasswordMax:   parseInt(process.env.RATE_LIMIT_FORGOT_PASSWORD_MAX  || '5'),
+  forgotPasswordWindowMs: parseInt(process.env.RATE_LIMIT_FORGOT_PASSWORD_WINDOW_MS || String(15 * 60 * 1000)),
+  apiMax:              parseInt(process.env.RATE_LIMIT_API_MAX              || '100'),
+};
 
-// Rate limiting configuration
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: isDevelopment ? 5000 : 500,
+  max: env.generalMax,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Stricter rate limit for authentication endpoints
 export const authLimiter = rateLimit({
-  windowMs: isDevelopment ? 1 * 60 * 1000 : 5 * 60 * 1000, // 1 min (dev) / 5 min (prod)
-  max: isDevelopment ? 200 : 30, // 200 attempts (dev) / 30 attempts (prod)
-  message: isDevelopment
-    ? 'Too many login attempts, please wait a moment.'
-    : 'Too many login attempts, please try again in a few minutes.',
+  windowMs: env.authWindowMs,
+  max: env.authMax,
+  message: 'Too many login attempts, please try again in a few minutes.',
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true, // Don't count successful requests
+  skipSuccessfulRequests: true,
 });
 
-// Stricter rate limit for forgot password
 export const forgotPasswordLimiter = rateLimit({
-  windowMs: isDevelopment ? 1 * 60 * 1000 : 15 * 60 * 1000, // 1 min (dev) / 15 min (prod)
-  max: isDevelopment ? 50 : 5, // 50 attempts (dev) / 5 attempts (prod)
+  windowMs: env.forgotPasswordWindowMs,
+  max: env.forgotPasswordMax,
   message: 'Too many password reset requests. Please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// API rate limiter
 export const apiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
-  max: isDevelopment ? 2000 : 100,
+  max: env.apiMax,
   message: 'Too many API requests, please slow down.',
   standardHeaders: true,
   legacyHeaders: false,
