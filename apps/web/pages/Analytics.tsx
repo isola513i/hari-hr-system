@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Download } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -28,9 +29,57 @@ const ChartSkeleton: React.FC = () => (
   </div>
 );
 
+function toCsvRow(cells: (string | number | null | undefined)[]): string {
+  return cells.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',');
+}
+
+function downloadCsv(content: string, filename: string): void {
+  const blob = new Blob(['﻿' + content], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export const Analytics: React.FC = () => {
   const { t } = useTranslation(['analytics', 'common']);
   const { data, isLoading } = useAnalyticsDashboard();
+
+  const exportToCSV = useCallback(() => {
+    if (!data) return;
+    const date = new Date().toISOString().split('T')[0];
+    const sections: string[] = [];
+
+    sections.push(
+      t('headcountGrowth.title'),
+      toCsvRow(['Month', 'New Hires']),
+      ...(data.headcount || []).map(r => toCsvRow([r.name, r.value])),
+      '',
+      t('departmentDistribution.title'),
+      toCsvRow(['Department', 'Employees']),
+      ...(data.departments || []).map(r => toCsvRow([r.name, r.value])),
+      '',
+      t('attendanceTrends.title'),
+      toCsvRow(['Day', 'On Time', 'Late', 'Absent']),
+      ...(data.attendance || []).map((r: any) => toCsvRow([r.day, r.onTime, r.late, r.absent])),
+      '',
+      t('leaveUsage.title'),
+      toCsvRow(['Leave Type', 'Days', 'Requests']),
+      ...(data.leaveByType || []).map((r: any) => toCsvRow([r.type, r.days, r.requests])),
+      '',
+      t('performanceDistribution.title'),
+      toCsvRow(['Rating', 'Label', 'Reviews']),
+      ...(data.performance || []).map((r: any) => toCsvRow([r.rating, r.label, r.count])),
+      '',
+      t('turnover.title'),
+      toCsvRow(['Month', 'Hires', 'Departures']),
+      ...(data.turnover || []).map((r: any) => toCsvRow([r.name, r.hires, r.departures])),
+    );
+
+    downloadCsv(sections.join('\n'), `analytics-report-${date}.csv`);
+  }, [data, t]);
 
   if (isLoading) {
     return (
@@ -55,9 +104,19 @@ export const Analytics: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <header>
-        <h1 className="text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">{t('title')}</h1>
-        <p className="text-text-muted-light dark:text-text-muted-dark text-base mt-1">{t('subtitle')}</p>
+      <header className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">{t('title')}</h1>
+          <p className="text-text-muted-light dark:text-text-muted-dark text-base mt-1">{t('subtitle')}</p>
+        </div>
+        <button
+          onClick={exportToCSV}
+          disabled={!data}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+        >
+          <Download size={16} />
+          {t('common:buttons.export')}
+        </button>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
