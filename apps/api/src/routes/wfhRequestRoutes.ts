@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { authenticateToken, requireAdmin } from '../middlewares/auth';
+import { authenticateToken, requireAdmin, requireAdminOrManager } from '../middlewares/auth';
 import WFHRequestService from '../services/WFHRequestService';
 import { apiLimiter } from '../middlewares/security';
 import { safeErrorMessage } from '../utils/errorResponse';
@@ -45,14 +45,19 @@ router.get('/my', async (req: Request, res: Response) => {
 
 /**
  * GET /api/wfh-requests/admin
- * Admin views all WFH requests
+ * Admin/Manager views WFH requests (manager sees only their direct reports)
  */
-router.get('/admin', requireAdmin, async (req: Request, res: Response) => {
+router.get('/admin', requireAdminOrManager, async (req: Request, res: Response) => {
   try {
+    const role = (req as any).user?.role;
+    const callerEmployeeId = (req as any).user?.employeeId as string | undefined;
+    const myTeam = role === 'MANAGER';
     const { status, date } = req.query;
     const requests = await WFHRequestService.getAll({
       status: status as string | undefined,
       date: date as string | undefined,
+      myTeam,
+      callerEmployeeId,
     });
     res.json(requests);
   } catch (error: unknown) {
@@ -61,8 +66,26 @@ router.get('/admin', requireAdmin, async (req: Request, res: Response) => {
 });
 
 /**
+ * PUT /api/wfh-requests/:id/manager-approve
+ * Manager gives first-tier approval for a WFH request (direct reports only)
+ */
+router.put('/:id/manager-approve', requireAdminOrManager, async (req: Request, res: Response) => {
+  try {
+    const managerEmployeeId = (req as any).user?.employeeId;
+    if (!managerEmployeeId) return res.status(403).json({ error: 'Employee profile required' });
+
+    const request = await WFHRequestService.managerApprove(req.params.id, managerEmployeeId);
+    res.json(request);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Failed to approve WFH request';
+    const status = msg.includes('not found') ? 404 : msg.includes('only') ? 403 : 400;
+    res.status(status).json({ error: msg });
+  }
+});
+
+/**
  * PUT /api/wfh-requests/:id/approve
- * Admin approves a WFH request
+ * HR Admin gives final approval for a WFH request
  */
 router.put('/:id/approve', requireAdmin, async (req: Request, res: Response) => {
   try {
@@ -78,9 +101,9 @@ router.put('/:id/approve', requireAdmin, async (req: Request, res: Response) => 
 
 /**
  * PUT /api/wfh-requests/:id/reject
- * Admin rejects a WFH request
+ * Admin or Manager rejects a WFH request
  */
-router.put('/:id/reject', requireAdmin, async (req: Request, res: Response) => {
+router.put('/:id/reject', requireAdminOrManager, async (req: Request, res: Response) => {
   try {
     const reviewedById = req.user?.employeeId;
     if (!reviewedById) return res.status(400).json({ error: 'Reviewer ID not found' });

@@ -2,10 +2,11 @@ import { Request, Response } from 'express';
 import LeaveRequestService, { LeaveRequestService as LeaveRequestServiceClass } from '../services/LeaveRequestService';
 import { emitLeaveRequestCreated, emitLeaveRequestUpdated, emitLeaveRequestDeleted } from '../socket';
 import { getPaginationParams, getSortParams } from '../utils/pagination';
-import type { LeaveRequest } from '../models/LeaveRequest';
+import type { LeaveRequest, UpdateLeaveRequestDTO } from '../models/LeaveRequest';
 import { storageService } from '../services/StorageService';
 import { generateStorageKey, getFileBuffer } from '../middlewares/upload';
 import { query } from '../db';
+import NotificationService from '../services/NotificationService';
 
 export class LeaveRequestController {
     async getAllLeaveRequests(req: Request, res: Response): Promise<void> {
@@ -150,12 +151,17 @@ export class LeaveRequestController {
             const { status, rejectionReason } = req.body;
             const user = (req as any).user;
 
-            if (!status || !['Pending', 'Approved', 'Rejected'].includes(status)) {
+            if (!status || !['Pending', 'Approved', 'Rejected', 'Manager Approved'].includes(status)) {
                 res.status(400).json({ error: 'Invalid status' });
                 return;
             }
 
-            // MANAGER can only approve direct reports' leave requests
+            const approverEmployeeId = user?.employeeId || undefined;
+            let effectiveStatus = status;
+            let managerApprovedBy: string | undefined;
+            let managerApprovedAt: Date | undefined;
+
+            // MANAGER: validate direct report + redirect 'Approved' → 'Manager Approved'
             if (user?.role === 'MANAGER' && user.employeeId) {
                 const leaveReq = await LeaveRequestService.getLeaveRequestById(id);
                 if (leaveReq) {
@@ -168,14 +174,31 @@ export class LeaveRequestController {
                         return;
                     }
                 }
+                if (status === 'Approved') {
+                    effectiveStatus = 'Manager Approved';
+                    managerApprovedBy = user.employeeId;
+                    managerApprovedAt = new Date();
+                }
             }
 
-            const approverEmployeeId = user?.employeeId || undefined;
             const leaveRequest = await LeaveRequestService.updateLeaveRequestStatus(id, {
-                status,
-                rejectionReason: status === 'Rejected' ? rejectionReason : undefined,
+                status: effectiveStatus as UpdateLeaveRequestDTO['status'],
+                rejectionReason: effectiveStatus === 'Rejected' ? rejectionReason : undefined,
                 approverEmployeeId,
+                managerApprovedBy,
+                managerApprovedAt,
             });
+
+            // If manager just set 'Manager Approved', notify HR for final approval
+            if (effectiveStatus === 'Manager Approved') {
+                const empName = leaveRequest.employeeName || 'An employee';
+                NotificationService.notifyAdmins({
+                    title: 'Leave Request Ready for Final Approval',
+                    message: `Manager approved ${empName}'s ${leaveRequest.type} leave request — needs HR final approval.`,
+                    type: 'info',
+                    link: '/leave-requests',
+                }).catch(() => {});
+            }
 
             emitLeaveRequestUpdated(leaveRequest);
 

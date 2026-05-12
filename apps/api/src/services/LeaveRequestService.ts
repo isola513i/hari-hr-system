@@ -233,6 +233,28 @@ export class LeaveRequestService {
             console.error('Failed to notify admins about leave request:', notifError);
         }
 
+        // Notify direct manager if employee has one
+        try {
+            const managerRow = await query(
+                `SELECT u.id AS user_id FROM employees e
+                 JOIN employees mgr ON mgr.id = e.manager_id
+                 JOIN users u ON u.id = mgr.user_id
+                 WHERE e.id = $1`,
+                [employeeId]
+            );
+            if (managerRow.rows[0]?.user_id) {
+                await NotificationService.create({
+                    user_id: managerRow.rows[0].user_id,
+                    title: 'Leave Request Needs Your Approval',
+                    message: `${employeeName} has submitted a ${type} leave request (${dates}).`,
+                    type: 'info',
+                    link: '/leave-requests',
+                });
+            }
+        } catch (notifError) {
+            console.error('Failed to notify manager about leave request:', notifError);
+        }
+
         return {
             ...this.mapRowToLeaveRequest(result.rows[0]),
             avatar,
@@ -387,14 +409,20 @@ export class LeaveRequestService {
     }
 
     async updateLeaveRequestStatus(id: string, updateData: UpdateLeaveRequestDTO): Promise<LeaveRequest> {
-        const { status, rejectionReason, approverEmployeeId } = updateData;
+        const { status, rejectionReason, approverEmployeeId, managerApprovedBy, managerApprovedAt } = updateData;
 
         // Snapshot before status change
         await this.snapshotToHistory(id, 'status_change', approverEmployeeId || 'system');
 
         const result = await query(
-            `UPDATE leave_requests SET status = $1, rejection_reason = $2, approver_id = $3, updated_at = NOW() WHERE id = $4 RETURNING *`,
-            [status, rejectionReason || null, approverEmployeeId || null, id]
+            `UPDATE leave_requests
+             SET status = $1, rejection_reason = $2, approver_id = $3,
+                 manager_approved_by = COALESCE($4, manager_approved_by),
+                 manager_approved_at = COALESCE($5, manager_approved_at),
+                 updated_at = NOW()
+             WHERE id = $6 RETURNING *`,
+            [status, rejectionReason || null, approverEmployeeId || null,
+             managerApprovedBy || null, managerApprovedAt || null, id]
         );
 
         if (result.rows.length === 0) {
@@ -403,30 +431,29 @@ export class LeaveRequestService {
 
         const leaveRequest = this.mapRowToLeaveRequest(result.rows[0]);
 
-        // Send notification to employee about status change
-        try {
-            const employeeResult = await query(
-                'SELECT user_id, name FROM employees WHERE id = $1',
-                [leaveRequest.employeeId]
-            );
+        // Notify employee on final status change only (not Manager Approved — HR still needs to act)
+        if (status === 'Approved' || status === 'Rejected') {
+            try {
+                const employeeResult = await query(
+                    'SELECT user_id, name FROM employees WHERE id = $1',
+                    [leaveRequest.employeeId]
+                );
 
-            if (employeeResult.rows[0]?.user_id) {
-                const employee = employeeResult.rows[0];
-                const isApproved = status === 'Approved';
-
-                const reasonSuffix = rejectionReason ? ` Reason: ${rejectionReason}` : '';
-                await NotificationService.create({
-                    user_id: employee.user_id,
-                    title: `Leave Request ${status}`,
-                    message: isApproved
-                        ? `Your ${leaveRequest.type} leave request has been approved.`
-                        : `Your ${leaveRequest.type} leave request has been rejected.${reasonSuffix}`,
-                    type: isApproved ? 'success' : 'warning',
-                    link: '/time-off',
-                });
+                if (employeeResult.rows[0]?.user_id) {
+                    const reasonSuffix = rejectionReason ? ` Reason: ${rejectionReason}` : '';
+                    await NotificationService.create({
+                        user_id: employeeResult.rows[0].user_id,
+                        title: `Leave Request ${status}`,
+                        message: status === 'Approved'
+                            ? `Your ${leaveRequest.type} leave request has been approved.`
+                            : `Your ${leaveRequest.type} leave request has been rejected.${reasonSuffix}`,
+                        type: status === 'Approved' ? 'success' : 'warning',
+                        link: '/time-off',
+                    });
+                }
+            } catch (notifError) {
+                console.error('Failed to send leave status notification:', notifError);
             }
-        } catch (notifError) {
-            console.error('Failed to send leave status notification:', notifError);
         }
 
         return leaveRequest;

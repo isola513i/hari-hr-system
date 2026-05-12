@@ -950,6 +950,16 @@ export const useRejectWFH = () => {
   });
 };
 
+export const useManagerApproveWFH = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.put(`/wfh-requests/${id}/manager-approve`, {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['wfh-requests'] });
+    },
+  });
+};
+
 // ---------------------------------------------------------------------------
 // OT Requests
 // ---------------------------------------------------------------------------

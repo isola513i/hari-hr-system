@@ -9,6 +9,7 @@ import {
   useLeaveTypeConfig,
 } from '../hooks/queries';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Avatar } from '../components/Avatar';
 import { Pagination } from '../components/Pagination';
 import { Dropdown } from '../components/Dropdown';
@@ -27,10 +28,13 @@ const ITEMS_PER_PAGE = 10;
 export const AdminLeaveRequests: React.FC = () => {
   const { t } = useTranslation(['leave', 'common']);
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const isManager = user?.role === 'MANAGER';
 
   const STATUS_OPTIONS = useMemo(
     () => [
       { value: 'Pending', label: t('leave:admin.allPending') },
+      { value: 'Manager Approved', label: 'Pending HR' },
       { value: 'All', label: t('leave:admin.allRequests') },
       { value: 'Approved', label: t('leave:admin.approved') },
       { value: 'Rejected', label: t('leave:admin.rejected') },
@@ -48,7 +52,7 @@ export const AdminLeaveRequests: React.FC = () => {
     [t]
   );
 
-  const [statusFilter, setStatusFilter] = useState('Pending');
+  const [statusFilter, setStatusFilter] = useState(() => isManager ? 'Pending' : 'Manager Approved');
   const [typeFilter, setTypeFilter] = useState('All');
   const [departmentFilter, setDepartmentFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
@@ -580,7 +584,7 @@ export const AdminLeaveRequests: React.FC = () => {
                                 {t('leave:admin.rejectCancel')}
                               </button>
                             </>
-                          ) : request.status === 'Pending' ? (
+                          ) : request.status === 'Pending' || (request.status === 'Manager Approved' && !isManager) ? (
                             <LeaveActionBar
                               employeeName={emp?.name || request.employeeName}
                               onApprove={() => handleApprove(request.id)}
@@ -592,17 +596,19 @@ export const AdminLeaveRequests: React.FC = () => {
                               className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full ${
                                 request.status === 'Approved'
                                   ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-200'
+                                : request.status === 'Manager Approved'
+                                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200'
                                   : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-200'
                               }`}
                             >
                               {request.status === 'Approved' ? (
                                 <CheckCircle2 className="w-3.5 h-3.5" />
+                              ) : request.status === 'Manager Approved' ? (
+                                <Clock className="w-3.5 h-3.5" />
                               ) : (
                                 <XCircle className="w-3.5 h-3.5" />
                               )}
-                              {t(`common:status.${request.status.toLowerCase()}`, {
-                                defaultValue: request.status,
-                              })}
+                              {request.status === 'Manager Approved' ? 'Pending HR' : t(`common:status.${request.status.toLowerCase()}`, { defaultValue: request.status })}
                             </span>
                           )}
                         </div>
@@ -694,7 +700,7 @@ export const AdminLeaveRequests: React.FC = () => {
                             {t('leave:admin.rejectCancel')}
                           </button>
                         </>
-                      ) : request.status === 'Pending' ? (
+                      ) : request.status === 'Pending' || (request.status === 'Manager Approved' && !isManager) ? (
                         <LeaveActionBar
                           employeeName={emp?.name || request.employeeName}
                           onApprove={() => handleApprove(request.id)}
@@ -706,17 +712,19 @@ export const AdminLeaveRequests: React.FC = () => {
                           className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full ${
                             request.status === 'Approved'
                               ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-200'
+                            : request.status === 'Manager Approved'
+                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200'
                               : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-200'
                           }`}
                         >
                           {request.status === 'Approved' ? (
                             <CheckCircle2 className="w-3.5 h-3.5" />
+                          ) : request.status === 'Manager Approved' ? (
+                            <Clock className="w-3.5 h-3.5" />
                           ) : (
                             <XCircle className="w-3.5 h-3.5" />
                           )}
-                          {t(`common:status.${request.status.toLowerCase()}`, {
-                            defaultValue: request.status,
-                          })}
+                          {request.status === 'Manager Approved' ? 'Pending HR' : t(`common:status.${request.status.toLowerCase()}`, { defaultValue: request.status })}
                         </span>
                       )}
                     </div>

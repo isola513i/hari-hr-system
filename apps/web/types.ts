@@ -144,7 +144,7 @@ export interface LeaveRequest {
   endDate: string; // ISO date string
   reason?: string;
   days: number;
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Cancel Requested';
+  status: 'Pending' | 'Manager Approved' | 'Approved' | 'Rejected' | 'Cancel Requested';
   avatar: string;
   handoverEmployeeId?: string;
   handoverEmployeeName?: string;

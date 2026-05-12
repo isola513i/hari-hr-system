@@ -10,9 +10,11 @@ export interface WFHRequest {
   employeeAvatar?: string | null;
   date: string;
   reason: string | null;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'manager_approved' | 'approved' | 'rejected';
   reviewedBy: string | null;
   reviewedAt: string | null;
+  managerReviewedBy: string | null;
+  managerReviewedAt: string | null;
   createdAt: string;
 }
 
@@ -45,11 +47,66 @@ export class WFHRequestService {
         type: 'info',
         link: '/admin-attendance',
       });
+      // Notify direct manager if employee has one
+      const managerRow = await query(
+        `SELECT u.id AS user_id FROM employees e
+         JOIN employees mgr ON mgr.id = e.manager_id
+         JOIN users u ON u.id = mgr.user_id
+         WHERE e.id = $1`,
+        [employeeId]
+      );
+      if (managerRow.rows[0]?.user_id) {
+        await NotificationService.create({
+          user_id: managerRow.rows[0].user_id,
+          title: 'WFH Request Needs Your Approval',
+          message: `${employeeName} has submitted a WFH request for ${formattedDate}.`,
+          type: 'info',
+          link: '/admin-attendance',
+        });
+      }
     } catch (err) {
-      console.error('Failed to notify admins about WFH request:', err);
+      console.error('Failed to notify about WFH request:', err);
     }
 
     return this.mapRow(result.rows[0]);
+  }
+
+  async managerApprove(requestId: string, managerEmployeeId: string): Promise<WFHRequest> {
+    const reqResult = await query('SELECT * FROM wfh_requests WHERE id = $1', [requestId]);
+    if (!reqResult.rows[0]) throw new BusinessError('WFH request not found');
+    const wfhRow = reqResult.rows[0];
+
+    if (wfhRow.status !== 'pending') {
+      throw new BusinessError('WFH request is not in pending state');
+    }
+
+    const empResult = await query('SELECT manager_id FROM employees WHERE id = $1', [wfhRow.employee_id]);
+    if (empResult.rows[0]?.manager_id !== managerEmployeeId) {
+      throw new BusinessError('You can only approve requests from your direct reports');
+    }
+
+    const result = await query(
+      `UPDATE wfh_requests
+       SET status = 'manager_approved', manager_reviewed_by = $1, manager_reviewed_at = CURRENT_TIMESTAMP,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2 RETURNING *`,
+      [managerEmployeeId, requestId]
+    );
+
+    const wfh = this.mapRow(result.rows[0]);
+
+    // Notify HR admins for final approval
+    const empNameResult = await query('SELECT name FROM employees WHERE id = $1', [wfhRow.employee_id]).catch(() => ({ rows: [] }));
+    const empName = (empNameResult.rows[0] as any)?.name ?? 'An employee';
+    const formattedDate = new Date(wfhRow.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+    NotificationService.notifyAdmins({
+      title: 'WFH Request Ready for Final Approval',
+      message: `Manager approved ${empName}'s WFH request for ${formattedDate}.`,
+      type: 'info',
+      link: '/admin-attendance',
+    }).catch(() => {});
+
+    return wfh;
   }
 
   async approve(requestId: string, reviewedById: string): Promise<WFHRequest> {
@@ -107,7 +164,7 @@ export class WFHRequestService {
     return result.rows.map(this.mapRow);
   }
 
-  async getAll(filters: { status?: string; date?: string } = {}): Promise<WFHRequest[]> {
+  async getAll(filters: { status?: string; date?: string; myTeam?: boolean; callerEmployeeId?: string } = {}): Promise<WFHRequest[]> {
     const conditions: string[] = [];
     const params: unknown[] = [];
     let i = 1;
@@ -119,6 +176,10 @@ export class WFHRequestService {
     if (filters.date) {
       conditions.push(`wr.date = $${i++}`);
       params.push(filters.date);
+    }
+    if (filters.myTeam && filters.callerEmployeeId) {
+      conditions.push(`e.manager_id = $${i++}`);
+      params.push(filters.callerEmployeeId);
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -158,6 +219,8 @@ export class WFHRequestService {
       status: row.status as WFHRequest['status'],
       reviewedBy: row.reviewed_by as string | null,
       reviewedAt: row.reviewed_at as string | null,
+      managerReviewedBy: row.manager_reviewed_by as string | null,
+      managerReviewedAt: row.manager_reviewed_at as string | null,
       createdAt: row.created_at as string,
     };
   }

@@ -35,6 +35,7 @@ import {
   useAdminWFHRequests,
   useApproveWFH,
   useRejectWFH,
+  useManagerApproveWFH,
   useAttendanceAnalytics,
   useHolidays,
   useAllOTRequests,
@@ -43,16 +44,18 @@ import {
   useRejectOT,
   type OTRequest,
 } from '../hooks/queries';
+import { useAuth } from '../contexts/AuthContext';
 import { formatTimeTH, formatDate, dayjs } from '../lib/date';
 import type { AdminAttendanceRecord, AdminAttendanceFilters, AdminDisplayStatus, AttendanceStatus } from '../types';
 
-type WFHItem = { id: string; date: string; reason: string | null; status: string; employeeName?: string; employeeDepartment?: string; employeeAvatar?: string | null };
+type WFHItem = { id: string; date: string; reason: string | null; status: 'pending' | 'manager_approved' | 'approved' | 'rejected'; employeeName?: string; employeeDepartment?: string; employeeAvatar?: string | null };
 
 const WFH_STATUS_OPTIONS: DropdownOption[] = [
-  { value: 'pending',  label: 'All Pending' },
-  { value: 'all',      label: 'All Requests' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Rejected' },
+  { value: 'pending',          label: 'Pending (Manager)' },
+  { value: 'manager_approved', label: 'Pending HR' },
+  { value: 'all',              label: 'All Requests' },
+  { value: 'approved',         label: 'Approved' },
+  { value: 'rejected',         label: 'Rejected' },
 ];
 
 const WFH_SORT_OPTIONS: DropdownOption[] = [
@@ -101,6 +104,8 @@ const CheckInTypeBadge: React.FC<{ type?: string }> = ({ type }) => {
 const AdminAttendance: React.FC = () => {
   const { t } = useTranslation(['attendance', 'common']);
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const isManager = user?.role === 'MANAGER';
 
   const DEPARTMENTS: DropdownOption[] = [
     { value: 'All', label: t('common:departments.allDepartments') },
@@ -136,8 +141,8 @@ const AdminAttendance: React.FC = () => {
   const [otRejectNotes, setOtRejectNotes] = useState('');
   const [otActionId, setOtActionId] = useState<string | null>(null);
 
-  // WFH filters
-  const [wfhStatusFilter, setWfhStatusFilter] = useState<string>('pending');
+  // WFH filters — manager sees 'pending' (their direct reports), HR sees 'manager_approved'
+  const [wfhStatusFilter, setWfhStatusFilter] = useState<string>(user?.role === 'MANAGER' ? 'pending' : 'manager_approved');
   const [wfhSearch, setWfhSearch] = useState('');
   const [wfhSort, setWfhSort] = useState<string>('date_desc');
 
@@ -194,6 +199,7 @@ const AdminAttendance: React.FC = () => {
   const { data: wfhRequests = [], isPending: wfhLoading } = useAdminWFHRequests();
   const approveMutation = useApproveWFH();
   const rejectMutation = useRejectWFH();
+  const managerApproveMutation = useManagerApproveWFH();
   const [wfhActionId, setWfhActionId] = useState<string | null>(null);
 
   const { data: otRequests = [], isPending: otLoading } = useAllOTRequests();
@@ -271,13 +277,14 @@ const AdminAttendance: React.FC = () => {
     return allWFH.reduce(
       (acc, r) => {
         if (r.status === 'pending') { acc.pending++; return acc; }
+        if (r.status === 'manager_approved') { acc.managerApproved++; return acc; }
         const d = new Date(r.date);
         if (d.getMonth() !== thisMonth || d.getFullYear() !== thisYear) return acc;
         if (r.status === 'approved') acc.approvedThisMonth++;
         else if (r.status === 'rejected') acc.rejectedThisMonth++;
         return acc;
       },
-      { pending: 0, approvedThisMonth: 0, rejectedThisMonth: 0 }
+      { pending: 0, managerApproved: 0, approvedThisMonth: 0, rejectedThisMonth: 0 }
     );
   }, [allWFH]);
 
@@ -310,6 +317,15 @@ const AdminAttendance: React.FC = () => {
       onSettled: () => setWfhActionId(null),
     });
   }, [rejectMutation, showToast]);
+
+  const handleWFHManagerApprove = useCallback((id: string) => {
+    setWfhActionId(id);
+    managerApproveMutation.mutate(id, {
+      onSuccess: () => showToast('Forwarded to HR for final approval', 'success'),
+      onError: () => showToast('Failed to forward to HR', 'error'),
+      onSettled: () => setWfhActionId(null),
+    });
+  }, [managerApproveMutation, showToast]);
 
   const filteredOT = useMemo(() => (otRequests as OTRequest[])
     .filter(r => {
@@ -430,11 +446,12 @@ const AdminAttendance: React.FC = () => {
         >
           <Home size={14} />
           WFH Requests
-          {wfhStats.pending > 0 && mainTab !== 'wfh' && (
-            <span className="ml-1 px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">
-              {wfhStats.pending}
-            </span>
-          )}
+          {(() => {
+            const cnt = isManager ? wfhStats.pending : wfhStats.managerApproved;
+            return cnt > 0 && mainTab !== 'wfh' ? (
+              <span className="ml-1 px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">{cnt}</span>
+            ) : null;
+          })()}
         </button>
         <button
           onClick={() => setMainTab('ot')}
@@ -457,9 +474,10 @@ const AdminAttendance: React.FC = () => {
       {mainTab === 'wfh' && (
           <div className="space-y-5">
             {/* Stats Cards */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
               {[
-                { label: 'Pending Requests', mobileLabel: 'Pending', value: wfhStats.pending, subtitle: 'Awaiting review', icon: <Clock size={20} />, iconColor: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400', filter: 'pending' },
+                { label: 'Pending (Manager)', mobileLabel: 'Pending', value: wfhStats.pending, subtitle: 'Awaiting manager', icon: <Clock size={20} />, iconColor: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400', filter: 'pending' },
+                { label: 'Pending HR', mobileLabel: 'Pending HR', value: wfhStats.managerApproved, subtitle: 'Awaiting HR final', icon: <CheckCircle2 size={20} />, iconColor: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400', filter: 'manager_approved' },
                 { label: 'Approved This Month', mobileLabel: 'Approved', value: wfhStats.approvedThisMonth, subtitle: 'WFH days approved', icon: <CheckCircle2 size={20} />, iconColor: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400', filter: 'approved' },
                 { label: 'Rejected This Month', mobileLabel: 'Rejected', value: wfhStats.rejectedThisMonth, subtitle: 'WFH days rejected', icon: <XCircle size={20} />, iconColor: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400', filter: 'rejected' },
               ].map(({ label, mobileLabel, value, subtitle, icon, iconColor, filter }) => (
@@ -553,7 +571,24 @@ const AdminAttendance: React.FC = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-2">
-                                {req.status === 'pending' ? (
+                                {req.status === 'pending' && isManager ? (
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleWFHManagerApprove(req.id)}
+                                      disabled={wfhActionId === req.id}
+                                      className="px-3 py-1.5 text-xs font-medium bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 whitespace-nowrap"
+                                    >
+                                      Forward to HR
+                                    </button>
+                                    <button
+                                      onClick={() => handleWFHReject(req.id)}
+                                      disabled={wfhActionId === req.id}
+                                      className="px-3 py-1.5 text-xs font-medium bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
+                                ) : (req.status === 'pending' || req.status === 'manager_approved') && !isManager ? (
                                   <LeaveActionBar
                                     employeeName={req.employeeName}
                                     compact
@@ -565,10 +600,14 @@ const AdminAttendance: React.FC = () => {
                                   <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full ${
                                     req.status === 'approved'
                                       ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-200'
+                                    : req.status === 'manager_approved'
+                                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200'
                                       : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-200'
                                   }`}>
-                                    {req.status === 'approved' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                                    {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                                    {req.status === 'approved' ? <CheckCircle2 className="w-3.5 h-3.5" />
+                                    : req.status === 'manager_approved' ? <Clock className="w-3.5 h-3.5" />
+                                    : <XCircle className="w-3.5 h-3.5" />}
+                                    {req.status === 'manager_approved' ? 'Pending HR' : req.status.charAt(0).toUpperCase() + req.status.slice(1)}
                                   </span>
                                 )}
                               </div>
@@ -591,19 +630,37 @@ const AdminAttendance: React.FC = () => {
                               <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.employeeDepartment}</p>
                             </div>
                           </div>
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
-                            req.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
-                            : req.status === 'approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                            req.status === 'pending'          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                            : req.status === 'manager_approved' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                            : req.status === 'approved'       ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                             : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                           }`}>
-                            {req.status}
+                            {req.status === 'manager_approved' ? 'Pending HR' : req.status.charAt(0).toUpperCase() + req.status.slice(1)}
                           </span>
                         </div>
                         <div className="text-sm text-text-muted-light dark:text-text-muted-dark space-y-0.5">
                           <p><span className="font-medium">Date:</span> {formatDate(req.date)}</p>
                           {req.reason && <p><span className="font-medium">Reason:</span> {req.reason}</p>}
                         </div>
-                        {req.status === 'pending' && (
+                        {req.status === 'pending' && isManager ? (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleWFHManagerApprove(req.id)}
+                              disabled={wfhActionId === req.id}
+                              className="flex-1 px-3 py-1.5 text-xs font-medium bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50"
+                            >
+                              Forward to HR
+                            </button>
+                            <button
+                              onClick={() => handleWFHReject(req.id)}
+                              disabled={wfhActionId === req.id}
+                              className="flex-1 px-3 py-1.5 text-xs font-medium bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        ) : (req.status === 'pending' || req.status === 'manager_approved') && !isManager ? (
                           <LeaveActionBar
                             employeeName={req.employeeName}
                             compact
@@ -611,7 +668,7 @@ const AdminAttendance: React.FC = () => {
                             onApprove={() => handleWFHApprove(req.id)}
                             onReject={() => handleWFHReject(req.id)}
                           />
-                        )}
+                        ) : null}
                       </div>
                     ))}
                   </div>
