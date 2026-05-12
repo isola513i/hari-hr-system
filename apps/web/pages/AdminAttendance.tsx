@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  Timer,
 } from 'lucide-react';
 import { AttendanceAnalyticsPanel } from '../components/AttendanceAnalyticsPanel';
 import { Avatar } from '../components/Avatar';
@@ -36,6 +37,11 @@ import {
   useRejectWFH,
   useAttendanceAnalytics,
   useHolidays,
+  useAllOTRequests,
+  useOTStats,
+  useApproveOT,
+  useRejectOT,
+  type OTRequest,
 } from '../hooks/queries';
 import { formatTimeTH, formatDate, dayjs } from '../lib/date';
 import type { AdminAttendanceRecord, AdminAttendanceFilters, AdminDisplayStatus, AttendanceStatus } from '../types';
@@ -121,7 +127,14 @@ const AdminAttendance: React.FC = () => {
   ];
 
   // Main tab
-  const [mainTab, setMainTab] = useState<'records' | 'wfh'>('records');
+  const [mainTab, setMainTab] = useState<'records' | 'wfh' | 'ot'>('records');
+
+  // OT filters
+  const [otSearch, setOtSearch] = useState('');
+  const [otStatusFilter, setOtStatusFilter] = useState<string>('pending');
+  const [otRejectId, setOtRejectId] = useState<string | null>(null);
+  const [otRejectNotes, setOtRejectNotes] = useState('');
+  const [otActionId, setOtActionId] = useState<string | null>(null);
 
   // WFH filters
   const [wfhStatusFilter, setWfhStatusFilter] = useState<string>('pending');
@@ -182,6 +195,11 @@ const AdminAttendance: React.FC = () => {
   const approveMutation = useApproveWFH();
   const rejectMutation = useRejectWFH();
   const [wfhActionId, setWfhActionId] = useState<string | null>(null);
+
+  const { data: otRequests = [], isPending: otLoading } = useAllOTRequests();
+  const { data: otStatsData } = useOTStats();
+  const approveOTMutation = useApproveOT();
+  const rejectOTMutation = useRejectOT();
 
   const records = recordsResponse?.data || [];
   const totalPages = recordsResponse?.totalPages || 1;
@@ -293,6 +311,34 @@ const AdminAttendance: React.FC = () => {
     });
   }, [rejectMutation, showToast]);
 
+  const filteredOT = useMemo(() => (otRequests as OTRequest[])
+    .filter(r => {
+      if (otStatusFilter !== 'all' && r.status !== otStatusFilter) return false;
+      if (otSearch && !r.employeeName?.toLowerCase().includes(otSearch.toLowerCase())) return false;
+      return true;
+    })
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+  [otRequests, otStatusFilter, otSearch]);
+
+  const handleOTApprove = useCallback((id: string) => {
+    setOtActionId(id);
+    approveOTMutation.mutate({ id }, {
+      onSuccess: () => showToast('OT request approved', 'success'),
+      onError: () => showToast('Failed to approve OT request', 'error'),
+      onSettled: () => setOtActionId(null),
+    });
+  }, [approveOTMutation, showToast]);
+
+  const handleOTRejectSubmit = useCallback(() => {
+    if (!otRejectId) return;
+    setOtActionId(otRejectId);
+    rejectOTMutation.mutate({ id: otRejectId, notes: otRejectNotes || undefined }, {
+      onSuccess: () => { showToast('OT request rejected', 'success'); setOtRejectId(null); setOtRejectNotes(''); },
+      onError: () => showToast('Failed to reject OT request', 'error'),
+      onSettled: () => setOtActionId(null),
+    });
+  }, [rejectOTMutation, otRejectId, otRejectNotes, showToast]);
+
   const exportToCSV = useCallback(() => {
     if (records.length === 0) {
       showToast(t('attendance:admin.noRecordsExport'), 'error');
@@ -387,6 +433,22 @@ const AdminAttendance: React.FC = () => {
           {wfhStats.pending > 0 && mainTab !== 'wfh' && (
             <span className="ml-1 px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">
               {wfhStats.pending}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setMainTab('ot')}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            mainTab === 'ot'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark'
+          }`}
+        >
+          <Timer size={14} />
+          OT Requests
+          {(otStatsData?.pending ?? 0) > 0 && mainTab !== 'ot' && (
+            <span className="ml-1 px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">
+              {otStatsData!.pending}
             </span>
           )}
         </button>
@@ -557,6 +619,225 @@ const AdminAttendance: React.FC = () => {
               )}
             </div>
           </div>
+      )}
+
+      {/* OT Reject Dialog */}
+      {otRejectId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4">
+            <h3 className="text-base font-semibold text-text-light dark:text-text-dark">Reject OT Request</h3>
+            <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Provide an optional reason for rejection:</p>
+            <textarea
+              value={otRejectNotes}
+              onChange={(e) => setOtRejectNotes(e.target.value)}
+              placeholder="Reason (optional)..."
+              rows={3}
+              className="w-full px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none resize-none"
+            />
+            <div className="flex gap-3">
+              <button onClick={() => { setOtRejectId(null); setOtRejectNotes(''); }} className="flex-1 px-4 py-2 text-sm font-medium border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancel</button>
+              <button onClick={handleOTRejectSubmit} disabled={!!otActionId} className="flex-1 px-4 py-2 text-sm font-medium bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50">
+                {otActionId ? 'Rejecting...' : 'Reject'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mainTab === 'ot' && (
+        <div className="space-y-5">
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            {[
+              { label: 'Pending OT Requests', mobileLabel: 'Pending', value: otStatsData?.pending ?? 0, subtitle: 'Awaiting approval', icon: <Clock size={20} />, iconColor: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400', filter: 'pending' },
+              { label: 'Approved This Month', mobileLabel: 'Approved', value: otStatsData?.approvedThisMonth ?? 0, subtitle: 'OT requests approved', icon: <CheckCircle2 size={20} />, iconColor: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400', filter: 'approved' },
+              { label: 'Total OT Hours', mobileLabel: 'OT Hours', value: (otStatsData?.totalOTHoursThisMonth ?? 0).toFixed(1) + 'h', subtitle: 'This month', icon: <Timer size={20} />, iconColor: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400', filter: 'all' },
+            ].map(({ label, mobileLabel, value, subtitle, icon, iconColor, filter }) => (
+              <button
+                key={filter}
+                onClick={() => setOtStatusFilter(filter === 'all' ? 'all' : (otStatusFilter === filter ? 'all' : filter))}
+                className={`p-3 sm:p-4 rounded-xl transition-all text-left w-full cursor-pointer border ${
+                  otStatusFilter === filter
+                    ? 'bg-primary/5 dark:bg-primary/10 border-primary/40 shadow-sm'
+                    : 'bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark hover:shadow-md'
+                }`}
+              >
+                <div className="flex flex-col items-start gap-1.5 sm:hidden">
+                  <div className={`p-1.5 rounded-lg ${iconColor}`}>{icon}</div>
+                  <p className="text-2xl font-bold text-text-light dark:text-text-dark leading-none">{value}</p>
+                  <p className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">{mobileLabel}</p>
+                </div>
+                <div className="hidden sm:flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${iconColor}`}>{icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark truncate">{label}</p>
+                    <p className="text-xl font-bold text-text-light dark:text-text-dark">{value}</p>
+                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">{subtitle}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Table Card */}
+          <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm overflow-hidden">
+            {/* Toolbar */}
+            <div className="p-4 border-b border-border-light dark:border-border-dark bg-gray-50/50 dark:bg-gray-800/20 flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark" size={16} />
+                <input
+                  type="text"
+                  value={otSearch}
+                  onChange={(e) => setOtSearch(e.target.value)}
+                  placeholder="Search employee..."
+                  className="pl-9 pr-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition-all w-full"
+                />
+              </div>
+              <Dropdown
+                options={[
+                  { value: 'pending', label: 'Pending' },
+                  { value: 'all', label: 'All Requests' },
+                  { value: 'approved', label: 'Approved' },
+                  { value: 'rejected', label: 'Rejected' },
+                ]}
+                value={otStatusFilter}
+                onChange={setOtStatusFilter}
+                width="flex-1 md:w-auto"
+              />
+            </div>
+
+            {/* Content */}
+            {otLoading ? (
+              <div className="flex items-center justify-center h-32 text-text-muted-light dark:text-text-muted-dark text-sm">Loading...</div>
+            ) : filteredOT.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-32 gap-2 text-text-muted-light dark:text-text-muted-dark">
+                <Timer size={24} />
+                <p className="text-sm">No OT requests found</p>
+              </div>
+            ) : (
+              <>
+                {/* Desktop Table */}
+                <div className="overflow-x-auto hidden md:block">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 dark:bg-gray-800 border-b border-border-light dark:border-border-dark">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Employee</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Type</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Planned</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Actual</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Reason</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border-light dark:divide-border-dark">
+                      {filteredOT.map((req) => (
+                        <tr key={req.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-3">
+                              <Avatar src={req.employeeAvatar ?? null} name={req.employeeName ?? '?'} size="lg" />
+                              <div>
+                                <p className="text-sm font-medium text-text-light dark:text-text-dark">{req.employeeName ?? '—'}</p>
+                                <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.department}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <p className="text-sm text-text-light dark:text-text-dark">{formatDate(req.date)}</p>
+                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.plannedStart} – {req.plannedEnd}</p>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full ${
+                              req.otType === 'holiday'
+                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                            }`}>
+                              {req.otType === 'holiday' ? 'Holiday 3×' : 'Regular 1.5×'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">
+                            {req.plannedHours}h
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            {req.actualHours != null
+                              ? <span className="text-green-600 dark:text-green-400 font-medium">{req.actualHours}h</span>
+                              : <span className="text-text-muted-light dark:text-text-muted-dark">—</span>}
+                          </td>
+                          <td className="px-6 py-4">
+                            <p className="text-sm text-text-light dark:text-text-dark truncate max-w-xs">{req.reason}</p>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full ${
+                              req.status === 'approved' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-200'
+                              : req.status === 'rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-200'
+                              : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200'
+                            }`}>
+                              {req.status === 'approved' ? <CheckCircle2 className="w-3.5 h-3.5" /> : req.status === 'rejected' ? <XCircle className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                              {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {req.status === 'pending' ? (
+                              <LeaveActionBar
+                                employeeName={req.employeeName}
+                                compact
+                                disabled={otActionId === req.id}
+                                onApprove={() => handleOTApprove(req.id)}
+                                onReject={() => { setOtRejectId(req.id); setOtRejectNotes(''); }}
+                              />
+                            ) : (
+                              <span className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.reviewerName ? `by ${req.reviewerName}` : '—'}</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Cards */}
+                <div className="md:hidden divide-y divide-border-light dark:divide-border-dark">
+                  {filteredOT.map((req) => (
+                    <div key={req.id} className="p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Avatar src={req.employeeAvatar ?? null} name={req.employeeName ?? '?'} size="lg" />
+                          <div>
+                            <p className="text-sm font-medium text-text-light dark:text-text-dark">{req.employeeName ?? '—'}</p>
+                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.department}</p>
+                          </div>
+                        </div>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
+                          req.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                          : req.status === 'approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                          : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                        }`}>
+                          {req.status}
+                        </span>
+                      </div>
+                      <div className="text-sm text-text-muted-light dark:text-text-muted-dark space-y-0.5">
+                        <p><span className="font-medium">Date:</span> {formatDate(req.date)} ({req.plannedStart} – {req.plannedEnd})</p>
+                        <p><span className="font-medium">Hours:</span> {req.plannedHours}h planned{req.actualHours != null ? ` / ${req.actualHours}h actual` : ''}</p>
+                        <p><span className="font-medium">Type:</span> {req.otType === 'holiday' ? 'Holiday (3×)' : 'Regular (1.5×)'}</p>
+                        {req.reason && <p><span className="font-medium">Reason:</span> {req.reason}</p>}
+                      </div>
+                      {req.status === 'pending' && (
+                        <LeaveActionBar
+                          employeeName={req.employeeName}
+                          compact
+                          disabled={otActionId === req.id}
+                          onApprove={() => handleOTApprove(req.id)}
+                          onReject={() => { setOtRejectId(req.id); setOtRejectNotes(''); }}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       {mainTab === 'records' && <>

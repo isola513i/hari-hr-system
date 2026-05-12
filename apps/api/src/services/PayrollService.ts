@@ -1,5 +1,6 @@
 import pool, { query } from '../db';
 import SystemConfigService from './SystemConfigService';
+import OTRequestService from './OTRequestService';
 import { BusinessError } from '../utils/errorResponse';
 
 export interface PayrollRecord {
@@ -77,6 +78,7 @@ const DEFAULT_SSF_MAX_BASE = 15000;
 const DEFAULT_PVF_EMPLOYEE_RATE = 0.03;
 const DEFAULT_PVF_EMPLOYER_RATE = 0.03;
 const DEFAULT_OT_MULTIPLIER = 1.5;
+const DEFAULT_HOLIDAY_OT_MULTIPLIER = 3.0;
 const DEFAULT_EXPENSE_DEDUCTION_RATE = 0.5;
 
 interface PayrollConfig {
@@ -89,6 +91,7 @@ interface PayrollConfig {
   pvfEmployeeRate: number;
   pvfEmployerRate: number;
   otMultiplier: number;
+  holidayOtMultiplier: number;
   expenseDeductionRate: number;
 }
 
@@ -98,7 +101,7 @@ export class PayrollService {
    */
   private async getPayrollConfig(): Promise<PayrollConfig> {
     try {
-      const [standardHours, taxBrackets, personalAllowance, expenseDeduction, ssfRate, ssfMaxBase, pvfEmployeeRate, pvfEmployerRate, otMultiplier, expenseDeductionRate] = await Promise.all([
+      const [standardHours, taxBrackets, personalAllowance, expenseDeduction, ssfRate, ssfMaxBase, pvfEmployeeRate, pvfEmployerRate, otMultiplier, holidayOtMultiplier, expenseDeductionRate] = await Promise.all([
         SystemConfigService.getConfigValue('payroll', 'standard_hours_per_month', DEFAULT_STANDARD_HOURS),
         SystemConfigService.getConfigValue('payroll', 'tax_brackets', DEFAULT_TAX_BRACKETS),
         SystemConfigService.getConfigValue('payroll', 'personal_allowance', DEFAULT_PERSONAL_ALLOWANCE),
@@ -108,6 +111,7 @@ export class PayrollService {
         SystemConfigService.getConfigValue('payroll', 'pvf_employee_rate', DEFAULT_PVF_EMPLOYEE_RATE),
         SystemConfigService.getConfigValue('payroll', 'pvf_employer_rate', DEFAULT_PVF_EMPLOYER_RATE),
         SystemConfigService.getConfigValue('payroll', 'ot_multiplier', DEFAULT_OT_MULTIPLIER),
+        SystemConfigService.getConfigValue('payroll', 'holiday_ot_multiplier', DEFAULT_HOLIDAY_OT_MULTIPLIER),
         SystemConfigService.getConfigValue('payroll', 'expense_deduction_rate', DEFAULT_EXPENSE_DEDUCTION_RATE),
       ]);
 
@@ -121,6 +125,7 @@ export class PayrollService {
         pvfEmployeeRate: typeof pvfEmployeeRate === 'number' ? pvfEmployeeRate : DEFAULT_PVF_EMPLOYEE_RATE,
         pvfEmployerRate: typeof pvfEmployerRate === 'number' ? pvfEmployerRate : DEFAULT_PVF_EMPLOYER_RATE,
         otMultiplier: typeof otMultiplier === 'number' && otMultiplier > 0 ? otMultiplier : DEFAULT_OT_MULTIPLIER,
+        holidayOtMultiplier: typeof holidayOtMultiplier === 'number' && holidayOtMultiplier > 0 ? holidayOtMultiplier : DEFAULT_HOLIDAY_OT_MULTIPLIER,
         expenseDeductionRate: typeof expenseDeductionRate === 'number' ? expenseDeductionRate : DEFAULT_EXPENSE_DEDUCTION_RATE,
       };
     } catch (error) {
@@ -135,6 +140,7 @@ export class PayrollService {
         pvfEmployeeRate: DEFAULT_PVF_EMPLOYEE_RATE,
         pvfEmployerRate: DEFAULT_PVF_EMPLOYER_RATE,
         otMultiplier: DEFAULT_OT_MULTIPLIER,
+        holidayOtMultiplier: DEFAULT_HOLIDAY_OT_MULTIPLIER,
         expenseDeductionRate: DEFAULT_EXPENSE_DEDUCTION_RATE,
       };
     }
@@ -263,11 +269,15 @@ export class PayrollService {
       payPeriodStart,
       payPeriodEnd,
       baseSalary,
-      overtimeHours = 0,
       bonus = 0,
       leaveDeduction = 0,
       deductions = 0,
     } = data;
+
+    // Auto-sum approved OT hours from OT requests when not explicitly provided
+    const overtimeHours = data.overtimeHours != null
+      ? data.overtimeHours
+      : await OTRequestService.getApprovedOTHours(employeeId, payPeriodStart, payPeriodEnd);
 
     // Validate date range
     if (payPeriodEnd <= payPeriodStart) {

@@ -143,6 +143,13 @@ async function createSystemConfigsTable() {
             },
             {
                 category: 'payroll',
+                key: 'holiday_ot_multiplier',
+                value: '3.0',
+                data_type: 'number',
+                description: 'OT rate multiplier for public holidays (Thai labor law: 3x)'
+            },
+            {
+                category: 'payroll',
                 key: 'default_intern_daily_rate',
                 value: '350',
                 data_type: 'number',

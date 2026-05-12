@@ -548,7 +548,30 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
     UNIQUE(user_id, endpoint)
 );
 
--- 23. Upcoming Events (Calendar)
+-- 23. OT Requests
+CREATE TABLE IF NOT EXISTS ot_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    planned_start TIME NOT NULL,
+    planned_end TIME NOT NULL,
+    planned_hours DECIMAL(4,2) NOT NULL,
+    actual_hours DECIMAL(4,2),
+    ot_type VARCHAR(20) DEFAULT 'regular',
+    reason TEXT NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending',
+    reviewed_by UUID REFERENCES employees(id),
+    reviewed_at TIMESTAMP WITH TIME ZONE,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_ot_request UNIQUE (employee_id, date)
+);
+CREATE INDEX IF NOT EXISTS idx_ot_requests_employee ON ot_requests(employee_id);
+CREATE INDEX IF NOT EXISTS idx_ot_requests_date ON ot_requests(date);
+CREATE INDEX IF NOT EXISTS idx_ot_requests_status ON ot_requests(status);
+
+-- 24. Upcoming Events (Calendar)
 CREATE TABLE upcoming_events (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(255) NOT NULL,

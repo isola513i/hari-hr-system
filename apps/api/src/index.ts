@@ -40,6 +40,7 @@ import complianceRoutes from "./routes/complianceRoutes";
 import expenseClaimRoutes from "./routes/expenseClaimRoutes";
 import holidayRoutes from "./routes/holidayRoutes";
 import clientLogsRoutes from "./routes/clientLogsRoutes";
+import otRequestRoutes from "./routes/otRequestRoutes";
 import { runMigration } from "./scripts/init-db";
 import { initAttendanceScheduler } from "./services/AttendanceScheduler";
 
@@ -165,6 +166,7 @@ app.use("/api/announcements", announcementsRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/admin/attendance", adminAttendanceRoutes);
 app.use("/api/wfh-requests", wfhRequestRoutes);
+app.use("/api/ot-requests", otRequestRoutes);
 app.use("/api/surveys", surveyRoutes);
 app.use("/api/compliance", complianceRoutes);
 app.use("/api/expense-claims", expenseClaimRoutes);

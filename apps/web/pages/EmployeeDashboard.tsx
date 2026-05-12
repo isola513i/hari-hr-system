@@ -21,6 +21,9 @@ import {
   Flag,
   Building2,
   DollarSign,
+  Timer,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import { Toast } from '../components/Toast';
 import { LeaveGanttCalendar } from '../components/LeaveGanttCalendar';
@@ -45,8 +48,10 @@ import {
   useUpcomingEvents,
   useExpenseClaims,
   useAttendanceGPSConfig,
+  useMyOTRequests,
 } from '../hooks/queries';
 import { WFHRequestModal } from '../components/WFHRequestModal';
+import { OTRequestModal } from '../components/OTRequestModal';
 import { LocationPermissionModal } from '../components/LocationPermissionModal';
 import { queryKeys } from '../lib/queryKeys';
 import { translateLeaveType } from '../lib/leaveTypeConfig';
@@ -111,6 +116,7 @@ export const EmployeeDashboard: React.FC = () => {
   const clockInMutation = useClockIn();
   const clockOutMutation = useClockOut();
   const { data: gpsConfig } = useAttendanceGPSConfig();
+  const { data: myOTRequests = [] } = useMyOTRequests();
   const addNoteMutation = useAddNote();
   const deleteNoteMutation = useDeleteNote();
   const togglePinMutation = useToggleNotePin();
@@ -126,6 +132,7 @@ export const EmployeeDashboard: React.FC = () => {
   const [isClockingIn, setIsClockingIn] = useState(false);
   const [locationModal, setLocationModal] = useState<{ show: boolean; mode: 'request' | 'denied' }>({ show: false, mode: 'request' });
   const [showWFHModal, setShowWFHModal] = useState(false);
+  const [showOTModal, setShowOTModal] = useState(false);
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
     show: false,
     message: '',
@@ -339,6 +346,13 @@ export const EmployeeDashboard: React.FC = () => {
         <WFHRequestModal
           onClose={() => setShowWFHModal(false)}
           onSuccess={(msg) => { showToast(msg, 'success'); setShowWFHModal(false); }}
+        />
+      )}
+
+      {showOTModal && (
+        <OTRequestModal
+          onClose={() => setShowOTModal(false)}
+          onSuccess={(msg) => { showToast(msg, 'success'); setShowOTModal(false); }}
         />
       )}
 
@@ -831,6 +845,63 @@ export const EmployeeDashboard: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* My OT Requests */}
+      <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+        <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-amber-100 dark:bg-amber-900/20 text-amber-500 rounded-lg">
+              <Timer size={16} />
+            </div>
+            <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">My OT Requests</h2>
+          </div>
+          <button
+            onClick={() => setShowOTModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+          >
+            <Timer size={12} />
+            Request OT
+          </button>
+        </div>
+        <div className="p-4">
+          {myOTRequests.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-6 text-text-muted-light dark:text-text-muted-dark">
+              <Timer size={28} className="mb-2 opacity-20" />
+              <p className="text-sm">No OT requests yet</p>
+              <button onClick={() => setShowOTModal(true)} className="mt-2 text-xs text-primary hover:underline">Submit your first OT request</button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {(myOTRequests as any[]).slice(0, 3).map((req) => (
+                <div key={req.id} className="flex items-center justify-between p-3 bg-background-light dark:bg-background-dark rounded-lg border border-border-light dark:border-border-dark">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`p-1.5 rounded-lg shrink-0 ${
+                      req.status === 'approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                      : req.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                      : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                    }`}>
+                      {req.status === 'approved' ? <CheckCircle2 size={14} /> : req.status === 'rejected' ? <XCircle size={14} /> : <Clock size={14} />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-text-light dark:text-text-dark">
+                        {req.plannedHours}h OT · <span className="text-text-muted-light dark:text-text-muted-dark">{req.otType === 'holiday' ? '3×' : '1.5×'}</span>
+                      </p>
+                      <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.date} · {req.plannedStart}–{req.plannedEnd}</p>
+                    </div>
+                  </div>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize shrink-0 ml-2 ${
+                    req.status === 'approved' ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                    : req.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                    : 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400'
+                  }`}>
+                    {req.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       </div>
