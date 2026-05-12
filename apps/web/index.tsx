@@ -8,6 +8,11 @@ import './index.css';
 
 initAnalytics();
 
+// Register service worker for push notifications
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
 // Prevent browser/PWA from restoring scroll position between sessions
 if ('scrollRestoration' in history) {
   history.scrollRestoration = 'manual';

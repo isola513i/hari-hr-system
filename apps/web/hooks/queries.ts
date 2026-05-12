@@ -1614,11 +1614,11 @@ export interface AnalyticsDashboard {
   turnover: { name: string; hires: number; departures: number }[];
 }
 
-export const useAnalyticsDashboard = () => {
+export const useAnalyticsDashboard = (year?: number) => {
   return useQuery({
-    queryKey: queryKeys.analytics.dashboard(),
-    queryFn: () => api.get<AnalyticsDashboard>('/analytics/dashboard'),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    queryKey: queryKeys.analytics.dashboard(year),
+    queryFn: () => api.get<AnalyticsDashboard>(`/analytics/dashboard${year ? `?year=${year}` : ''}`),
+    staleTime: 5 * 60 * 1000,
   });
 };
 

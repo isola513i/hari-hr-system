@@ -6,6 +6,7 @@ import {
 } from "../models/Notification";
 import { emitNotificationCreated, emitNotificationRefresh } from "../socket";
 import EmailService from "./EmailService";
+import PushService from "./PushService";
 
 // Helper function to format relative time
 function formatRelativeTime(date: Date): string {
@@ -83,6 +84,15 @@ export class NotificationService {
     );
     const notification = toResponse(result.rows[0]);
     emitNotificationCreated(notification);
+
+    // Send web push notification (fire-and-forget)
+    PushService.sendToUser(data.user_id, {
+      title: data.title,
+      body: data.message,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      url: data.link || '/',
+    }).catch((err) => console.error('PushService: failed to send push', err));
 
     // Send email notification if user has email notifications enabled
     query(

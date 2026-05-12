@@ -1,6 +1,6 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Download } from 'lucide-react';
+import { Download, ChevronDown } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -43,9 +43,13 @@ function downloadCsv(content: string, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: 4 }, (_, i) => CURRENT_YEAR - i);
+
 export const Analytics: React.FC = () => {
   const { t } = useTranslation(['analytics', 'common']);
-  const { data, isLoading } = useAnalyticsDashboard();
+  const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
+  const { data, isLoading } = useAnalyticsDashboard(selectedYear);
 
   const exportToCSV = useCallback(() => {
     if (!data) return;
@@ -78,7 +82,7 @@ export const Analytics: React.FC = () => {
       ...(data.turnover || []).map((r: any) => toCsvRow([r.name, r.hires, r.departures])),
     );
 
-    downloadCsv(sections.join('\n'), `analytics-report-${date}.csv`);
+    downloadCsv(sections.join('\n'), `analytics-report-${selectedYear}-${date}.csv`);
   }, [data, t]);
 
   if (isLoading) {
@@ -109,14 +113,28 @@ export const Analytics: React.FC = () => {
           <h1 className="text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">{t('title')}</h1>
           <p className="text-text-muted-light dark:text-text-muted-dark text-base mt-1">{t('subtitle')}</p>
         </div>
-        <button
-          onClick={exportToCSV}
-          disabled={!data}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-        >
-          <Download size={16} />
-          {t('common:buttons.export')}
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="relative">
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="appearance-none pl-3 pr-8 py-2 text-sm font-medium bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              {YEAR_OPTIONS.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted-light dark:text-text-muted-dark" />
+          </div>
+          <button
+            onClick={exportToCSV}
+            disabled={!data}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download size={16} />
+            {t('common:buttons.export')}
+          </button>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -7,8 +7,14 @@ class AnalyticsController {
    * GET /api/analytics/dashboard
    * Returns all analytics data in a single response for the Deep Analytics page.
    */
-  async getDashboard(_req: Request, res: Response): Promise<void> {
+  async getDashboard(req: Request, res: Response): Promise<void> {
     try {
+      const currentYear = new Date().getFullYear();
+      const yearParam = parseInt(req.query.year as string);
+      const year = Number.isFinite(yearParam) && yearParam >= 2000 && yearParam <= currentYear
+        ? yearParam
+        : currentYear;
+
       const [
         headcount,
         departments,
@@ -17,12 +23,12 @@ class AnalyticsController {
         performance,
         turnover,
       ] = await Promise.all([
-        this.fetchHeadcountGrowth(),
+        this.fetchHeadcountGrowth(year),
         this.fetchDepartmentDistribution(),
-        this.fetchAttendanceTrends(),
-        this.fetchLeaveByType(),
-        this.fetchPerformanceDistribution(),
-        this.fetchTurnover(),
+        this.fetchAttendanceTrends(year),
+        this.fetchLeaveByType(year),
+        this.fetchPerformanceDistribution(year),
+        this.fetchTurnover(year),
       ]);
 
       res.json({
@@ -45,7 +51,7 @@ class AnalyticsController {
    */
   async getHeadcountStats(_req: Request, res: Response): Promise<void> {
     try {
-      const data = await this.fetchHeadcountGrowth();
+      const data = await this.fetchHeadcountGrowth(new Date().getFullYear());
       res.json(data);
     } catch (err) {
       console.error('Error fetching headcount stats:', err);
@@ -77,17 +83,17 @@ class AnalyticsController {
     }
   }
 
-  // ── Headcount Growth (last 6 months, new hires per month) ──────────
-  private async fetchHeadcountGrowth() {
+  // ── Headcount Growth (new hires per month for selected year) ──────────
+  private async fetchHeadcountGrowth(year: number) {
     const result = await query(`
       SELECT
         TO_CHAR(DATE_TRUNC('month', COALESCE(join_date, created_at::date)), 'YYYY-MM') AS month,
         COUNT(*) AS count
       FROM employees
-      WHERE COALESCE(join_date, created_at::date) >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'
+      WHERE EXTRACT(YEAR FROM COALESCE(join_date, created_at::date)) = $1
       GROUP BY month
       ORDER BY month
-    `);
+    `, [year]);
 
     const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const countMap = new Map<string, number>();
@@ -95,16 +101,12 @@ class AnalyticsController {
       countMap.set(r.month, parseInt(r.count, 10));
     }
 
-    // Always return all 6 months, fill 0 for months with no hires
-    const data = [];
     const now = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      data.push({
-        name: monthNames[d.getMonth()],
-        value: countMap.get(key) || 0,
-      });
+    const lastMonth = year === now.getFullYear() ? now.getMonth() : 11;
+    const data = [];
+    for (let m = 0; m <= lastMonth; m++) {
+      const key = `${year}-${String(m + 1).padStart(2, '0')}`;
+      data.push({ name: monthNames[m], value: countMap.get(key) || 0 });
     }
     return data;
   }
@@ -124,8 +126,9 @@ class AnalyticsController {
     }));
   }
 
-  // ── Attendance Trends (last 14 weekdays) ───────────────────────────
-  private async fetchAttendanceTrends() {
+  // ── Attendance Trends (last 14 weekdays of selected year) ───────────
+  private async fetchAttendanceTrends(year: number) {
+    const isCurrentYear = year === new Date().getFullYear();
     const result = await query(`
       SELECT
         TO_CHAR(date, 'MM/DD') AS day,
@@ -134,12 +137,13 @@ class AnalyticsController {
         COUNT(*) FILTER (WHERE status = 'Late') AS late,
         COUNT(*) FILTER (WHERE status = 'Absent') AS absent
       FROM attendance_records
-      WHERE date >= CURRENT_DATE - INTERVAL '21 days'
+      WHERE EXTRACT(YEAR FROM date) = $1
         AND EXTRACT(DOW FROM date) BETWEEN 1 AND 5
+        ${isCurrentYear ? "AND date >= CURRENT_DATE - INTERVAL '21 days'" : ''}
       GROUP BY date
       ORDER BY date DESC
       LIMIT 14
-    `);
+    `, [year]);
     return result.rows
       .map((r: { day: string; on_time: string; late: string; absent: string }) => ({
         day: r.day,
@@ -150,8 +154,8 @@ class AnalyticsController {
       .reverse();
   }
 
-  // ── Leave Usage by Type (approved, this year) ──────────────────────
-  private async fetchLeaveByType() {
+  // ── Leave Usage by Type (approved, selected year) ──────────────────
+  private async fetchLeaveByType(year: number) {
     const result = await query(`
       SELECT
         leave_type AS type,
@@ -163,10 +167,10 @@ class AnalyticsController {
         ), 0) AS days
       FROM leave_requests
       WHERE status = 'Approved'
-        AND start_date >= DATE_TRUNC('year', CURRENT_DATE)
+        AND EXTRACT(YEAR FROM start_date) = $1
       GROUP BY leave_type
       ORDER BY days DESC
-    `);
+    `, [year]);
     return result.rows.map((r: { type: string; requests: string; days: string }) => ({
       type: r.type,
       requests: parseInt(r.requests, 10),
@@ -174,15 +178,15 @@ class AnalyticsController {
     }));
   }
 
-  // ── Performance Rating Distribution ────────────────────────────────
-  private async fetchPerformanceDistribution() {
+  // ── Performance Rating Distribution (selected year) ────────────────
+  private async fetchPerformanceDistribution(year: number) {
     const result = await query(`
       SELECT rating, COUNT(*) AS count
       FROM performance_reviews
-      WHERE date >= CURRENT_DATE - INTERVAL '1 year'
+      WHERE EXTRACT(YEAR FROM date) = $1
       GROUP BY rating
       ORDER BY rating
-    `);
+    `, [year]);
 
     const labels = ['', 'Needs Improvement', 'Developing', 'Solid Performer', 'Exceeds', 'Outstanding'];
     // Fill all ratings 1-5 even if some have 0
@@ -198,29 +202,28 @@ class AnalyticsController {
     }));
   }
 
-  // ── Turnover: Hires vs Departures (last 6 months) ─────────────────
-  private async fetchTurnover() {
+  // ── Turnover: Hires vs Departures (selected year) ─────────────────
+  private async fetchTurnover(year: number) {
     const hiresResult = await query(`
       SELECT
         TO_CHAR(DATE_TRUNC('month', COALESCE(join_date, created_at::date)), 'YYYY-MM') AS month,
         COUNT(*) AS count
       FROM employees
-      WHERE COALESCE(join_date, created_at::date) >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'
+      WHERE EXTRACT(YEAR FROM COALESCE(join_date, created_at::date)) = $1
       GROUP BY month
       ORDER BY month
-    `);
+    `, [year]);
 
-    // Departures = employees with status 'Terminated' whose last job_history end_date is in range
     const departuresResult = await query(`
       SELECT
         TO_CHAR(DATE_TRUNC('month', end_date), 'YYYY-MM') AS month,
         COUNT(*) AS count
       FROM job_history
       WHERE end_date IS NOT NULL
-        AND end_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'
+        AND EXTRACT(YEAR FROM end_date) = $1
       GROUP BY month
       ORDER BY month
-    `);
+    `, [year]);
 
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const hiresMap = new Map<string, number>();
@@ -233,14 +236,13 @@ class AnalyticsController {
       deptMap.set(r.month, parseInt(r.count, 10));
     }
 
-    // Build array for last 6 months
-    const result = [];
     const now = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const lastMonth = year === now.getFullYear() ? now.getMonth() : 11;
+    const result = [];
+    for (let m = 0; m <= lastMonth; m++) {
+      const key = `${year}-${String(m + 1).padStart(2, '0')}`;
       result.push({
-        name: months[d.getMonth()],
+        name: months[m],
         hires: hiresMap.get(key) || 0,
         departures: deptMap.get(key) || 0,
       });

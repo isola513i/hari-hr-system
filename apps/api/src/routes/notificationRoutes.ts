@@ -40,4 +40,13 @@ router.delete(
   NotificationController.delete.bind(NotificationController)
 );
 
+// GET /api/notifications/push-key - VAPID public key
+router.get("/push-key", NotificationController.getPushKey.bind(NotificationController));
+
+// POST /api/notifications/push-subscribe - Save push subscription
+router.post("/push-subscribe", NotificationController.pushSubscribe.bind(NotificationController));
+
+// POST /api/notifications/push-unsubscribe - Remove push subscription
+router.post("/push-unsubscribe", NotificationController.pushUnsubscribe.bind(NotificationController));
+
 export default router;

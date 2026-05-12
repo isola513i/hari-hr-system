@@ -26,6 +26,7 @@ import { queryKeys } from '../lib/queryKeys';
 import { LeaveTypesTab } from '../components/settings/LeaveTypesTab';
 import { PHONE_COUNTRY_CODES, parsePhoneNumber } from '../lib/phoneUtils';
 import { useAttendanceGPSConfig, useUpdateGPSConfig } from '../hooks/queries';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 export const Settings: React.FC = () => {
   const { t, i18n } = useTranslation('settings');
@@ -47,6 +48,7 @@ export const Settings: React.FC = () => {
     () => user?.emailNotifications ?? true
   );
   const [isSavingNotif, setIsSavingNotif] = useState(false);
+  const { state: pushState, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications();
 
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
 
@@ -666,6 +668,31 @@ export const Settings: React.FC = () => {
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary peer-disabled:opacity-50"></div>
                   </label>
                 </div>
+
+                {pushState !== 'unsupported' && (
+                  <div className="flex items-center justify-between p-4 bg-background-light dark:bg-background-dark/50 rounded-lg">
+                    <div>
+                      <h3 className="font-medium text-text-light dark:text-text-dark">
+                        {t('notifications.pushNotifications', { defaultValue: 'Push Notifications' })}
+                      </h3>
+                      <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
+                        {pushState === 'denied'
+                          ? t('notifications.pushDenied', { defaultValue: 'Blocked by browser — allow in browser settings' })
+                          : t('notifications.pushDesc', { defaultValue: 'Receive notifications on this device even when the app is closed' })}
+                      </p>
+                    </div>
+                    <label className={`relative inline-flex items-center ${pushState === 'denied' || pushState === 'loading' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                      <input
+                        type="checkbox"
+                        checked={pushState === 'subscribed'}
+                        onChange={() => pushState === 'subscribed' ? pushUnsubscribe() : pushSubscribe()}
+                        disabled={pushState === 'denied' || pushState === 'loading'}
+                        className="absolute w-0 h-0 opacity-0 peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary peer-disabled:opacity-50"></div>
+                    </label>
+                  </div>
+                )}
               </div>
             </div>
           )}

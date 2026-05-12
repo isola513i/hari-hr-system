@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import NotificationService from "../services/NotificationService";
+import PushService from "../services/PushService";
 import { query } from "../db";
 
 export class NotificationController {
@@ -138,6 +139,52 @@ export class NotificationController {
     } catch (error: any) {
       console.error("Error deleting notification:", error);
       res.status(500).json({ error: "Failed to delete notification" });
+    }
+  }
+
+  // GET /api/notifications/push-key - Return VAPID public key
+  async getPushKey(_req: Request, res: Response): Promise<void> {
+    if (!PushService.isConfigured) {
+      res.status(503).json({ error: 'Push notifications not configured' });
+      return;
+    }
+    res.json({ publicKey: PushService.publicKey });
+  }
+
+  // POST /api/notifications/push-subscribe
+  async pushSubscribe(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.userId;
+      if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
+
+      const { endpoint, keys } = req.body;
+      if (!endpoint || !keys?.p256dh || !keys?.auth) {
+        res.status(400).json({ error: 'Invalid subscription object' });
+        return;
+      }
+
+      await PushService.saveSubscription(userId, { endpoint, keys });
+      res.json({ message: 'Subscribed to push notifications' });
+    } catch (err: any) {
+      console.error('Error saving push subscription:', err);
+      res.status(500).json({ error: 'Failed to save push subscription' });
+    }
+  }
+
+  // POST /api/notifications/push-unsubscribe
+  async pushUnsubscribe(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.userId;
+      if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
+
+      const { endpoint } = req.body;
+      if (!endpoint) { res.status(400).json({ error: 'Endpoint required' }); return; }
+
+      await PushService.removeSubscription(userId, endpoint);
+      res.json({ message: 'Unsubscribed from push notifications' });
+    } catch (err: any) {
+      console.error('Error removing push subscription:', err);
+      res.status(500).json({ error: 'Failed to remove push subscription' });
     }
   }
 }
