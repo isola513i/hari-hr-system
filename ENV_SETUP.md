@@ -66,6 +66,20 @@ If you accidentally commit a `.env` file:
 ### Backend (`apps/api/.env`)
 - `PORT` - API server port (default: 3001)
 - `DATABASE_URL` - PostgreSQL connection string
+- `JWT_SECRET` / `JWT_REFRESH_SECRET` - Generate with `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
+- `FRONTEND_URL` - Frontend URL for CORS (Vercel URL in production)
+
+**Email (AWS SES)**
+- `AWS_SES_REGION` / `AWS_SES_ACCESS_KEY_ID` / `AWS_SES_SECRET_ACCESS_KEY` / `AWS_SES_FROM_EMAIL`
+
+**File Storage — Cloudflare R2 (optional, recommended for production)**
+
+If `R2_ACCOUNT_ID` is set the server uses Cloudflare R2; otherwise it falls back to local disk (`uploads/` directory — not suitable for multi-instance deploys).
+
+- `R2_ACCOUNT_ID` - Cloudflare account ID
+- `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` - R2 API token credentials (from Cloudflare Dashboard → R2 → Manage R2 API Tokens)
+- `R2_BUCKET_NAME` - Bucket name (default: `hari-uploads`)
+- `R2_PUBLIC_URL` - Public base URL after enabling public access or custom domain (e.g. `https://pub-xxxx.r2.dev`)
 
 ### Frontend (`apps/web/.env.local`)
 - `VITE_API_URL` - API endpoint URL
