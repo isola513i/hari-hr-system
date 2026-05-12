@@ -482,8 +482,7 @@ export class LeaveRequestService {
 
         const status = row.status;
 
-        if (status === 'Pending') {
-            // Snapshot then delete
+        if (status === 'Pending' || status === 'Manager Approved') {
             await this.snapshotToHistory(id, 'cancel_requested', employeeId);
             await query('DELETE FROM leave_requests WHERE id = $1', [id]);
             return { action: 'deleted' };

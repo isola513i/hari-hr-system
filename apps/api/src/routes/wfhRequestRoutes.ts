@@ -1,8 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { authenticateToken, requireAdmin, requireAdminOrManager } from '../middlewares/auth';
+import { authenticateToken, requireAdmin, requireAdminOrManager, requireRole } from '../middlewares/auth';
 import WFHRequestService from '../services/WFHRequestService';
 import { apiLimiter } from '../middlewares/security';
 import { safeErrorMessage } from '../utils/errorResponse';
+import { query } from '../db';
 
 const router = Router();
 
@@ -69,7 +70,7 @@ router.get('/admin', requireAdminOrManager, async (req: Request, res: Response) 
  * PUT /api/wfh-requests/:id/manager-approve
  * Manager gives first-tier approval for a WFH request (direct reports only)
  */
-router.put('/:id/manager-approve', requireAdminOrManager, async (req: Request, res: Response) => {
+router.put('/:id/manager-approve', requireRole('MANAGER'), async (req: Request, res: Response) => {
   try {
     const managerEmployeeId = (req as any).user?.employeeId;
     if (!managerEmployeeId) return res.status(403).json({ error: 'Employee profile required' });
@@ -107,6 +108,19 @@ router.put('/:id/reject', requireAdminOrManager, async (req: Request, res: Respo
   try {
     const reviewedById = req.user?.employeeId;
     if (!reviewedById) return res.status(400).json({ error: 'Reviewer ID not found' });
+
+    const role = (req as any).user?.role;
+    if (role === 'MANAGER') {
+      const wfhRow = await query('SELECT employee_id, status FROM wfh_requests WHERE id = $1', [req.params.id]);
+      if (!wfhRow.rows[0]) return res.status(404).json({ error: 'WFH request not found' });
+      if (wfhRow.rows[0].status === 'approved') {
+        return res.status(400).json({ error: 'Cannot reject an already-approved WFH request' });
+      }
+      const empRow = await query('SELECT manager_id FROM employees WHERE id = $1', [wfhRow.rows[0].employee_id]);
+      if (empRow.rows[0]?.manager_id !== reviewedById) {
+        return res.status(403).json({ error: 'You can only reject requests from your direct reports' });
+      }
+    }
 
     const request = await WFHRequestService.reject(req.params.id, reviewedById);
     res.json(request);

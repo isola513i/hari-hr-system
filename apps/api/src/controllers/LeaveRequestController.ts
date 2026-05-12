@@ -161,17 +161,25 @@ export class LeaveRequestController {
             let managerApprovedBy: string | undefined;
             let managerApprovedAt: Date | undefined;
 
+            const leaveReq = await LeaveRequestService.getLeaveRequestById(id);
+            if (!leaveReq) {
+                res.status(404).json({ error: 'Leave request not found' });
+                return;
+            }
+
+            if (['Approved', 'Rejected'].includes(leaveReq.status)) {
+                res.status(400).json({ error: `Cannot update a leave request that is already ${leaveReq.status.toLowerCase()}` });
+                return;
+            }
+
             if (user?.role === 'MANAGER' && user.employeeId) {
-                const leaveReq = await LeaveRequestService.getLeaveRequestById(id);
-                if (leaveReq) {
-                    const empResult = await query(
-                        'SELECT manager_id FROM employees WHERE id = $1',
-                        [leaveReq.employeeId]
-                    );
-                    if (empResult.rows[0]?.manager_id !== user.employeeId) {
-                        res.status(403).json({ error: 'You can only approve leave requests from your direct reports' });
-                        return;
-                    }
+                const empResult = await query(
+                    'SELECT manager_id FROM employees WHERE id = $1',
+                    [leaveReq.employeeId]
+                );
+                if (empResult.rows[0]?.manager_id !== user.employeeId) {
+                    res.status(403).json({ error: 'You can only approve leave requests from your direct reports' });
+                    return;
                 }
                 if (status === 'Approved') {
                     effectiveStatus = 'Manager Approved';
