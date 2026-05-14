@@ -44,6 +44,7 @@ import otRequestRoutes from "./routes/otRequestRoutes";
 import calendarRoutes from "./routes/calendarRoutes";
 import { runMigration } from "./scripts/init-db";
 import { initAttendanceScheduler } from "./services/AttendanceScheduler";
+import { initMilestoneScheduler } from "./services/MilestoneScheduler";
 
 dotenv.config();
 
@@ -781,6 +782,7 @@ if (process.env.VERCEL !== '1') {
       console.log(`Server running at http://localhost:${port}`);
       console.log(`Socket.io enabled for real-time updates`);
       initAttendanceScheduler();
+      initMilestoneScheduler();
     });
   });
 }

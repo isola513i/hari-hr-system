@@ -91,6 +91,7 @@ export interface Employee {
   status: 'Active' | 'On Leave' | 'Terminated';
   onboardingStatus: 'Not Started' | 'In Progress' | 'Completed';
   joinDate: string;
+  birthDate?: string;
   location: string;
   skills: string[];
   // New fields for ESS
@@ -493,6 +494,7 @@ export interface EmployeeFormData {
   jobTitle?: string;
   location?: string;
   joinDate?: string;
+  birthDate?: string;
   bio?: string;
   slack?: string;
   emergencyContact?: string;

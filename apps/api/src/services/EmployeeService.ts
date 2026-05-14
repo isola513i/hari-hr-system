@@ -208,6 +208,10 @@ export class EmployeeService {
             updates.push(`join_date = $${paramIndex++}`);
             values.push(data.joinDate);
         }
+        if (data.birthDate !== undefined) {
+            updates.push(`birth_date = $${paramIndex++}`);
+            values.push(data.birthDate || null);
+        }
         if (data.bio !== undefined) {
             updates.push(`bio = $${paramIndex++}`);
             values.push(data.bio);
@@ -354,6 +358,7 @@ export class EmployeeService {
             role: row.role,
             department: row.department,
             joinDate: row.join_date || row.created_at,
+            birthDate: row.birth_date || null,
             salary: row.salary,
             avatar: row.avatar,
             status: row.effective_status || row.status,

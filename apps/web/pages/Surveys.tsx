@@ -15,8 +15,9 @@ import {
   useCloseSurvey,
   useReopenSurvey,
   useDeleteSurvey,
+  useSentimentOverview,
 } from '../hooks/queries';
-import type { SurveyCategory } from '../types';
+import type { SurveyCategory, SentimentOverview } from '../types';
 
 const SURVEY_CATEGORIES: SurveyCategory[] = [
   'Workload', 'Team', 'Growth', 'Work-Life Balance', 'Management',
@@ -319,12 +320,105 @@ const CreateSurveyModal: React.FC<{
 // Main Surveys Page
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Survey Analytics
+// ---------------------------------------------------------------------------
+
+function ScoreRing({ score }: { score: number }) {
+  const color = score >= 70 ? 'text-green-500' : score >= 40 ? 'text-yellow-500' : 'text-red-500';
+  return (
+    <div className={`text-4xl font-bold ${color}`}>
+      {score}<span className="text-lg font-normal text-text-muted-light dark:text-text-muted-dark">/100</span>
+    </div>
+  );
+}
+
+function SurveyAnalytics({ data }: { data: SentimentOverview }) {
+  const { overallScore, responseRate, totalResponses, totalEmployees, categoryBreakdown, distribution } = data;
+
+  return (
+    <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
+      <div className="p-5 border-b border-border-light dark:border-border-dark bg-primary/5 flex items-center gap-2">
+        <BarChart3 size={20} className="text-primary" />
+        <h2 className="text-lg font-bold text-text-light dark:text-text-dark">Survey Analytics</h2>
+      </div>
+
+      <div className="p-5 space-y-6">
+        {/* Summary stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="text-center">
+            <ScoreRing score={overallScore} />
+            <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">Overall Score</p>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-primary">{responseRate}%</div>
+            <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">Response Rate</p>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-text-light dark:text-text-dark">{totalResponses}</div>
+            <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">Respondents</p>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-text-light dark:text-text-dark">{totalEmployees}</div>
+            <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">Total Employees</p>
+          </div>
+        </div>
+
+        {/* Sentiment distribution */}
+        <div>
+          <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-2">Sentiment</p>
+          <div className="flex rounded-full overflow-hidden h-3">
+            {distribution.positive > 0 && (
+              <div className="bg-green-500 transition-all" style={{ width: `${distribution.positive}%` }} title={`Positive ${distribution.positive}%`} />
+            )}
+            {distribution.neutral > 0 && (
+              <div className="bg-yellow-400 transition-all" style={{ width: `${distribution.neutral}%` }} title={`Neutral ${distribution.neutral}%`} />
+            )}
+            {distribution.negative > 0 && (
+              <div className="bg-red-400 transition-all" style={{ width: `${distribution.negative}%` }} title={`Negative ${distribution.negative}%`} />
+            )}
+          </div>
+          <div className="flex gap-4 mt-2 text-xs text-text-muted-light dark:text-text-muted-dark">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />Positive {distribution.positive}%</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />Neutral {distribution.neutral}%</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" />Negative {distribution.negative}%</span>
+          </div>
+        </div>
+
+        {/* Category breakdown */}
+        {categoryBreakdown.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-3">Category Breakdown</p>
+            <div className="space-y-2.5">
+              {categoryBreakdown.map((cat) => (
+                <div key={cat.category}>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-text-light dark:text-text-dark font-medium">{cat.category}</span>
+                    <span className="text-text-muted-light dark:text-text-muted-dark">{cat.score}/100</span>
+                  </div>
+                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${cat.score >= 70 ? 'bg-green-500' : cat.score >= 40 ? 'bg-yellow-400' : 'bg-red-400'}`}
+                      style={{ width: `${cat.score}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export const Surveys: React.FC = () => {
   const { t } = useTranslation(['help', 'common']);
-  const { user, isAdminView } = useAuth();
+  const { isAdminView } = useAuth();
   const navigate = useNavigate();
   const isAdmin = isAdminView;
   const { data: surveys = [], isLoading } = useSurveyList();
+  const { data: sentiment } = useSentimentOverview();
   const closeMutation = useCloseSurvey();
   const reopenMutation = useReopenSurvey();
   const deleteMutation = useDeleteSurvey();
@@ -386,6 +480,9 @@ export const Surveys: React.FC = () => {
           </button>
         )}
       </header>
+
+      {/* Analytics — Admin only */}
+      {isAdmin && sentiment && <SurveyAnalytics data={sentiment} />}
 
       {isLoading ? (
         <div className="text-center py-12 text-text-muted-light">{t('surveys.loading')}</div>

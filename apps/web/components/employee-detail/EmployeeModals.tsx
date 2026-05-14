@@ -274,6 +274,17 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
 
                             <div>
                                 <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                                    Birth Date
+                                </label>
+                                <DatePicker
+                                    value={editForm.birthDate || ''}
+                                    onChange={(date) => onProfileChange('birthDate', date)}
+                                    placeholder="Select birth date"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                                     {t('employees:modals.status')}
                                     {!canEditSensitiveInfo && <Lock size={12} className="inline ml-2 text-text-muted-light" />}
                                 </label>

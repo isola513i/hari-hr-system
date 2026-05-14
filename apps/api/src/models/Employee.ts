@@ -13,6 +13,7 @@ export interface Employee {
     role: string;
     department: string;
     joinDate: string;
+    birthDate?: string | null;
     salary?: number;
     avatar?: string;
     status?: string;
@@ -57,4 +58,5 @@ export interface UpdateEmployeeDTO extends Partial<CreateEmployeeDTO> {
     address?: EmployeeAddress | null;
     bannerColor?: string | null;
     workType?: 'office' | 'remote' | 'hybrid';
+    birthDate?: string | null;
 }
