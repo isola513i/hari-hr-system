@@ -48,7 +48,8 @@ router.get('/team', cacheMiddleware(30000), async (req, res) => {
       `SELECT
          lr.id, 'leave' AS event_type,
          e.id AS employee_id, e.name AS employee_name, e.avatar, e.department,
-         lr.start_date AS start_date, lr.end_date AS end_date,
+         TO_CHAR(lr.start_date, 'YYYY-MM-DD') AS start_date,
+         TO_CHAR(lr.end_date, 'YYYY-MM-DD') AS end_date,
          lr.leave_type AS sub_type, lr.status, lr.reason
        FROM leave_requests lr
        JOIN employees e ON lr.employee_id = e.id
@@ -64,7 +65,8 @@ router.get('/team', cacheMiddleware(30000), async (req, res) => {
       `SELECT
          wr.id, 'wfh' AS event_type,
          e.id AS employee_id, e.name AS employee_name, e.avatar, e.department,
-         wr.date AS start_date, wr.date AS end_date,
+         TO_CHAR(wr.date, 'YYYY-MM-DD') AS start_date,
+         TO_CHAR(wr.date, 'YYYY-MM-DD') AS end_date,
          'WFH' AS sub_type, wr.status, wr.reason
        FROM wfh_requests wr
        JOIN employees e ON wr.employee_id = e.id
@@ -80,9 +82,9 @@ router.get('/team', cacheMiddleware(30000), async (req, res) => {
       `SELECT
          ot.id, 'ot' AS event_type,
          e.id AS employee_id, e.name AS employee_name, e.avatar, e.department,
-         ot.date AS start_date, ot.date AS end_date,
-         ot.ot_type AS sub_type, ot.status,
-         ot.reason
+         TO_CHAR(ot.date, 'YYYY-MM-DD') AS start_date,
+         TO_CHAR(ot.date, 'YYYY-MM-DD') AS end_date,
+         ot.ot_type AS sub_type, ot.status, ot.reason
        FROM ot_requests ot
        JOIN employees e ON ot.employee_id = e.id
        WHERE ot.date >= $1 AND ot.date <= $2
@@ -96,7 +98,8 @@ router.get('/team', cacheMiddleware(30000), async (req, res) => {
     const holidayResult = await query(
       `SELECT id, 'holiday' AS event_type,
          NULL AS employee_id, name AS employee_name, NULL AS avatar, NULL AS department,
-         date AS start_date, COALESCE(end_date, date) AS end_date,
+         TO_CHAR(date, 'YYYY-MM-DD') AS start_date,
+         TO_CHAR(COALESCE(end_date, date), 'YYYY-MM-DD') AS end_date,
          'Holiday' AS sub_type, 'confirmed' AS status, name AS reason
        FROM holidays
        WHERE date >= $1 AND date <= $2
