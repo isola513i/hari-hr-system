@@ -463,6 +463,31 @@ CREATE INDEX idx_wfh_requests_employee ON wfh_requests(employee_id);
 CREATE INDEX idx_wfh_requests_date ON wfh_requests(date);
 CREATE INDEX idx_wfh_requests_status ON wfh_requests(status);
 
+-- 18a-2. Shifts and Shift Assignments
+CREATE TABLE IF NOT EXISTS shifts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    color VARCHAR(20) DEFAULT 'blue',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS shift_assignments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    shift_id UUID NOT NULL REFERENCES shifts(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    notes TEXT,
+    created_by UUID REFERENCES users(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_shift_per_day UNIQUE (employee_id, date)
+);
+CREATE INDEX IF NOT EXISTS idx_shift_assignments_employee ON shift_assignments(employee_id);
+CREATE INDEX IF NOT EXISTS idx_shift_assignments_date ON shift_assignments(date);
+CREATE INDEX IF NOT EXISTS idx_shift_assignments_shift ON shift_assignments(shift_id);
+
 -- 18. Payroll Records
 CREATE TABLE payroll_records (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

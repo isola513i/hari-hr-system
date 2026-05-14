@@ -102,6 +102,9 @@ const Assets = lazy(() =>
 const AuditLogs = lazy(() =>
   import("./pages/AuditLogs").then((m) => ({ default: m.AuditLogs })),
 );
+const ShiftManagement = lazy(() =>
+  import("./pages/ShiftManagement").then((m) => ({ default: m.ShiftManagement })),
+);
 
 // Loading component
 const PageLoader = () => (
@@ -181,6 +184,7 @@ const App: React.FC = () => {
                     <Route path="team-calendar" element={<PageErrorBoundary><TeamCalendar /></PageErrorBoundary>} />
                     <Route path="assets" element={<PageErrorBoundary><Assets /></PageErrorBoundary>} />
                     <Route path="audit-logs" element={<PageErrorBoundary><AuditLogs /></PageErrorBoundary>} />
+                    <Route path="shift-management" element={<PageErrorBoundary><ShiftManagement /></PageErrorBoundary>} />
                     <Route path="help" element={<PageErrorBoundary><HelpSupport /></PageErrorBoundary>} />
                     <Route path="*" element={<NotFound />} />
                   </Route>

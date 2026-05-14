@@ -159,4 +159,10 @@ export const queryKeys = {
     list: (filters?: Record<string, unknown>) => [...queryKeys.assets.all, 'list', filters] as const,
     detail: (id: string) => [...queryKeys.assets.all, 'detail', id] as const,
   },
+  shifts: {
+    all: ['shifts'] as const,
+    templates: () => [...queryKeys.shifts.all, 'templates'] as const,
+    schedule: (filters: Record<string, unknown>) => [...queryKeys.shifts.all, 'schedule', filters] as const,
+    mySchedule: (filters: Record<string, unknown>) => [...queryKeys.shifts.all, 'my', filters] as const,
+  },
 } as const;
