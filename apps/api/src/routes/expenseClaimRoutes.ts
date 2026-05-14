@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { apiLimiter } from '../middlewares/security';
-import { authenticateToken, requireAdmin, requireAdminOrFinance } from '../middlewares/auth';
+import { authenticateToken, requireAdmin, requireAdminOrFinance, requireRole } from '../middlewares/auth';
 import { cacheMiddleware, invalidateCache } from '../middlewares/cache';
 import { receiptUpload, generateStorageKey, getFileBuffer } from '../middlewares/upload';
 import { storageService } from '../services/StorageService';
@@ -35,6 +35,18 @@ router.get('/summary/:employeeId', cacheMiddleware(60000), async (req, res) => {
     } catch (error: any) {
         console.error('Error fetching employee expense summary:', error);
         res.status(500).json({ error: 'Failed to fetch expense summary' });
+    }
+});
+
+// GET /api/expense-claims/manager-queue - Manager sees direct reports' pending claims
+router.get('/manager-queue', requireRole('MANAGER', 'HR_ADMIN'), async (req, res) => {
+    try {
+        const user = (req as any).user;
+        const claims = await ExpenseClaimService.getManagerQueue(user.employeeId);
+        res.json(claims);
+    } catch (error: any) {
+        console.error('Error fetching manager expense queue:', error);
+        res.status(500).json({ error: 'Failed to fetch expense queue' });
     }
 });
 
@@ -169,6 +181,23 @@ router.patch('/:id', requireAdminOrFinance, apiLimiter, invalidateCache('/api/ex
     } catch (error: any) {
         console.error('Error updating expense claim status:', error);
         res.status(500).json({ error: safeErrorMessage(error, 'Failed to update expense claim status') });
+    }
+});
+
+// PATCH /api/expense-claims/:id/manager-approve - Manager first-tier approval
+router.patch('/:id/manager-approve', requireRole('MANAGER', 'HR_ADMIN'), apiLimiter, invalidateCache('/api/expense-claims'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = (req as any).user;
+        const claim = await ExpenseClaimService.managerApprove(id, user.employeeId);
+        if (!claim) {
+            return res.status(404).json({ error: 'Expense claim not found' });
+        }
+        emitExpenseClaimUpdated(claim);
+        res.json(claim);
+    } catch (error: any) {
+        console.error('Error manager-approving expense claim:', error);
+        res.status(400).json({ error: safeErrorMessage(error, 'Failed to approve expense claim') });
     }
 });
 

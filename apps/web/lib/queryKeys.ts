@@ -72,6 +72,11 @@ export const queryKeys = {
   performanceReviews: {
     all: ['performanceReviews'] as const,
     byEmployee: (id: string) => [...queryKeys.performanceReviews.all, id] as const,
+    list: (filters?: Record<string, string>) => [...queryKeys.performanceReviews.all, 'list', filters] as const,
+  },
+  teamCalendar: {
+    all: ['teamCalendar'] as const,
+    byMonth: (month: string, dept?: string) => [...queryKeys.teamCalendar.all, month, dept] as const,
   },
   jobHistory: {
     all: ['jobHistory'] as const,

@@ -41,6 +41,7 @@ import expenseClaimRoutes from "./routes/expenseClaimRoutes";
 import holidayRoutes from "./routes/holidayRoutes";
 import clientLogsRoutes from "./routes/clientLogsRoutes";
 import otRequestRoutes from "./routes/otRequestRoutes";
+import calendarRoutes from "./routes/calendarRoutes";
 import { runMigration } from "./scripts/init-db";
 import { initAttendanceScheduler } from "./services/AttendanceScheduler";
 
@@ -172,6 +173,7 @@ app.use("/api/compliance", complianceRoutes);
 app.use("/api/expense-claims", expenseClaimRoutes);
 app.use("/api/holidays", holidayRoutes);
 app.use("/api/logs", clientLogsRoutes);
+app.use("/api/calendar", calendarRoutes);
 
 // Backward compatibility for leave balances endpoint
 // Old: GET /api/leave-balances/:employeeId

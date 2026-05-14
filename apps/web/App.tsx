@@ -90,6 +90,12 @@ const Holidays = lazy(() =>
 const NotFound = lazy(() =>
   import("./pages/NotFound").then((m) => ({ default: m.NotFound })),
 );
+const PerformanceReviews = lazy(() =>
+  import("./pages/PerformanceReviews").then((m) => ({ default: m.PerformanceReviews })),
+);
+const TeamCalendar = lazy(() =>
+  import("./pages/TeamCalendar").then((m) => ({ default: m.TeamCalendar })),
+);
 
 // Loading component
 const PageLoader = () => (
@@ -165,6 +171,8 @@ const App: React.FC = () => {
                     <Route path="documents" element={<PageErrorBoundary><Documents /></PageErrorBoundary>} />
                     <Route path="settings" element={<PageErrorBoundary><Settings /></PageErrorBoundary>} />
                     <Route path="notifications" element={<PageErrorBoundary><Notifications /></PageErrorBoundary>} />
+                    <Route path="performance-reviews" element={<PageErrorBoundary><PerformanceReviews /></PageErrorBoundary>} />
+                    <Route path="team-calendar" element={<PageErrorBoundary><TeamCalendar /></PageErrorBoundary>} />
                     <Route path="help" element={<PageErrorBoundary><HelpSupport /></PageErrorBoundary>} />
                     <Route path="*" element={<NotFound />} />
                   </Route>

@@ -10,9 +10,11 @@ export interface ExpenseClaim {
     expenseDate: string;
     description?: string;
     receiptPath?: string;
-    status: 'Pending' | 'Approved' | 'Rejected' | 'Reimbursed' | 'Cancelled';
+    status: 'Pending' | 'Manager Approved' | 'Approved' | 'Rejected' | 'Reimbursed' | 'Cancelled';
     rejectionReason?: string;
     approverEmployeeId?: string;
+    managerReviewedBy?: string;
+    managerReviewedAt?: string;
     createdAt?: string;
     updatedAt?: string;
 }

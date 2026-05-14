@@ -1,6 +1,7 @@
 import { query } from '../db';
 import { ExpenseClaim, CreateExpenseClaimDTO, UpdateExpenseClaimStatusDTO } from '../models/ExpenseClaim';
 import { BusinessError } from '../utils/errorResponse';
+import NotificationService from './NotificationService';
 
 export class ExpenseClaimService {
     async getAllExpenseClaims(): Promise<ExpenseClaim[]> {
@@ -154,6 +155,53 @@ export class ExpenseClaimService {
         }
     }
 
+    async managerApprove(id: string, managerEmployeeId: string): Promise<ExpenseClaim> {
+        const existing = await query('SELECT * FROM expense_claims WHERE id = $1', [id]);
+        if (existing.rows.length === 0) throw new BusinessError('Expense claim not found');
+
+        const claim = existing.rows[0];
+        if (claim.status !== 'Pending') throw new BusinessError('Only pending expense claims can be manager-approved');
+
+        // Verify manager is a direct manager of the employee
+        const empCheck = await query(
+            'SELECT manager_id, name FROM employees WHERE id = $1',
+            [claim.employee_id]
+        );
+        if (empCheck.rows[0]?.manager_id !== managerEmployeeId) {
+            throw new BusinessError('You can only approve expense claims from your direct reports');
+        }
+
+        const result = await query(
+            `UPDATE expense_claims
+             SET status = 'Manager Approved', manager_reviewed_by = $1, manager_reviewed_at = NOW(), updated_at = NOW()
+             WHERE id = $2 RETURNING *`,
+            [managerEmployeeId, id]
+        );
+
+        // Notify HR admins for final approval
+        const empName = empCheck.rows[0]?.name ?? 'An employee';
+        NotificationService.notifyAdmins({
+            title: 'Expense Claim Ready for Final Approval',
+            message: `Manager approved ${empName}'s expense claim "${claim.title}" (฿${claim.amount}). Needs final approval.`,
+            type: 'info',
+            link: '/expenses',
+        }).catch(() => {});
+
+        return this.getExpenseClaimById(result.rows[0].id) as Promise<ExpenseClaim>;
+    }
+
+    async getManagerQueue(managerEmployeeId: string): Promise<ExpenseClaim[]> {
+        const result = await query(
+            `SELECT ec.*, e.name AS employee_name, e.avatar
+             FROM expense_claims ec
+             JOIN employees e ON ec.employee_id = e.id
+             WHERE e.manager_id = $1 AND ec.status = 'Pending'
+             ORDER BY ec.created_at DESC`,
+            [managerEmployeeId]
+        );
+        return result.rows.map(this.mapRowToExpenseClaim);
+    }
+
     async deleteExpenseClaim(id: string): Promise<void> {
         const result = await query('DELETE FROM expense_claims WHERE id = $1', [id]);
         if (result.rowCount === 0) {
@@ -238,6 +286,8 @@ export class ExpenseClaimService {
             status: row.status,
             rejectionReason: row.rejection_reason || undefined,
             approverEmployeeId: row.approver_id || undefined,
+            managerReviewedBy: row.manager_reviewed_by || undefined,
+            managerReviewedAt: row.manager_reviewed_at || undefined,
             createdAt: row.created_at,
             updatedAt: row.updated_at,
         };

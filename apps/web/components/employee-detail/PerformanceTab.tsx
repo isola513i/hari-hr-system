@@ -50,7 +50,7 @@ export const PerformanceTab: React.FC<PerformanceTabProps> = ({
                                             <Star
                                                 key={star}
                                                 size={16}
-                                                className={`${star <= review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
+                                                className={`${star <= (review.rating ?? 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
                                             />
                                         ))}
                                         <span className="ml-2 text-sm font-medium text-text-light dark:text-text-dark">{review.rating}/5</span>

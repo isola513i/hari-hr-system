@@ -374,11 +374,38 @@ export interface TeamMember {
 export interface PerformanceReview {
   id: string;
   employeeId: string;
+  employeeName?: string;
+  employeeAvatar?: string;
   date: string;
   reviewer: string;
   reviewerUserId?: string;
-  rating: number; // 1 to 5
+  rating: number | null;
   notes: string;
+  status: 'draft' | 'submitted' | 'manager_reviewed' | 'completed' | 'rejected';
+  selfReview?: string | null;
+  managerComment?: string | null;
+  hrComment?: string | null;
+  reviewPeriod?: string | null;
+  managerReviewedBy?: string | null;
+  managerReviewedAt?: string | null;
+  hrReviewedBy?: string | null;
+  hrReviewedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  eventType: 'leave' | 'wfh' | 'ot' | 'holiday';
+  employeeId: string | null;
+  employeeName: string;
+  avatar: string | null;
+  department: string | null;
+  startDate: string;
+  endDate: string;
+  subType: string;
+  status: string;
+  reason: string | null;
 }
 
 // ============================================================================

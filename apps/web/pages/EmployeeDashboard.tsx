@@ -559,7 +559,7 @@ export const EmployeeDashboard: React.FC = () => {
                       </div>
                     </div>
                     <span className={`px-2 py-1 text-xs font-medium rounded ${badgeColor}`}>
-                      {t(`common:status.${req.status === 'Cancel Requested' ? 'cancelRequested' : req.status === 'In Progress' ? 'inProgress' : req.status.toLowerCase()}`, { defaultValue: req.status })}
+                      {t(`common:status.${req.status === 'Cancel Requested' ? 'cancelRequested' : req.status === 'Manager Approved' ? 'managerApproved' : req.status.toLowerCase()}`, { defaultValue: req.status })}
                     </span>
                   </div>
                 );

@@ -474,6 +474,102 @@ export const usePerformanceReviews = (id: string | undefined) => {
   });
 };
 
+export const useAllPerformanceReviews = (filters?: { status?: string }) => {
+  return useQuery({
+    queryKey: queryKeys.performanceReviews.list(filters),
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (filters?.status) params.set('status', filters.status);
+      return api.get<PerformanceReview[]>(`/performance/reviews?${params.toString()}`);
+    },
+    staleTime: 30000,
+  });
+};
+
+export const useCreateSelfReview = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { selfReview: string; reviewPeriod?: string }) =>
+      api.post<PerformanceReview>('/performance/reviews/self', data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.performanceReviews.all });
+    },
+  });
+};
+
+export const useSubmitSelfReview = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<PerformanceReview>(`/performance/reviews/${id}/submit`, {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.performanceReviews.all });
+    },
+  });
+};
+
+export const useManagerReview = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, rating, managerComment }: { id: string; rating: number; managerComment: string }) =>
+      api.put<PerformanceReview>(`/performance/reviews/${id}/manager-review`, { rating, managerComment }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.performanceReviews.all });
+    },
+  });
+};
+
+export const useHrApproveReview = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, hrComment }: { id: string; hrComment?: string }) =>
+      api.put<PerformanceReview>(`/performance/reviews/${id}/hr-approve`, { hrComment }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.performanceReviews.all });
+    },
+  });
+};
+
+export const useRejectReview = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      api.put<PerformanceReview>(`/performance/reviews/${id}/reject`, { reason }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.performanceReviews.all });
+    },
+  });
+};
+
+export const useManagerExpenseQueue = () => {
+  return useQuery({
+    queryKey: ['expenseClaims', 'managerQueue'],
+    queryFn: () => api.get<any[]>('/expense-claims/manager-queue'),
+    staleTime: 30000,
+  });
+};
+
+export const useManagerApproveExpense = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.patch(`/expense-claims/${id}/manager-approve`, {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['expenseClaims'] });
+    },
+  });
+};
+
+export const useTeamCalendar = (month: string, department?: string) => {
+  return useQuery({
+    queryKey: queryKeys.teamCalendar.byMonth(month, department),
+    queryFn: () => {
+      const params = new URLSearchParams({ month });
+      if (department) params.set('department', department);
+      return api.get<{ month: string; events: any[]; departments: string[] }>(`/calendar/team?${params.toString()}`);
+    },
+    staleTime: 30000,
+  });
+};
+
 export const useEmployeeTraining = (id: string | undefined) => {
   return useQuery({
     queryKey: queryKeys.training.byEmployee(id!),
