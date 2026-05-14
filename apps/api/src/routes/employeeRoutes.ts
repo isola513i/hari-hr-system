@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import EmployeeController from '../controllers/EmployeeController';
 import EmployeeLeaveQuotaController from '../controllers/EmployeeLeaveQuotaController';
 import { apiLimiter, validateEmployeeCreation, validateRequest } from '../middlewares/security';
@@ -9,6 +9,8 @@ import { storageService } from '../services/StorageService';
 import { getStatusMap } from '../socket';
 import { query } from '../db';
 import { safeErrorMessage } from '../utils/errorResponse';
+import { generateEmployeeReportPdf } from '../services/EmployeeReportPdfService';
+import SystemConfigService from '../services/SystemConfigService';
 
 const router = Router();
 
@@ -194,5 +196,101 @@ router.put('/:id', requireAdmin, apiLimiter, invalidateCache('/api/employees'), 
 
 // DELETE /api/employees/:id - Delete employee (HR_ADMIN only)
 router.delete('/:id', requireAdmin, apiLimiter, invalidateCache('/api/employees'), EmployeeController.deleteEmployee.bind(EmployeeController));
+
+/**
+ * GET /api/employees/:id/report
+ * Download comprehensive employee report as PDF (admin or self)
+ */
+router.get('/:id/report', async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+
+    const empResult = await query(
+      `SELECT e.*, u.email AS user_email FROM employees e LEFT JOIN users u ON u.id = e.user_id WHERE e.id = $1`,
+      [req.params.id]
+    );
+    if (!empResult.rows.length) return res.status(404).json({ error: 'Employee not found' });
+    const emp = empResult.rows[0];
+
+    // Access: admin, manager, or self
+    if (user.role !== 'HR_ADMIN' && user.role !== 'MANAGER' && user.employeeId !== req.params.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Leave summary
+    const leaveResult = await query(
+      `SELECT leave_type, status, COUNT(*) AS cnt
+       FROM leave_requests WHERE employee_id = $1
+       GROUP BY leave_type, status`,
+      [req.params.id]
+    );
+    const leaveSummary = {
+      totalApproved: leaveResult.rows.filter((r: any) => r.status === 'Approved').reduce((s: number, r: any) => s + parseInt(r.cnt), 0),
+      totalPending: leaveResult.rows.filter((r: any) => r.status === 'Pending').reduce((s: number, r: any) => s + parseInt(r.cnt), 0),
+      byType: Object.values(
+        leaveResult.rows.filter((r: any) => r.status === 'Approved').reduce((acc: any, r: any) => {
+          acc[r.leave_type] = acc[r.leave_type] || { type: r.leave_type, count: 0 };
+          acc[r.leave_type].count += parseInt(r.cnt);
+          return acc;
+        }, {} as Record<string, any>)
+      ) as Array<{ type: string; count: number }>,
+    };
+
+    // Attendance summary (last 90 days)
+    const attResult = await query(
+      `SELECT status, COUNT(*) AS cnt FROM attendance_records
+       WHERE employee_id = $1 AND date >= CURRENT_DATE - INTERVAL '90 days'
+       GROUP BY status`,
+      [req.params.id]
+    );
+    const attMap: Record<string, number> = {};
+    attResult.rows.forEach((r: any) => { attMap[r.status] = parseInt(r.cnt); });
+    const attendanceSummary = {
+      present: (attMap['Present'] || 0) + (attMap['Late'] || 0),
+      absent: attMap['Absent'] || 0,
+      late: attMap['Late'] || 0,
+      total: attResult.rows.reduce((s: number, r: any) => s + parseInt(r.cnt), 0),
+    };
+
+    // Performance reviews
+    const perfResult = await query(
+      `SELECT TO_CHAR(date, 'YYYY-MM-DD') AS date, reviewer, rating, notes FROM performance_reviews WHERE employee_id = $1 ORDER BY date DESC LIMIT 5`,
+      [req.params.id]
+    );
+
+    // Training records
+    const trainResult = await query(
+      `SELECT title, status, TO_CHAR(completion_date, 'YYYY-MM-DD') AS completion_date, score FROM employee_training WHERE employee_id = $1 ORDER BY assigned_at DESC`,
+      [req.params.id]
+    );
+
+    const companyName = await SystemConfigService.getConfigValue('system', 'app_name', 'HARI HR System');
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="report-${emp.name?.replace(/\s+/g, '-')}.pdf"`);
+
+    generateEmployeeReportPdf({
+      employee: {
+        name: emp.name,
+        email: emp.email || emp.user_email,
+        role: emp.role,
+        department: emp.department,
+        joinDate: emp.join_date,
+        employeeCode: emp.employee_code,
+        phone: emp.phone,
+        location: emp.location,
+        status: emp.status,
+      },
+      leaveSummary,
+      attendanceSummary,
+      performanceReviews: perfResult.rows.map((r: any) => ({ date: r.date, reviewer: r.reviewer, rating: r.rating, notes: r.notes })),
+      trainingRecords: trainResult.rows.map((r: any) => ({ title: r.title, status: r.status, completionDate: r.completion_date, score: r.score })),
+      companyName: String(companyName),
+    }, res);
+  } catch (err) {
+    console.error('Employee report PDF error:', err);
+    res.status(500).json({ error: 'Failed to generate report' });
+  }
+});
 
 export default router;

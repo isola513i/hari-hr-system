@@ -753,6 +753,29 @@ export interface AdminAttendanceFilters {
 }
 
 // ============================================================================
+// Asset Types
+// ============================================================================
+
+export type AssetStatus = 'Available' | 'Assigned' | 'Under Maintenance' | 'Retired';
+
+export interface CompanyAsset {
+  id: string;
+  name: string;
+  assetType: string;
+  serialNumber?: string | null;
+  status: AssetStatus;
+  assignedTo?: string | null;
+  assignedToName?: string | null;
+  assignedToDepartment?: string | null;
+  assignedAt?: string | null;
+  purchaseDate?: string | null;
+  purchasePrice?: number | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================================================
 // System Config Types
 // ============================================================================
 

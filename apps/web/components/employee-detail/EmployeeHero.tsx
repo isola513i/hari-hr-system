@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { EmployeeHeroProps } from './EmployeeDetailTypes';
 import { StatusIndicator } from '../StatusIndicator';
 import { useUserStatus } from '../../contexts/UserStatusContext';
+import { BASE_URL, getAuthToken } from '../../lib/api';
 
 const BANNER_PRESETS = [
     { label: 'Blue Teal',      from: '#4a90d9', to: '#50c5b7' },
@@ -187,6 +188,28 @@ export const EmployeeHero: React.FC<EmployeeHeroProps> = ({
                                             className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-text-light dark:text-text-dark"
                                         >
                                             {t('employees:hero.transfer')}
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                setActionsOpen(false);
+                                                try {
+                                                    const token = getAuthToken();
+                                                    const res = await fetch(`${BASE_URL}/employees/${employee.id}/report`, {
+                                                        headers: { Authorization: `Bearer ${token}` },
+                                                    });
+                                                    if (!res.ok) throw new Error();
+                                                    const blob = await res.blob();
+                                                    const url = URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = url;
+                                                    a.download = `report-${employee.name?.replace(/\s+/g, '-')}.pdf`;
+                                                    a.click();
+                                                    URL.revokeObjectURL(url);
+                                                } catch { alert('Failed to download report'); }
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-text-light dark:text-text-dark"
+                                        >
+                                            Download Report PDF
                                         </button>
                                         <button
                                             onClick={() => { setActionsOpen(false); onTerminate(); }}

@@ -154,4 +154,9 @@ export const queryKeys = {
     all: ['holidays'] as const,
     list: () => [...queryKeys.holidays.all, 'list'] as const,
   },
+  assets: {
+    all: ['assets'] as const,
+    list: (filters?: Record<string, unknown>) => [...queryKeys.assets.all, 'list', filters] as const,
+    detail: (id: string) => [...queryKeys.assets.all, 'detail', id] as const,
+  },
 } as const;

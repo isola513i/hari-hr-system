@@ -96,6 +96,9 @@ const PerformanceReviews = lazy(() =>
 const TeamCalendar = lazy(() =>
   import("./pages/TeamCalendar").then((m) => ({ default: m.TeamCalendar })),
 );
+const Assets = lazy(() =>
+  import("./pages/Assets").then((m) => ({ default: m.Assets })),
+);
 
 // Loading component
 const PageLoader = () => (
@@ -173,6 +176,7 @@ const App: React.FC = () => {
                     <Route path="notifications" element={<PageErrorBoundary><Notifications /></PageErrorBoundary>} />
                     <Route path="performance-reviews" element={<PageErrorBoundary><PerformanceReviews /></PageErrorBoundary>} />
                     <Route path="team-calendar" element={<PageErrorBoundary><TeamCalendar /></PageErrorBoundary>} />
+                    <Route path="assets" element={<PageErrorBoundary><Assets /></PageErrorBoundary>} />
                     <Route path="help" element={<PageErrorBoundary><HelpSupport /></PageErrorBoundary>} />
                     <Route path="*" element={<NotFound />} />
                   </Route>

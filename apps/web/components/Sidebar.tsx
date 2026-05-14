@@ -20,6 +20,7 @@ import {
   GraduationCap,
   Star,
   CalendarDays,
+  Package,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLeaveRequests, useExpenseClaims, useAdminWFHRequests } from '../hooks/queries';
@@ -65,6 +66,7 @@ export const Sidebar: React.FC = () => {
 
     { icon: <Star size={20} />, label: 'Performance Reviews', path: '/performance-reviews', allowed: true },
     { icon: <CalendarDays size={20} />, label: 'Team Calendar', path: '/team-calendar', allowed: isAdminView && (isHrAdmin || isManager) },
+    { icon: <Package size={20} />, label: 'Assets', path: '/assets', allowed: isAdminView && isHrAdmin },
 
     // Admin Specific — HR_ADMIN only
     { icon: <ShieldCheck size={20} />, label: t('nav.compliance'), path: '/compliance', allowed: isAdminView && isHrAdmin },

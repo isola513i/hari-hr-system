@@ -1,7 +1,8 @@
 import React from 'react';
-import { CheckCircle2, PlayCircle, Clock, BookOpen, Trash2, AlertCircle, Play } from 'lucide-react';
+import { CheckCircle2, PlayCircle, Clock, BookOpen, Trash2, AlertCircle, Play, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { EmployeeTrainingRecord } from '../../types';
+import { getAuthToken, BASE_URL } from '../../lib/api';
 
 interface TrainingTabProps {
     isAdmin: boolean;
@@ -21,6 +22,25 @@ export const TrainingTab: React.FC<TrainingTabProps> = ({
     onUpdateStatus,
 }) => {
     const { t } = useTranslation(['employees', 'common']);
+
+    const handleDownloadCertificate = async (id: string, title: string) => {
+        try {
+            const token = getAuthToken();
+            const res = await fetch(`${BASE_URL}/training/${id}/certificate`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error('Download failed');
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `certificate-${title.replace(/\s+/g, '-')}.pdf`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch {
+            showToast('Failed to download certificate', 'error');
+        }
+    };
 
     const isOverdue = (dueDate?: string) => {
         if (!dueDate) return false;
@@ -64,6 +84,15 @@ export const TrainingTab: React.FC<TrainingTabProps> = ({
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
+                                {record.status === 'Completed' && (
+                                    <button
+                                        onClick={() => handleDownloadCertificate(record.id, record.title)}
+                                        className="p-1.5 text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
+                                        title="Download Certificate"
+                                    >
+                                        <Download size={14} />
+                                    </button>
+                                )}
                                 {record.status === 'Not Started' && onUpdateStatus && (
                                     <button
                                         onClick={() => onUpdateStatus(record.id, 'In Progress')}
