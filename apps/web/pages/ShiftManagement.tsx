@@ -59,7 +59,11 @@ function addDays(date: Date, n: number): Date {
 }
 
 function toISO(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  // Use local date parts to avoid UTC offset shifting the date
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function formatWeekRange(start: Date): string {
@@ -183,6 +187,7 @@ const AssignModal: React.FC<AssignModalProps> = ({
   const [selectedDates, setSelectedDates] = useState<Set<string>>(
     new Set(preSelectedDate ? [preSelectedDate] : [])
   );
+  const [empSearch, setEmpSearch] = useState('');
 
   const toggleEmployee = (id: string) => {
     setSelectedEmployees((prev) => {
@@ -258,19 +263,28 @@ const AssignModal: React.FC<AssignModalProps> = ({
             <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">
               Employees ({selectedEmployees.size} selected)
             </label>
+            <input
+              type="text"
+              placeholder="Search employees…"
+              value={empSearch}
+              onChange={(e) => setEmpSearch(e.target.value)}
+              className="w-full px-3 py-1.5 text-sm mb-1.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
             <div className="max-h-48 overflow-y-auto space-y-1 border border-border-light dark:border-border-dark rounded-lg p-2">
-              {employees.map((emp) => (
-                <label key={emp.id} className="flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-background-light dark:hover:bg-background-dark cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedEmployees.has(emp.id)}
-                    onChange={() => toggleEmployee(emp.id)}
-                    className="rounded"
-                  />
-                  <span className="text-sm text-text-light dark:text-text-dark">{emp.name}</span>
-                  <span className="text-xs text-text-muted-light dark:text-text-muted-dark ml-auto">{emp.department}</span>
-                </label>
-              ))}
+              {employees
+                .filter((emp) => !empSearch || emp.name.toLowerCase().includes(empSearch.toLowerCase()) || emp.department.toLowerCase().includes(empSearch.toLowerCase()))
+                .map((emp) => (
+                  <label key={emp.id} className="flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-background-light dark:hover:bg-background-dark cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedEmployees.has(emp.id)}
+                      onChange={() => toggleEmployee(emp.id)}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-text-light dark:text-text-dark">{emp.name}</span>
+                    <span className="text-xs text-text-muted-light dark:text-text-muted-dark ml-auto">{emp.department}</span>
+                  </label>
+                ))}
             </div>
           </div>
         </div>
@@ -303,6 +317,7 @@ export const ShiftManagement: React.FC = () => {
   const [shiftModal, setShiftModal] = useState<{ open: boolean; editing: ShiftTemplate | null }>({ open: false, editing: null });
   const [assignModal, setAssignModal] = useState<{ open: boolean; preEmp?: string; preDate?: string }>({ open: false });
   const [removeConfirm, setRemoveConfirm] = useState<string | null>(null);
+  const [deleteShiftConfirm, setDeleteShiftConfirm] = useState<string | null>(null);
 
   const weekDates = useMemo(() => Array.from({ length: 7 }, (_, i) => toISO(addDays(weekStart, i))), [weekStart]);
   const startDate = weekDates[0] ?? '';
@@ -355,10 +370,10 @@ export const ShiftManagement: React.FC = () => {
   };
 
   const handleDeleteShift = async (id: string) => {
-    if (!confirm('Deactivate this shift?')) return;
     try {
       await deleteShift.mutateAsync(id);
       showToast('Shift deactivated', 'success');
+      setDeleteShiftConfirm(null);
     } catch {
       showToast('Failed to delete shift', 'error');
     }
@@ -461,19 +476,41 @@ export const ShiftManagement: React.FC = () => {
                         <div className={`w-5 h-5 rounded-full ${COLOR_SWATCH[s.color] ?? 'bg-gray-400'}`} />
                       </td>
                       <td className="px-5 py-3">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => setShiftModal({ open: true, editing: s })}
-                            className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:text-primary hover:bg-primary/10 rounded transition-colors"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteShift(s.id)}
-                            className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                        <div className="flex items-center justify-end gap-1 min-w-[120px]">
+                          {deleteShiftConfirm === s.id ? (
+                            <>
+                              <span className="text-xs text-red-600 dark:text-red-400 mr-1 whitespace-nowrap">Deactivate?</span>
+                              <button
+                                onClick={() => handleDeleteShift(s.id)}
+                                className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                title="Confirm"
+                              >
+                                <Check size={14} />
+                              </button>
+                              <button
+                                onClick={() => setDeleteShiftConfirm(null)}
+                                className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark rounded transition-colors"
+                                title="Cancel"
+                              >
+                                <X size={14} />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => setShiftModal({ open: true, editing: s })}
+                                className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                              >
+                                <Pencil size={14} />
+                              </button>
+                              <button
+                                onClick={() => setDeleteShiftConfirm(s.id)}
+                                className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -486,7 +523,20 @@ export const ShiftManagement: React.FC = () => {
       )}
 
       {/* ===== TAB: Weekly Schedule ===== */}
-      {tab === 'schedule' && (
+      {tab === 'schedule' && shifts.length === 0 && (
+        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-dashed border-border-light dark:border-border-dark p-12 text-center">
+          <CalendarClock size={40} className="mx-auto mb-4 text-text-muted-light dark:text-text-muted-dark opacity-30" />
+          <p className="text-text-light dark:text-text-dark font-medium mb-1">No shifts defined yet</p>
+          <p className="text-sm text-text-muted-light dark:text-text-muted-dark mb-4">Create shift templates before assigning employees to a schedule.</p>
+          <button
+            onClick={() => setTab('shifts')}
+            className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            Go to Shift Templates
+          </button>
+        </div>
+      )}
+      {tab === 'schedule' && shifts.length > 0 && (
         <div className="space-y-3">
           {/* Controls */}
           <div className="flex flex-wrap items-center gap-3">
@@ -540,8 +590,9 @@ export const ShiftManagement: React.FC = () => {
                     <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider w-44">Employee</th>
                     {weekDates.map((d, i) => {
                       const isToday = d === toISO(new Date());
+                      const isWeekend = i >= 5;
                       return (
-                        <th key={d} className={`px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider ${isToday ? 'text-primary' : 'text-text-muted-light dark:text-text-muted-dark'}`}>
+                        <th key={d} className={`px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider ${isToday ? 'text-primary' : isWeekend ? 'text-text-muted-light/60 dark:text-text-muted-dark/60' : 'text-text-muted-light dark:text-text-muted-dark'}`}>
                           <div>{DAY_LABELS[i]}</div>
                           <div className={`text-sm font-bold mt-0.5 ${isToday ? 'bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center mx-auto' : ''}`}>
                             {new Date(d + 'T00:00:00').getDate()}
@@ -575,13 +626,14 @@ export const ShiftManagement: React.FC = () => {
                                 {emp.name.split(' ').map((p: string) => p[0]).join('').slice(0, 2).toUpperCase()}
                               </span>
                             </div>
-                            <span className="text-xs font-medium text-text-light dark:text-text-dark truncate max-w-[100px]">{emp.name}</span>
+                            <span className="text-xs font-medium text-text-light dark:text-text-dark truncate max-w-[100px]" title={emp.name}>{emp.name}</span>
                           </div>
                         </td>
-                        {weekDates.map((date) => {
+                        {weekDates.map((date, di) => {
+                          const isWeekend = di >= 5;
                           const assignment = assignmentMap.get(`${emp.id}:${date}`);
                           return (
-                            <td key={date} className="px-1.5 py-2 text-center">
+                            <td key={date} className={`px-1.5 py-2 text-center ${isWeekend ? 'bg-background-light/50 dark:bg-background-dark/30' : ''}`}>
                               {assignment ? (
                                 <div className="relative group">
                                   {removeConfirm === assignment.assignmentId ? (

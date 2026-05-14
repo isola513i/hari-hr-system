@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ScrollText,
   Download,
@@ -11,6 +11,16 @@ import {
 } from 'lucide-react';
 import { useAuditLogsFull, PersistentAuditLog } from '../hooks/queries';
 import { BASE_URL, getAuthToken } from '../lib/api';
+import { useToast } from '../contexts/ToastContext';
+
+function useDebounce<T>(value: T, delay = 400): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
 
 const RESOURCES = ['All', 'employees', 'leave', 'expense', 'attendance', 'wfh', 'ot', 'training', 'assets', 'compliance', 'payroll', 'surveys', 'announcements'];
 
@@ -61,14 +71,27 @@ const ExpandedRow: React.FC<{ log: PersistentAuditLog }> = ({ log }) => (
 );
 
 export const AuditLogs: React.FC = () => {
+  const { showToast } = useToast();
   const [page, setPage] = useState(1);
   const [resource, setResource] = useState('All');
-  const [actionFilter, setActionFilter] = useState('');
-  const [userEmailFilter, setUserEmailFilter] = useState('');
+  const [actionInput, setActionInput] = useState('');
+  const [userEmailInput, setUserEmailInput] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [successFilter, setSuccessFilter] = useState('All');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  const actionFilter = useDebounce(actionInput, 400);
+  const userEmailFilter = useDebounce(userEmailInput, 400);
+
+  // Reset page when debounced filters change
+  const prevFiltersRef = useRef({ actionFilter, userEmailFilter });
+  useEffect(() => {
+    if (prevFiltersRef.current.actionFilter !== actionFilter || prevFiltersRef.current.userEmailFilter !== userEmailFilter) {
+      setPage(1);
+      prevFiltersRef.current = { actionFilter, userEmailFilter };
+    }
+  }, [actionFilter, userEmailFilter]);
 
   const filters = {
     page,
@@ -114,15 +137,15 @@ export const AuditLogs: React.FC = () => {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert('Failed to export audit logs');
+      showToast('Failed to export audit logs', 'error');
     }
   };
 
   const resetFilters = () => {
     setPage(1);
     setResource('All');
-    setActionFilter('');
-    setUserEmailFilter('');
+    setActionInput('');
+    setUserEmailInput('');
     setStartDate('');
     setEndDate('');
     setSuccessFilter('All');
@@ -159,15 +182,15 @@ export const AuditLogs: React.FC = () => {
           <span className="text-sm font-semibold text-text-muted-light dark:text-text-muted-dark">Filters</span>
           <button onClick={resetFilters} className="ml-auto text-xs text-primary hover:underline">Reset</button>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 pt-4">
           {/* User email */}
           <div className="relative col-span-2 md:col-span-1">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark" />
             <input
               type="text"
               placeholder="User email"
-              value={userEmailFilter}
-              onChange={(e) => { setUserEmailFilter(e.target.value); setPage(1); }}
+              value={userEmailInput}
+              onChange={(e) => setUserEmailInput(e.target.value)}
               className="w-full pl-8 pr-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
@@ -177,8 +200,8 @@ export const AuditLogs: React.FC = () => {
             <input
               type="text"
               placeholder="Action"
-              value={actionFilter}
-              onChange={(e) => { setActionFilter(e.target.value); setPage(1); }}
+              value={actionInput}
+              onChange={(e) => setActionInput(e.target.value)}
               className="w-full pl-8 pr-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
@@ -203,19 +226,25 @@ export const AuditLogs: React.FC = () => {
             <option value="Failed">Failed</option>
           </select>
           {/* Start date */}
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
-            className="py-2 px-3 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
+          <div className="relative">
+            <label className="absolute -top-4 left-0 text-xs text-text-muted-light dark:text-text-muted-dark">From</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+              className="w-full py-2 px-3 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
           {/* End date */}
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
-            className="py-2 px-3 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
+          <div className="relative">
+            <label className="absolute -top-4 left-0 text-xs text-text-muted-light dark:text-text-muted-dark">To</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+              className="w-full py-2 px-3 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
         </div>
       </div>
 
@@ -268,7 +297,7 @@ export const AuditLogs: React.FC = () => {
                       <td className="px-4 py-3 text-text-muted-light dark:text-text-muted-dark whitespace-nowrap font-mono text-xs">
                         {new Date(log.createdAt).toLocaleString()}
                       </td>
-                      <td className="px-4 py-3 text-text-light dark:text-text-dark max-w-[180px] truncate">
+                      <td className="px-4 py-3 text-text-light dark:text-text-dark max-w-[180px] truncate" title={log.userEmail ?? 'System'}>
                         {log.userEmail ?? <span className="italic text-text-muted-light dark:text-text-muted-dark">System</span>}
                       </td>
                       <td className="px-4 py-3">
@@ -311,27 +340,29 @@ export const AuditLogs: React.FC = () => {
         </div>
 
         {/* Pagination */}
-        {data && totalPages > 1 && (
+        {data && (
           <div className="flex items-center justify-between px-6 py-3 border-t border-border-light dark:border-border-dark">
             <span className="text-sm text-text-muted-light dark:text-text-muted-dark">
-              Page {page} of {totalPages} · {data.total} total
+              {totalPages > 1 ? `Page ${page} of ${totalPages} · ` : ''}{data.total} {data.total === 1 ? 'result' : 'results'}
             </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-border-light dark:border-border-dark text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark disabled:opacity-40 transition-colors"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-border-light dark:border-border-dark text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark disabled:opacity-40 transition-colors"
-              >
-                Next
-              </button>
-            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-border-light dark:border-border-dark text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark disabled:opacity-40 transition-colors"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-border-light dark:border-border-dark text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark disabled:opacity-40 transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
