@@ -21,6 +21,7 @@ import {
   Star,
   CalendarDays,
   Package,
+  ScrollText,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLeaveRequests, useExpenseClaims, useAdminWFHRequests } from '../hooks/queries';
@@ -70,6 +71,7 @@ export const Sidebar: React.FC = () => {
 
     // Admin Specific — HR_ADMIN only
     { icon: <ShieldCheck size={20} />, label: t('nav.compliance'), path: '/compliance', allowed: isAdminView && isHrAdmin },
+    { icon: <ScrollText size={20} />, label: 'Audit Logs', path: '/audit-logs', allowed: isAdminView && isHrAdmin },
     { icon: <BarChart2 size={20} />, label: t('nav.analytics'), path: '/analytics', allowed: isAdminView && isHrAdmin },
 
     { icon: <FileText size={20} />, label: t('nav.documents'), path: '/documents', allowed: true },

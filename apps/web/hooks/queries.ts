@@ -1849,7 +1849,9 @@ export interface PersistentAuditLog {
   method: string;
   path: string;
   ip: string;
+  userAgent: string | null;
   statusCode: number;
+  duration: number | null;
   success: boolean;
   details: Record<string, unknown> | null;
   createdAt: string;
@@ -2015,6 +2017,33 @@ export const useComplianceAuditLogs = (filters: { page?: number; limit?: number;
       return api.get<PaginatedResponse<PersistentAuditLog>>(
         qs ? `/compliance/audit-logs?${qs}` : '/compliance/audit-logs'
       );
+    },
+  });
+};
+
+export const useAuditLogsFull = (filters: {
+  page?: number;
+  limit?: number;
+  resource?: string;
+  action?: string;
+  userEmail?: string;
+  startDate?: string;
+  endDate?: string;
+  success?: string;
+} = {}) => {
+  return useQuery({
+    queryKey: queryKeys.compliance.auditLogs(filters as Record<string, unknown>),
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filters.page) params.append('page', filters.page.toString());
+      params.append('limit', (filters.limit || 15).toString());
+      if (filters.resource && filters.resource !== 'All') params.append('resource', filters.resource);
+      if (filters.action) params.append('action', filters.action);
+      if (filters.userEmail) params.append('userEmail', filters.userEmail);
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      if (filters.success && filters.success !== 'All') params.append('success', filters.success === 'Success' ? 'true' : 'false');
+      return api.get<PaginatedResponse<PersistentAuditLog>>(`/compliance/audit-logs?${params.toString()}`);
     },
   });
 };

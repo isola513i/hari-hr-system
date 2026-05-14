@@ -171,6 +171,56 @@ router.get('/checks', async (_req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
+// GET /api/compliance/audit-logs/export
+// CSV export of audit logs with same filters as list endpoint
+// ---------------------------------------------------------------------------
+router.get('/audit-logs/export', async (req: Request, res: Response) => {
+  try {
+    const resource = req.query.resource as string | undefined;
+    const action = req.query.action as string | undefined;
+    const userEmail = req.query.userEmail as string | undefined;
+    const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+    const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+    const successFilter = req.query.success !== undefined
+      ? req.query.success === 'true'
+      : undefined;
+
+    const { logs } = await AuditLogService.getAll({
+      limit: 10000,
+      offset: 0,
+      resource: resource && resource !== 'All' ? resource : undefined,
+      action: action || undefined,
+      userEmail: userEmail || undefined,
+      startDate,
+      endDate,
+      success: successFilter,
+    });
+
+    const header = 'timestamp,user_email,action,resource,method,path,status_code,duration,success,ip\n';
+    const rows = logs.map((log) => [
+      log.createdAt ? new Date(log.createdAt).toISOString() : '',
+      log.userEmail ?? '',
+      log.action,
+      log.resource,
+      log.method,
+      `"${log.path}"`,
+      log.statusCode ?? '',
+      log.duration ?? '',
+      log.success ?? '',
+      log.ip ?? '',
+    ].join(',')).join('\n');
+
+    const date = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="audit-logs-${date}.csv"`);
+    res.send(header + rows);
+  } catch (error) {
+    console.error('Error exporting audit logs:', error);
+    res.status(500).json({ error: 'Failed to export audit logs' });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // GET /api/compliance/audit-logs
 // Paginated audit logs from persistent table
 // ---------------------------------------------------------------------------
@@ -179,12 +229,24 @@ router.get('/audit-logs', async (req: Request, res: Response) => {
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 15;
     const resource = req.query.resource as string | undefined;
+    const action = req.query.action as string | undefined;
+    const userEmail = req.query.userEmail as string | undefined;
+    const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+    const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+    const successFilter = req.query.success !== undefined
+      ? req.query.success === 'true'
+      : undefined;
     const offset = (page - 1) * limit;
 
     const { logs, total } = await AuditLogService.getAll({
       limit,
       offset,
       resource: resource && resource !== 'All' ? resource : undefined,
+      action: action || undefined,
+      userEmail: userEmail || undefined,
+      startDate,
+      endDate,
+      success: successFilter,
     });
 
     res.json({

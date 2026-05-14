@@ -55,12 +55,14 @@ export class AuditLogService {
     limit?: number;
     offset?: number;
     userId?: string;
+    userEmail?: string;
     action?: string;
     resource?: string;
+    success?: boolean;
     startDate?: Date;
     endDate?: Date;
   } = {}): Promise<{ logs: AuditLogEntry[]; total: number }> {
-    const { limit = 100, offset = 0, userId, action, resource, startDate, endDate } = options;
+    const { limit = 100, offset = 0, userId, userEmail, action, resource, success, startDate, endDate } = options;
 
     let whereClause = "WHERE 1=1";
     const params: unknown[] = [];
@@ -69,6 +71,14 @@ export class AuditLogService {
     if (userId) {
       whereClause += ` AND user_id = $${paramIndex++}`;
       params.push(userId);
+    }
+    if (userEmail) {
+      whereClause += ` AND user_email ILIKE $${paramIndex++}`;
+      params.push(`%${userEmail}%`);
+    }
+    if (success !== undefined) {
+      whereClause += ` AND success = $${paramIndex++}`;
+      params.push(success);
     }
     if (action) {
       whereClause += ` AND action ILIKE $${paramIndex++}`;
