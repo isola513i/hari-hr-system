@@ -1731,6 +1731,12 @@ export const useUpdatePayroll = () => {
   });
 };
 
+export const useEmailPayslip = () => {
+  return useMutation({
+    mutationFn: (id: string) => api.post<{ message: string }>(`/payroll/${id}/email-payslip`, {}),
+  });
+};
+
 export const useUpdateSalary = () => {
   const qc = useQueryClient();
   return useMutation({

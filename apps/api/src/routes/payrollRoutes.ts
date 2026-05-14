@@ -1,8 +1,10 @@
 import { Router, Request, Response } from 'express';
+import { PassThrough } from 'stream';
 import { authenticateToken, requireAdmin, requireAdminOrFinance, requireOwnerOrAdmin } from '../middlewares/auth';
 import PayrollService from '../services/PayrollService';
 import { generatePayslipPdf } from '../services/PayslipPdfService';
 import SystemConfigService from '../services/SystemConfigService';
+import EmailService from '../services/EmailService';
 import { query } from '../db';
 import { apiLimiter } from '../middlewares/security';
 import { safeErrorMessage } from '../utils/errorResponse';
@@ -302,6 +304,61 @@ router.get('/:id/payslip', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Payslip PDF error:', error);
     res.status(500).json({ error: 'Failed to generate payslip' });
+  }
+});
+
+/**
+ * POST /api/payroll/:id/email-payslip
+ * Generate payslip PDF and email it to the employee (admin/finance or record owner)
+ */
+router.post('/:id/email-payslip', apiLimiter, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+
+    const record = await PayrollService.getPayrollById(id);
+    if (!record) return res.status(404).json({ error: 'Payroll record not found' });
+
+    if (user?.role !== 'HR_ADMIN' && user?.role !== 'FINANCE' && user?.employeeId !== record.employeeId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const empResult = await query(
+      'SELECT name, email, department, employee_code FROM employees WHERE id = $1',
+      [record.employeeId]
+    );
+    const emp = empResult.rows[0];
+    if (!emp?.email) return res.status(400).json({ error: 'Employee email not found' });
+
+    const [companyName, currency] = await Promise.all([
+      SystemConfigService.getConfigValue('system', 'app_name', 'HARI HR System'),
+      SystemConfigService.getConfigValue('system', 'currency', 'THB'),
+    ]);
+
+    // Generate PDF into a buffer
+    const pass = new PassThrough();
+    const chunks: Buffer[] = [];
+    pass.on('data', (chunk: Buffer) => chunks.push(chunk));
+
+    await new Promise<void>((resolve, reject) => {
+      pass.on('end', resolve);
+      pass.on('error', reject);
+      generatePayslipPdf(
+        { ...record, employeeName: emp.name || 'Unknown', department: emp.department || '', employeeCode: emp.employee_code },
+        pass,
+        { companyName: String(companyName), currency: String(currency) }
+      );
+    });
+
+    const pdfBuffer = Buffer.concat(chunks);
+    const payPeriod = `${record.payPeriodStart} to ${record.payPeriodEnd}`;
+
+    await EmailService.sendPayslipEmail(emp.email, emp.name, payPeriod, pdfBuffer);
+
+    res.json({ message: `Payslip emailed to ${emp.email}` });
+  } catch (error) {
+    console.error('Email payslip error:', error);
+    res.status(500).json({ error: safeErrorMessage(error, 'Failed to email payslip') });
   }
 });
 

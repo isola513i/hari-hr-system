@@ -13,6 +13,7 @@ import {
   useAllEmployees,
   usePayrollSettings,
   useUpdatePayrollSettings,
+  useEmailPayslip,
   type PayrollSettings,
   type PayrollRecord,
 } from './queries';
@@ -183,6 +184,17 @@ export function usePayrollPage() {
     }
   };
 
+  // Email payslip to employee
+  const emailPayslipMutation = useEmailPayslip();
+  const handleEmailPayslip = async (id: string) => {
+    try {
+      await emailPayslipMutation.mutateAsync(id);
+      showToast('Payslip emailed to employee successfully');
+    } catch {
+      showToast('Failed to email payslip', 'error');
+    }
+  };
+
   // Download payslip as PDF
   const handleDownloadPayslip = async (id: string) => {
     try {
@@ -285,6 +297,7 @@ export function usePayrollPage() {
     closeSettings,
     handleSaveSettings,
     handleDownloadPayslip,
+    handleEmailPayslip,
     handleExportCSV,
     expandedId,
     setExpandedId,

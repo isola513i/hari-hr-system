@@ -1,4 +1,4 @@
-import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+import { SESClient, SendEmailCommand, SendRawEmailCommand } from "@aws-sdk/client-ses";
 
 type Lang = "en" | "th";
 
@@ -201,6 +201,65 @@ class EmailService {
       </p>`;
 
     await this.sendEmail(to, `HARI — ${title}`, this.wrapHtml(body, l));
+  }
+
+  async sendPayslipEmail(
+    to: string,
+    employeeName: string,
+    payPeriod: string,
+    pdfBuffer: Buffer,
+  ): Promise<void> {
+    const subject = `HARI — Payslip for ${payPeriod}`;
+    const boundary = `----=_Part_${Date.now()}`;
+    const htmlBody = this.wrapHtml(`
+      <h2 style="color:#2c3e50;margin-top:0;">Your Payslip is Ready</h2>
+      <p style="color:#4a5568;line-height:1.7;">Hi ${this.escapeHtml(employeeName)},</p>
+      <p style="color:#4a5568;line-height:1.7;">Please find your payslip for <strong>${this.escapeHtml(payPeriod)}</strong> attached to this email.</p>
+    `, 'en');
+
+    const pdfBase64 = pdfBuffer.toString('base64');
+    const filename = `payslip-${payPeriod.replace(/\s/g, '-')}.pdf`;
+
+    const rawMessage = [
+      `From: ${this.fromEmail}`,
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      `MIME-Version: 1.0`,
+      `Content-Type: multipart/mixed; boundary="${boundary}"`,
+      ``,
+      `--${boundary}`,
+      `Content-Type: text/html; charset=UTF-8`,
+      `Content-Transfer-Encoding: 7bit`,
+      ``,
+      htmlBody,
+      ``,
+      `--${boundary}`,
+      `Content-Type: application/pdf; name="${filename}"`,
+      `Content-Transfer-Encoding: base64`,
+      `Content-Disposition: attachment; filename="${filename}"`,
+      ``,
+      pdfBase64,
+      ``,
+      `--${boundary}--`,
+    ].join('\r\n');
+
+    if (!this.client) {
+      console.log(`EmailService [DEV]: Would send payslip "${subject}" to ${to}`);
+      return;
+    }
+
+    const command = new SendRawEmailCommand({
+      RawMessage: { Data: Buffer.from(rawMessage) },
+    });
+
+    try {
+      await this.client.send(command);
+      console.log(`EmailService: Payslip sent to ${to} — "${subject}"`);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error(`EmailService: Failed to send payslip to ${to} — ${msg}`);
+      throw new Error(msg);
+    }
   }
 }
 

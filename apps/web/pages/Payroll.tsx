@@ -19,6 +19,7 @@ import {
   PlusCircle,
   X,
   Download,
+  Mail,
   Wallet,
   Shield,
   CalendarCheck,
@@ -90,6 +91,7 @@ export const Payroll: React.FC = () => {
     closeSettings,
     handleSaveSettings,
     handleDownloadPayslip,
+    handleEmailPayslip,
     handleExportCSV,
     expandedId,
     setExpandedId,
@@ -312,7 +314,7 @@ export const Payroll: React.FC = () => {
                           {t('employee.detail.paidOn')}: {formatDate(record.paymentDate)}
                         </p>
                       )}
-                      {/* Download payslip button */}
+                      {/* Download / Email payslip buttons */}
                       <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border-light dark:border-border-dark">
                         <button
                           onClick={() => handleDownloadPayslip(record.id)}
@@ -321,6 +323,15 @@ export const Payroll: React.FC = () => {
                           <Download size={14} />
                           {t('employee.downloadPayslip')}
                         </button>
+                        {isAdminView && (
+                          <button
+                            onClick={() => handleEmailPayslip(record.id)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 dark:bg-green-900/20 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                          >
+                            <Mail size={14} />
+                            Email Payslip
+                          </button>
+                        )}
                       </div>
                       {/* Admin: action buttons */}
                       {isAdminView && record.status !== 'Paid' && record.status !== 'Cancelled' && (
