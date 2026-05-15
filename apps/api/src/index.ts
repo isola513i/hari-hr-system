@@ -767,6 +767,38 @@ const runLightMigrations = async () => {
   } catch (err) {
     console.error("Migration: expense_claims table creation failed:", err);
   }
+
+  // Shifts and shift assignments tables
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS shifts (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name VARCHAR(100) NOT NULL,
+        start_time TIME NOT NULL,
+        end_time TIME NOT NULL,
+        color VARCHAR(20) DEFAULT 'blue',
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await query(`
+      CREATE TABLE IF NOT EXISTS shift_assignments (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+        shift_id UUID NOT NULL REFERENCES shifts(id) ON DELETE CASCADE,
+        date DATE NOT NULL,
+        notes TEXT,
+        created_by UUID REFERENCES users(id),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT unique_shift_per_day UNIQUE (employee_id, date)
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_shift_assignments_employee ON shift_assignments(employee_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_shift_assignments_date ON shift_assignments(date)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_shift_assignments_shift ON shift_assignments(shift_id)`);
+  } catch (err) {
+    console.error("Migration: shifts tables creation failed:", err);
+  }
 };
 
 // Global error handlers (must be after all routes)

@@ -5,15 +5,6 @@
   "storage": "พื้นที่จัดเก็บ",
   "usedOfTotal": "ใช้แล้ว {{used}}",
   "totalStorage": "ทั้งหมด {{total}}",
-  "categories": {
-    "allFiles": "ไฟล์ทั้งหมด",
-    "contracts": "สัญญา",
-    "policies": "นโยบาย",
-    "finance": "การเงิน",
-    "hr": "HR",
-    "recent": "ล่าสุด",
-    "trash": "ถังขยะ"
-  },
   "fileTypes": {
     "all": "ทั้งหมด",
     "pdf": "PDF",
@@ -78,10 +69,13 @@
   },
   "noDocuments": "ไม่พบเอกสาร",
   "categories": {
-    "hr": "HR",
+    "allFiles": "ไฟล์ทั้งหมด",
     "contracts": "สัญญา",
     "policies": "นโยบาย",
     "finance": "การเงิน",
-    "personal": "ส่วนตัว"
+    "hr": "HR",
+    "personal": "ส่วนตัว",
+    "recent": "ล่าสุด",
+    "trash": "ถังขยะ"
   }
 }

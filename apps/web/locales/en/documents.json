@@ -5,15 +5,6 @@
   "storage": "Storage",
   "usedOfTotal": "{{used}} used",
   "totalStorage": "{{total}} total",
-  "categories": {
-    "allFiles": "All Files",
-    "contracts": "Contracts",
-    "policies": "Policies",
-    "finance": "Finance",
-    "hr": "HR",
-    "recent": "Recent",
-    "trash": "Trash"
-  },
   "fileTypes": {
     "all": "All",
     "pdf": "PDF",
@@ -78,10 +69,13 @@
   },
   "noDocuments": "No documents found.",
   "categories": {
-    "hr": "HR",
+    "allFiles": "All Files",
     "contracts": "Contracts",
     "policies": "Policies",
     "finance": "Finance",
-    "personal": "Personal"
+    "hr": "HR",
+    "personal": "Personal",
+    "recent": "Recent",
+    "trash": "Trash"
   }
 }
