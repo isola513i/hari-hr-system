@@ -406,7 +406,7 @@ function SurveyAnalytics({ data }: { data: SentimentOverview }) {
         </div>
 
         {/* Split layout: sentiment left, radar right */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* Left: Sentiment distribution */}
           <div className="space-y-4">
             <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide">{t('surveyAnalytics.sentimentDistribution', 'Sentiment Distribution')}</p>
