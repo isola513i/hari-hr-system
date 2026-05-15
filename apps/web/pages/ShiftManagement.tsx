@@ -6,11 +6,11 @@ import {
   Plus,
   Pencil,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
   X,
   Check,
 } from 'lucide-react';
+import { Dropdown } from '../components/Dropdown';
+import { WeekPicker } from '../components/WeekPicker';
 import {
   useShiftTemplates,
   useShiftSchedule,
@@ -545,39 +545,15 @@ export const ShiftManagement: React.FC = () => {
         <div className="space-y-3">
           {/* Controls */}
           <div className="flex flex-wrap items-center gap-3">
-            {/* Week navigator */}
-            <div className="flex items-center gap-2 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg px-3 py-1.5">
-              <button
-                onClick={() => setWeekStart((w) => addDays(w, -7))}
-                className="p-1 text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <span className="text-sm font-medium text-text-light dark:text-text-dark min-w-[160px] text-center">
-                {formatWeekRange(weekStart)}
-              </span>
-              <button
-                onClick={() => setWeekStart((w) => addDays(w, 7))}
-                className="p-1 text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-            {/* Today */}
-            <button
-              onClick={() => setWeekStart(getWeekStart(new Date()))}
-              className="px-3 py-1.5 text-sm font-medium border border-border-light dark:border-border-dark rounded-lg text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors"
-            >
-              {t('buttons.thisWeek')}
-            </button>
+            {/* Week picker */}
+            <WeekPicker weekStart={weekStart} onChange={setWeekStart} />
             {/* Department filter */}
-            <select
+            <Dropdown
+              options={departments.map((d) => ({ value: d, label: d === 'All' ? t('filters.allDepartments') : d }))}
               value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              className="py-1.5 px-3 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none"
-            >
-              {departments.map((d) => <option key={d} value={d}>{d === 'All' ? t('filters.allDepartments') : d}</option>)}
-            </select>
+              onChange={setDepartment}
+              width="w-44"
+            />
             <button
               onClick={() => setAssignModal({ open: true })}
               className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"

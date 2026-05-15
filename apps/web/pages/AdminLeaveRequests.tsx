@@ -52,7 +52,7 @@ export const AdminLeaveRequests: React.FC = () => {
     [t]
   );
 
-  const [statusFilter, setStatusFilter] = useState(() => isManager ? 'Pending' : 'Manager Approved');
+  const [statusFilter, setStatusFilter] = useState('Pending');
   const [typeFilter, setTypeFilter] = useState('All');
   const [departmentFilter, setDepartmentFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
