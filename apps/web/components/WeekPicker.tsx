@@ -128,36 +128,30 @@ export const WeekPicker: React.FC<WeekPickerProps> = ({ weekStart, onChange, cla
   const DAY_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
   return (
-    <div className={`inline-flex items-center rounded-xl border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark shadow-sm ${className}`}>
+    <div className={`inline-flex items-center gap-1 ${className}`}>
       {/* Prev week */}
       <button
         onClick={() => { const d = new Date(weekStart); d.setDate(d.getDate() - 7); onChange(d); }}
-        className="px-2.5 py-2 text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors"
+        className="p-1.5 rounded-lg text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors"
       >
         <ChevronLeft size={15} />
       </button>
-
-      {/* Divider */}
-      <span className="w-px h-4 bg-border-light dark:bg-border-dark" />
 
       {/* Clickable date range label */}
       <div
         ref={triggerRef}
         onClick={open}
-        className="px-4 py-2 cursor-pointer select-none hover:bg-background-light dark:hover:bg-background-dark transition-colors"
+        className="px-4 py-2 rounded-xl border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark cursor-pointer select-none hover:border-primary/40 transition-colors shadow-sm"
       >
         <span className="text-sm font-medium text-text-light dark:text-text-dark whitespace-nowrap tabular-nums">
           {formatRange(weekStart, i18n.language)}
         </span>
       </div>
 
-      {/* Divider */}
-      <span className="w-px h-4 bg-border-light dark:bg-border-dark" />
-
       {/* Next week */}
       <button
         onClick={() => { const d = new Date(weekStart); d.setDate(d.getDate() + 7); onChange(d); }}
-        className="px-2.5 py-2 text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors"
+        className="p-1.5 rounded-lg text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors"
       >
         <ChevronRight size={15} />
       </button>

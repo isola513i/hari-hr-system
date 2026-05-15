@@ -11,6 +11,42 @@ import {
 } from 'lucide-react';
 import { Dropdown } from '../components/Dropdown';
 import { WeekPicker } from '../components/WeekPicker';
+
+const AVATAR_PALETTE = [
+  'bg-blue-100 text-blue-700',
+  'bg-teal-100 text-teal-700',
+  'bg-violet-100 text-violet-700',
+  'bg-orange-100 text-orange-700',
+  'bg-green-100 text-green-700',
+  'bg-pink-100 text-pink-700',
+  'bg-amber-100 text-amber-700',
+  'bg-cyan-100 text-cyan-700',
+];
+
+function avatarColor(id: string): string {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return AVATAR_PALETTE[h % AVATAR_PALETTE.length]!;
+}
+
+function EmployeeAvatar({ emp }: { emp: { id: string; name: string; avatar?: string | null } }) {
+  const initials = emp.name.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase();
+  if (emp.avatar) {
+    return (
+      <img
+        src={emp.avatar}
+        alt={emp.name}
+        className="w-7 h-7 rounded-full object-cover flex-shrink-0"
+        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+      />
+    );
+  }
+  return (
+    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${avatarColor(emp.id)}`}>
+      {initials}
+    </div>
+  );
+}
 import {
   useShiftTemplates,
   useShiftSchedule,
@@ -602,11 +638,7 @@ export const ShiftManagement: React.FC = () => {
                       <tr key={emp.id} className="hover:bg-background-light dark:hover:bg-background-dark/20 transition-colors">
                         <td className="px-4 py-2">
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                              <span className="text-xs font-bold text-primary">
-                                {emp.name.split(' ').map((p: string) => p[0]).join('').slice(0, 2).toUpperCase()}
-                              </span>
-                            </div>
+                            <EmployeeAvatar emp={emp} />
                             <span className="text-xs font-medium text-text-light dark:text-text-dark truncate max-w-[100px]" title={emp.name}>{emp.name}</span>
                           </div>
                         </td>
