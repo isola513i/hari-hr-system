@@ -109,7 +109,7 @@ export const AdminHolidays: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-text-light dark:text-text-dark rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm whitespace-nowrap"
           >
             <Upload size={16} />
-            Import
+            {t('leave:holidays.import')}
           </button>
           <button
             onClick={openCreate}

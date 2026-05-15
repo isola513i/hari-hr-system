@@ -223,7 +223,8 @@
     "createSuccess": "Holiday created successfully",
     "updateSuccess": "Holiday updated successfully",
     "deleteSuccess": "Holiday deleted successfully",
-    "businessDays": "business days"
+    "businessDays": "business days",
+    "import": "Import"
   },
   "allLeaveTypes": "All Leave Types",
   "types": {

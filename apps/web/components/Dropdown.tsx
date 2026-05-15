@@ -129,7 +129,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
         name={name}
         onClick={handleToggle}
         disabled={disabled}
-        className={`w-full flex items-center justify-between pl-4 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-text-light dark:text-text-dark ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-primary/50'}`}
+        className={`w-full flex items-center justify-between pl-4 pr-3 py-2 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-text-light dark:text-text-dark ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-primary/40'}`}
       >
         <span className={`whitespace-nowrap truncate ${selectedOption ? '' : 'text-text-muted-light'}`}>
           {displayLabel}

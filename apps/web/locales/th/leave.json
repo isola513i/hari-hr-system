@@ -223,7 +223,8 @@
     "createSuccess": "เพิ่มวันหยุดสำเร็จ",
     "updateSuccess": "อัปเดตวันหยุดสำเร็จ",
     "deleteSuccess": "ลบวันหยุดสำเร็จ",
-    "businessDays": "วันทำการ"
+    "businessDays": "วันทำการ",
+    "import": "นำเข้า"
   },
   "allLeaveTypes": "ประเภทการลาทั้งหมด",
   "types": {
