@@ -241,6 +241,8 @@
     "responseRate": "Response Rate",
     "respondents": "Respondents",
     "totalEmployees": "Total Employees",
+    "sentimentDistribution": "Sentiment Distribution",
+    "categoryBreakdown": "Category Breakdown",
     "positive": "Positive",
     "neutral": "Neutral",
     "negative": "Negative"

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Star, Plus, CheckCircle, Clock, XCircle, ChevronDown, ChevronUp, Send, ThumbsUp, Award } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { Avatar } from '../components/Avatar';
 import {
   useAllPerformanceReviews,
   useCreateSelfReview,
@@ -15,11 +16,11 @@ import type { PerformanceReview } from '../types';
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const STATUS_COLOR: Record<string, string> = {
-  draft:            'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  submitted:        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
-  manager_reviewed: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  completed:        'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-  rejected:         'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  draft:            'bg-gray-100 text-gray-600 dark:bg-gray-700/50 dark:text-gray-400',
+  submitted:        'bg-accent-orange/10 text-accent-orange',
+  manager_reviewed: 'bg-primary/10 text-primary',
+  completed:        'bg-accent-green/10 text-accent-green',
+  rejected:         'bg-accent-red/10 text-accent-red',
 };
 
 const STATUS_ICON: Record<string, React.ReactNode> = {
@@ -98,57 +99,57 @@ function ReviewCard({
   const canHrApprove = role === 'HR_ADMIN';
   const isEmployee = role === 'EMPLOYEE';
 
+  const employeeName = review.employeeName ?? review.reviewer ?? '';
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+    <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden shadow-sm">
       <button
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left"
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-background-light dark:hover:bg-background-dark/40 transition-colors text-left"
         onClick={() => setExpanded((e) => !e)}
       >
-        <div className="flex items-center gap-4 min-w-0">
-          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-            <Award size={18} className="text-primary" />
-          </div>
+        <div className="flex items-center gap-3 min-w-0">
+          <Avatar name={employeeName} size="md" />
           <div className="min-w-0">
             <p className="font-semibold text-text-primary-light dark:text-text-primary-dark truncate">
-              {review.employeeName ?? review.reviewer}
+              {employeeName}
             </p>
             <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
               {review.reviewPeriod ?? new Date(review.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-              {review.reviewer && ` • ${t('reviewer', { name: review.reviewer })}`}
+              {review.reviewer && ` · ${t('reviewer', { name: review.reviewer })}`}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3 shrink-0">
           {review.rating !== null && <StarRating value={review.rating} readonly />}
           <StatusBadge status={review.status} />
-          {expanded ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+          {expanded ? <ChevronUp size={16} className="text-text-muted-light dark:text-text-muted-dark" /> : <ChevronDown size={16} className="text-text-muted-light dark:text-text-muted-dark" />}
         </div>
       </button>
 
       {expanded && (
-        <div className="px-5 pb-5 border-t border-gray-100 dark:border-gray-700 space-y-4 pt-4">
+        <div className="px-5 pb-5 border-t border-border-light dark:border-border-dark space-y-4 pt-4">
           {review.selfReview && (
             <div>
-              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-1">{t('sections.selfReview')}</p>
-              <p className="text-sm text-text-primary-light dark:text-text-primary-dark bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">{review.selfReview}</p>
+              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-1.5">{t('sections.selfReview')}</p>
+              <p className="text-sm text-text-primary-light dark:text-text-primary-dark bg-background-light dark:bg-background-dark rounded-lg p-3 leading-relaxed">{review.selfReview}</p>
             </div>
           )}
           {review.notes && (
             <div>
-              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-1">{t('sections.notes')}</p>
-              <p className="text-sm text-text-primary-light dark:text-text-primary-dark">{review.notes}</p>
+              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-1.5">{t('sections.notes')}</p>
+              <p className="text-sm text-text-primary-light dark:text-text-primary-dark leading-relaxed">{review.notes}</p>
             </div>
           )}
           {review.managerComment && (
             <div>
-              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-1">{t('sections.managerFeedback')}</p>
-              <p className="text-sm text-text-primary-light dark:text-text-primary-dark bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">{review.managerComment}</p>
+              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-1.5">{t('sections.managerFeedback')}</p>
+              <p className="text-sm text-text-primary-light dark:text-text-primary-dark bg-primary/5 dark:bg-primary/10 rounded-lg p-3 leading-relaxed">{review.managerComment}</p>
             </div>
           )}
           {review.hrComment && (
             <div>
-              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-1">{t('sections.hrComment')}</p>
-              <p className="text-sm text-text-primary-light dark:text-text-primary-dark bg-green-50 dark:bg-green-900/20 rounded-lg p-3">{review.hrComment}</p>
+              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-1.5">{t('sections.hrComment')}</p>
+              <p className="text-sm text-text-primary-light dark:text-text-primary-dark bg-accent-green/5 dark:bg-accent-green/10 rounded-lg p-3 leading-relaxed">{review.hrComment}</p>
             </div>
           )}
 
@@ -156,7 +157,7 @@ function ReviewCard({
           {isEmployee && review.status === 'draft' && (
             <button
               onClick={() => onSubmit(review.id)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors"
             >
               <Send size={14} /> {t('actions.submitForManager')}
             </button>
@@ -166,16 +167,16 @@ function ReviewCard({
           {canManagerReview && review.status === 'submitted' && (
             <div className="space-y-3">
               {action !== 'manager' ? (
-                <div className="flex gap-2">
-                  <button onClick={() => setAction('manager')} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                <div className="flex gap-2 flex-wrap">
+                  <button onClick={() => setAction('manager')} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">
                     <ThumbsUp size={14} /> {t('actions.writeReview')}
                   </button>
-                  <button onClick={() => setAction('reject')} className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                  <button onClick={() => setAction('reject')} className="flex items-center gap-2 px-4 py-2 bg-accent-red/10 text-accent-red rounded-lg text-sm font-medium hover:bg-accent-red/20 transition-colors">
                     <XCircle size={14} /> {t('actions.requestRevision')}
                   </button>
                 </div>
               ) : (
-                <div className="space-y-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                <div className="space-y-3 bg-primary/5 dark:bg-primary/10 rounded-lg p-4">
                   <div>
                     <p className="text-sm font-medium mb-2 text-text-primary-light dark:text-text-primary-dark">{t('form.rating')}</p>
                     <StarRating value={mgrRating} onChange={setMgrRating} />
@@ -185,17 +186,17 @@ function ReviewCard({
                     onChange={(e) => setMgrComment(e.target.value)}
                     placeholder={t('form.feedbackPlaceholder')}
                     rows={3}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-text-primary-light dark:text-text-primary-dark resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark text-sm text-text-primary-light dark:text-text-primary-dark resize-none focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={() => { onManagerReview(review.id, mgrRating, mgrComment); setAction(null); }}
                       disabled={!mgrRating || !mgrComment.trim()}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                      className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
                     >
                       {t('actions.submitReview')}
                     </button>
-                    <button onClick={() => setAction(null)} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <button onClick={() => setAction(null)} className="px-4 py-2 rounded-lg text-sm font-medium text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors">
                       {t('actions.cancel')}
                     </button>
                   </div>
@@ -206,22 +207,22 @@ function ReviewCard({
 
           {/* Reject form */}
           {action === 'reject' && (
-            <div className="space-y-3 bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+            <div className="space-y-3 bg-accent-red/5 dark:bg-accent-red/10 rounded-lg p-4">
               <textarea
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 placeholder={t('form.rejectReasonPlaceholder')}
                 rows={2}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark text-sm resize-none focus:outline-none focus:ring-2 focus:ring-accent-red"
               />
               <div className="flex gap-2">
                 <button
                   onClick={() => { onReject(review.id, rejectReason); setAction(null); }}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+                  className="px-4 py-2 bg-accent-red text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
                 >
                   {t('actions.sendBack')}
                 </button>
-                <button onClick={() => setAction(null)} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <button onClick={() => setAction(null)} className="px-4 py-2 rounded-lg text-sm font-medium text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors">
                   {t('actions.cancel')}
                 </button>
               </div>
@@ -232,31 +233,31 @@ function ReviewCard({
           {canHrApprove && review.status === 'manager_reviewed' && (
             <div className="space-y-3">
               {action !== 'hr' ? (
-                <div className="flex gap-2">
-                  <button onClick={() => setAction('hr')} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+                <div className="flex gap-2 flex-wrap">
+                  <button onClick={() => setAction('hr')} className="flex items-center gap-2 px-4 py-2 bg-accent-green text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
                     <CheckCircle size={14} /> {t('actions.finalizeReview')}
                   </button>
-                  <button onClick={() => setAction('reject')} className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                  <button onClick={() => setAction('reject')} className="flex items-center gap-2 px-4 py-2 bg-accent-red/10 text-accent-red rounded-lg text-sm font-medium hover:bg-accent-red/20 transition-colors">
                     <XCircle size={14} /> {t('actions.sendBack')}
                   </button>
                 </div>
               ) : (
-                <div className="space-y-3 bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                <div className="space-y-3 bg-accent-green/5 dark:bg-accent-green/10 rounded-lg p-4">
                   <textarea
                     value={hrComment}
                     onChange={(e) => setHrComment(e.target.value)}
                     placeholder={t('form.hrCommentPlaceholder')}
                     rows={2}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark text-sm resize-none focus:outline-none focus:ring-2 focus:ring-accent-green"
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={() => { onHrApprove(review.id, hrComment); setAction(null); }}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                      className="px-4 py-2 bg-accent-green text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
                     >
                       {t('actions.finalize')}
                     </button>
-                    <button onClick={() => setAction(null)} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <button onClick={() => setAction(null)} className="px-4 py-2 rounded-lg text-sm font-medium text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors">
                       {t('actions.cancel')}
                     </button>
                   </div>
@@ -284,14 +285,14 @@ function SelfReviewForm({ onSubmit, loading }: { onSubmit: (data: { selfReview: 
   ];
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
+    <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-5 space-y-4 shadow-sm">
       <h3 className="font-semibold text-text-primary-light dark:text-text-primary-dark">{t('actions.newSelfReview')}</h3>
       <div>
         <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-1">{t('form.reviewPeriod')}</label>
         <select
           value={reviewPeriod}
           onChange={(e) => setReviewPeriod(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark text-sm text-text-primary-light dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="">{t('form.selectPeriod')}</option>
           {periods.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -304,16 +305,47 @@ function SelfReviewForm({ onSubmit, loading }: { onSubmit: (data: { selfReview: 
           onChange={(e) => setSelfReview(e.target.value)}
           placeholder={t('form.selfAssessmentPlaceholder')}
           rows={5}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark text-sm text-text-primary-light dark:text-text-primary-dark resize-none focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
       <button
         onClick={() => onSubmit({ selfReview, reviewPeriod: reviewPeriod || undefined })}
         disabled={!selfReview.trim() || loading}
-        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
+        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
       >
         <Plus size={14} /> {loading ? t('actions.saving') : t('actions.saveDraft')}
       </button>
+    </div>
+  );
+}
+
+// ─── Pipeline Summary Strip ───────────────────────────────────────────────────
+
+function PipelineSummary({ reviews }: { reviews: PerformanceReview[] }) {
+  const { t } = useTranslation(['performance-reviews']);
+
+  const counts = {
+    submitted: reviews.filter(r => r.status === 'submitted').length,
+    manager_reviewed: reviews.filter(r => r.status === 'manager_reviewed').length,
+    completed: reviews.filter(r => r.status === 'completed').length,
+  };
+
+  if (!reviews.length) return null;
+
+  return (
+    <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm divide-x divide-border-light dark:divide-border-dark flex overflow-hidden">
+      <div className="flex-1 px-5 py-3 text-center">
+        <p className="text-2xl font-bold text-accent-orange tabular-nums">{counts.submitted}</p>
+        <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">{t('status.submitted', 'รอดำเนินการ')}</p>
+      </div>
+      <div className="flex-1 px-5 py-3 text-center">
+        <p className="text-2xl font-bold text-primary tabular-nums">{counts.manager_reviewed}</p>
+        <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">{t('status.manager_reviewed', 'ผู้จัดการรีวิวแล้ว')}</p>
+      </div>
+      <div className="flex-1 px-5 py-3 text-center">
+        <p className="text-2xl font-bold text-accent-green tabular-nums">{counts.completed}</p>
+        <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">{t('status.completed', 'เสร็จสิ้น')}</p>
+      </div>
     </div>
   );
 }
@@ -346,9 +378,9 @@ export function PerformanceReviews() {
   const pendingCount = reviews.filter(r => ['submitted', 'manager_reviewed'].includes(r.status)).length;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-text-primary-light dark:text-text-primary-dark">{t('page.title')}</h1>
           <p className="text-sm text-text-muted-light dark:text-text-muted-dark mt-0.5">
@@ -360,12 +392,15 @@ export function PerformanceReviews() {
         {role === 'EMPLOYEE' && (
           <button
             onClick={() => setShowNewForm((v) => !v)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shrink-0"
           >
             <Plus size={16} /> {t('actions.newSelfReview')}
           </button>
         )}
       </div>
+
+      {/* Pipeline summary (non-employee roles see counts) */}
+      {role !== 'EMPLOYEE' && !isLoading && <PipelineSummary reviews={reviews} />}
 
       {/* New self-review form */}
       {showNewForm && role === 'EMPLOYEE' && (
@@ -378,10 +413,10 @@ export function PerformanceReviews() {
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
               statusFilter === s
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-text-muted-light dark:text-text-muted-dark hover:bg-gray-200 dark:hover:bg-gray-700'
+                ? 'bg-primary text-white border-primary'
+                : 'bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark text-text-muted-light dark:text-text-muted-dark hover:border-primary hover:text-primary'
             }`}
           >
             {t(`statusFilter.${s || 'all'}`, s || 'All')}
@@ -395,9 +430,11 @@ export function PerformanceReviews() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       ) : reviews.length === 0 ? (
-        <div className="text-center py-12 text-text-muted-light dark:text-text-muted-dark">
-          <Award size={40} className="mx-auto mb-3 opacity-40" />
-          <p className="font-medium">{t('empty.noReviews')}</p>
+        <div className="text-center py-14 text-text-muted-light dark:text-text-muted-dark">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+            <Award size={24} className="text-primary" />
+          </div>
+          <p className="font-medium text-text-primary-light dark:text-text-primary-dark">{t('empty.noReviews')}</p>
           {role === 'EMPLOYEE' && <p className="text-sm mt-1">{t('empty.startHint')}</p>}
         </div>
       ) : (

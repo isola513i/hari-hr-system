@@ -241,6 +241,8 @@
     "responseRate": "อัตราการตอบ",
     "respondents": "ผู้ตอบ",
     "totalEmployees": "พนักงานทั้งหมด",
+    "sentimentDistribution": "การกระจายความรู้สึก",
+    "categoryBreakdown": "สรุปรายหมวด",
     "positive": "เชิงบวก",
     "neutral": "เป็นกลาง",
     "negative": "เชิงลบ"
