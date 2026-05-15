@@ -1,0 +1,73 @@
+{
+  "page": {
+    "title": "จัดการสินทรัพย์",
+    "subtitle": "ติดตามและจัดการสินทรัพย์ของบริษัท"
+  },
+  "buttons": {
+    "addAsset": "เพิ่มสินทรัพย์",
+    "save": "บันทึก",
+    "saving": "กำลังบันทึก…",
+    "cancel": "ยกเลิก",
+    "assign": "มอบหมาย",
+    "assigning": "กำลังมอบหมาย…"
+  },
+  "stats": {
+    "total": "ทั้งหมด",
+    "available": "พร้อมใช้",
+    "assigned": "มอบหมายแล้ว",
+    "maintenance": "ซ่อมบำรุง"
+  },
+  "form": {
+    "editTitle": "แก้ไขสินทรัพย์",
+    "addTitle": "เพิ่มสินทรัพย์",
+    "name": "ชื่อ *",
+    "type": "ประเภท *",
+    "status": "สถานะ",
+    "serialNumber": "หมายเลขซีเรียล",
+    "purchaseDate": "วันที่ซื้อ",
+    "purchasePrice": "ราคาซื้อ",
+    "notes": "หมายเหตุ"
+  },
+  "assignModal": {
+    "title": "มอบหมาย \"{{name}}\"",
+    "selectEmployee": "เลือกพนักงาน…"
+  },
+  "filters": {
+    "search": "ค้นหาตามชื่อหรือซีเรียล…",
+    "allStatuses": "ทุกสถานะ"
+  },
+  "table": {
+    "asset": "สินทรัพย์",
+    "type": "ประเภท",
+    "status": "สถานะ",
+    "assignedTo": "มอบหมายให้",
+    "purchaseDate": "วันที่ซื้อ",
+    "actions": "การดำเนินการ"
+  },
+  "status": {
+    "Available": "พร้อมใช้",
+    "Assigned": "มอบหมายแล้ว",
+    "Under Maintenance": "ซ่อมบำรุง",
+    "Retired": "เลิกใช้แล้ว"
+  },
+  "statusFilter": {
+    "allStatuses": "ทุกสถานะ"
+  },
+  "empty": {
+    "noAssets": "ไม่พบสินทรัพย์"
+  },
+  "confirm": {
+    "delete": "ลบสินทรัพย์นี้?"
+  },
+  "toast": {
+    "assetUpdated": "อัปเดตสินทรัพย์แล้ว",
+    "assetCreated": "สร้างสินทรัพย์แล้ว",
+    "assetSaveFailed": "บันทึกสินทรัพย์ไม่สำเร็จ",
+    "assetAssigned": "มอบหมายสินทรัพย์สำเร็จ",
+    "assetAssignFailed": "มอบหมายสินทรัพย์ไม่สำเร็จ",
+    "assetUnassigned": "ยกเลิกการมอบหมายแล้ว",
+    "assetUnassignFailed": "ยกเลิกการมอบหมายไม่สำเร็จ",
+    "assetDeleted": "ลบสินทรัพย์แล้ว",
+    "assetDeleteFailed": "ลบสินทรัพย์ไม่สำเร็จ"
+  }
+}

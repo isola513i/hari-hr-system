@@ -87,7 +87,13 @@
     "empty": "ยังไม่มีผู้ติดต่อสำคัญ",
     "addFirst": "เพิ่มผู้ติดต่อสำคัญคนแรกด้านบน",
     "emailOpened": "เปิดโปรแกรมอีเมลแล้ว!",
-    "sendEmail": "ส่งอีเมล"
+    "sendEmail": "ส่งอีเมล",
+    "contactAdded": "เพิ่มผู้ติดต่อแล้ว",
+    "contactAddFailed": "ไม่สามารถเพิ่มผู้ติดต่อได้",
+    "contactUpdated": "แก้ไขผู้ติดต่อแล้ว",
+    "contactUpdateFailed": "ไม่สามารถแก้ไขผู้ติดต่อได้",
+    "contactDeleted": "ลบผู้ติดต่อแล้ว",
+    "contactDeleteFailed": "ไม่สามารถลบผู้ติดต่อได้"
   },
   "overview": {
     "noOnboarding": "ไม่มีการต้อนรับที่ดำเนินการอยู่",

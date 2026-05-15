@@ -1,0 +1,73 @@
+{
+  "page": {
+    "title": "Asset Management",
+    "subtitle": "Track and manage company assets"
+  },
+  "buttons": {
+    "addAsset": "Add Asset",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "assign": "Assign",
+    "assigning": "Assigning…"
+  },
+  "stats": {
+    "total": "Total",
+    "available": "Available",
+    "assigned": "Assigned",
+    "maintenance": "Maintenance"
+  },
+  "form": {
+    "editTitle": "Edit Asset",
+    "addTitle": "Add Asset",
+    "name": "Name *",
+    "type": "Type *",
+    "status": "Status",
+    "serialNumber": "Serial Number",
+    "purchaseDate": "Purchase Date",
+    "purchasePrice": "Purchase Price",
+    "notes": "Notes"
+  },
+  "assignModal": {
+    "title": "Assign \"{{name}}\"",
+    "selectEmployee": "Select employee…"
+  },
+  "filters": {
+    "search": "Search by name or serial…",
+    "allStatuses": "All Statuses"
+  },
+  "table": {
+    "asset": "Asset",
+    "type": "Type",
+    "status": "Status",
+    "assignedTo": "Assigned To",
+    "purchaseDate": "Purchase Date",
+    "actions": "Actions"
+  },
+  "status": {
+    "Available": "Available",
+    "Assigned": "Assigned",
+    "Under Maintenance": "Under Maintenance",
+    "Retired": "Retired"
+  },
+  "statusFilter": {
+    "allStatuses": "All Statuses"
+  },
+  "empty": {
+    "noAssets": "No assets found"
+  },
+  "confirm": {
+    "delete": "Delete this asset?"
+  },
+  "toast": {
+    "assetUpdated": "Asset updated",
+    "assetCreated": "Asset created",
+    "assetSaveFailed": "Failed to save asset",
+    "assetAssigned": "Asset assigned successfully",
+    "assetAssignFailed": "Failed to assign asset",
+    "assetUnassigned": "Asset unassigned",
+    "assetUnassignFailed": "Failed to unassign asset",
+    "assetDeleted": "Asset deleted",
+    "assetDeleteFailed": "Failed to delete asset"
+  }
+}

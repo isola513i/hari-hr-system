@@ -225,5 +225,15 @@
       "NurturingDesc": "You focus on relationships, empathy, and helping others. You create deep connections.",
       "KnowledgeDesc": "You prioritize data, analysis, and expertise. You value intelligence and the scientific method."
     }
+  },
+  "surveyAnalytics": {
+    "title": "Survey Analytics",
+    "overallScore": "Overall Score",
+    "responseRate": "Response Rate",
+    "respondents": "Respondents",
+    "totalEmployees": "Total Employees",
+    "positive": "Positive",
+    "neutral": "Neutral",
+    "negative": "Negative"
   }
 }

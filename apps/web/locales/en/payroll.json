@@ -36,6 +36,7 @@
       "confirmProcess": "Are you sure you want to mark this payroll as processed?",
       "confirmPaid": "Are you sure you want to mark this payroll as paid?",
       "downloadPayslip": "Download Payslip",
+      "emailPayslip": "Email Payslip",
       "markAsCancelled": "Cancel",
       "confirmCancel": "Are you sure you want to cancel this payroll record?",
       "exportCSV": "Export CSV"

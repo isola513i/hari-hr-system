@@ -1,0 +1,66 @@
+{
+  "page": {
+    "title": "Shift Management",
+    "subtitle": "Define shifts and manage employee schedules"
+  },
+  "tabs": {
+    "schedule": "Weekly Schedule",
+    "shifts": "Shift Templates"
+  },
+  "shiftModal": {
+    "titleNew": "New Shift",
+    "titleEdit": "Edit Shift",
+    "shiftName": "Shift Name",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "color": "Color",
+    "placeholder": "e.g. Morning Shift"
+  },
+  "assignModal": {
+    "title": "Assign Shift",
+    "shift": "Shift",
+    "days": "Days",
+    "employees": "Employees ({{count}} selected)",
+    "searchEmployees": "Search employees…"
+  },
+  "table": {
+    "name": "Name",
+    "hours": "Hours",
+    "color": "Color",
+    "actions": "Actions",
+    "employee": "Employee"
+  },
+  "buttons": {
+    "addShift": "Add Shift",
+    "assignShift": "Assign Shift",
+    "goToTemplates": "Go to Shift Templates",
+    "thisWeek": "This Week",
+    "deactivateConfirm": "Deactivate?",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "assign": "Assign",
+    "assigning": "Assigning…"
+  },
+  "filters": {
+    "allDepartments": "All departments"
+  },
+  "empty": {
+    "noShifts": "No shifts defined yet. Click \"Add Shift\" to create one.",
+    "noShiftsSchedule": "No shifts defined yet",
+    "noShiftsScheduleDesc": "Create shift templates before assigning employees to a schedule.",
+    "noEmployees": "No employees found for this department."
+  },
+  "templateSection": "Shift Templates",
+  "toast": {
+    "shiftUpdated": "Shift updated",
+    "shiftCreated": "Shift created",
+    "shiftSaveFailed": "Failed to save shift",
+    "shiftDeactivated": "Shift deactivated",
+    "shiftDeleteFailed": "Failed to delete shift",
+    "shiftAssigned": "Shift assigned",
+    "shiftAssignFailed": "Failed to assign shift",
+    "assignmentRemoved": "Assignment removed",
+    "assignmentRemoveFailed": "Failed to remove assignment"
+  }
+}

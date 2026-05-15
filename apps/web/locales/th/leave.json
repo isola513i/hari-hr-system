@@ -238,5 +238,79 @@
     "compensatoryLeave": "ชดเชย",
     "militaryLeave": "ทหาร",
     "leaveWithoutPay": "ไม่รับค่าจ้าง"
+  },
+  "otModal": {
+    "title": "ขอทำงานล่วงเวลา (OT)",
+    "date": "วันที่",
+    "startTime": "เวลาเริ่ม",
+    "endTime": "เวลาสิ้นสุด",
+    "plannedHours": "ชั่วโมง OT ที่วางแผน",
+    "otType": "ประเภท OT",
+    "regularRate": "1.5× อัตราค่าจ้าง",
+    "holidayRate": "3× อัตราค่าจ้าง",
+    "reason": "เหตุผล",
+    "reasonPlaceholder": "อธิบายเหตุผลที่ต้องทำงานล่วงเวลา...",
+    "cancel": "ยกเลิก",
+    "submit": "ส่งคำขอ",
+    "submitting": "กำลังส่ง...",
+    "success": "ส่งคำขอ OT สำเร็จ",
+    "failedSubmit": "ไม่สามารถส่งคำขอ OT ได้",
+    "errorNoReason": "กรุณาระบุเหตุผลในการขอ OT",
+    "errorEndTime": "เวลาสิ้นสุดต้องหลังจากเวลาเริ่ม",
+    "errorMaxHours": "ชั่วโมง OT ต้องไม่เกิน 12 ชั่วโมง"
+  },
+  "wfhModal": {
+    "title": "ขอทำงานจากบ้าน (WFH)",
+    "newRequest": "คำขอใหม่",
+    "myRequests": "คำขอของฉัน",
+    "date": "วันที่",
+    "reason": "เหตุผล",
+    "optional": "(ไม่บังคับ)",
+    "reasonPlaceholder": "เช่น ซ่อมบ้าน, ธุระครอบครัว...",
+    "cancel": "ยกเลิก",
+    "submit": "ส่งคำขอ",
+    "submitting": "กำลังส่ง...",
+    "success": "ส่งคำขอ WFH สำเร็จ",
+    "failedSubmit": "ไม่สามารถส่งคำขอได้",
+    "noRequests": "ยังไม่มีคำขอ WFH"
+  },
+  "holidayCard": {
+    "todayBadge": "วันนี้",
+    "nextBadge": "ถัดไป",
+    "annual": "รายปี",
+    "todayLabel": "วันนี้",
+    "daysAgo": "{{count}} วันที่แล้ว",
+    "inDays": "อีก {{count}} วัน",
+    "todayExclaim": "วันนี้!"
+  },
+  "teamCalendar": {
+    "title": "ปฏิทินทีม",
+    "subtitle": "ภาพรวมการลา, WFH และ OT",
+    "allDepartments": "ทุกแผนก",
+    "department": "แผนก",
+    "date": "วันที่",
+    "type": "ประเภท",
+    "status": "สถานะ",
+    "reason": "เหตุผล",
+    "more": "+{{count}} รายการ",
+    "eventTypes": {
+      "leave": "ลา",
+      "wfh": "WFH",
+      "ot": "OT",
+      "holiday": "วันหยุด"
+    }
+  },
+  "adminLeaveRequests": {
+    "pendingHR": "รอ HR อนุมัติ"
+  },
+  "publicHolidays": {
+    "upcoming": "วันหยุดที่กำลังจะมาถึง",
+    "pastHolidays": "วันหยุดที่ผ่านมา",
+    "none": "ไม่มี",
+    "totalYear": "รวม {{year}}",
+    "holidaysLabel": "วันหยุด",
+    "nextCard": "ถัดไป",
+    "passedCard": "ผ่านไปแล้ว",
+    "leftLabel": "เหลืออีก {{count}} วัน"
   }
 }

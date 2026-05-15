@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from "react";
-import { HashRouter, Routes, Route, useLocation } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./lib/queryClient";
@@ -75,9 +75,6 @@ const Notifications = lazy(() => import("./pages/Notifications"));
 const LeaveRequestForm = lazy(() =>
   import("./pages/LeaveRequestForm").then((m) => ({ default: m.LeaveRequestForm })),
 );
-const AdminLeaveRequests = lazy(() =>
-  import("./pages/AdminLeaveRequests").then((m) => ({ default: m.AdminLeaveRequests })),
-);
 const Announcements = lazy(() =>
   import("./pages/Announcements").then((m) => ({ default: m.Announcements })),
 );
@@ -93,9 +90,6 @@ const NotFound = lazy(() =>
 const PerformanceReviews = lazy(() =>
   import("./pages/PerformanceReviews").then((m) => ({ default: m.PerformanceReviews })),
 );
-const TeamCalendar = lazy(() =>
-  import("./pages/TeamCalendar").then((m) => ({ default: m.TeamCalendar })),
-);
 const Assets = lazy(() =>
   import("./pages/Assets").then((m) => ({ default: m.Assets })),
 );
@@ -104,6 +98,9 @@ const AuditLogs = lazy(() =>
 );
 const ShiftManagement = lazy(() =>
   import("./pages/ShiftManagement").then((m) => ({ default: m.ShiftManagement })),
+);
+const Requests = lazy(() =>
+  import("./pages/Requests").then((m) => ({ default: m.Requests })),
 );
 
 // Loading component
@@ -161,7 +158,8 @@ const App: React.FC = () => {
                     <Route path="time-off" element={<PageErrorBoundary><TimeOff /></PageErrorBoundary>} />
                     <Route path="time-off/request" element={<PageErrorBoundary><LeaveRequestForm /></PageErrorBoundary>} />
                     <Route path="time-off/request/:id" element={<PageErrorBoundary><LeaveRequestForm /></PageErrorBoundary>} />
-                    <Route path="leave-requests" element={<PageErrorBoundary><AdminLeaveRequests /></PageErrorBoundary>} />
+                    <Route path="leave-requests" element={<Navigate to="/requests?tab=leave" replace />} />
+                    <Route path="requests" element={<PageErrorBoundary><Requests /></PageErrorBoundary>} />
                     <Route path="holidays" element={<PageErrorBoundary><AdminHolidays /></PageErrorBoundary>} />
                     <Route path="company-holidays" element={<PageErrorBoundary><Holidays /></PageErrorBoundary>} />
                     <Route path="expenses" element={<PageErrorBoundary><Expenses /></PageErrorBoundary>} />
@@ -181,7 +179,6 @@ const App: React.FC = () => {
                     <Route path="settings" element={<PageErrorBoundary><Settings /></PageErrorBoundary>} />
                     <Route path="notifications" element={<PageErrorBoundary><Notifications /></PageErrorBoundary>} />
                     <Route path="performance-reviews" element={<PageErrorBoundary><PerformanceReviews /></PageErrorBoundary>} />
-                    <Route path="team-calendar" element={<PageErrorBoundary><TeamCalendar /></PageErrorBoundary>} />
                     <Route path="assets" element={<PageErrorBoundary><Assets /></PageErrorBoundary>} />
                     <Route path="audit-logs" element={<PageErrorBoundary><AuditLogs /></PageErrorBoundary>} />
                     <Route path="shift-management" element={<PageErrorBoundary><ShiftManagement /></PageErrorBoundary>} />

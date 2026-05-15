@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ScrollText,
   Download,
@@ -12,6 +13,8 @@ import {
 import { useAuditLogsFull, PersistentAuditLog } from '../hooks/queries';
 import { BASE_URL, getAuthToken } from '../lib/api';
 import { useToast } from '../contexts/ToastContext';
+import { Dropdown } from '../components/Dropdown';
+import { DatePicker } from '../components/DatePicker';
 
 function useDebounce<T>(value: T, delay = 400): T {
   const [debounced, setDebounced] = useState(value);
@@ -43,34 +46,38 @@ function actionBadge(action: string, success: boolean) {
   return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
 }
 
-const ExpandedRow: React.FC<{ log: PersistentAuditLog }> = ({ log }) => (
-  <tr className="bg-background-light dark:bg-background-dark/40">
-    <td colSpan={9} className="px-6 py-3">
-      <div className="space-y-2 text-xs">
-        <div>
-          <span className="font-semibold text-text-muted-light dark:text-text-muted-dark">Full path: </span>
-          <code className="font-mono text-text-light dark:text-text-dark break-all">{log.path}</code>
+const ExpandedRow: React.FC<{ log: PersistentAuditLog }> = ({ log }) => {
+  const { t } = useTranslation(['audit-logs']);
+  return (
+    <tr className="bg-background-light dark:bg-background-dark/40">
+      <td colSpan={9} className="px-6 py-3">
+        <div className="space-y-2 text-xs">
+          <div>
+            <span className="font-semibold text-text-muted-light dark:text-text-muted-dark">{t('detail.fullPath')} </span>
+            <code className="font-mono text-text-light dark:text-text-dark break-all">{log.path}</code>
+          </div>
+          {log.userAgent && (
+            <div>
+              <span className="font-semibold text-text-muted-light dark:text-text-muted-dark">{t('detail.userAgent')} </span>
+              <span className="text-text-muted-light dark:text-text-muted-dark break-all">{log.userAgent}</span>
+            </div>
+          )}
+          {log.details && Object.keys(log.details).length > 0 && (
+            <div>
+              <span className="font-semibold text-text-muted-light dark:text-text-muted-dark">{t('detail.details')}</span>
+              <pre className="mt-1 p-2 bg-card-light dark:bg-card-dark rounded-md overflow-auto max-h-40 text-text-light dark:text-text-dark border border-border-light dark:border-border-dark">
+                {JSON.stringify(log.details, null, 2)}
+              </pre>
+            </div>
+          )}
         </div>
-        {log.userAgent && (
-          <div>
-            <span className="font-semibold text-text-muted-light dark:text-text-muted-dark">User-Agent: </span>
-            <span className="text-text-muted-light dark:text-text-muted-dark break-all">{log.userAgent}</span>
-          </div>
-        )}
-        {log.details && Object.keys(log.details).length > 0 && (
-          <div>
-            <span className="font-semibold text-text-muted-light dark:text-text-muted-dark">Details:</span>
-            <pre className="mt-1 p-2 bg-card-light dark:bg-card-dark rounded-md overflow-auto max-h-40 text-text-light dark:text-text-dark border border-border-light dark:border-border-dark">
-              {JSON.stringify(log.details, null, 2)}
-            </pre>
-          </div>
-        )}
-      </div>
-    </td>
-  </tr>
-);
+      </td>
+    </tr>
+  );
+};
 
 export const AuditLogs: React.FC = () => {
+  const { t } = useTranslation(['audit-logs']);
   const { showToast } = useToast();
   const [page, setPage] = useState(1);
   const [resource, setResource] = useState('All');
@@ -84,7 +91,6 @@ export const AuditLogs: React.FC = () => {
   const actionFilter = useDebounce(actionInput, 400);
   const userEmailFilter = useDebounce(userEmailInput, 400);
 
-  // Reset page when debounced filters change
   const prevFiltersRef = useRef({ actionFilter, userEmailFilter });
   useEffect(() => {
     if (prevFiltersRef.current.actionFilter !== actionFilter || prevFiltersRef.current.userEmailFilter !== userEmailFilter) {
@@ -92,6 +98,13 @@ export const AuditLogs: React.FC = () => {
       prevFiltersRef.current = { actionFilter, userEmailFilter };
     }
   }, [actionFilter, userEmailFilter]);
+
+  const RESOURCE_OPTIONS = RESOURCES.map(r => ({ value: r, label: r === 'All' ? t('filters.allResources') : r }));
+  const SUCCESS_OPTIONS = [
+    { value: 'All', label: t('filters.allOutcomes') },
+    { value: 'Success', label: t('filters.success') },
+    { value: 'Failed', label: t('filters.failed') },
+  ];
 
   const filters = {
     page,
@@ -162,8 +175,8 @@ export const AuditLogs: React.FC = () => {
             <ScrollText size={22} className="text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-text-light dark:text-text-dark">Audit Logs</h1>
-            <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Full system activity trail</p>
+            <h1 className="text-2xl font-bold text-text-light dark:text-text-dark">{t('page.title')}</h1>
+            <p className="text-sm text-text-muted-light dark:text-text-muted-dark">{t('page.subtitle')}</p>
           </div>
         </div>
         <button
@@ -171,7 +184,7 @@ export const AuditLogs: React.FC = () => {
           className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
         >
           <Download size={16} />
-          Export CSV
+          {t('buttons.exportCsv')}
         </button>
       </div>
 
@@ -179,16 +192,16 @@ export const AuditLogs: React.FC = () => {
       <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4">
         <div className="flex items-center gap-2 mb-3">
           <Filter size={15} className="text-text-muted-light dark:text-text-muted-dark" />
-          <span className="text-sm font-semibold text-text-muted-light dark:text-text-muted-dark">Filters</span>
-          <button onClick={resetFilters} className="ml-auto text-xs text-primary hover:underline">Reset</button>
+          <span className="text-sm font-semibold text-text-muted-light dark:text-text-muted-dark">{t('filters.title')}</span>
+          <button onClick={resetFilters} className="ml-auto text-xs text-primary hover:underline">{t('filters.reset')}</button>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 pt-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {/* User email */}
           <div className="relative col-span-2 md:col-span-1">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark" />
             <input
               type="text"
-              placeholder="User email"
+              placeholder={t('filters.userEmail')}
               value={userEmailInput}
               onChange={(e) => setUserEmailInput(e.target.value)}
               className="w-full pl-8 pr-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -199,50 +212,40 @@ export const AuditLogs: React.FC = () => {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark" />
             <input
               type="text"
-              placeholder="Action"
+              placeholder={t('filters.action')}
               value={actionInput}
               onChange={(e) => setActionInput(e.target.value)}
               className="w-full pl-8 pr-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
           {/* Resource */}
-          <select
+          <Dropdown
+            options={RESOURCE_OPTIONS}
             value={resource}
-            onChange={(e) => { setResource(e.target.value); setPage(1); }}
-            className="py-2 px-3 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
-          >
-            {RESOURCES.map((r) => (
-              <option key={r} value={r}>{r === 'All' ? 'All resources' : r}</option>
-            ))}
-          </select>
+            onChange={(val) => { setResource(val); setPage(1); }}
+          />
           {/* Success */}
-          <select
+          <Dropdown
+            options={SUCCESS_OPTIONS}
             value={successFilter}
-            onChange={(e) => { setSuccessFilter(e.target.value); setPage(1); }}
-            className="py-2 px-3 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
-          >
-            <option value="All">All outcomes</option>
-            <option value="Success">Success</option>
-            <option value="Failed">Failed</option>
-          </select>
+            onChange={(val) => { setSuccessFilter(val); setPage(1); }}
+          />
           {/* Start date */}
-          <div className="relative">
-            <label className="absolute -top-4 left-0 text-xs text-text-muted-light dark:text-text-muted-dark">From</label>
-            <input
-              type="date"
+          <div>
+            <label className="block text-xs text-text-muted-light dark:text-text-muted-dark mb-1">{t('filters.from')}</label>
+            <DatePicker
               value={startDate}
-              onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
-              className="w-full py-2 px-3 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
+              onChange={(date) => { setStartDate(date); setPage(1); }}
+              placeholder={t('filters.startDate')}
             />
           </div>
           {/* End date */}
-          <div className="relative">
-            <label className="absolute -top-4 left-0 text-xs text-text-muted-light dark:text-text-muted-dark">To</label>
-            <input
-              type="date"
+          <div>
+            <label className="block text-xs text-text-muted-light dark:text-text-muted-dark mb-1">{t('filters.to')}</label>
+            <DatePicker
               value={endDate}
-              onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
-              className="w-full py-2 px-3 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
+              onChange={(date) => { setEndDate(date); setPage(1); }}
+              placeholder={t('filters.endDate')}
             />
           </div>
         </div>
@@ -255,14 +258,14 @@ export const AuditLogs: React.FC = () => {
             <thead>
               <tr className="border-b border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark/50">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider w-8"></th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider whitespace-nowrap">Timestamp</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">User</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Action</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Resource</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Method</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider whitespace-nowrap">Duration</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">IP</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider whitespace-nowrap">{t('table.timestamp')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">{t('table.user')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">{t('table.action')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">{t('table.resource')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">{t('table.method')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">{t('table.status')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider whitespace-nowrap">{t('table.duration')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">{t('table.ip')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-light dark:divide-border-dark">
@@ -278,7 +281,7 @@ export const AuditLogs: React.FC = () => {
                 <tr>
                   <td colSpan={9} className="px-4 py-12 text-center text-text-muted-light dark:text-text-muted-dark">
                     <ScrollText size={36} className="mx-auto mb-3 opacity-20" />
-                    <p>No audit logs found</p>
+                    <p>{t('empty')}</p>
                   </td>
                 </tr>
               ) : (
@@ -297,8 +300,8 @@ export const AuditLogs: React.FC = () => {
                       <td className="px-4 py-3 text-text-muted-light dark:text-text-muted-dark whitespace-nowrap font-mono text-xs">
                         {new Date(log.createdAt).toLocaleString()}
                       </td>
-                      <td className="px-4 py-3 text-text-light dark:text-text-dark max-w-[180px] truncate" title={log.userEmail ?? 'System'}>
-                        {log.userEmail ?? <span className="italic text-text-muted-light dark:text-text-muted-dark">System</span>}
+                      <td className="px-4 py-3 text-text-light dark:text-text-dark max-w-[180px] truncate" title={log.userEmail ?? t('system')}>
+                        {log.userEmail ?? <span className="italic text-text-muted-light dark:text-text-muted-dark">{t('system')}</span>}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${actionBadge(log.action, log.success)}`}>
@@ -343,7 +346,7 @@ export const AuditLogs: React.FC = () => {
         {data && (
           <div className="flex items-center justify-between px-6 py-3 border-t border-border-light dark:border-border-dark">
             <span className="text-sm text-text-muted-light dark:text-text-muted-dark">
-              {totalPages > 1 ? `Page ${page} of ${totalPages} · ` : ''}{data.total} {data.total === 1 ? 'result' : 'results'}
+              {totalPages > 1 ? t('pagination.pageOf', { page, total: totalPages }) : ''}{data.total} {data.total === 1 ? t('pagination.result') : t('pagination.results')}
             </span>
             {totalPages > 1 && (
               <div className="flex items-center gap-2">
@@ -352,14 +355,14 @@ export const AuditLogs: React.FC = () => {
                   disabled={page <= 1}
                   className="px-3 py-1.5 text-sm font-medium rounded-lg border border-border-light dark:border-border-dark text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark disabled:opacity-40 transition-colors"
                 >
-                  Previous
+                  {t('buttons.previous')}
                 </button>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
                   className="px-3 py-1.5 text-sm font-medium rounded-lg border border-border-light dark:border-border-dark text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark disabled:opacity-40 transition-colors"
                 >
-                  Next
+                  {t('buttons.next')}
                 </button>
               </div>
             )}

@@ -76,5 +76,12 @@
     "owner": "เจ้าของ:",
     "modified": "แก้ไขล่าสุด:"
   },
-  "noDocuments": "ไม่พบเอกสาร"
+  "noDocuments": "ไม่พบเอกสาร",
+  "categories": {
+    "hr": "HR",
+    "contracts": "สัญญา",
+    "policies": "นโยบาย",
+    "finance": "การเงิน",
+    "personal": "ส่วนตัว"
+  }
 }

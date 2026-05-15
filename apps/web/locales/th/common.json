@@ -19,7 +19,18 @@
     "signOut": "ออกจากระบบ",
     "menu": "เมนู",
     "holidays": "วันหยุด",
-    "training": "การฝึกอบรม"
+    "training": "การฝึกอบรม",
+    "requests": "คำขอ",
+    "shifts": "กะการทำงาน",
+    "performanceReviews": "การประเมินผล",
+    "assets": "สินทรัพย์",
+    "auditLogs": "บันทึกการตรวจสอบ",
+    "timeAttendance": "เวลาและการลงเวลา",
+    "finance": "การเงิน",
+    "people": "บุคลากร",
+    "performance": "ผลการทำงาน",
+    "operations": "การดำเนินงาน",
+    "system": "ระบบ"
   },
   "header": {
     "searchPlaceholder": "ค้นหาพนักงาน เอกสาร นโยบาย...",

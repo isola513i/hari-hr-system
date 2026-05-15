@@ -87,7 +87,13 @@
     "empty": "No key contacts yet",
     "addFirst": "Add your first key contact above",
     "emailOpened": "Email client opened!",
-    "sendEmail": "Send Email"
+    "sendEmail": "Send Email",
+    "contactAdded": "Contact added",
+    "contactAddFailed": "Failed to add contact",
+    "contactUpdated": "Contact updated",
+    "contactUpdateFailed": "Failed to update contact",
+    "contactDeleted": "Contact deleted",
+    "contactDeleteFailed": "Failed to delete contact"
   },
   "overview": {
     "noOnboarding": "No Onboarding in Progress",

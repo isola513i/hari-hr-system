@@ -40,13 +40,20 @@
     "deleteFailed": "Failed to delete announcement.",
     "manage": "Manage",
     "noAnnouncements": "No announcements yet",
-    "noAnnouncementsHint": "Announcements and policies will appear here."
+    "noAnnouncementsHint": "Announcements and policies will appear here.",
+    "fillRequired": "Please fill in title and description."
   },
   "calendar": {
     "teamCalendar": "Team Calendar",
     "addEvent": "Add New Event",
     "upcomingEvents": "Upcoming Events",
-    "noUpcoming": "No upcoming events"
+    "noUpcoming": "No upcoming events",
+    "legend": {
+      "holiday": "Holiday",
+      "event": "Event",
+      "onLeave": "on leave",
+      "weekend": "Weekend"
+    }
   },
   "announcementModal": {
     "title": "Post New Announcement",
@@ -60,6 +67,7 @@
     "eventDatePlaceholder": "e.g. Aug 15",
     "content": "Content",
     "contentPlaceholder": "Details about the announcement...",
+    "typePlaceholder": "Select announcement type",
     "cancel": "Cancel",
     "post": "Post"
   },
@@ -70,13 +78,22 @@
     "eventType": "Event Type",
     "date": "Date",
     "cancel": "Cancel",
-    "create": "Create Event"
+    "create": "Create Event",
+    "fillRequired": "Please fill in title and date.",
+    "deleteSuccess": "Event deleted successfully!",
+    "deleteError": "Failed to delete event.",
+    "createSuccess": "Event created successfully!",
+    "createError": "Failed to create event. Please try again."
   },
   "eventTypes": {
     "meeting": "Meeting",
+    "birthday": "Birthday",
+    "social": "Social",
     "holiday": "Holiday",
     "training": "Training",
     "teamBuilding": "Team Building",
+    "deadline": "Deadline",
+    "companyEvent": "Company Event",
     "other": "Other"
   }
 }

@@ -21,6 +21,11 @@ import payrollEN from '../locales/en/payroll.json';
 import helpEN from '../locales/en/help.json';
 import expensesEN from '../locales/en/expenses.json';
 import trainingEN from '../locales/en/training.json';
+import shiftsEN from '../locales/en/shifts.json';
+import assetsEN from '../locales/en/assets.json';
+import performanceReviewsEN from '../locales/en/performance-reviews.json';
+import auditLogsEN from '../locales/en/audit-logs.json';
+import requestsEN from '../locales/en/requests.json';
 
 // Thai namespaces
 import commonTH from '../locales/th/common.json';
@@ -39,6 +44,11 @@ import payrollTH from '../locales/th/payroll.json';
 import helpTH from '../locales/th/help.json';
 import expensesTH from '../locales/th/expenses.json';
 import trainingTH from '../locales/th/training.json';
+import shiftsTH from '../locales/th/shifts.json';
+import assetsTH from '../locales/th/assets.json';
+import performanceReviewsTH from '../locales/th/performance-reviews.json';
+import auditLogsTH from '../locales/th/audit-logs.json';
+import requestsTH from '../locales/th/requests.json';
 
 i18n
   .use(LanguageDetector)
@@ -62,6 +72,11 @@ i18n
         help: helpEN,
         expenses: expensesEN,
         training: trainingEN,
+        shifts: shiftsEN,
+        assets: assetsEN,
+        'performance-reviews': performanceReviewsEN,
+        'audit-logs': auditLogsEN,
+        requests: requestsEN,
       },
       th: {
         common: commonTH,
@@ -80,6 +95,11 @@ i18n
         help: helpTH,
         expenses: expensesTH,
         training: trainingTH,
+        shifts: shiftsTH,
+        assets: assetsTH,
+        'performance-reviews': performanceReviewsTH,
+        'audit-logs': auditLogsTH,
+        requests: requestsTH,
       },
     },
     detection: {
@@ -93,6 +113,7 @@ i18n
       'common', 'auth', 'dashboard', 'attendance', 'leave',
       'employees', 'documents', 'settings', 'onboarding',
       'wellbeing', 'compliance', 'analytics', 'payroll', 'help', 'expenses', 'training',
+      'shifts', 'assets', 'performance-reviews', 'audit-logs', 'requests',
     ],
     interpolation: {
       escapeValue: false,

@@ -410,7 +410,7 @@ export const Announcements: React.FC = () => {
                         { value: 'policy', label: t('announcementModal.typePolicy') },
                         { value: 'event', label: t('announcementModal.typeEvent') },
                       ]}
-                      placeholder="Select announcement type"
+                      placeholder={t('announcementModal.typePlaceholder')}
                     />
                   </div>
 

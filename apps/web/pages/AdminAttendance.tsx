@@ -12,19 +12,12 @@ import {
   Search,
   MoreVertical,
   Download,
-  Home,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Timer,
 } from 'lucide-react';
 import { AttendanceAnalyticsPanel } from '../components/AttendanceAnalyticsPanel';
-import { Avatar } from '../components/Avatar';
 import { Dropdown, DropdownOption } from '../components/Dropdown';
 import { DatePicker } from '../components/DatePicker';
 import { Pagination } from '../components/Pagination';
 import { UpsertAttendanceModal } from '../components/UpsertAttendanceModal';
-import { LeaveActionBar } from '../components/LeaveActionBar';
 import { useToast } from '../contexts/ToastContext';
 import {
   useAdminAttendanceSnapshot,
@@ -32,37 +25,12 @@ import {
   useAdminUpsertAttendance,
   useAdminDeleteAttendance,
   useAllEmployees,
-  useAdminWFHRequests,
-  useApproveWFH,
-  useRejectWFH,
-  useManagerApproveWFH,
   useAttendanceAnalytics,
   useHolidays,
-  useAllOTRequests,
-  useOTStats,
-  useApproveOT,
-  useRejectOT,
-  type OTRequest,
 } from '../hooks/queries';
 import { useAuth } from '../contexts/AuthContext';
-import { formatTimeTH, formatDate, dayjs } from '../lib/date';
+import { formatTimeTH } from '../lib/date';
 import type { AdminAttendanceRecord, AdminAttendanceFilters, AdminDisplayStatus, AttendanceStatus } from '../types';
-
-type WFHItem = { id: string; date: string; reason: string | null; status: 'pending' | 'manager_approved' | 'approved' | 'rejected'; employeeName?: string; employeeDepartment?: string; employeeAvatar?: string | null };
-
-const WFH_STATUS_OPTIONS: DropdownOption[] = [
-  { value: 'pending',          label: 'Pending (Manager)' },
-  { value: 'manager_approved', label: 'Pending HR' },
-  { value: 'all',              label: 'All Requests' },
-  { value: 'approved',         label: 'Approved' },
-  { value: 'rejected',         label: 'Rejected' },
-];
-
-const WFH_SORT_OPTIONS: DropdownOption[] = [
-  { value: 'date_desc', label: 'Date Requested' },
-  { value: 'date_asc',  label: 'Oldest First' },
-  { value: 'name_asc',  label: 'Name A–Z' },
-];
 
 const ITEMS_PER_PAGE = 20;
 
@@ -85,18 +53,20 @@ const getStatusStyle = (status: AdminDisplayStatus | string): { dot: string; bad
 
 const formatTime = formatTimeTH;
 
-const CHECK_IN_TYPE_CONFIG: Record<string, { label: string; cls: string }> = {
-  office:  { label: 'Office',  cls: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
-  wfh:     { label: 'WFH',     cls: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
-  remote:  { label: 'Remote',  cls: 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+const CHECK_IN_TYPE_CLS: Record<string, string> = {
+  office: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  wfh:    'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  remote: 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
 };
 
 const CheckInTypeBadge: React.FC<{ type?: string }> = ({ type }) => {
+  const { t } = useTranslation(['attendance']);
   if (!type) return null;
-  const config = CHECK_IN_TYPE_CONFIG[type] ?? { label: type, cls: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' };
+  const cls = CHECK_IN_TYPE_CLS[type] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
+  const label = CHECK_IN_TYPE_CLS[type] ? t(`checkInType.${type}`, type) : type;
   return (
-    <span className={`px-1.5 py-0.5 text-[10px] font-semibold rounded uppercase tracking-wide ${config.cls}`}>
-      {config.label}
+    <span className={`px-1.5 py-0.5 text-[10px] font-semibold rounded uppercase tracking-wide ${cls}`}>
+      {label}
     </span>
   );
 };
@@ -104,8 +74,7 @@ const CheckInTypeBadge: React.FC<{ type?: string }> = ({ type }) => {
 const AdminAttendance: React.FC = () => {
   const { t } = useTranslation(['attendance', 'common']);
   const { showToast } = useToast();
-  const { user } = useAuth();
-  const isManager = user?.role === 'MANAGER';
+  useAuth();
 
   const DEPARTMENTS: DropdownOption[] = [
     { value: 'All', label: t('common:departments.allDepartments') },
@@ -130,21 +99,6 @@ const AdminAttendance: React.FC = () => {
     { value: 'Checked Out', label: t('attendance:filters.checkedOut') },
     { value: 'Not In', label: t('attendance:filters.notInOnLeave') },
   ];
-
-  // Main tab
-  const [mainTab, setMainTab] = useState<'records' | 'wfh' | 'ot'>('records');
-
-  // OT filters
-  const [otSearch, setOtSearch] = useState('');
-  const [otStatusFilter, setOtStatusFilter] = useState<string>('pending');
-  const [otRejectId, setOtRejectId] = useState<string | null>(null);
-  const [otRejectNotes, setOtRejectNotes] = useState('');
-  const [otActionId, setOtActionId] = useState<string | null>(null);
-
-  // WFH filters — manager sees 'pending' (their direct reports), HR sees 'manager_approved'
-  const [wfhStatusFilter, setWfhStatusFilter] = useState<string>(user?.role === 'MANAGER' ? 'pending' : 'manager_approved');
-  const [wfhSearch, setWfhSearch] = useState('');
-  const [wfhSort, setWfhSort] = useState<string>('date_desc');
 
   // Filters
   const [searchInput, setSearchInput] = useState('');
@@ -196,17 +150,6 @@ const AdminAttendance: React.FC = () => {
   const { data: allEmployees = [] } = useAllEmployees();
   const upsertMutation = useAdminUpsertAttendance();
   const deleteMutation = useAdminDeleteAttendance();
-  const { data: wfhRequests = [], isPending: wfhLoading } = useAdminWFHRequests();
-  const approveMutation = useApproveWFH();
-  const rejectMutation = useRejectWFH();
-  const managerApproveMutation = useManagerApproveWFH();
-  const [wfhActionId, setWfhActionId] = useState<string | null>(null);
-
-  const { data: otRequests = [], isPending: otLoading } = useAllOTRequests();
-  const { data: otStatsData } = useOTStats();
-  const approveOTMutation = useApproveOT();
-  const rejectOTMutation = useRejectOT();
-
   const records = recordsResponse?.data || [];
   const totalPages = recordsResponse?.totalPages || 1;
   const totalItems = recordsResponse?.total || 0;
@@ -268,93 +211,6 @@ const AdminAttendance: React.FC = () => {
     setTimeout(() => recordsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   }, []);
 
-  const allWFH = useMemo(() => wfhRequests as WFHItem[], [wfhRequests]);
-
-  const wfhStats = useMemo(() => {
-    const now = new Date();
-    const thisMonth = now.getMonth();
-    const thisYear = now.getFullYear();
-    return allWFH.reduce(
-      (acc, r) => {
-        if (r.status === 'pending') { acc.pending++; return acc; }
-        if (r.status === 'manager_approved') { acc.managerApproved++; return acc; }
-        const d = new Date(r.date);
-        if (d.getMonth() !== thisMonth || d.getFullYear() !== thisYear) return acc;
-        if (r.status === 'approved') acc.approvedThisMonth++;
-        else if (r.status === 'rejected') acc.rejectedThisMonth++;
-        return acc;
-      },
-      { pending: 0, managerApproved: 0, approvedThisMonth: 0, rejectedThisMonth: 0 }
-    );
-  }, [allWFH]);
-
-  const filteredWFH = useMemo(() => allWFH
-    .filter(r => {
-      if (wfhStatusFilter !== 'all' && r.status !== wfhStatusFilter) return false;
-      if (wfhSearch && !r.employeeName?.toLowerCase().includes(wfhSearch.toLowerCase())) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      if (wfhSort === 'date_asc') return a.date.localeCompare(b.date);
-      if (wfhSort === 'name_asc') return (a.employeeName ?? '').localeCompare(b.employeeName ?? '');
-      return b.date.localeCompare(a.date);
-    }), [allWFH, wfhStatusFilter, wfhSearch, wfhSort]);
-
-  const handleWFHApprove = useCallback((id: string) => {
-    setWfhActionId(id);
-    approveMutation.mutate(id, {
-      onSuccess: () => showToast('Approved', 'success'),
-      onError: () => showToast('Failed to approve', 'error'),
-      onSettled: () => setWfhActionId(null),
-    });
-  }, [approveMutation, showToast]);
-
-  const handleWFHReject = useCallback((id: string) => {
-    setWfhActionId(id);
-    rejectMutation.mutate(id, {
-      onSuccess: () => showToast('Rejected', 'success'),
-      onError: () => showToast('Failed to reject', 'error'),
-      onSettled: () => setWfhActionId(null),
-    });
-  }, [rejectMutation, showToast]);
-
-  const handleWFHManagerApprove = useCallback((id: string) => {
-    setWfhActionId(id);
-    managerApproveMutation.mutate(id, {
-      onSuccess: () => showToast('Forwarded to HR for final approval', 'success'),
-      onError: () => showToast('Failed to forward to HR', 'error'),
-      onSettled: () => setWfhActionId(null),
-    });
-  }, [managerApproveMutation, showToast]);
-
-  const filteredOT = useMemo(() => (otRequests as OTRequest[])
-    .filter(r => {
-      if (otStatusFilter !== 'all' && r.status !== otStatusFilter) return false;
-      if (otSearch && !r.employeeName?.toLowerCase().includes(otSearch.toLowerCase())) return false;
-      return true;
-    })
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-  [otRequests, otStatusFilter, otSearch]);
-
-  const handleOTApprove = useCallback((id: string) => {
-    setOtActionId(id);
-    approveOTMutation.mutate({ id }, {
-      onSuccess: () => showToast('OT request approved', 'success'),
-      onError: () => showToast('Failed to approve OT request', 'error'),
-      onSettled: () => setOtActionId(null),
-    });
-  }, [approveOTMutation, showToast]);
-
-  const handleOTRejectSubmit = useCallback(() => {
-    if (!otRejectId) return;
-    setOtActionId(otRejectId);
-    rejectOTMutation.mutate({ id: otRejectId, notes: otRejectNotes || undefined }, {
-      onSuccess: () => { showToast('OT request rejected', 'success'); setOtRejectId(null); setOtRejectNotes(''); },
-      onError: () => showToast('Failed to reject OT request', 'error'),
-      onSettled: () => setOtActionId(null),
-    });
-  }, [rejectOTMutation, otRejectId, otRejectNotes, showToast]);
-
   const exportToCSV = useCallback(() => {
     if (records.length === 0) {
       showToast(t('attendance:admin.noRecordsExport'), 'error');
@@ -413,491 +269,15 @@ const AdminAttendance: React.FC = () => {
             {t('attendance:admin.subtitle')}
           </p>
         </div>
-        {mainTab === 'records' && (
-          <button
+        <button
             onClick={handleOpenAdd}
             className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm font-medium shadow-sm"
           >
             <Plus size={18} />
             <span>{t('attendance:admin.addRecord')}</span>
           </button>
-        )}
       </div>
 
-      {/* Main Tabs */}
-      <div className="flex border-b border-border-light dark:border-border-dark">
-        <button
-          onClick={() => setMainTab('records')}
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-            mainTab === 'records'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark'
-          }`}
-        >
-          {t('attendance:admin.title')}
-        </button>
-        <button
-          onClick={() => setMainTab('wfh')}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-            mainTab === 'wfh'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark'
-          }`}
-        >
-          <Home size={14} />
-          WFH Requests
-          {(() => {
-            const cnt = isManager ? wfhStats.pending : wfhStats.managerApproved;
-            return cnt > 0 && mainTab !== 'wfh' ? (
-              <span className="ml-1 px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">{cnt}</span>
-            ) : null;
-          })()}
-        </button>
-        <button
-          onClick={() => setMainTab('ot')}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-            mainTab === 'ot'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark'
-          }`}
-        >
-          <Timer size={14} />
-          OT Requests
-          {(otStatsData?.pending ?? 0) > 0 && mainTab !== 'ot' && (
-            <span className="ml-1 px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">
-              {otStatsData!.pending}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {mainTab === 'wfh' && (
-          <div className="space-y-5">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-              {[
-                { label: 'Pending (Manager)', mobileLabel: 'Pending', value: wfhStats.pending, subtitle: 'Awaiting manager', icon: <Clock size={20} />, iconColor: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400', filter: 'pending' },
-                { label: 'Pending HR', mobileLabel: 'Pending HR', value: wfhStats.managerApproved, subtitle: 'Awaiting HR final', icon: <CheckCircle2 size={20} />, iconColor: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400', filter: 'manager_approved' },
-                { label: 'Approved This Month', mobileLabel: 'Approved', value: wfhStats.approvedThisMonth, subtitle: 'WFH days approved', icon: <CheckCircle2 size={20} />, iconColor: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400', filter: 'approved' },
-                { label: 'Rejected This Month', mobileLabel: 'Rejected', value: wfhStats.rejectedThisMonth, subtitle: 'WFH days rejected', icon: <XCircle size={20} />, iconColor: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400', filter: 'rejected' },
-              ].map(({ label, mobileLabel, value, subtitle, icon, iconColor, filter }) => (
-                <button
-                  key={filter}
-                  onClick={() => setWfhStatusFilter(wfhStatusFilter === filter ? 'all' : filter)}
-                  className={`p-3 sm:p-4 rounded-xl transition-all text-left w-full cursor-pointer border ${
-                    wfhStatusFilter === filter
-                      ? 'bg-primary/5 dark:bg-primary/10 border-primary/40 shadow-sm'
-                      : 'bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark hover:shadow-md'
-                  }`}
-                >
-                  <div className="flex flex-col items-start gap-1.5 sm:hidden">
-                    <div className={`p-1.5 rounded-lg ${iconColor}`}>{icon}</div>
-                    <p className="text-2xl font-bold text-text-light dark:text-text-dark leading-none">{value}</p>
-                    <p className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">{mobileLabel}</p>
-                  </div>
-                  <div className="hidden sm:flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${iconColor}`}>{icon}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark truncate">{label}</p>
-                      <p className="text-xl font-bold text-text-light dark:text-text-dark">{value}</p>
-                      <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">{subtitle}</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {/* Table Card */}
-            <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm overflow-hidden">
-              {/* Toolbar */}
-              <div className="p-4 border-b border-border-light dark:border-border-dark bg-gray-50/50 dark:bg-gray-800/20 flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark" size={16} />
-                  <input
-                    type="text"
-                    value={wfhSearch}
-                    onChange={(e) => setWfhSearch(e.target.value)}
-                    placeholder="Search employee..."
-                    className="pl-9 pr-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition-all w-full"
-                  />
-                </div>
-                <div className="flex items-center gap-3">
-                  <Dropdown options={WFH_STATUS_OPTIONS} value={wfhStatusFilter} onChange={setWfhStatusFilter} width="flex-1 md:w-auto" />
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="hidden md:inline text-sm font-medium text-text-muted-light dark:text-text-muted-dark whitespace-nowrap">Sort by:</span>
-                    <Dropdown options={WFH_SORT_OPTIONS} value={wfhSort} onChange={setWfhSort} width="w-auto" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Desktop Table */}
-              {wfhLoading ? (
-                <div className="flex items-center justify-center h-32 text-text-muted-light dark:text-text-muted-dark text-sm">Loading...</div>
-              ) : filteredWFH.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-32 gap-2 text-text-muted-light dark:text-text-muted-dark">
-                  <Home size={24} />
-                  <p className="text-sm">No WFH requests found</p>
-                </div>
-              ) : (
-                <>
-                  {/* Desktop */}
-                  <div className="overflow-x-auto hidden md:block">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 dark:bg-gray-800 border-b border-border-light dark:border-border-dark">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Employee</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Date</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Reason</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border-light dark:divide-border-dark">
-                        {filteredWFH.map((req) => (
-                          <tr key={req.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center gap-3">
-                                <Avatar src={req.employeeAvatar ?? null} name={req.employeeName ?? '?'} size="lg" />
-                                <div>
-                                  <p className="text-sm font-medium text-text-light dark:text-text-dark">{req.employeeName ?? '—'}</p>
-                                  <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.employeeDepartment}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <p className="text-sm text-text-light dark:text-text-dark">{formatDate(req.date)}</p>
-                            </td>
-                            <td className="px-6 py-4">
-                              <p className="text-sm text-text-light dark:text-text-dark truncate max-w-xs">{req.reason || <span className="text-text-muted-light dark:text-text-muted-dark">—</span>}</p>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center gap-2">
-                                {req.status === 'pending' && isManager ? (
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={() => handleWFHManagerApprove(req.id)}
-                                      disabled={wfhActionId === req.id}
-                                      className="px-3 py-1.5 text-xs font-medium bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 whitespace-nowrap"
-                                    >
-                                      Forward to HR
-                                    </button>
-                                    <button
-                                      onClick={() => handleWFHReject(req.id)}
-                                      disabled={wfhActionId === req.id}
-                                      className="px-3 py-1.5 text-xs font-medium bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
-                                    >
-                                      Reject
-                                    </button>
-                                  </div>
-                                ) : (req.status === 'pending' || req.status === 'manager_approved') && !isManager ? (
-                                  <LeaveActionBar
-                                    employeeName={req.employeeName}
-                                    compact
-                                    disabled={wfhActionId === req.id}
-                                    onApprove={() => handleWFHApprove(req.id)}
-                                    onReject={() => handleWFHReject(req.id)}
-                                  />
-                                ) : (
-                                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full ${
-                                    req.status === 'approved'
-                                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-200'
-                                    : req.status === 'manager_approved'
-                                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200'
-                                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-200'
-                                  }`}>
-                                    {req.status === 'approved' ? <CheckCircle2 className="w-3.5 h-3.5" />
-                                    : req.status === 'manager_approved' ? <Clock className="w-3.5 h-3.5" />
-                                    : <XCircle className="w-3.5 h-3.5" />}
-                                    {req.status === 'manager_approved' ? 'Pending HR' : req.status.charAt(0).toUpperCase() + req.status.slice(1)}
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Mobile Cards */}
-                  <div className="md:hidden divide-y divide-border-light dark:divide-border-dark">
-                    {filteredWFH.map((req) => (
-                      <div key={req.id} className="p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Avatar src={req.employeeAvatar ?? null} name={req.employeeName ?? '?'} size="lg" />
-                            <div>
-                              <p className="text-sm font-medium text-text-light dark:text-text-dark">{req.employeeName ?? '—'}</p>
-                              <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.employeeDepartment}</p>
-                            </div>
-                          </div>
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                            req.status === 'pending'          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
-                            : req.status === 'manager_approved' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                            : req.status === 'approved'       ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                          }`}>
-                            {req.status === 'manager_approved' ? 'Pending HR' : req.status.charAt(0).toUpperCase() + req.status.slice(1)}
-                          </span>
-                        </div>
-                        <div className="text-sm text-text-muted-light dark:text-text-muted-dark space-y-0.5">
-                          <p><span className="font-medium">Date:</span> {formatDate(req.date)}</p>
-                          {req.reason && <p><span className="font-medium">Reason:</span> {req.reason}</p>}
-                        </div>
-                        {req.status === 'pending' && isManager ? (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleWFHManagerApprove(req.id)}
-                              disabled={wfhActionId === req.id}
-                              className="flex-1 px-3 py-1.5 text-xs font-medium bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50"
-                            >
-                              Forward to HR
-                            </button>
-                            <button
-                              onClick={() => handleWFHReject(req.id)}
-                              disabled={wfhActionId === req.id}
-                              className="flex-1 px-3 py-1.5 text-xs font-medium bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        ) : (req.status === 'pending' || req.status === 'manager_approved') && !isManager ? (
-                          <LeaveActionBar
-                            employeeName={req.employeeName}
-                            compact
-                            disabled={wfhActionId === req.id}
-                            onApprove={() => handleWFHApprove(req.id)}
-                            onReject={() => handleWFHReject(req.id)}
-                          />
-                        ) : null}
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-      )}
-
-      {/* OT Reject Dialog */}
-      {otRejectId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4">
-            <h3 className="text-base font-semibold text-text-light dark:text-text-dark">Reject OT Request</h3>
-            <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Provide an optional reason for rejection:</p>
-            <textarea
-              value={otRejectNotes}
-              onChange={(e) => setOtRejectNotes(e.target.value)}
-              placeholder="Reason (optional)..."
-              rows={3}
-              className="w-full px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none resize-none"
-            />
-            <div className="flex gap-3">
-              <button onClick={() => { setOtRejectId(null); setOtRejectNotes(''); }} className="flex-1 px-4 py-2 text-sm font-medium border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancel</button>
-              <button onClick={handleOTRejectSubmit} disabled={!!otActionId} className="flex-1 px-4 py-2 text-sm font-medium bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50">
-                {otActionId ? 'Rejecting...' : 'Reject'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {mainTab === 'ot' && (
-        <div className="space-y-5">
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-4">
-            {[
-              { label: 'Pending OT Requests', mobileLabel: 'Pending', value: otStatsData?.pending ?? 0, subtitle: 'Awaiting approval', icon: <Clock size={20} />, iconColor: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400', filter: 'pending' },
-              { label: 'Approved This Month', mobileLabel: 'Approved', value: otStatsData?.approvedThisMonth ?? 0, subtitle: 'OT requests approved', icon: <CheckCircle2 size={20} />, iconColor: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400', filter: 'approved' },
-              { label: 'Total OT Hours', mobileLabel: 'OT Hours', value: (otStatsData?.totalOTHoursThisMonth ?? 0).toFixed(1) + 'h', subtitle: 'This month', icon: <Timer size={20} />, iconColor: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400', filter: 'all' },
-            ].map(({ label, mobileLabel, value, subtitle, icon, iconColor, filter }) => (
-              <button
-                key={filter}
-                onClick={() => setOtStatusFilter(filter === 'all' ? 'all' : (otStatusFilter === filter ? 'all' : filter))}
-                className={`p-3 sm:p-4 rounded-xl transition-all text-left w-full cursor-pointer border ${
-                  otStatusFilter === filter
-                    ? 'bg-primary/5 dark:bg-primary/10 border-primary/40 shadow-sm'
-                    : 'bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark hover:shadow-md'
-                }`}
-              >
-                <div className="flex flex-col items-start gap-1.5 sm:hidden">
-                  <div className={`p-1.5 rounded-lg ${iconColor}`}>{icon}</div>
-                  <p className="text-2xl font-bold text-text-light dark:text-text-dark leading-none">{value}</p>
-                  <p className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">{mobileLabel}</p>
-                </div>
-                <div className="hidden sm:flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${iconColor}`}>{icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark truncate">{label}</p>
-                    <p className="text-xl font-bold text-text-light dark:text-text-dark">{value}</p>
-                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">{subtitle}</p>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          {/* Table Card */}
-          <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm overflow-hidden">
-            {/* Toolbar */}
-            <div className="p-4 border-b border-border-light dark:border-border-dark bg-gray-50/50 dark:bg-gray-800/20 flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark" size={16} />
-                <input
-                  type="text"
-                  value={otSearch}
-                  onChange={(e) => setOtSearch(e.target.value)}
-                  placeholder="Search employee..."
-                  className="pl-9 pr-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition-all w-full"
-                />
-              </div>
-              <Dropdown
-                options={[
-                  { value: 'pending', label: 'Pending' },
-                  { value: 'all', label: 'All Requests' },
-                  { value: 'approved', label: 'Approved' },
-                  { value: 'rejected', label: 'Rejected' },
-                ]}
-                value={otStatusFilter}
-                onChange={setOtStatusFilter}
-                width="flex-1 md:w-auto"
-              />
-            </div>
-
-            {/* Content */}
-            {otLoading ? (
-              <div className="flex items-center justify-center h-32 text-text-muted-light dark:text-text-muted-dark text-sm">Loading...</div>
-            ) : filteredOT.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-32 gap-2 text-text-muted-light dark:text-text-muted-dark">
-                <Timer size={24} />
-                <p className="text-sm">No OT requests found</p>
-              </div>
-            ) : (
-              <>
-                {/* Desktop Table */}
-                <div className="overflow-x-auto hidden md:block">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-800 border-b border-border-light dark:border-border-dark">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Employee</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Type</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Planned</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Actual</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Reason</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border-light dark:divide-border-dark">
-                      {filteredOT.map((req) => (
-                        <tr key={req.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-3">
-                              <Avatar src={req.employeeAvatar ?? null} name={req.employeeName ?? '?'} size="lg" />
-                              <div>
-                                <p className="text-sm font-medium text-text-light dark:text-text-dark">{req.employeeName ?? '—'}</p>
-                                <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.department}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <p className="text-sm text-text-light dark:text-text-dark">{formatDate(req.date)}</p>
-                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.plannedStart} – {req.plannedEnd}</p>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full ${
-                              req.otType === 'holiday'
-                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
-                                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                            }`}>
-                              {req.otType === 'holiday' ? 'Holiday 3×' : 'Regular 1.5×'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">
-                            {req.plannedHours}h
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {req.actualHours != null
-                              ? <span className="text-green-600 dark:text-green-400 font-medium">{req.actualHours}h</span>
-                              : <span className="text-text-muted-light dark:text-text-muted-dark">—</span>}
-                          </td>
-                          <td className="px-6 py-4">
-                            <p className="text-sm text-text-light dark:text-text-dark truncate max-w-xs">{req.reason}</p>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full ${
-                              req.status === 'approved' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-200'
-                              : req.status === 'rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-200'
-                              : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200'
-                            }`}>
-                              {req.status === 'approved' ? <CheckCircle2 className="w-3.5 h-3.5" /> : req.status === 'rejected' ? <XCircle className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
-                              {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {req.status === 'pending' ? (
-                              <LeaveActionBar
-                                employeeName={req.employeeName}
-                                compact
-                                disabled={otActionId === req.id}
-                                onApprove={() => handleOTApprove(req.id)}
-                                onReject={() => { setOtRejectId(req.id); setOtRejectNotes(''); }}
-                              />
-                            ) : (
-                              <span className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.reviewerName ? `by ${req.reviewerName}` : '—'}</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Mobile Cards */}
-                <div className="md:hidden divide-y divide-border-light dark:divide-border-dark">
-                  {filteredOT.map((req) => (
-                    <div key={req.id} className="p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Avatar src={req.employeeAvatar ?? null} name={req.employeeName ?? '?'} size="lg" />
-                          <div>
-                            <p className="text-sm font-medium text-text-light dark:text-text-dark">{req.employeeName ?? '—'}</p>
-                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.department}</p>
-                          </div>
-                        </div>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
-                          req.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
-                          : req.status === 'approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                          : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                        }`}>
-                          {req.status}
-                        </span>
-                      </div>
-                      <div className="text-sm text-text-muted-light dark:text-text-muted-dark space-y-0.5">
-                        <p><span className="font-medium">Date:</span> {formatDate(req.date)} ({req.plannedStart} – {req.plannedEnd})</p>
-                        <p><span className="font-medium">Hours:</span> {req.plannedHours}h planned{req.actualHours != null ? ` / ${req.actualHours}h actual` : ''}</p>
-                        <p><span className="font-medium">Type:</span> {req.otType === 'holiday' ? 'Holiday (3×)' : 'Regular (1.5×)'}</p>
-                        {req.reason && <p><span className="font-medium">Reason:</span> {req.reason}</p>}
-                      </div>
-                      {req.status === 'pending' && (
-                        <LeaveActionBar
-                          employeeName={req.employeeName}
-                          compact
-                          disabled={otActionId === req.id}
-                          onApprove={() => handleOTApprove(req.id)}
-                          onReject={() => { setOtRejectId(req.id); setOtRejectNotes(''); }}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {mainTab === 'records' && <>
       {/* Snapshot Cards — click to filter */}
       {snapshot && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
@@ -1306,7 +686,6 @@ const AdminAttendance: React.FC = () => {
         )}
       </div>
 
-      </>}
 
       {/* Upsert Modal */}
       <UpsertAttendanceModal

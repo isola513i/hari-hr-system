@@ -19,13 +19,27 @@ import {
   Clock,
   GraduationCap,
   Star,
-  CalendarDays,
   Package,
   ScrollText,
   CalendarClock,
+  Inbox,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useLeaveRequests, useExpenseClaims, useAdminWFHRequests } from '../hooks/queries';
+import { useLeaveRequests, useExpenseClaims, useAdminWFHRequests, useOTStats } from '../hooks/queries';
+
+interface NavItem {
+  icon: React.ReactNode;
+  label: string;
+  path: string;
+  allowed: boolean;
+  badge?: boolean;
+}
+
+interface NavGroup {
+  key: string;
+  label: string;
+  items: NavItem[];
+}
 
 export const Sidebar: React.FC = () => {
   const { t } = useTranslation('common');
@@ -42,41 +56,74 @@ export const Sidebar: React.FC = () => {
   );
   const { data: wfhRequests = [] } = useAdminWFHRequests(isAdminView && (isHrAdmin || isManager) ? {} : false);
   const hasPendingWFH = isAdminView && (wfhRequests as { status: string }[]).some((r) => r.status === 'pending');
+  const { data: otStats } = useOTStats();
+  const hasPendingOT = isAdminView && (otStats?.pending ?? 0) > 0;
+  const hasPendingRequests = hasPendingLeaves || hasPendingWFH || hasPendingOT || hasPendingExpenses;
 
-  // Define nav items based on role
-  const navItems = [
-    { icon: <LayoutDashboard size={20} />, label: t('nav.dashboard'), path: '/', allowed: true },
-
-    // Admin Attendance — for HR_ADMIN and MANAGER
-    { icon: <Clock size={20} />, label: t('nav.attendance'), path: '/admin-attendance', allowed: isAdminView && (isHrAdmin || isManager) },
-    { icon: <Calendar size={20} />, label: t('nav.leaveRequests'), path: '/leave-requests', allowed: isAdminView && (isHrAdmin || isManager) },
-    { icon: <Calendar size={20} />, label: t('nav.holidays'), path: '/holidays', allowed: isAdminView && isHrAdmin },
-
-    // Employee Focused Tools
-    { icon: <Clock size={20} />, label: t('nav.attendance'), path: '/attendance', allowed: !isAdminView },
-    { icon: <Calendar size={20} />, label: t('nav.timeOff'), path: '/time-off', allowed: !isAdminView },
-    { icon: <Calendar size={20} />, label: t('nav.holidays'), path: '/company-holidays', allowed: false },
-    { icon: <DollarSign size={20} />, label: t('nav.payroll'), path: '/payroll', allowed: true },
-    { icon: <FileText size={20} />, label: t('nav.expenses'), path: '/expenses', allowed: true },
-    { icon: <MessageSquare size={20} />, label: t('nav.surveys'), path: '/surveys', allowed: true },
-
-    { icon: <Smile size={20} />, label: t('nav.wellbeing'), path: '/wellbeing', allowed: true },
-    { icon: <Users size={20} />, label: t('nav.employees'), path: '/employees', allowed: true },
-    { icon: <GitGraph size={20} />, label: t('nav.orgChart'), path: '/org-chart', allowed: true },
-    { icon: <ClipboardList size={20} />, label: t('nav.onboarding'), path: '/onboarding', allowed: true },
-    { icon: <GraduationCap size={20} />, label: t('nav.training', 'Training'), path: '/training', allowed: isAdminView && (isHrAdmin || isManager) },
-    { icon: <CalendarClock size={20} />, label: 'Shifts', path: '/shift-management', allowed: isAdminView && (isHrAdmin || isManager) },
-
-    { icon: <Star size={20} />, label: 'Performance Reviews', path: '/performance-reviews', allowed: true },
-    { icon: <CalendarDays size={20} />, label: 'Team Calendar', path: '/team-calendar', allowed: isAdminView && (isHrAdmin || isManager) },
-    { icon: <Package size={20} />, label: 'Assets', path: '/assets', allowed: isAdminView && isHrAdmin },
-
-    // Admin Specific — HR_ADMIN only
-    { icon: <ShieldCheck size={20} />, label: t('nav.compliance'), path: '/compliance', allowed: isAdminView && isHrAdmin },
-    { icon: <ScrollText size={20} />, label: 'Audit Logs', path: '/audit-logs', allowed: isAdminView && isHrAdmin },
-    { icon: <BarChart2 size={20} />, label: t('nav.analytics'), path: '/analytics', allowed: isAdminView && isHrAdmin },
-
-    { icon: <FileText size={20} />, label: t('nav.documents'), path: '/documents', allowed: true },
+  const navGroups: NavGroup[] = [
+    {
+      key: 'overview',
+      label: '',
+      items: [
+        { icon: <LayoutDashboard size={20} />, label: t('nav.dashboard'), path: '/', allowed: true },
+      ],
+    },
+    {
+      key: 'time',
+      label: t('nav.timeAttendance', 'Time & Attendance'),
+      items: [
+        { icon: <Clock size={20} />, label: t('nav.attendance'), path: '/admin-attendance', allowed: isAdminView && (isHrAdmin || isManager) },
+        { icon: <Inbox size={20} />, label: t('nav.requests', 'Requests'), path: '/requests', allowed: isAdminView && (isHrAdmin || isManager), badge: hasPendingRequests },
+        { icon: <Calendar size={20} />, label: t('nav.holidays'), path: '/holidays', allowed: isAdminView && isHrAdmin },
+        { icon: <CalendarClock size={20} />, label: t('nav.shifts', 'Shifts'), path: '/shift-management', allowed: isAdminView && (isHrAdmin || isManager) },
+        { icon: <Clock size={20} />, label: t('nav.attendance'), path: '/attendance', allowed: !isAdminView },
+        { icon: <Calendar size={20} />, label: t('nav.timeOff'), path: '/time-off', allowed: !isAdminView },
+      ],
+    },
+    {
+      key: 'finance',
+      label: t('nav.finance', 'Finance'),
+      items: [
+        { icon: <DollarSign size={20} />, label: t('nav.payroll'), path: '/payroll', allowed: true },
+        { icon: <FileText size={20} />, label: t('nav.expenses'), path: '/expenses', allowed: !isAdminView },
+      ],
+    },
+    {
+      key: 'people',
+      label: t('nav.people', 'People'),
+      items: [
+        { icon: <Users size={20} />, label: t('nav.employees'), path: '/employees', allowed: true },
+        { icon: <GitGraph size={20} />, label: t('nav.orgChart'), path: '/org-chart', allowed: true },
+        { icon: <ClipboardList size={20} />, label: t('nav.onboarding'), path: '/onboarding', allowed: true },
+        { icon: <GraduationCap size={20} />, label: t('nav.training', 'Training'), path: '/training', allowed: isAdminView && (isHrAdmin || isManager) },
+      ],
+    },
+    {
+      key: 'performance',
+      label: t('nav.performance', 'Performance'),
+      items: [
+        { icon: <Star size={20} />, label: t('nav.performanceReviews', 'Performance Reviews'), path: '/performance-reviews', allowed: true },
+        { icon: <MessageSquare size={20} />, label: t('nav.surveys'), path: '/surveys', allowed: true },
+        { icon: <Smile size={20} />, label: t('nav.wellbeing'), path: '/wellbeing', allowed: true },
+      ],
+    },
+    {
+      key: 'operations',
+      label: t('nav.operations', 'Operations'),
+      items: [
+        { icon: <Package size={20} />, label: t('nav.assets', 'Assets'), path: '/assets', allowed: isAdminView && isHrAdmin },
+        { icon: <ShieldCheck size={20} />, label: t('nav.compliance'), path: '/compliance', allowed: isAdminView && isHrAdmin },
+        { icon: <BarChart2 size={20} />, label: t('nav.analytics'), path: '/analytics', allowed: isAdminView && isHrAdmin },
+        { icon: <FileText size={20} />, label: t('nav.documents'), path: '/documents', allowed: true },
+      ],
+    },
+    {
+      key: 'system',
+      label: t('nav.system', 'System'),
+      items: [
+        { icon: <ScrollText size={20} />, label: t('nav.auditLogs', 'Audit Logs'), path: '/audit-logs', allowed: isAdminView && isHrAdmin },
+      ],
+    },
   ];
 
   return (
@@ -97,32 +144,38 @@ export const Sidebar: React.FC = () => {
         </Link>
       </div>
 
-      <nav className="flex flex-col gap-1 flex-grow p-4 overflow-y-auto no-scrollbar">
-        <p className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-2">{t('nav.menu')}</p>
-        {navItems.filter(item => item.allowed).map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group ${isActive
-                ? 'bg-primary text-white shadow-md'
-                : 'text-gray-300 hover:bg-white/10 hover:text-white'
-              }`
-            }
-          >
-            {item.icon}
-            <span className="text-sm font-medium">{item.label}</span>
-            {item.path === '/leave-requests' && hasPendingLeaves && (
-              <span className="w-2 h-2 rounded-full bg-red-500 ml-auto shrink-0" />
-            )}
-            {item.path === '/expenses' && hasPendingExpenses && (
-              <span className="w-2 h-2 rounded-full bg-red-500 ml-auto shrink-0" />
-            )}
-            {item.path === '/admin-attendance' && hasPendingWFH && (
-              <span className="w-2 h-2 rounded-full bg-red-500 ml-auto shrink-0" />
-            )}
-          </NavLink>
-        ))}
+      <nav className="flex flex-col flex-grow p-3 overflow-y-auto no-scrollbar gap-1">
+        {navGroups.map((group) => {
+          const visibleItems = group.items.filter((item) => item.allowed);
+          if (visibleItems.length === 0) return null;
+          return (
+            <div key={group.key} className="mb-1">
+              {group.label && (
+                <p className="px-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1 mt-3">
+                  {group.label}
+                </p>
+              )}
+              {visibleItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isActive
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                    }`
+                  }
+                >
+                  {item.icon}
+                  <span className="text-sm font-medium">{item.label}</span>
+                  {item.badge && (
+                    <span className="w-2 h-2 rounded-full bg-red-500 ml-auto shrink-0" />
+                  )}
+                </NavLink>
+              ))}
+            </div>
+          );
+        })}
       </nav>
 
       <div className="p-4 border-t border-white/10">

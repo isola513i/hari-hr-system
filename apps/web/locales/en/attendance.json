@@ -86,5 +86,26 @@
     "addRecord": "Add Record",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "checkInType": {
+    "office": "Office",
+    "wfh": "WFH",
+    "remote": "Remote"
+  },
+  "analytics": {
+    "title": "Attendance Rate",
+    "subtitle": "Last 7 days · weekday avg excludes weekends",
+    "today": "Today",
+    "sevenDayAvg": "7-day Avg",
+    "weekdaysOnly": "weekdays only",
+    "vsYesterday": "vs Yesterday",
+    "dayOverDay": "day-over-day",
+    "weekend": "Weekend",
+    "topLate": "Top Late Arrivals",
+    "thisMonth": "This month",
+    "noLateArrivals": "No late arrivals this month",
+    "employees": "{{present}} / {{total}} employees",
+    "arrivedLate": "{{count}} arrived late",
+    "avg": "Avg {{value}}%"
   }
 }

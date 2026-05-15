@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useTeamCalendar } from '../hooks/queries';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -21,15 +22,13 @@ interface CalendarEvent {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const EVENT_COLORS: Record<CalendarEvent['event_type'], { bg: string; text: string; dot: string; label: string }> = {
-  leave:   { bg: 'bg-red-100 dark:bg-red-900/30',    text: 'text-red-800 dark:text-red-300',    dot: 'bg-red-500',    label: 'Leave' },
-  wfh:     { bg: 'bg-blue-100 dark:bg-blue-900/30',  text: 'text-blue-800 dark:text-blue-300',  dot: 'bg-blue-500',   label: 'WFH' },
-  ot:      { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-800 dark:text-orange-300', dot: 'bg-orange-500', label: 'OT' },
-  holiday: { bg: 'bg-gray-100 dark:bg-gray-700',     text: 'text-gray-700 dark:text-gray-300',  dot: 'bg-gray-400',   label: 'Holiday' },
+const EVENT_COLORS: Record<CalendarEvent['event_type'], { bg: string; text: string; dot: string }> = {
+  leave:   { bg: 'bg-red-100 dark:bg-red-900/30',    text: 'text-red-800 dark:text-red-300',    dot: 'bg-red-500'    },
+  wfh:     { bg: 'bg-blue-100 dark:bg-blue-900/30',  text: 'text-blue-800 dark:text-blue-300',  dot: 'bg-blue-500'   },
+  ot:      { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-800 dark:text-orange-300', dot: 'bg-orange-500' },
+  holiday: { bg: 'bg-gray-100 dark:bg-gray-700',     text: 'text-gray-700 dark:text-gray-300',  dot: 'bg-gray-400'   },
 };
 
-const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -68,6 +67,7 @@ function EventPill({ event, onClick }: { event: CalendarEvent; onClick: () => vo
 // ─── Detail Modal ─────────────────────────────────────────────────────────────
 
 function EventModal({ event, onClose }: { event: CalendarEvent; onClose: () => void }) {
+  const { t } = useTranslation(['leave']);
   const cfg = EVENT_COLORS[event.event_type];
   const isMultiDay = event.start_date !== event.end_date;
 
@@ -81,7 +81,7 @@ function EventModal({ event, onClose }: { event: CalendarEvent; onClose: () => v
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
-              <span className={`text-xs font-semibold uppercase tracking-wide ${cfg.text}`}>{cfg.label}</span>
+              <span className={`text-xs font-semibold uppercase tracking-wide ${cfg.text}`}>{t(`teamCalendar.eventTypes.${event.event_type}`)}</span>
             </div>
             <h3 className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
               {event.event_type === 'holiday' ? event.employee_name : event.employee_name}
@@ -95,12 +95,12 @@ function EventModal({ event, onClose }: { event: CalendarEvent; onClose: () => v
         <div className="space-y-2 text-sm">
           {event.department && (
             <div className="flex justify-between">
-              <span className="text-text-muted-light dark:text-text-muted-dark">Department</span>
+              <span className="text-text-muted-light dark:text-text-muted-dark">{t('teamCalendar.department')}</span>
               <span className="font-medium text-text-primary-light dark:text-text-primary-dark">{event.department}</span>
             </div>
           )}
           <div className="flex justify-between">
-            <span className="text-text-muted-light dark:text-text-muted-dark">Date</span>
+            <span className="text-text-muted-light dark:text-text-muted-dark">{t('teamCalendar.date')}</span>
             <span className="font-medium text-text-primary-light dark:text-text-primary-dark">
               {isMultiDay
                 ? `${new Date(event.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(event.end_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
@@ -109,17 +109,17 @@ function EventModal({ event, onClose }: { event: CalendarEvent; onClose: () => v
           </div>
           {event.sub_type && event.event_type !== 'holiday' && (
             <div className="flex justify-between">
-              <span className="text-text-muted-light dark:text-text-muted-dark">Type</span>
+              <span className="text-text-muted-light dark:text-text-muted-dark">{t('teamCalendar.type')}</span>
               <span className="font-medium text-text-primary-light dark:text-text-primary-dark">{event.sub_type}</span>
             </div>
           )}
           <div className="flex justify-between">
-            <span className="text-text-muted-light dark:text-text-muted-dark">Status</span>
+            <span className="text-text-muted-light dark:text-text-muted-dark">{t('teamCalendar.status')}</span>
             <span className="font-medium capitalize text-text-primary-light dark:text-text-primary-dark">{event.status}</span>
           </div>
           {event.reason && (
             <div>
-              <span className="text-text-muted-light dark:text-text-muted-dark">Reason</span>
+              <span className="text-text-muted-light dark:text-text-muted-dark">{t('teamCalendar.reason')}</span>
               <p className="mt-1 text-text-primary-light dark:text-text-primary-dark bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">{event.reason}</p>
             </div>
           )}
@@ -132,6 +132,7 @@ function EventModal({ event, onClose }: { event: CalendarEvent; onClose: () => v
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function TeamCalendar() {
+  const { t } = useTranslation(['leave', 'common']);
   const { user } = useAuth();
   const isAdminOrManager = user?.role === 'HR_ADMIN' || user?.role === 'MANAGER';
 
@@ -177,8 +178,8 @@ export function TeamCalendar() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary-light dark:text-text-primary-dark">Team Calendar</h1>
-          <p className="text-sm text-text-muted-light dark:text-text-muted-dark mt-0.5">Leave, WFH, and OT overview</p>
+          <h1 className="text-2xl font-bold text-text-primary-light dark:text-text-primary-dark">{t('teamCalendar.title')}</h1>
+          <p className="text-sm text-text-muted-light dark:text-text-muted-dark mt-0.5">{t('teamCalendar.subtitle')}</p>
         </div>
 
         {/* Department filter */}
@@ -188,7 +189,7 @@ export function TeamCalendar() {
             onChange={(e) => setDepartment(e.target.value)}
             className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-text-primary-light dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            <option value="">All Departments</option>
+            <option value="">{t('teamCalendar.allDepartments')}</option>
             {data.departments.map((d: string) => <option key={d} value={d}>{d}</option>)}
           </select>
         )}
@@ -201,7 +202,7 @@ export function TeamCalendar() {
             <ChevronLeft size={18} className="text-gray-600 dark:text-gray-400" />
           </button>
           <h2 className="text-base font-semibold text-text-primary-light dark:text-text-primary-dark">
-            {MONTH_NAMES[month]} {year}
+            {t(`common:months.${['january','february','march','april','may','june','july','august','september','october','november','december'][month]}`)} {year}
           </h2>
           <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
             <ChevronRight size={18} className="text-gray-600 dark:text-gray-400" />
@@ -210,8 +211,8 @@ export function TeamCalendar() {
 
         {/* Day headers */}
         <div className="grid grid-cols-7 border-b border-gray-100 dark:border-gray-700">
-          {DAY_NAMES.map((d) => (
-            <div key={d} className="py-2 text-center text-xs font-semibold text-text-muted-light dark:text-text-muted-dark">{d}</div>
+          {(['sun','mon','tue','wed','thu','fri','sat'] as const).map((d) => (
+            <div key={d} className="py-2 text-center text-xs font-semibold text-text-muted-light dark:text-text-muted-dark">{t(`common:weekdaysShort.${d}`)}</div>
           ))}
         </div>
 
@@ -250,7 +251,7 @@ export function TeamCalendar() {
                       <EventPill key={`${ev.id}-${dateStr}`} event={ev} onClick={() => setSelectedEvent(ev)} />
                     ))}
                     {events.length > 3 && (
-                      <p className="text-[10px] text-text-muted-light dark:text-text-muted-dark pl-1">+{events.length - 3} more</p>
+                      <p className="text-[10px] text-text-muted-light dark:text-text-muted-dark pl-1">{t('teamCalendar.more', { count: events.length - 3 })}</p>
                     )}
                   </div>
                 </div>
@@ -265,7 +266,7 @@ export function TeamCalendar() {
         {(Object.entries(EVENT_COLORS) as [CalendarEvent['event_type'], typeof EVENT_COLORS[keyof typeof EVENT_COLORS]][]).map(([type, cfg]) => (
           <div key={type} className="flex items-center gap-1.5 text-sm text-text-muted-light dark:text-text-muted-dark">
             <span className={`w-3 h-3 rounded-sm ${cfg.dot}`} />
-            {cfg.label}
+            {t(`teamCalendar.eventTypes.${type}`)}
           </div>
         ))}
       </div>

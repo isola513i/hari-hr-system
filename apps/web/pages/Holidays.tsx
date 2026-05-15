@@ -42,6 +42,7 @@ const getDuration = (h: PublicHoliday): number => {
 };
 
 function HolidayCard({ h, isNext }: { h: PublicHoliday; isNext: boolean }) {
+  const { t } = useTranslation(['leave']);
   const daysUntil = getDaysUntil(h.date);
   const isPast = daysUntil < 0;
   const isToday = daysUntil === 0;
@@ -75,14 +76,14 @@ function HolidayCard({ h, isNext }: { h: PublicHoliday; isNext: boolean }) {
             {h.name}
           </p>
           {isToday && (
-            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-primary text-white uppercase tracking-wide">Today</span>
+            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-primary text-white uppercase tracking-wide">{t('holidayCard.todayBadge')}</span>
           )}
           {isNext && !isToday && (
-            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-green-500 text-white uppercase tracking-wide">Next</span>
+            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-green-500 text-white uppercase tracking-wide">{t('holidayCard.nextBadge')}</span>
           )}
           {h.isRecurring && (
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-              <RotateCw size={9} /> Annual
+              <RotateCw size={9} /> {t('holidayCard.annual')}
             </span>
           )}
         </div>
@@ -94,12 +95,12 @@ function HolidayCard({ h, isNext }: { h: PublicHoliday; isNext: boolean }) {
       {/* Days counter */}
       <div className="shrink-0 text-right">
         {isToday ? (
-          <span className="text-xs font-semibold text-primary">Today</span>
+          <span className="text-xs font-semibold text-primary">{t('holidayCard.todayLabel')}</span>
         ) : isPast ? (
-          <span className="text-xs text-text-muted-light dark:text-text-muted-dark">{Math.abs(daysUntil)}d ago</span>
+          <span className="text-xs text-text-muted-light dark:text-text-muted-dark">{t('holidayCard.daysAgo', { count: Math.abs(daysUntil) })}</span>
         ) : (
           <span className={`text-xs font-semibold ${isNext ? 'text-green-600 dark:text-green-400' : 'text-text-muted-light dark:text-text-muted-dark'}`}>
-            in {daysUntil}d
+            {t('holidayCard.inDays', { count: daysUntil })}
           </span>
         )}
       </div>
@@ -154,34 +155,34 @@ export const Holidays: React.FC = () => {
         <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-3 sm:p-4 shadow-sm">
           <div className="flex items-center gap-1.5 mb-1">
             <CalendarDays size={14} className="text-primary shrink-0" />
-            <p className="text-xs text-text-muted-light dark:text-text-muted-dark truncate">Total {thisYear}</p>
+            <p className="text-xs text-text-muted-light dark:text-text-muted-dark truncate">{t('publicHolidays.totalYear', { year: thisYear })}</p>
           </div>
           <p className="text-xl sm:text-2xl font-bold text-text-light dark:text-text-dark">{yearHolidays.length}</p>
-          <p className="text-xs text-text-muted-light dark:text-text-muted-dark">holidays</p>
+          <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{t('publicHolidays.holidaysLabel')}</p>
         </div>
         <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-3 sm:p-4 shadow-sm">
           <div className="flex items-center gap-1.5 mb-1">
             <PartyPopper size={14} className="text-green-500 shrink-0" />
-            <p className="text-xs text-text-muted-light dark:text-text-muted-dark truncate">Next</p>
+            <p className="text-xs text-text-muted-light dark:text-text-muted-dark truncate">{t('publicHolidays.nextCard')}</p>
           </div>
           {nextHoliday ? (
             <>
               <p className="text-xs sm:text-sm font-bold text-text-light dark:text-text-dark truncate">{nextHoliday.name}</p>
               <p className="text-xs text-green-600 dark:text-green-400 font-medium truncate">
-                {getDaysUntil(nextHoliday.date) === 0 ? 'Today!' : `in ${getDaysUntil(nextHoliday.date)}d`}
+                {getDaysUntil(nextHoliday.date) === 0 ? t('holidayCard.todayExclaim') : t('holidayCard.inDays', { count: getDaysUntil(nextHoliday.date) })}
               </p>
             </>
           ) : (
-            <p className="text-xs text-text-muted-light dark:text-text-muted-dark">None</p>
+            <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{t('publicHolidays.none')}</p>
           )}
         </div>
         <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-3 sm:p-4 shadow-sm">
           <div className="flex items-center gap-1.5 mb-1">
             <CheckCheck size={14} className="text-text-muted-light dark:text-text-muted-dark shrink-0" />
-            <p className="text-xs text-text-muted-light dark:text-text-muted-dark truncate">Passed</p>
+            <p className="text-xs text-text-muted-light dark:text-text-muted-dark truncate">{t('publicHolidays.passedCard')}</p>
           </div>
           <p className="text-xl sm:text-2xl font-bold text-text-light dark:text-text-dark">{past.length}</p>
-          <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{upcoming.length} left</p>
+          <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{t('publicHolidays.leftLabel', { count: upcoming.length })}</p>
         </div>
       </div>
 
@@ -197,7 +198,7 @@ export const Holidays: React.FC = () => {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Clock size={14} className="text-primary" />
-                <h2 className="text-sm font-semibold text-text-light dark:text-text-dark">Upcoming</h2>
+                <h2 className="text-sm font-semibold text-text-light dark:text-text-dark">{t('publicHolidays.upcoming')}</h2>
                 <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-primary/10 text-primary">{upcoming.length}</span>
               </div>
               <div className="space-y-2">
@@ -213,7 +214,7 @@ export const Holidays: React.FC = () => {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <CheckCheck size={14} className="text-text-muted-light dark:text-text-muted-dark" />
-                <h2 className="text-sm font-semibold text-text-muted-light dark:text-text-muted-dark">Past Holidays</h2>
+                <h2 className="text-sm font-semibold text-text-muted-light dark:text-text-muted-dark">{t('publicHolidays.pastHolidays')}</h2>
                 <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-gray-100 dark:bg-gray-800 text-text-muted-light dark:text-text-muted-dark">{past.length}</span>
               </div>
               <div className="space-y-2">

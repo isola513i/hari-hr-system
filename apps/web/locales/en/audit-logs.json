@@ -1,0 +1,47 @@
+{
+  "page": {
+    "title": "Audit Logs",
+    "subtitle": "Full system activity trail"
+  },
+  "buttons": {
+    "exportCsv": "Export CSV",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "filters": {
+    "title": "Filters",
+    "reset": "Reset",
+    "userEmail": "User email",
+    "action": "Action",
+    "allResources": "All resources",
+    "allOutcomes": "All outcomes",
+    "success": "Success",
+    "failed": "Failed",
+    "from": "From",
+    "to": "To",
+    "startDate": "Start date",
+    "endDate": "End date"
+  },
+  "table": {
+    "timestamp": "Timestamp",
+    "user": "User",
+    "action": "Action",
+    "resource": "Resource",
+    "method": "Method",
+    "status": "Status",
+    "duration": "Duration",
+    "ip": "IP"
+  },
+  "detail": {
+    "fullPath": "Full path:",
+    "userAgent": "User-Agent:",
+    "details": "Details:"
+  },
+  "empty": "No audit logs found",
+  "system": "System",
+  "pagination": {
+    "pageOf": "Page {{page}} of {{total}} · ",
+    "result": "result",
+    "results": "results"
+  }
+}

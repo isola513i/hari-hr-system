@@ -43,20 +43,20 @@ export const Onboarding: React.FC = () => {
     const handleAddContact = async (data: { name: string; role: string; relation: string; email: string }) => {
         try {
             await createContactMutation.mutateAsync(data);
-            showToast('Contact added', 'success');
-        } catch { showToast('Failed to add contact', 'error'); }
+            showToast(t('keyContacts.contactAdded'), 'success');
+        } catch { showToast(t('keyContacts.contactAddFailed'), 'error'); }
     };
     const handleEditContact = async (id: string, data: { name: string; role: string; relation: string; email: string }) => {
         try {
             await updateContactMutation.mutateAsync({ id, data });
-            showToast('Contact updated', 'success');
-        } catch { showToast('Failed to update contact', 'error'); }
+            showToast(t('keyContacts.contactUpdated'), 'success');
+        } catch { showToast(t('keyContacts.contactUpdateFailed'), 'error'); }
     };
     const handleDeleteContact = async (id: string) => {
         try {
             await deleteContactMutation.mutateAsync(id);
-            showToast('Contact deleted', 'success');
-        } catch { showToast('Failed to delete contact', 'error'); }
+            showToast(t('keyContacts.contactDeleted'), 'success');
+        } catch { showToast(t('keyContacts.contactDeleteFailed'), 'error'); }
     };
 
     // Document Checklist state (from React Query)

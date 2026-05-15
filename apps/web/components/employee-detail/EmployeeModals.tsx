@@ -241,16 +241,16 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                             {canEditSensitiveInfo && (
                                 <div>
                                     <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
-                                        Work Type
+                                        {t('employees:modals.workType')}
                                     </label>
                                     <Dropdown
                                         value={(editForm as Record<string, unknown>).workType as string || 'office'}
                                         onChange={(val) => onProfileChange('workType', val)}
-                                        placeholder="Select work type"
+                                        placeholder={t('employees:modals.selectWorkType')}
                                         options={[
-                                            { value: 'office', label: 'Office' },
-                                            { value: 'remote', label: 'Remote' },
-                                            { value: 'hybrid', label: 'Hybrid' },
+                                            { value: 'office', label: t('employees:modals.workTypes.office') },
+                                            { value: 'remote', label: t('employees:modals.workTypes.remote') },
+                                            { value: 'hybrid', label: t('employees:modals.workTypes.hybrid') },
                                         ]}
                                     />
                                     <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">
@@ -274,12 +274,12 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
 
                             <div>
                                 <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
-                                    Birth Date
+                                    {t('employees:dateOfBirth')}
                                 </label>
                                 <DatePicker
                                     value={editForm.birthDate || ''}
                                     onChange={(date) => onProfileChange('birthDate', date)}
-                                    placeholder="Select birth date"
+                                    placeholder={t('employees:modals.selectBirthDate')}
                                 />
                             </div>
 

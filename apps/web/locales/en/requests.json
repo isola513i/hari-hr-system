@@ -1,0 +1,134 @@
+{
+  "page": {
+    "title": "Requests",
+    "subtitle": "Manage all pending approvals in one place"
+  },
+  "tabs": {
+    "leave": "Leave",
+    "wfh": "WFH",
+    "ot": "Overtime",
+    "expense": "Expenses"
+  },
+  "exportCsv": "Export CSV",
+  "searchPlaceholder": "Search employee...",
+  "wfh": {
+    "title": "WFH Requests",
+    "subtitle": "Manage work-from-home approvals",
+    "statusOptions": {
+      "pending": "Pending (Manager)",
+      "manager_approved": "Pending HR",
+      "all": "All Requests",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "sortOptions": {
+      "date_desc": "Date Requested",
+      "date_asc": "Oldest First",
+      "name_asc": "Name A–Z"
+    },
+    "sortBy": "Sort by:",
+    "stats": {
+      "pendingRequests": "Pending Requests",
+      "pendingRate": "{{rate}}% of all requests",
+      "approvedThisMonth": "Approved This Month",
+      "approvalRate": "Approval rate {{rate}}%",
+      "rejectedThisMonth": "Rejected This Month",
+      "rejectionRate": "Rejection rate {{rate}}%"
+    },
+    "table": {
+      "employee": "Employee",
+      "date": "Date",
+      "reason": "Reason",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "mobile": {
+      "date": "Date:",
+      "reason": "Reason:"
+    },
+    "status": {
+      "pending": "Pending",
+      "manager_approved": "Pending HR",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "actions": {
+      "forwardToHR": "Forward to HR",
+      "reject": "Reject"
+    },
+    "empty": "No WFH requests found",
+    "toast": {
+      "approved": "Approved",
+      "approveFailed": "Failed to approve",
+      "rejected": "Rejected",
+      "rejectFailed": "Failed to reject",
+      "forwardedToHR": "Forwarded to HR for final approval",
+      "forwardFailed": "Failed to forward to HR"
+    }
+  },
+  "ot": {
+    "title": "OT Requests",
+    "subtitle": "Manage overtime approvals for your team",
+    "statusOptions": {
+      "pending": "Pending",
+      "all": "All Requests",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "stats": {
+      "pendingRequests": "Pending Requests",
+      "pendingRate": "{{rate}}% of all requests",
+      "approvedThisMonth": "Approved This Month",
+      "approvedSubtext": "OT requests approved",
+      "totalOTHours": "Total OT Hours",
+      "thisMonth": "This month"
+    },
+    "table": {
+      "employee": "Employee",
+      "date": "Date",
+      "type": "Type",
+      "hours": "Hours",
+      "reason": "Reason",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "mobile": {
+      "date": "Date:",
+      "hours": "Hours:",
+      "type": "Type:",
+      "reason": "Reason:",
+      "actual": "actual"
+    },
+    "otType": {
+      "holiday": "Holiday 3×",
+      "regular": "Regular 1.5×",
+      "holidayCsv": "Holiday (3×)",
+      "regularCsv": "Regular (1.5×)"
+    },
+    "reviewedBy": "by {{name}}",
+    "empty": "No OT requests found",
+    "rejectDialog": {
+      "title": "Reject OT Request",
+      "subtitle": "Provide an optional reason for rejection:",
+      "placeholder": "Reason (optional)...",
+      "cancel": "Cancel",
+      "reject": "Reject",
+      "rejecting": "Rejecting..."
+    },
+    "toast": {
+      "approved": "OT request approved",
+      "approveFailed": "Failed to approve OT request",
+      "rejected": "OT request rejected",
+      "rejectFailed": "Failed to reject OT request"
+    }
+  },
+  "expense": {
+    "exportCsv": "Export CSV",
+    "searchPlaceholder": "Search employee or title...",
+    "awaitingApproval": "Awaiting approval",
+    "ofAllClaims": "{{rate}}% of all claims",
+    "thisMonth": "This month",
+    "statusHeader": "Status",
+    "actionsHeader": "Actions"
+  }
+}

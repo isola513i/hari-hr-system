@@ -118,5 +118,34 @@
     "saveFailed": "Failed to save leave type",
     "typeDeleted": "Leave type deleted",
     "deleteFailed": "Failed to delete leave type"
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "passwordStrength": "Password Strength",
+    "weak": "Weak",
+    "fair": "Fair",
+    "good": "Good",
+    "strong": "Strong",
+    "requirements": {
+      "minLength": "At least 8 characters",
+      "uppercase": "Contains uppercase letter",
+      "lowercase": "Contains lowercase letter",
+      "number": "Contains number",
+      "special": "Contains special character"
+    },
+    "cancel": "Cancel",
+    "update": "Update Password",
+    "updating": "Updating...",
+    "success": "Password updated successfully!",
+    "errorCurrentRequired": "Please enter your current password",
+    "errorNewRequired": "Please enter a new password",
+    "errorConfirmRequired": "Please confirm your new password",
+    "errorMismatch": "New passwords do not match",
+    "errorTooShort": "Password must be at least 8 characters",
+    "errorTooWeak": "Password is too weak. Please choose a stronger password.",
+    "errorFailed": "Failed to update password"
   }
 }

@@ -34,7 +34,7 @@ export const AdminLeaveRequests: React.FC = () => {
   const STATUS_OPTIONS = useMemo(
     () => [
       { value: 'Pending', label: t('leave:admin.allPending') },
-      { value: 'Manager Approved', label: 'Pending HR' },
+      { value: 'Manager Approved', label: t('leave:adminLeaveRequests.pendingHR') },
       { value: 'All', label: t('leave:admin.allRequests') },
       { value: 'Approved', label: t('leave:admin.approved') },
       { value: 'Rejected', label: t('leave:admin.rejected') },
@@ -608,7 +608,7 @@ export const AdminLeaveRequests: React.FC = () => {
                               ) : (
                                 <XCircle className="w-3.5 h-3.5" />
                               )}
-                              {request.status === 'Manager Approved' ? 'Pending HR' : t(`common:status.${request.status.toLowerCase()}`, { defaultValue: request.status })}
+                              {request.status === 'Manager Approved' ? t('leave:adminLeaveRequests.pendingHR') : t(`common:status.${request.status.toLowerCase()}`, { defaultValue: request.status })}
                             </span>
                           )}
                         </div>
@@ -724,7 +724,7 @@ export const AdminLeaveRequests: React.FC = () => {
                           ) : (
                             <XCircle className="w-3.5 h-3.5" />
                           )}
-                          {request.status === 'Manager Approved' ? 'Pending HR' : t(`common:status.${request.status.toLowerCase()}`, { defaultValue: request.status })}
+                          {request.status === 'Manager Approved' ? t('leave:adminLeaveRequests.pendingHR') : t(`common:status.${request.status.toLowerCase()}`, { defaultValue: request.status })}
                         </span>
                       )}
                     </div>

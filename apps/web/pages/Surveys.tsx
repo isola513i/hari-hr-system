@@ -324,89 +324,113 @@ const CreateSurveyModal: React.FC<{
 // Survey Analytics
 // ---------------------------------------------------------------------------
 
-function ScoreRing({ score }: { score: number }) {
-  const color = score >= 70 ? 'text-green-500' : score >= 40 ? 'text-yellow-500' : 'text-red-500';
+function SentimentDonut({ positive, neutral, negative, score }: { positive: number; neutral: number; negative: number; score: number }) {
+  const scoreColor = score >= 70 ? '#22c55e' : score >= 40 ? '#facc15' : '#f87171';
+  const hasData = positive + neutral + negative > 0;
   return (
-    <div className={`text-4xl font-bold ${color}`}>
-      {score}<span className="text-lg font-normal text-text-muted-light dark:text-text-muted-dark">/100</span>
+    <div className="relative w-44 h-44 mx-auto">
+      <div
+        className="w-full h-full rounded-full"
+        style={{
+          background: hasData
+            ? `conic-gradient(#22c55e 0% ${positive}%, #facc15 ${positive}% ${positive + neutral}%, #f87171 ${positive + neutral}% 100%)`
+            : '#e5e7eb',
+        }}
+      />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-24 h-24 rounded-full bg-card-light dark:bg-card-dark flex items-center justify-center shadow-inner">
+          <div className="text-center">
+            <div className="text-3xl font-bold leading-none" style={{ color: scoreColor }}>{score}</div>
+            <div className="text-xs text-text-muted-light dark:text-text-muted-dark font-medium">/100</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
 function SurveyAnalytics({ data }: { data: SentimentOverview }) {
+  const { t } = useTranslation(['help']);
   const { overallScore, responseRate, totalResponses, totalEmployees, categoryBreakdown, distribution } = data;
 
   return (
     <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
       <div className="p-5 border-b border-border-light dark:border-border-dark bg-primary/5 flex items-center gap-2">
         <BarChart3 size={20} className="text-primary" />
-        <h2 className="text-lg font-bold text-text-light dark:text-text-dark">Survey Analytics</h2>
+        <h2 className="text-lg font-bold text-text-light dark:text-text-dark">{t('surveyAnalytics.title')}</h2>
       </div>
 
-      <div className="p-5 space-y-6">
-        {/* Summary stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="text-center">
-            <ScoreRing score={overallScore} />
-            <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">Overall Score</p>
-          </div>
-          <div className="text-center">
-            <div className="text-4xl font-bold text-primary">{responseRate}%</div>
-            <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">Response Rate</p>
-          </div>
-          <div className="text-center">
-            <div className="text-4xl font-bold text-text-light dark:text-text-dark">{totalResponses}</div>
-            <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">Respondents</p>
-          </div>
-          <div className="text-center">
-            <div className="text-4xl font-bold text-text-light dark:text-text-dark">{totalEmployees}</div>
-            <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">Total Employees</p>
-          </div>
+      <div className="p-5 space-y-5">
+        {/* Summary stats row */}
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            { value: String(overallScore), suffix: '/100', label: t('surveyAnalytics.overallScore'), color: overallScore >= 70 ? 'text-green-500' : overallScore >= 40 ? 'text-yellow-500' : 'text-red-500' },
+            { value: String(responseRate), suffix: '%', label: t('surveyAnalytics.responseRate'), color: 'text-primary' },
+            { value: String(totalResponses), suffix: '', label: t('surveyAnalytics.respondents'), color: 'text-text-light dark:text-text-dark' },
+            { value: String(totalEmployees), suffix: '', label: t('surveyAnalytics.totalEmployees'), color: 'text-text-light dark:text-text-dark' },
+          ].map((s) => (
+            <div key={s.label} className="text-center p-3 bg-background-light dark:bg-background-dark rounded-lg">
+              <div className={`text-2xl font-bold ${s.color}`}>
+                {s.value}<span className="text-sm font-normal text-text-muted-light dark:text-text-muted-dark">{s.suffix}</span>
+              </div>
+              <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">{s.label}</p>
+            </div>
+          ))}
         </div>
 
-        {/* Sentiment distribution */}
-        <div>
-          <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-2">Sentiment</p>
-          <div className="flex rounded-full overflow-hidden h-3">
-            {distribution.positive > 0 && (
-              <div className="bg-green-500 transition-all" style={{ width: `${distribution.positive}%` }} title={`Positive ${distribution.positive}%`} />
-            )}
-            {distribution.neutral > 0 && (
-              <div className="bg-yellow-400 transition-all" style={{ width: `${distribution.neutral}%` }} title={`Neutral ${distribution.neutral}%`} />
-            )}
-            {distribution.negative > 0 && (
-              <div className="bg-red-400 transition-all" style={{ width: `${distribution.negative}%` }} title={`Negative ${distribution.negative}%`} />
-            )}
-          </div>
-          <div className="flex gap-4 mt-2 text-xs text-text-muted-light dark:text-text-muted-dark">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />Positive {distribution.positive}%</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />Neutral {distribution.neutral}%</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" />Negative {distribution.negative}%</span>
-          </div>
-        </div>
-
-        {/* Category breakdown */}
-        {categoryBreakdown.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-3">Category Breakdown</p>
-            <div className="space-y-2.5">
-              {categoryBreakdown.map((cat) => (
-                <div key={cat.category}>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-text-light dark:text-text-dark font-medium">{cat.category}</span>
-                    <span className="text-text-muted-light dark:text-text-muted-dark">{cat.score}/100</span>
-                  </div>
-                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${cat.score >= 70 ? 'bg-green-500' : cat.score >= 40 ? 'bg-yellow-400' : 'bg-red-400'}`}
-                      style={{ width: `${cat.score}%` }}
-                    />
+        {/* Split layout: donut left, categories right */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left: Donut chart + sentiment legend */}
+          <div className="flex flex-col items-center justify-center gap-4">
+            <SentimentDonut
+              positive={distribution.positive}
+              neutral={distribution.neutral}
+              negative={distribution.negative}
+              score={overallScore}
+            />
+            <div className="flex flex-col gap-2 w-full max-w-[200px]">
+              {[
+                { label: t('surveyAnalytics.positive'), value: distribution.positive, color: 'bg-green-500' },
+                { label: t('surveyAnalytics.neutral'), value: distribution.neutral, color: 'bg-yellow-400' },
+                { label: t('surveyAnalytics.negative'), value: distribution.negative, color: 'bg-red-400' },
+              ].map((seg) => (
+                <div key={seg.label} className="flex items-center gap-2">
+                  <span className={`w-3 h-3 rounded-full flex-shrink-0 ${seg.color}`} />
+                  <span className="text-xs text-text-light dark:text-text-dark flex-1">{seg.label}</span>
+                  <div className="flex items-center gap-1.5 flex-1">
+                    <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full flex-1 overflow-hidden">
+                      <div className={`h-full rounded-full ${seg.color}`} style={{ width: `${seg.value}%` }} />
+                    </div>
+                    <span className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark w-8 text-right">{seg.value}%</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        )}
+
+          {/* Right: Category breakdown */}
+          {categoryBreakdown.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-3">Category Breakdown</p>
+              <div className="space-y-2">
+                {categoryBreakdown.map((cat) => (
+                  <div key={cat.category}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-text-light dark:text-text-dark font-medium">{cat.category}</span>
+                      <span className={`font-semibold ${cat.score >= 70 ? 'text-green-500' : cat.score >= 40 ? 'text-yellow-500' : 'text-red-500'}`}>{cat.score}/100</span>
+                    </div>
+                    <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${cat.score >= 70 ? 'bg-green-500' : cat.score >= 40 ? 'bg-yellow-400' : 'bg-red-400'}`}
+                        style={{ width: `${cat.score}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

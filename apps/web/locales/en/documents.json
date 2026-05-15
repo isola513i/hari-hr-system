@@ -76,5 +76,12 @@
     "owner": "Owner:",
     "modified": "Modified:"
   },
-  "noDocuments": "No documents found."
+  "noDocuments": "No documents found.",
+  "categories": {
+    "hr": "HR",
+    "contracts": "Contracts",
+    "policies": "Policies",
+    "finance": "Finance",
+    "personal": "Personal"
+  }
 }

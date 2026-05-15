@@ -1,0 +1,56 @@
+{
+  "page": {
+    "title": "การประเมินผลการทำงาน",
+    "subtitle": "จัดการการประเมินผลการทำงาน",
+    "reviewsNeedAttention": "{{count}} รายการต้องดำเนินการ"
+  },
+  "status": {
+    "draft": "ร่าง",
+    "submitted": "รอการรีวิว",
+    "manager_reviewed": "ผู้จัดการรีวิวแล้ว",
+    "completed": "เสร็จสิ้น",
+    "rejected": "ต้องแก้ไข"
+  },
+  "statusFilter": {
+    "all": "ทั้งหมด",
+    "draft": "ร่าง",
+    "submitted": "รอดำเนินการ",
+    "manager_reviewed": "ผู้จัดการรีวิวแล้ว",
+    "completed": "เสร็จสิ้น",
+    "rejected": "ต้องแก้ไข"
+  },
+  "sections": {
+    "selfReview": "ประเมินตนเอง",
+    "notes": "หมายเหตุ",
+    "managerFeedback": "ความเห็นผู้จัดการ",
+    "hrComment": "ความเห็น HR"
+  },
+  "actions": {
+    "submitForManager": "ส่งให้ผู้จัดการรีวิว",
+    "writeReview": "เขียนรีวิว",
+    "requestRevision": "ขอแก้ไข",
+    "submitReview": "ส่งรีวิว",
+    "sendBack": "ส่งกลับ",
+    "finalizeReview": "สรุปผลการประเมิน",
+    "finalize": "สรุป",
+    "saveDraft": "บันทึกร่าง",
+    "saving": "กำลังบันทึก...",
+    "cancel": "ยกเลิก",
+    "newSelfReview": "ประเมินตนเองใหม่"
+  },
+  "form": {
+    "rating": "คะแนน",
+    "feedbackPlaceholder": "เพิ่มความเห็นของคุณ...",
+    "rejectReasonPlaceholder": "เหตุผลในการขอแก้ไข...",
+    "hrCommentPlaceholder": "ความเห็น HR (ไม่บังคับ)...",
+    "reviewPeriod": "ช่วงเวลาประเมิน",
+    "selectPeriod": "เลือกช่วงเวลา...",
+    "selfAssessment": "การประเมินตนเอง",
+    "selfAssessmentPlaceholder": "อธิบายผลงาน ความท้าทาย และเป้าหมายสำหรับช่วงถัดไป..."
+  },
+  "reviewer": "โดย {{name}}",
+  "empty": {
+    "noReviews": "ไม่พบรายการประเมิน",
+    "startHint": "เริ่มต้นโดยสร้างการประเมินตนเองด้านบน"
+  }
+}

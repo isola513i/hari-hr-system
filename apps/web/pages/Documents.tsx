@@ -916,11 +916,11 @@ export const Documents: React.FC = () => {
                   value={uploadCategory}
                   onChange={(value) => setUploadCategory(value)}
                   options={[
-                    { value: 'HR', label: 'HR' },
-                    { value: 'Contracts', label: 'Contracts' },
-                    { value: 'Policies', label: 'Policies' },
-                    { value: 'Finance', label: 'Finance' },
-                    { value: 'Personal', label: 'Personal' },
+                    { value: 'HR', label: t('categories.hr') },
+                    { value: 'Contracts', label: t('categories.contracts') },
+                    { value: 'Policies', label: t('categories.policies') },
+                    { value: 'Finance', label: t('categories.finance') },
+                    { value: 'Personal', label: t('categories.personal') },
                   ]}
                   placeholder={t('common:placeholders.selectCategory')}
                 />

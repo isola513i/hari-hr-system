@@ -140,7 +140,7 @@ export const Wellbeing: React.FC = () => {
   const handleSaveAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAnnouncement.title || !newAnnouncement.description) {
-      showToast('Please fill in title and description.', 'warning');
+      showToast(t('announcements.fillRequired'), 'warning');
       return;
     }
 
@@ -202,17 +202,17 @@ export const Wellbeing: React.FC = () => {
   const handleDeleteEvent = async (eventId: string) => {
     try {
       await deleteEventMutation.mutateAsync(eventId);
-      showToast('Event deleted successfully!', 'success');
+      showToast(t('eventModal.deleteSuccess'), 'success');
     } catch (error: any) {
       console.error('Error deleting event:', error);
-      showToast(error.message || 'Failed to delete event.', 'error');
+      showToast(error.message || t('eventModal.deleteError'), 'error');
     }
   };
 
   const handleSaveEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEvent.title || !newEvent.date) {
-      showToast('Please fill in title and date.', 'warning');
+      showToast(t('eventModal.fillRequired'), 'warning');
       return;
     }
 
@@ -225,10 +225,10 @@ export const Wellbeing: React.FC = () => {
 
       setIsEventModalOpen(false);
       setNewEvent({ type: 'Meeting', title: '', date: '' });
-      showToast('Event created successfully!', 'success');
+      showToast(t('eventModal.createSuccess'), 'success');
     } catch (error: any) {
       console.error('Error creating event:', error);
-      showToast(error.message || 'Failed to create event. Please try again.', 'error');
+      showToast(error.message || t('eventModal.createError'), 'error');
     }
   };
 
@@ -266,12 +266,12 @@ export const Wellbeing: React.FC = () => {
   // Event type options for dropdown
   const eventTypeOptions = [
     { value: 'Meeting', label: t('eventTypes.meeting') },
-    { value: 'Birthday', label: 'Birthday' },
-    { value: 'Social', label: 'Social' },
+    { value: 'Birthday', label: t('eventTypes.birthday') },
+    { value: 'Social', label: t('eventTypes.social') },
     { value: 'Training', label: t('eventTypes.training') },
     { value: 'Holiday', label: t('eventTypes.holiday') },
-    { value: 'Deadline', label: 'Deadline' },
-    { value: 'Company Event', label: 'Company Event' },
+    { value: 'Deadline', label: t('eventTypes.deadline') },
+    { value: 'Company Event', label: t('eventTypes.companyEvent') },
   ];
 
   return (
@@ -602,10 +602,10 @@ export const Wellbeing: React.FC = () => {
 
               {/* Legend */}
               <div className="flex flex-wrap gap-x-3 gap-y-1 pt-3 mt-3 border-t border-border-light dark:border-border-dark">
-                <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-400" /><span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">Holiday</span></div>
-                <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-accent-teal" /><span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">Event</span></div>
-                <div className="flex items-center gap-1"><span className="text-[10px] font-bold text-amber-500">3</span><span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">on leave</span></div>
-                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600" /><span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">Weekend</span></div>
+                <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-400" /><span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">{t('calendar.legend.holiday')}</span></div>
+                <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-accent-teal" /><span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">{t('calendar.legend.event')}</span></div>
+                <div className="flex items-center gap-1"><span className="text-[10px] font-bold text-amber-500">3</span><span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">{t('calendar.legend.onLeave')}</span></div>
+                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600" /><span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">{t('calendar.legend.weekend')}</span></div>
               </div>
 
               {/* Upcoming events */}

@@ -40,13 +40,20 @@
     "deleteFailed": "ไม่สามารถลบประกาศได้",
     "manage": "จัดการ",
     "noAnnouncements": "ยังไม่มีประกาศ",
-    "noAnnouncementsHint": "ประกาศและนโยบายจะแสดงที่นี่"
+    "noAnnouncementsHint": "ประกาศและนโยบายจะแสดงที่นี่",
+    "fillRequired": "กรุณากรอกหัวข้อและรายละเอียด"
   },
   "calendar": {
     "teamCalendar": "ปฏิทินทีม",
     "addEvent": "เพิ่มกิจกรรมใหม่",
     "upcomingEvents": "กิจกรรมที่กำลังจะมาถึง",
-    "noUpcoming": "ไม่มีกิจกรรมที่กำลังจะมาถึง"
+    "noUpcoming": "ไม่มีกิจกรรมที่กำลังจะมาถึง",
+    "legend": {
+      "holiday": "วันหยุด",
+      "event": "กิจกรรม",
+      "onLeave": "ลา",
+      "weekend": "วันหยุดสัปดาห์"
+    }
   },
   "announcementModal": {
     "title": "โพสต์ประกาศใหม่",
@@ -60,6 +67,7 @@
     "eventDatePlaceholder": "เช่น 15 ส.ค.",
     "content": "เนื้อหา",
     "contentPlaceholder": "รายละเอียดเกี่ยวกับประกาศ...",
+    "typePlaceholder": "เลือกประเภทประกาศ",
     "cancel": "ยกเลิก",
     "post": "โพสต์"
   },
@@ -70,13 +78,22 @@
     "eventType": "ประเภทกิจกรรม",
     "date": "วันที่",
     "cancel": "ยกเลิก",
-    "create": "สร้างกิจกรรม"
+    "create": "สร้างกิจกรรม",
+    "fillRequired": "กรุณากรอกชื่อและวันที่",
+    "deleteSuccess": "ลบกิจกรรมสำเร็จ!",
+    "deleteError": "ไม่สามารถลบกิจกรรมได้",
+    "createSuccess": "สร้างกิจกรรมสำเร็จ!",
+    "createError": "ไม่สามารถสร้างกิจกรรมได้ กรุณาลองอีกครั้ง"
   },
   "eventTypes": {
     "meeting": "ประชุม",
+    "birthday": "วันเกิด",
+    "social": "สังสรรค์",
     "holiday": "วันหยุด",
     "training": "อบรม",
     "teamBuilding": "สร้างทีม",
+    "deadline": "กำหนดส่ง",
+    "companyEvent": "งานบริษัท",
     "other": "อื่นๆ"
   }
 }

@@ -1,0 +1,57 @@
+{
+  "page": {
+    "title": "Performance Reviews",
+    "subtitle": "Manage performance evaluations",
+    "reviewsNeedAttention_one": "{{count}} review needs attention",
+    "reviewsNeedAttention_other": "{{count}} reviews need attention"
+  },
+  "status": {
+    "draft": "Draft",
+    "submitted": "Pending Review",
+    "manager_reviewed": "Manager Reviewed",
+    "completed": "Completed",
+    "rejected": "Needs Revision"
+  },
+  "statusFilter": {
+    "all": "All",
+    "draft": "Draft",
+    "submitted": "Pending",
+    "manager_reviewed": "Manager Reviewed",
+    "completed": "Completed",
+    "rejected": "Needs Revision"
+  },
+  "sections": {
+    "selfReview": "Self Review",
+    "notes": "Notes",
+    "managerFeedback": "Manager Feedback",
+    "hrComment": "HR Comment"
+  },
+  "actions": {
+    "submitForManager": "Submit for Manager Review",
+    "writeReview": "Write Review",
+    "requestRevision": "Request Revision",
+    "submitReview": "Submit Review",
+    "sendBack": "Send Back",
+    "finalizeReview": "Finalize Review",
+    "finalize": "Finalize",
+    "saveDraft": "Save Draft",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "newSelfReview": "New Self-Review"
+  },
+  "form": {
+    "rating": "Rating",
+    "feedbackPlaceholder": "Add your feedback...",
+    "rejectReasonPlaceholder": "Reason for requesting revision...",
+    "hrCommentPlaceholder": "Optional HR comment...",
+    "reviewPeriod": "Review Period",
+    "selectPeriod": "Select period...",
+    "selfAssessment": "Self Assessment",
+    "selfAssessmentPlaceholder": "Describe your accomplishments, challenges, and goals for next period..."
+  },
+  "reviewer": "By {{name}}",
+  "empty": {
+    "noReviews": "No reviews found",
+    "startHint": "Start by creating a self-review above"
+  }
+}

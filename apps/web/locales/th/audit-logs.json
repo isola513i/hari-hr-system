@@ -1,0 +1,47 @@
+{
+  "page": {
+    "title": "บันทึกการตรวจสอบ",
+    "subtitle": "ประวัติกิจกรรมระบบทั้งหมด"
+  },
+  "buttons": {
+    "exportCsv": "ส่งออก CSV",
+    "previous": "ก่อนหน้า",
+    "next": "ถัดไป"
+  },
+  "filters": {
+    "title": "ตัวกรอง",
+    "reset": "รีเซ็ต",
+    "userEmail": "อีเมลผู้ใช้",
+    "action": "การดำเนินการ",
+    "allResources": "ทุกทรัพยากร",
+    "allOutcomes": "ทุกผลลัพธ์",
+    "success": "สำเร็จ",
+    "failed": "ล้มเหลว",
+    "from": "จาก",
+    "to": "ถึง",
+    "startDate": "วันเริ่มต้น",
+    "endDate": "วันสิ้นสุด"
+  },
+  "table": {
+    "timestamp": "เวลา",
+    "user": "ผู้ใช้",
+    "action": "การดำเนินการ",
+    "resource": "ทรัพยากร",
+    "method": "เมธอด",
+    "status": "สถานะ",
+    "duration": "ระยะเวลา",
+    "ip": "IP"
+  },
+  "detail": {
+    "fullPath": "เส้นทางเต็ม:",
+    "userAgent": "User-Agent:",
+    "details": "รายละเอียด:"
+  },
+  "empty": "ไม่พบบันทึกการตรวจสอบ",
+  "system": "ระบบ",
+  "pagination": {
+    "pageOf": "หน้า {{page}} จาก {{total}} · ",
+    "result": "รายการ",
+    "results": "รายการ"
+  }
+}

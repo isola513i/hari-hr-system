@@ -19,7 +19,18 @@
     "signOut": "Sign Out",
     "menu": "Menu",
     "holidays": "Holidays",
-    "training": "Training"
+    "training": "Training",
+    "requests": "Requests",
+    "shifts": "Shifts",
+    "performanceReviews": "Performance Reviews",
+    "assets": "Assets",
+    "auditLogs": "Audit Logs",
+    "timeAttendance": "Time & Attendance",
+    "finance": "Finance",
+    "people": "People",
+    "performance": "Performance",
+    "operations": "Operations",
+    "system": "System"
   },
   "header": {
     "searchPlaceholder": "Search employees, documents, policies...",

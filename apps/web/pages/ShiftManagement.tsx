@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { createPortal } from 'react-dom';
 import {
   CalendarClock,
   Plus,
@@ -59,7 +61,6 @@ function addDays(date: Date, n: number): Date {
 }
 
 function toISO(d: Date): string {
-  // Use local date parts to avoid UTC offset shifting the date
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
@@ -85,17 +86,18 @@ interface ShiftModalProps {
 }
 
 const ShiftModal: React.FC<ShiftModalProps> = ({ initial, onClose, onSave, saving }) => {
+  const { t } = useTranslation(['shifts']);
   const [name, setName] = useState(initial?.name ?? '');
   const [startTime, setStartTime] = useState(initial?.startTime?.slice(0, 5) ?? '09:00');
   const [endTime, setEndTime] = useState(initial?.endTime?.slice(0, 5) ?? '18:00');
   const [color, setColor] = useState(initial?.color ?? 'blue');
 
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
       <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl w-full max-w-md border border-border-light dark:border-border-dark">
         <div className="flex items-center justify-between p-5 border-b border-border-light dark:border-border-dark">
           <h2 className="text-lg font-bold text-text-light dark:text-text-dark">
-            {initial ? 'Edit Shift' : 'New Shift'}
+            {initial ? t('shiftModal.titleEdit') : t('shiftModal.titleNew')}
           </h2>
           <button onClick={onClose} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark">
             <X size={20} />
@@ -103,18 +105,18 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ initial, onClose, onSave, savin
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Shift Name</label>
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('shiftModal.shiftName')}</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Morning Shift"
+              placeholder={t('shiftModal.placeholder')}
               className="w-full px-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">Start Time</label>
+              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('shiftModal.startTime')}</label>
               <input
                 type="time"
                 value={startTime}
@@ -123,7 +125,7 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ initial, onClose, onSave, savin
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">End Time</label>
+              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('shiftModal.endTime')}</label>
               <input
                 type="time"
                 value={endTime}
@@ -133,7 +135,7 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ initial, onClose, onSave, savin
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">Color</label>
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">{t('shiftModal.color')}</label>
             <div className="flex gap-2">
               {COLORS.map((c) => (
                 <button
@@ -148,18 +150,19 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ initial, onClose, onSave, savin
         </div>
         <div className="flex justify-end gap-2 px-5 pb-5">
           <button onClick={onClose} className="px-4 py-2 text-sm font-medium rounded-lg border border-border-light dark:border-border-dark text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors">
-            Cancel
+            {t('buttons.cancel')}
           </button>
           <button
             disabled={!name || saving}
             onClick={() => onSave({ name, startTime, endTime, color })}
             className="px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? t('buttons.saving') : t('buttons.save')}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
@@ -180,6 +183,7 @@ interface AssignModalProps {
 const AssignModal: React.FC<AssignModalProps> = ({
   shifts, employees, preSelectedEmployee, preSelectedDate, weekDates, onClose, onAssign, saving,
 }) => {
+  const { t } = useTranslation(['shifts']);
   const [shiftId, setShiftId] = useState(shifts[0]?.id ?? '');
   const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(
     new Set(preSelectedEmployee ? [preSelectedEmployee] : [])
@@ -205,11 +209,11 @@ const AssignModal: React.FC<AssignModalProps> = ({
     });
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
       <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl w-full max-w-lg border border-border-light dark:border-border-dark max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-5 border-b border-border-light dark:border-border-dark flex-shrink-0">
-          <h2 className="text-lg font-bold text-text-light dark:text-text-dark">Assign Shift</h2>
+          <h2 className="text-lg font-bold text-text-light dark:text-text-dark">{t('assignModal.title')}</h2>
           <button onClick={onClose} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark">
             <X size={20} />
           </button>
@@ -217,7 +221,7 @@ const AssignModal: React.FC<AssignModalProps> = ({
         <div className="p-5 space-y-4 overflow-y-auto flex-1">
           {/* Shift picker */}
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">Shift</label>
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">{t('assignModal.shift')}</label>
             <div className="flex flex-wrap gap-2">
               {shifts.map((s) => (
                 <button
@@ -236,7 +240,7 @@ const AssignModal: React.FC<AssignModalProps> = ({
           </div>
           {/* Date picker */}
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">Days</label>
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">{t('assignModal.days')}</label>
             <div className="flex gap-1.5">
               {weekDates.map((d, i) => {
                 const label = DAY_LABELS[i];
@@ -261,11 +265,11 @@ const AssignModal: React.FC<AssignModalProps> = ({
           {/* Employee picker */}
           <div>
             <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">
-              Employees ({selectedEmployees.size} selected)
+              {t('assignModal.employees', { count: selectedEmployees.size })}
             </label>
             <input
               type="text"
-              placeholder="Search employees…"
+              placeholder={t('assignModal.searchEmployees')}
               value={empSearch}
               onChange={(e) => setEmpSearch(e.target.value)}
               className="w-full px-3 py-1.5 text-sm mb-1.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -290,18 +294,19 @@ const AssignModal: React.FC<AssignModalProps> = ({
         </div>
         <div className="flex justify-end gap-2 px-5 pb-5 flex-shrink-0 border-t border-border-light dark:border-border-dark pt-4">
           <button onClick={onClose} className="px-4 py-2 text-sm font-medium rounded-lg border border-border-light dark:border-border-dark text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors">
-            Cancel
+            {t('buttons.cancel')}
           </button>
           <button
             disabled={!shiftId || selectedEmployees.size === 0 || selectedDates.size === 0 || saving}
             onClick={() => onAssign({ employeeIds: [...selectedEmployees], shiftId, dates: [...selectedDates] })}
             className="px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
-            {saving ? 'Assigning…' : 'Assign'}
+            {saving ? t('buttons.assigning') : t('buttons.assign')}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
@@ -309,6 +314,7 @@ const AssignModal: React.FC<AssignModalProps> = ({
 // Main Page
 // ---------------------------------------------------------------------------
 export const ShiftManagement: React.FC = () => {
+  const { t } = useTranslation(['shifts']);
   const { showToast } = useToast();
   const [tab, setTab] = useState<'shifts' | 'schedule'>('schedule');
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
@@ -345,7 +351,6 @@ export const ShiftManagement: React.FC = () => {
     [allEmployees, department]
   );
 
-  // Build lookup: employeeId+date → assignment
   const assignmentMap = useMemo(() => {
     const map = new Map<string, typeof schedule[0]>();
     for (const a of schedule) {
@@ -358,44 +363,44 @@ export const ShiftManagement: React.FC = () => {
     try {
       if (shiftModal.editing) {
         await updateShift.mutateAsync({ id: shiftModal.editing.id, ...data });
-        showToast('Shift updated', 'success');
+        showToast(t('toast.shiftUpdated'), 'success');
       } else {
         await createShift.mutateAsync(data);
-        showToast('Shift created', 'success');
+        showToast(t('toast.shiftCreated'), 'success');
       }
       setShiftModal({ open: false, editing: null });
     } catch {
-      showToast('Failed to save shift', 'error');
+      showToast(t('toast.shiftSaveFailed'), 'error');
     }
   };
 
   const handleDeleteShift = async (id: string) => {
     try {
       await deleteShift.mutateAsync(id);
-      showToast('Shift deactivated', 'success');
+      showToast(t('toast.shiftDeactivated'), 'success');
       setDeleteShiftConfirm(null);
     } catch {
-      showToast('Failed to delete shift', 'error');
+      showToast(t('toast.shiftDeleteFailed'), 'error');
     }
   };
 
   const handleAssign = async (data: { employeeIds: string[]; shiftId: string; dates: string[] }) => {
     try {
       await assignShift.mutateAsync(data);
-      showToast('Shift assigned', 'success');
+      showToast(t('toast.shiftAssigned'), 'success');
       setAssignModal({ open: false });
     } catch {
-      showToast('Failed to assign shift', 'error');
+      showToast(t('toast.shiftAssignFailed'), 'error');
     }
   };
 
   const handleRemove = async (assignmentId: string) => {
     try {
       await removeAssignment.mutateAsync(assignmentId);
-      showToast('Assignment removed', 'success');
+      showToast(t('toast.assignmentRemoved'), 'success');
       setRemoveConfirm(null);
     } catch {
-      showToast('Failed to remove assignment', 'error');
+      showToast(t('toast.assignmentRemoveFailed'), 'error');
     }
   };
 
@@ -408,25 +413,25 @@ export const ShiftManagement: React.FC = () => {
             <CalendarClock size={22} className="text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-text-light dark:text-text-dark">Shift Management</h1>
-            <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Define shifts and manage employee schedules</p>
+            <h1 className="text-2xl font-bold text-text-light dark:text-text-dark">{t('page.title')}</h1>
+            <p className="text-sm text-text-muted-light dark:text-text-muted-dark">{t('page.subtitle')}</p>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 bg-background-light dark:bg-background-dark rounded-lg p-1 w-fit">
-        {(['schedule', 'shifts'] as const).map((t) => (
+        {(['schedule', 'shifts'] as const).map((tabKey) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={tabKey}
+            onClick={() => setTab(tabKey)}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors capitalize ${
-              tab === t
+              tab === tabKey
                 ? 'bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark shadow-sm'
                 : 'text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark'
             }`}
           >
-            {t === 'schedule' ? 'Weekly Schedule' : 'Shift Templates'}
+            {tabKey === 'schedule' ? t('tabs.schedule') : t('tabs.shifts')}
           </button>
         ))}
       </div>
@@ -435,22 +440,22 @@ export const ShiftManagement: React.FC = () => {
       {tab === 'shifts' && (
         <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark">
           <div className="flex items-center justify-between p-5 border-b border-border-light dark:border-border-dark">
-            <h2 className="font-bold text-text-light dark:text-text-dark">Shift Templates</h2>
+            <h2 className="font-bold text-text-light dark:text-text-dark">{t('templateSection')}</h2>
             <button
               onClick={() => setShiftModal({ open: true, editing: null })}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
             >
-              <Plus size={15} /> Add Shift
+              <Plus size={15} /> {t('buttons.addShift')}
             </button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark/50">
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Name</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Hours</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Color</th>
-                  <th className="px-5 py-3 text-right text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Actions</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">{t('table.name')}</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">{t('table.hours')}</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">{t('table.color')}</th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">{t('table.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-light dark:divide-border-dark">
@@ -458,7 +463,7 @@ export const ShiftManagement: React.FC = () => {
                   <tr>
                     <td colSpan={4} className="px-5 py-10 text-center text-text-muted-light dark:text-text-muted-dark">
                       <CalendarClock size={36} className="mx-auto mb-3 opacity-20" />
-                      <p>No shifts defined yet. Click "Add Shift" to create one.</p>
+                      <p>{t('empty.noShifts')}</p>
                     </td>
                   </tr>
                 ) : (
@@ -479,7 +484,7 @@ export const ShiftManagement: React.FC = () => {
                         <div className="flex items-center justify-end gap-1 min-w-[120px]">
                           {deleteShiftConfirm === s.id ? (
                             <>
-                              <span className="text-xs text-red-600 dark:text-red-400 mr-1 whitespace-nowrap">Deactivate?</span>
+                              <span className="text-xs text-red-600 dark:text-red-400 mr-1 whitespace-nowrap">{t('buttons.deactivateConfirm')}</span>
                               <button
                                 onClick={() => handleDeleteShift(s.id)}
                                 className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
@@ -526,13 +531,13 @@ export const ShiftManagement: React.FC = () => {
       {tab === 'schedule' && shifts.length === 0 && (
         <div className="bg-card-light dark:bg-card-dark rounded-xl border border-dashed border-border-light dark:border-border-dark p-12 text-center">
           <CalendarClock size={40} className="mx-auto mb-4 text-text-muted-light dark:text-text-muted-dark opacity-30" />
-          <p className="text-text-light dark:text-text-dark font-medium mb-1">No shifts defined yet</p>
-          <p className="text-sm text-text-muted-light dark:text-text-muted-dark mb-4">Create shift templates before assigning employees to a schedule.</p>
+          <p className="text-text-light dark:text-text-dark font-medium mb-1">{t('empty.noShiftsSchedule')}</p>
+          <p className="text-sm text-text-muted-light dark:text-text-muted-dark mb-4">{t('empty.noShiftsScheduleDesc')}</p>
           <button
             onClick={() => setTab('shifts')}
             className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
           >
-            Go to Shift Templates
+            {t('buttons.goToTemplates')}
           </button>
         </div>
       )}
@@ -563,7 +568,7 @@ export const ShiftManagement: React.FC = () => {
               onClick={() => setWeekStart(getWeekStart(new Date()))}
               className="px-3 py-1.5 text-sm font-medium border border-border-light dark:border-border-dark rounded-lg text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors"
             >
-              This Week
+              {t('buttons.thisWeek')}
             </button>
             {/* Department filter */}
             <select
@@ -571,13 +576,13 @@ export const ShiftManagement: React.FC = () => {
               onChange={(e) => setDepartment(e.target.value)}
               className="py-1.5 px-3 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none"
             >
-              {departments.map((d) => <option key={d} value={d}>{d === 'All' ? 'All departments' : d}</option>)}
+              {departments.map((d) => <option key={d} value={d}>{d === 'All' ? t('filters.allDepartments') : d}</option>)}
             </select>
             <button
               onClick={() => setAssignModal({ open: true })}
               className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
             >
-              <Plus size={15} /> Assign Shift
+              <Plus size={15} /> {t('buttons.assignShift')}
             </button>
           </div>
 
@@ -587,7 +592,7 @@ export const ShiftManagement: React.FC = () => {
               <table className="w-full text-sm min-w-[700px]">
                 <thead>
                   <tr className="border-b border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark/50">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider w-44">Employee</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider w-44">{t('table.employee')}</th>
                     {weekDates.map((d, i) => {
                       const isToday = d === toISO(new Date());
                       const isWeekend = i >= 5;
@@ -613,7 +618,7 @@ export const ShiftManagement: React.FC = () => {
                   ) : activeEmployees.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="px-4 py-10 text-center text-text-muted-light dark:text-text-muted-dark">
-                        No employees found for this department.
+                        {t('empty.noEmployees')}
                       </td>
                     </tr>
                   ) : (

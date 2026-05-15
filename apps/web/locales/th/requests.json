@@ -1,0 +1,134 @@
+{
+  "page": {
+    "title": "คำขอ",
+    "subtitle": "จัดการการอนุมัติที่รอดำเนินการทั้งหมดในที่เดียว"
+  },
+  "tabs": {
+    "leave": "ลาหยุด",
+    "wfh": "WFH",
+    "ot": "ล่วงเวลา",
+    "expense": "ค่าใช้จ่าย"
+  },
+  "exportCsv": "ส่งออก CSV",
+  "searchPlaceholder": "ค้นหาพนักงาน...",
+  "wfh": {
+    "title": "คำขอ WFH",
+    "subtitle": "จัดการการอนุมัติการทำงานจากบ้าน",
+    "statusOptions": {
+      "pending": "รอ (ผู้จัดการ)",
+      "manager_approved": "รอ HR",
+      "all": "คำขอทั้งหมด",
+      "approved": "อนุมัติแล้ว",
+      "rejected": "ปฏิเสธแล้ว"
+    },
+    "sortOptions": {
+      "date_desc": "วันที่ขอล่าสุด",
+      "date_asc": "เก่าที่สุดก่อน",
+      "name_asc": "ชื่อ ก-ฮ"
+    },
+    "sortBy": "เรียงตาม:",
+    "stats": {
+      "pendingRequests": "คำขอที่รอดำเนินการ",
+      "pendingRate": "{{rate}}% ของคำขอทั้งหมด",
+      "approvedThisMonth": "อนุมัติเดือนนี้",
+      "approvalRate": "อัตราอนุมัติ {{rate}}%",
+      "rejectedThisMonth": "ปฏิเสธเดือนนี้",
+      "rejectionRate": "อัตราปฏิเสธ {{rate}}%"
+    },
+    "table": {
+      "employee": "พนักงาน",
+      "date": "วันที่",
+      "reason": "เหตุผล",
+      "status": "สถานะ",
+      "actions": "การดำเนินการ"
+    },
+    "mobile": {
+      "date": "วันที่:",
+      "reason": "เหตุผล:"
+    },
+    "status": {
+      "pending": "รอดำเนินการ",
+      "manager_approved": "รอ HR",
+      "approved": "อนุมัติแล้ว",
+      "rejected": "ปฏิเสธแล้ว"
+    },
+    "actions": {
+      "forwardToHR": "ส่งให้ HR",
+      "reject": "ปฏิเสธ"
+    },
+    "empty": "ไม่พบคำขอ WFH",
+    "toast": {
+      "approved": "อนุมัติแล้ว",
+      "approveFailed": "อนุมัติไม่สำเร็จ",
+      "rejected": "ปฏิเสธแล้ว",
+      "rejectFailed": "ปฏิเสธไม่สำเร็จ",
+      "forwardedToHR": "ส่งให้ HR เพื่ออนุมัติขั้นสุดท้ายแล้ว",
+      "forwardFailed": "ส่งให้ HR ไม่สำเร็จ"
+    }
+  },
+  "ot": {
+    "title": "คำขอทำงานล่วงเวลา",
+    "subtitle": "จัดการการอนุมัติล่วงเวลาของทีม",
+    "statusOptions": {
+      "pending": "รอดำเนินการ",
+      "all": "คำขอทั้งหมด",
+      "approved": "อนุมัติแล้ว",
+      "rejected": "ปฏิเสธแล้ว"
+    },
+    "stats": {
+      "pendingRequests": "คำขอที่รอดำเนินการ",
+      "pendingRate": "{{rate}}% ของคำขอทั้งหมด",
+      "approvedThisMonth": "อนุมัติเดือนนี้",
+      "approvedSubtext": "คำขอ OT ที่อนุมัติแล้ว",
+      "totalOTHours": "ชั่วโมง OT รวม",
+      "thisMonth": "เดือนนี้"
+    },
+    "table": {
+      "employee": "พนักงาน",
+      "date": "วันที่",
+      "type": "ประเภท",
+      "hours": "ชั่วโมง",
+      "reason": "เหตุผล",
+      "status": "สถานะ",
+      "actions": "การดำเนินการ"
+    },
+    "mobile": {
+      "date": "วันที่:",
+      "hours": "ชั่วโมง:",
+      "type": "ประเภท:",
+      "reason": "เหตุผล:",
+      "actual": "จริง"
+    },
+    "otType": {
+      "holiday": "วันหยุด 3×",
+      "regular": "ปกติ 1.5×",
+      "holidayCsv": "วันหยุด (3×)",
+      "regularCsv": "ปกติ (1.5×)"
+    },
+    "reviewedBy": "โดย {{name}}",
+    "empty": "ไม่พบคำขอล่วงเวลา",
+    "rejectDialog": {
+      "title": "ปฏิเสธคำขอ OT",
+      "subtitle": "ระบุเหตุผลในการปฏิเสธ (ไม่บังคับ):",
+      "placeholder": "เหตุผล (ไม่บังคับ)...",
+      "cancel": "ยกเลิก",
+      "reject": "ปฏิเสธ",
+      "rejecting": "กำลังปฏิเสธ..."
+    },
+    "toast": {
+      "approved": "อนุมัติคำขอ OT แล้ว",
+      "approveFailed": "อนุมัติคำขอ OT ไม่สำเร็จ",
+      "rejected": "ปฏิเสธคำขอ OT แล้ว",
+      "rejectFailed": "ปฏิเสธคำขอ OT ไม่สำเร็จ"
+    }
+  },
+  "expense": {
+    "exportCsv": "ส่งออก CSV",
+    "searchPlaceholder": "ค้นหาพนักงานหรือหัวข้อ...",
+    "awaitingApproval": "รออนุมัติ",
+    "ofAllClaims": "{{rate}}% ของทั้งหมด",
+    "thisMonth": "เดือนนี้",
+    "statusHeader": "สถานะ",
+    "actionsHeader": "การดำเนินการ"
+  }
+}

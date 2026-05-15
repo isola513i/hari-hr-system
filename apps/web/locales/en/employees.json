@@ -285,7 +285,15 @@
     "onboardRole": "Role / Job Title",
     "onboardDepartment": "Department",
     "onboardEmail": "Email Address",
-    "onboardStartDate": "Starting Date"
+    "onboardStartDate": "Starting Date",
+    "workType": "Work Type",
+    "selectWorkType": "Select work type",
+    "selectBirthDate": "Select birth date",
+    "workTypes": {
+      "office": "Office",
+      "remote": "Remote",
+      "hybrid": "Hybrid"
+    }
   },
   "toast": {
     "employeeDeleted": "Employee terminated successfully.",

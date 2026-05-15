@@ -86,5 +86,26 @@
     "addRecord": "เพิ่มบันทึก",
     "save": "บันทึก",
     "cancel": "ยกเลิก"
+  },
+  "checkInType": {
+    "office": "ที่ออฟฟิศ",
+    "wfh": "WFH",
+    "remote": "ทำงานจากระยะไกล"
+  },
+  "analytics": {
+    "title": "อัตราการมาทำงาน",
+    "subtitle": "7 วันล่าสุด · ค่าเฉลี่ยวันทำงานไม่นับสุดสัปดาห์",
+    "today": "วันนี้",
+    "sevenDayAvg": "เฉลี่ย 7 วัน",
+    "weekdaysOnly": "เฉพาะวันทำงาน",
+    "vsYesterday": "เทียบเมื่อวาน",
+    "dayOverDay": "เปรียบเทียบรายวัน",
+    "weekend": "วันหยุดสัปดาห์",
+    "topLate": "มาสายมากที่สุด",
+    "thisMonth": "เดือนนี้",
+    "noLateArrivals": "ไม่มีการมาสายในเดือนนี้",
+    "employees": "{{present}} / {{total}} คน",
+    "arrivedLate": "{{count}} คนมาสาย",
+    "avg": "เฉลี่ย {{value}}%"
   }
 }

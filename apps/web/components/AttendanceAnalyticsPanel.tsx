@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine, ReferenceArea } from 'recharts';
 import { TrendingUp, TrendingDown, Minus, Clock } from 'lucide-react';
 import { Avatar } from './Avatar';
@@ -34,24 +35,27 @@ const CustomTooltip = ({ active, payload, label }: {
   payload?: { value: number; payload: { date: string; present: number; total: number; late: number; isOff: boolean; holidayName?: string } }[];
   label?: string;
 }) => {
+  const { t } = useTranslation(['attendance']);
   if (!active || !payload?.length || !payload[0]) return null;
   const { date, present, total, late, holidayName } = payload[0].payload;
   const rate = payload[0].value;
   const weekend = isWeekend(date);
-  const offLabel = holidayName ?? (weekend ? 'Weekend' : null);
+  const offLabel = holidayName ?? (weekend ? t('analytics.weekend') : null);
   return (
     <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg shadow-lg p-3 text-xs min-w-[130px]">
       <p className="font-semibold text-text-light dark:text-text-dark mb-2">
         {label}{offLabel ? <span className="ml-1.5 text-text-muted-light dark:text-text-muted-dark font-normal">· {offLabel}</span> : null}
       </p>
       <p className="text-2xl font-bold text-teal-600 dark:text-teal-400 mb-1">{rate}%</p>
-      <p className="text-text-muted-light dark:text-text-muted-dark">{present} of {total} employees</p>
-      {late > 0 && <p className="text-orange-500 dark:text-orange-400 mt-1">{late} arrived late</p>}
+      <p className="text-text-muted-light dark:text-text-muted-dark">{t('analytics.employees', { present, total })}</p>
+      {late > 0 && <p className="text-orange-500 dark:text-orange-400 mt-1">{t('analytics.arrivedLate', { count: late })}</p>}
     </div>
   );
 };
 
 export const AttendanceAnalyticsPanel: React.FC<Props> = ({ data, holidays = [] }) => {
+  const { t } = useTranslation(['attendance']);
+
   const chartData = data.dailyRate.map((d) => {
     const off = isWeekend(d.date) || isHoliday(d.date, holidays);
     const holiday = !isWeekend(d.date) && isHoliday(d.date, holidays)
@@ -103,8 +107,8 @@ export const AttendanceAnalyticsPanel: React.FC<Props> = ({ data, holidays = [] 
               <TrendingUp size={18} />
             </div>
             <div>
-              <p className="font-semibold text-text-light dark:text-text-dark text-sm">Attendance Rate</p>
-              <p className="text-xs text-text-muted-light dark:text-text-muted-dark">Last 7 days · weekday avg excludes weekends</p>
+              <p className="font-semibold text-text-light dark:text-text-dark text-sm">{t('analytics.title')}</p>
+              <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{t('analytics.subtitle')}</p>
             </div>
           </div>
         </div>
@@ -112,22 +116,22 @@ export const AttendanceAnalyticsPanel: React.FC<Props> = ({ data, holidays = [] 
         {/* KPI row */}
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="bg-background-light dark:bg-background-dark rounded-lg px-3 py-2">
-            <p className="text-[10px] text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-0.5">Today</p>
+            <p className="text-[10px] text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-0.5">{t('analytics.today')}</p>
             <p className="text-xl font-bold text-teal-600 dark:text-teal-400">{todayRate}%</p>
-            <p className="text-[10px] text-text-muted-light dark:text-text-muted-dark">{today?.present ?? 0} / {today?.total ?? 0} employees</p>
+            <p className="text-[10px] text-text-muted-light dark:text-text-muted-dark">{t('analytics.employees', { present: today?.present ?? 0, total: today?.total ?? 0 })}</p>
           </div>
           <div className="bg-background-light dark:bg-background-dark rounded-lg px-3 py-2">
-            <p className="text-[10px] text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-0.5">7-day Avg</p>
+            <p className="text-[10px] text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-0.5">{t('analytics.sevenDayAvg')}</p>
             <p className="text-xl font-bold text-text-light dark:text-text-dark">{avg}%</p>
-            <p className="text-[10px] text-text-muted-light dark:text-text-muted-dark">weekdays only</p>
+            <p className="text-[10px] text-text-muted-light dark:text-text-muted-dark">{t('analytics.weekdaysOnly')}</p>
           </div>
           <div className="bg-background-light dark:bg-background-dark rounded-lg px-3 py-2">
-            <p className="text-[10px] text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-0.5">vs Yesterday</p>
+            <p className="text-[10px] text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-0.5">{t('analytics.vsYesterday')}</p>
             <div className={`flex items-center gap-1 ${trendColor}`}>
               <TrendIcon size={18} />
               <p className="text-xl font-bold">{trend > 0 ? '+' : ''}{trend}%</p>
             </div>
-            <p className="text-[10px] text-text-muted-light dark:text-text-muted-dark">day-over-day</p>
+            <p className="text-[10px] text-text-muted-light dark:text-text-muted-dark">{t('analytics.dayOverDay')}</p>
           </div>
         </div>
 
@@ -140,13 +144,11 @@ export const AttendanceAnalyticsPanel: React.FC<Props> = ({ data, holidays = [] 
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" className="stroke-border-light dark:stroke-border-dark" />
-            {/* Weekend + holiday shading */}
             {offAreas.map((w) => (
               <ReferenceArea key={w.x1} x1={w.x1} x2={w.x2} fill="#94a3b8" fillOpacity={0.08} />
             ))}
-            {/* Average reference line */}
             <ReferenceLine y={avg} stroke="#94a3b8" strokeDasharray="4 3" strokeWidth={1.5}
-              label={{ value: `Avg ${avg}%`, position: 'insideTopRight', fontSize: 10, fill: '#94a3b8' }} />
+              label={{ value: t('analytics.avg', { value: avg }), position: 'insideTopRight', fontSize: 10, fill: '#94a3b8' }} />
             <XAxis dataKey="label" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
             <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} />
             <Tooltip content={<CustomTooltip />} />
@@ -162,12 +164,12 @@ export const AttendanceAnalyticsPanel: React.FC<Props> = ({ data, holidays = [] 
             <Clock size={18} />
           </div>
           <div>
-            <p className="font-semibold text-text-light dark:text-text-dark text-sm">Top Late Arrivals</p>
-            <p className="text-xs text-text-muted-light dark:text-text-muted-dark">This month</p>
+            <p className="font-semibold text-text-light dark:text-text-dark text-sm">{t('analytics.topLate')}</p>
+            <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{t('analytics.thisMonth')}</p>
           </div>
         </div>
         {data.topLate.length === 0 ? (
-          <p className="text-sm text-text-muted-light dark:text-text-muted-dark text-center py-6">No late arrivals this month</p>
+          <p className="text-sm text-text-muted-light dark:text-text-muted-dark text-center py-6">{t('analytics.noLateArrivals')}</p>
         ) : (
           <ul className="space-y-3">
             {data.topLate.map((emp, i) => (

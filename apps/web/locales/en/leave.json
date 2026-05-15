@@ -238,5 +238,79 @@
     "compensatoryLeave": "Compensatory",
     "militaryLeave": "Military",
     "leaveWithoutPay": "LWP"
+  },
+  "otModal": {
+    "title": "Request Overtime",
+    "date": "Date",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "plannedHours": "planned overtime",
+    "otType": "OT Type",
+    "regularRate": "1.5× pay rate",
+    "holidayRate": "3× pay rate",
+    "reason": "Reason",
+    "reasonPlaceholder": "Describe why overtime is needed...",
+    "cancel": "Cancel",
+    "submit": "Submit Request",
+    "submitting": "Submitting...",
+    "success": "OT request submitted successfully",
+    "failedSubmit": "Failed to submit OT request",
+    "errorNoReason": "Please provide a reason for the OT request",
+    "errorEndTime": "End time must be after start time",
+    "errorMaxHours": "Planned OT hours cannot exceed 12 hours"
+  },
+  "wfhModal": {
+    "title": "Work From Home Request",
+    "newRequest": "New Request",
+    "myRequests": "My Requests",
+    "date": "Date",
+    "reason": "Reason",
+    "optional": "(optional)",
+    "reasonPlaceholder": "e.g. Home renovation, family matter...",
+    "cancel": "Cancel",
+    "submit": "Submit Request",
+    "submitting": "Submitting...",
+    "success": "WFH request submitted successfully",
+    "failedSubmit": "Failed to submit request",
+    "noRequests": "No WFH requests yet"
+  },
+  "holidayCard": {
+    "todayBadge": "Today",
+    "nextBadge": "Next",
+    "annual": "Annual",
+    "todayLabel": "Today",
+    "daysAgo": "{{count}}d ago",
+    "inDays": "in {{count}}d",
+    "todayExclaim": "Today!"
+  },
+  "teamCalendar": {
+    "title": "Team Calendar",
+    "subtitle": "Leave, WFH, and OT overview",
+    "allDepartments": "All Departments",
+    "department": "Department",
+    "date": "Date",
+    "type": "Type",
+    "status": "Status",
+    "reason": "Reason",
+    "more": "+{{count}} more",
+    "eventTypes": {
+      "leave": "Leave",
+      "wfh": "WFH",
+      "ot": "OT",
+      "holiday": "Holiday"
+    }
+  },
+  "adminLeaveRequests": {
+    "pendingHR": "Pending HR"
+  },
+  "publicHolidays": {
+    "upcoming": "Upcoming",
+    "pastHolidays": "Past Holidays",
+    "none": "None",
+    "totalYear": "Total {{year}}",
+    "holidaysLabel": "holidays",
+    "nextCard": "Next",
+    "passedCard": "Passed",
+    "leftLabel": "{{count}} left"
   }
 }

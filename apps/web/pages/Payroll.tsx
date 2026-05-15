@@ -329,7 +329,7 @@ export const Payroll: React.FC = () => {
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 dark:bg-green-900/20 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
                           >
                             <Mail size={14} />
-                            Email Payslip
+                            {t('admin.actions.emailPayslip')}
                           </button>
                         )}
                       </div>

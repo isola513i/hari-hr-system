@@ -1,0 +1,66 @@
+{
+  "page": {
+    "title": "จัดการกะการทำงาน",
+    "subtitle": "กำหนดกะและจัดการตารางพนักงาน"
+  },
+  "tabs": {
+    "schedule": "ตารางรายสัปดาห์",
+    "shifts": "เทมเพลตกะ"
+  },
+  "shiftModal": {
+    "titleNew": "กะใหม่",
+    "titleEdit": "แก้ไขกะ",
+    "shiftName": "ชื่อกะ",
+    "startTime": "เวลาเริ่ม",
+    "endTime": "เวลาสิ้นสุด",
+    "color": "สี",
+    "placeholder": "เช่น กะเช้า"
+  },
+  "assignModal": {
+    "title": "มอบหมายกะ",
+    "shift": "กะ",
+    "days": "วัน",
+    "employees": "พนักงาน (เลือก {{count}} คน)",
+    "searchEmployees": "ค้นหาพนักงาน…"
+  },
+  "table": {
+    "name": "ชื่อ",
+    "hours": "ชั่วโมง",
+    "color": "สี",
+    "actions": "การดำเนินการ",
+    "employee": "พนักงาน"
+  },
+  "buttons": {
+    "addShift": "เพิ่มกะ",
+    "assignShift": "มอบหมายกะ",
+    "goToTemplates": "ไปที่เทมเพลตกะ",
+    "thisWeek": "สัปดาห์นี้",
+    "deactivateConfirm": "ปิดใช้งาน?",
+    "save": "บันทึก",
+    "saving": "กำลังบันทึก…",
+    "cancel": "ยกเลิก",
+    "assign": "มอบหมาย",
+    "assigning": "กำลังมอบหมาย…"
+  },
+  "filters": {
+    "allDepartments": "ทุกแผนก"
+  },
+  "empty": {
+    "noShifts": "ยังไม่มีกะที่กำหนด คลิก \"เพิ่มกะ\" เพื่อสร้าง",
+    "noShiftsSchedule": "ยังไม่มีกะที่กำหนด",
+    "noShiftsScheduleDesc": "สร้างเทมเพลตกะก่อนมอบหมายพนักงานในตาราง",
+    "noEmployees": "ไม่พบพนักงานในแผนกนี้"
+  },
+  "templateSection": "เทมเพลตกะ",
+  "toast": {
+    "shiftUpdated": "อัปเดตกะแล้ว",
+    "shiftCreated": "สร้างกะแล้ว",
+    "shiftSaveFailed": "บันทึกกะไม่สำเร็จ",
+    "shiftDeactivated": "ปิดใช้งานกะแล้ว",
+    "shiftDeleteFailed": "ลบกะไม่สำเร็จ",
+    "shiftAssigned": "มอบหมายกะแล้ว",
+    "shiftAssignFailed": "มอบหมายกะไม่สำเร็จ",
+    "assignmentRemoved": "ลบการมอบหมายแล้ว",
+    "assignmentRemoveFailed": "ลบการมอบหมายไม่สำเร็จ"
+  }
+}

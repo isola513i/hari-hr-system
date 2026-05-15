@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Clock, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useCreateOTRequest } from '../hooks/queries';
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
+  const { t } = useTranslation(['leave']);
   const today = new Date().toISOString().slice(0, 10);
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
@@ -22,7 +24,7 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
 
   const plannedHours = (() => {
     if (!plannedStart || !plannedEnd) return 0;
-    const parts = (t: string) => { const [h = 0, m = 0] = t.split(':').map(Number); return h * 60 + m; };
+    const parts = (s: string) => { const [h = 0, m = 0] = s.split(':').map(Number); return h * 60 + m; };
     const diff = parts(plannedEnd) - parts(plannedStart);
     return diff > 0 ? Math.round(diff / 60 * 100) / 100 : 0;
   })();
@@ -33,15 +35,15 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reason.trim()) { setError('Please provide a reason for the OT request'); return; }
-    if (plannedHours <= 0) { setError('End time must be after start time'); return; }
-    if (plannedHours > 12) { setError('Planned OT hours cannot exceed 12 hours'); return; }
+    if (!reason.trim()) { setError(t('otModal.errorNoReason')); return; }
+    if (plannedHours <= 0) { setError(t('otModal.errorEndTime')); return; }
+    if (plannedHours > 12) { setError(t('otModal.errorMaxHours')); return; }
 
     createMutation.mutate(
       { date, plannedStart, plannedEnd, plannedHours, otType, reason: reason.trim() },
       {
-        onSuccess: () => onSuccess('OT request submitted successfully'),
-        onError: (err: any) => setError(err?.response?.data?.error || err?.message || 'Failed to submit OT request'),
+        onSuccess: () => onSuccess(t('otModal.success')),
+        onError: (err: any) => setError(err?.response?.data?.error || err?.message || t('otModal.failedSubmit')),
       }
     );
   };
@@ -55,7 +57,7 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
             <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg">
               <Clock size={18} />
             </div>
-            <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">Request Overtime</h2>
+            <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">{t('otModal.title')}</h2>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-text-muted-light dark:text-text-muted-dark">
             <X size={18} />
@@ -65,7 +67,7 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Date */}
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">Date</label>
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">{t('otModal.date')}</label>
             <input
               type="date"
               value={date}
@@ -78,7 +80,7 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
           {/* Time range */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">Start Time</label>
+              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">{t('otModal.startTime')}</label>
               <input
                 type="time"
                 value={plannedStart}
@@ -87,7 +89,7 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">End Time</label>
+              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">{t('otModal.endTime')}</label>
               <input
                 type="time"
                 value={plannedEnd}
@@ -102,14 +104,14 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
             <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800/50">
               <Clock size={14} className="text-amber-600 dark:text-amber-400 shrink-0" />
               <p className="text-sm text-amber-700 dark:text-amber-400">
-                <span className="font-semibold">{plannedHours.toFixed(1)}h</span> planned overtime
+                <span className="font-semibold">{plannedHours.toFixed(1)}h</span> {t('otModal.plannedHours')}
               </p>
             </div>
           )}
 
           {/* OT Type */}
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">OT Type</label>
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">{t('otModal.otType')}</label>
             <div className="grid grid-cols-2 gap-2">
               {(['regular', 'holiday'] as const).map((type) => (
                 <button
@@ -123,7 +125,7 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
                   }`}
                 >
                   <p className="font-semibold capitalize">{type}</p>
-                  <p className="text-xs opacity-75">{type === 'regular' ? '1.5× pay rate' : '3× pay rate'}</p>
+                  <p className="text-xs opacity-75">{t(`otModal.${type}Rate`)}</p>
                 </button>
               ))}
             </div>
@@ -132,12 +134,12 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
           {/* Reason */}
           <div>
             <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">
-              Reason <span className="text-red-500">*</span>
+              {t('otModal.reason')} <span className="text-red-500">*</span>
             </label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Describe why overtime is needed..."
+              placeholder={t('otModal.reasonPlaceholder')}
               rows={3}
               className="w-full px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none resize-none"
             />
@@ -158,14 +160,14 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
               onClick={onClose}
               className="flex-1 px-4 py-2.5 text-sm font-medium border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
-              Cancel
+              {t('otModal.cancel')}
             </button>
             <button
               type="submit"
               disabled={createMutation.isPending || !reason.trim() || plannedHours <= 0}
               className="flex-1 px-4 py-2.5 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
-              {createMutation.isPending ? 'Submitting...' : 'Submit Request'}
+              {createMutation.isPending ? t('otModal.submitting') : t('otModal.submit')}
             </button>
           </div>
         </form>

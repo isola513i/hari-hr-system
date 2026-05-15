@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Star, Plus, CheckCircle, Clock, XCircle, ChevronDown, ChevronUp, Send, ThumbsUp, Award } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -13,20 +14,29 @@ import type { PerformanceReview } from '../types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  draft:            { label: 'Draft',            color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',    icon: <Clock size={12} /> },
-  submitted:        { label: 'Pending Review',   color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300', icon: <Clock size={12} /> },
-  manager_reviewed: { label: 'Manager Reviewed', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',  icon: <ThumbsUp size={12} /> },
-  completed:        { label: 'Completed',        color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', icon: <CheckCircle size={12} /> },
-  rejected:         { label: 'Needs Revision',   color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',     icon: <XCircle size={12} /> },
+const STATUS_COLOR: Record<string, string> = {
+  draft:            'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+  submitted:        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+  manager_reviewed: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  completed:        'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  rejected:         'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+};
+
+const STATUS_ICON: Record<string, React.ReactNode> = {
+  draft:            <Clock size={12} />,
+  submitted:        <Clock size={12} />,
+  manager_reviewed: <ThumbsUp size={12} />,
+  completed:        <CheckCircle size={12} />,
+  rejected:         <XCircle size={12} />,
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG['draft'];
-  if (!cfg) return null;
+  const { t } = useTranslation(['performance-reviews']);
+  const color = STATUS_COLOR[status] ?? STATUS_COLOR['draft'];
+  const icon = STATUS_ICON[status] ?? STATUS_ICON['draft'];
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.color}`}>
-      {cfg.icon} {cfg.label}
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>
+      {icon} {t(`status.${status}`, status)}
     </span>
   );
 }
@@ -76,6 +86,7 @@ function ReviewCard({
   onReject: (id: string, reason: string) => void;
   onSubmit: (id: string) => void;
 }) {
+  const { t } = useTranslation(['performance-reviews']);
   const [expanded, setExpanded] = useState(false);
   const [mgrRating, setMgrRating] = useState(review.rating ?? 0);
   const [mgrComment, setMgrComment] = useState('');
@@ -103,7 +114,7 @@ function ReviewCard({
             </p>
             <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
               {review.reviewPeriod ?? new Date(review.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-              {review.reviewer && ` • By ${review.reviewer}`}
+              {review.reviewer && ` • ${t('reviewer', { name: review.reviewer })}`}
             </p>
           </div>
         </div>
@@ -118,25 +129,25 @@ function ReviewCard({
         <div className="px-5 pb-5 border-t border-gray-100 dark:border-gray-700 space-y-4 pt-4">
           {review.selfReview && (
             <div>
-              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-1">Self Review</p>
+              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-1">{t('sections.selfReview')}</p>
               <p className="text-sm text-text-primary-light dark:text-text-primary-dark bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">{review.selfReview}</p>
             </div>
           )}
           {review.notes && (
             <div>
-              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-1">Notes</p>
+              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-1">{t('sections.notes')}</p>
               <p className="text-sm text-text-primary-light dark:text-text-primary-dark">{review.notes}</p>
             </div>
           )}
           {review.managerComment && (
             <div>
-              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-1">Manager Feedback</p>
+              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-1">{t('sections.managerFeedback')}</p>
               <p className="text-sm text-text-primary-light dark:text-text-primary-dark bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">{review.managerComment}</p>
             </div>
           )}
           {review.hrComment && (
             <div>
-              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-1">HR Comment</p>
+              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-1">{t('sections.hrComment')}</p>
               <p className="text-sm text-text-primary-light dark:text-text-primary-dark bg-green-50 dark:bg-green-900/20 rounded-lg p-3">{review.hrComment}</p>
             </div>
           )}
@@ -147,7 +158,7 @@ function ReviewCard({
               onClick={() => onSubmit(review.id)}
               className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
             >
-              <Send size={14} /> Submit for Manager Review
+              <Send size={14} /> {t('actions.submitForManager')}
             </button>
           )}
 
@@ -157,22 +168,22 @@ function ReviewCard({
               {action !== 'manager' ? (
                 <div className="flex gap-2">
                   <button onClick={() => setAction('manager')} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                    <ThumbsUp size={14} /> Write Review
+                    <ThumbsUp size={14} /> {t('actions.writeReview')}
                   </button>
                   <button onClick={() => setAction('reject')} className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
-                    <XCircle size={14} /> Request Revision
+                    <XCircle size={14} /> {t('actions.requestRevision')}
                   </button>
                 </div>
               ) : (
                 <div className="space-y-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                   <div>
-                    <p className="text-sm font-medium mb-2 text-text-primary-light dark:text-text-primary-dark">Rating</p>
+                    <p className="text-sm font-medium mb-2 text-text-primary-light dark:text-text-primary-dark">{t('form.rating')}</p>
                     <StarRating value={mgrRating} onChange={setMgrRating} />
                   </div>
                   <textarea
                     value={mgrComment}
                     onChange={(e) => setMgrComment(e.target.value)}
-                    placeholder="Add your feedback..."
+                    placeholder={t('form.feedbackPlaceholder')}
                     rows={3}
                     className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-text-primary-light dark:text-text-primary-dark resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -182,10 +193,10 @@ function ReviewCard({
                       disabled={!mgrRating || !mgrComment.trim()}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
                     >
-                      Submit Review
+                      {t('actions.submitReview')}
                     </button>
                     <button onClick={() => setAction(null)} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                      Cancel
+                      {t('actions.cancel')}
                     </button>
                   </div>
                 </div>
@@ -199,7 +210,7 @@ function ReviewCard({
               <textarea
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Reason for requesting revision..."
+                placeholder={t('form.rejectReasonPlaceholder')}
                 rows={2}
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-500"
               />
@@ -208,10 +219,10 @@ function ReviewCard({
                   onClick={() => { onReject(review.id, rejectReason); setAction(null); }}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
                 >
-                  Send Back
+                  {t('actions.sendBack')}
                 </button>
                 <button onClick={() => setAction(null)} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                  Cancel
+                  {t('actions.cancel')}
                 </button>
               </div>
             </div>
@@ -223,10 +234,10 @@ function ReviewCard({
               {action !== 'hr' ? (
                 <div className="flex gap-2">
                   <button onClick={() => setAction('hr')} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
-                    <CheckCircle size={14} /> Finalize Review
+                    <CheckCircle size={14} /> {t('actions.finalizeReview')}
                   </button>
                   <button onClick={() => setAction('reject')} className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
-                    <XCircle size={14} /> Send Back
+                    <XCircle size={14} /> {t('actions.sendBack')}
                   </button>
                 </div>
               ) : (
@@ -234,7 +245,7 @@ function ReviewCard({
                   <textarea
                     value={hrComment}
                     onChange={(e) => setHrComment(e.target.value)}
-                    placeholder="Optional HR comment..."
+                    placeholder={t('form.hrCommentPlaceholder')}
                     rows={2}
                     className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
@@ -243,10 +254,10 @@ function ReviewCard({
                       onClick={() => { onHrApprove(review.id, hrComment); setAction(null); }}
                       className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
                     >
-                      Finalize
+                      {t('actions.finalize')}
                     </button>
                     <button onClick={() => setAction(null)} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                      Cancel
+                      {t('actions.cancel')}
                     </button>
                   </div>
                 </div>
@@ -262,6 +273,7 @@ function ReviewCard({
 // ─── Self Review Form ─────────────────────────────────────────────────────────
 
 function SelfReviewForm({ onSubmit, loading }: { onSubmit: (data: { selfReview: string; reviewPeriod?: string }) => void; loading: boolean }) {
+  const { t } = useTranslation(['performance-reviews']);
   const [selfReview, setSelfReview] = useState('');
   const [reviewPeriod, setReviewPeriod] = useState('');
 
@@ -273,24 +285,24 @@ function SelfReviewForm({ onSubmit, loading }: { onSubmit: (data: { selfReview: 
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-      <h3 className="font-semibold text-text-primary-light dark:text-text-primary-dark">New Self-Review</h3>
+      <h3 className="font-semibold text-text-primary-light dark:text-text-primary-dark">{t('actions.newSelfReview')}</h3>
       <div>
-        <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-1">Review Period</label>
+        <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-1">{t('form.reviewPeriod')}</label>
         <select
           value={reviewPeriod}
           onChange={(e) => setReviewPeriod(e.target.value)}
           className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
         >
-          <option value="">Select period...</option>
+          <option value="">{t('form.selectPeriod')}</option>
           {periods.map((p) => <option key={p} value={p}>{p}</option>)}
         </select>
       </div>
       <div>
-        <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-1">Self Assessment</label>
+        <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-1">{t('form.selfAssessment')}</label>
         <textarea
           value={selfReview}
           onChange={(e) => setSelfReview(e.target.value)}
-          placeholder="Describe your accomplishments, challenges, and goals for next period..."
+          placeholder={t('form.selfAssessmentPlaceholder')}
           rows={5}
           className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
         />
@@ -300,7 +312,7 @@ function SelfReviewForm({ onSubmit, loading }: { onSubmit: (data: { selfReview: 
         disabled={!selfReview.trim() || loading}
         className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
       >
-        <Plus size={14} /> {loading ? 'Saving...' : 'Save Draft'}
+        <Plus size={14} /> {loading ? t('actions.saving') : t('actions.saveDraft')}
       </button>
     </div>
   );
@@ -309,6 +321,7 @@ function SelfReviewForm({ onSubmit, loading }: { onSubmit: (data: { selfReview: 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function PerformanceReviews() {
+  const { t } = useTranslation(['performance-reviews']);
   const { user } = useAuth();
   const role = user?.role ?? 'EMPLOYEE';
 
@@ -329,9 +342,6 @@ export function PerformanceReviews() {
   };
 
   const statuses = ['', 'draft', 'submitted', 'manager_reviewed', 'completed', 'rejected'];
-  const statusLabels: Record<string, string> = {
-    '': 'All', draft: 'Draft', submitted: 'Pending', manager_reviewed: 'Manager Reviewed', completed: 'Completed', rejected: 'Needs Revision',
-  };
 
   const pendingCount = reviews.filter(r => ['submitted', 'manager_reviewed'].includes(r.status)).length;
 
@@ -340,9 +350,11 @@ export function PerformanceReviews() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary-light dark:text-text-primary-dark">Performance Reviews</h1>
+          <h1 className="text-2xl font-bold text-text-primary-light dark:text-text-primary-dark">{t('page.title')}</h1>
           <p className="text-sm text-text-muted-light dark:text-text-muted-dark mt-0.5">
-            {pendingCount > 0 ? `${pendingCount} review${pendingCount > 1 ? 's' : ''} need${pendingCount === 1 ? 's' : ''} attention` : 'Manage performance evaluations'}
+            {pendingCount > 0
+              ? t('page.reviewsNeedAttention', { count: pendingCount })
+              : t('page.subtitle')}
           </p>
         </div>
         {role === 'EMPLOYEE' && (
@@ -350,7 +362,7 @@ export function PerformanceReviews() {
             onClick={() => setShowNewForm((v) => !v)}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
           >
-            <Plus size={16} /> New Self-Review
+            <Plus size={16} /> {t('actions.newSelfReview')}
           </button>
         )}
       </div>
@@ -372,7 +384,7 @@ export function PerformanceReviews() {
                 : 'bg-gray-100 dark:bg-gray-800 text-text-muted-light dark:text-text-muted-dark hover:bg-gray-200 dark:hover:bg-gray-700'
             }`}
           >
-            {statusLabels[s]}
+            {t(`statusFilter.${s || 'all'}`, s || 'All')}
           </button>
         ))}
       </div>
@@ -385,8 +397,8 @@ export function PerformanceReviews() {
       ) : reviews.length === 0 ? (
         <div className="text-center py-12 text-text-muted-light dark:text-text-muted-dark">
           <Award size={40} className="mx-auto mb-3 opacity-40" />
-          <p className="font-medium">No reviews found</p>
-          {role === 'EMPLOYEE' && <p className="text-sm mt-1">Start by creating a self-review above</p>}
+          <p className="font-medium">{t('empty.noReviews')}</p>
+          {role === 'EMPLOYEE' && <p className="text-sm mt-1">{t('empty.startHint')}</p>}
         </div>
       ) : (
         <div className="space-y-3">

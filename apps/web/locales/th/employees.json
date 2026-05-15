@@ -285,7 +285,15 @@
     "onboardRole": "ตำแหน่ง / ชื่อตำแหน่ง",
     "onboardDepartment": "แผนก",
     "onboardEmail": "ที่อยู่อีเมล",
-    "onboardStartDate": "วันเริ่มงาน"
+    "onboardStartDate": "วันเริ่มงาน",
+    "workType": "ประเภทการทำงาน",
+    "selectWorkType": "เลือกประเภทการทำงาน",
+    "selectBirthDate": "เลือกวันเกิด",
+    "workTypes": {
+      "office": "ที่ออฟฟิศ",
+      "remote": "ทำงานจากระยะไกล",
+      "hybrid": "ผสมผสาน"
+    }
   },
   "toast": {
     "employeeDeleted": "เลิกจ้างพนักงานสำเร็จ",
