@@ -73,7 +73,13 @@
     "holidays": "วันหยุด",
     "companyHolidays": "วันหยุดบริษัท",
     "training": "การฝึกอบรม",
-    "performance": "ประเมินผลงาน"
+    "performance": "ประเมินผลงาน",
+    "auditLogs": "บันทึกการตรวจสอบ",
+    "shiftManagement": "จัดการกะงาน",
+    "adminAttendance": "การลงเวลา (แอดมิน)",
+    "requests": "คำขอ",
+    "performanceReviews": "ประเมินผลงาน",
+    "assets": "ทรัพย์สิน"
   },
   "sidebar": {
     "byAiya": "by AIYA",

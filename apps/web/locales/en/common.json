@@ -73,7 +73,13 @@
     "holidays": "Holidays",
     "companyHolidays": "Company Holidays",
     "training": "Training",
-    "performance": "Performance"
+    "performance": "Performance",
+    "auditLogs": "Audit Logs",
+    "shiftManagement": "Shift Management",
+    "adminAttendance": "Attendance (Admin)",
+    "requests": "Requests",
+    "performanceReviews": "Performance Reviews",
+    "assets": "Assets"
   },
   "sidebar": {
     "byAiya": "by AIYA",

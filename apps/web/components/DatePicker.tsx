@@ -232,7 +232,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           type="button"
           onClick={handleToggle}
           disabled={disabled}
-          className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark text-left hover:border-primary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-border-light dark:disabled:hover:border-border-dark"
+          className="w-full pl-10 pr-3 py-2 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm text-sm text-text-light dark:text-text-dark text-left hover:border-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-border-light dark:disabled:hover:border-border-dark"
         >
           <span className={value ? '' : 'text-text-muted-light dark:text-text-muted-dark'}>
             {value ? formatDisplayDate(value) : placeholder}

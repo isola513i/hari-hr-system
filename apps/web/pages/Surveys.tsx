@@ -324,34 +324,61 @@ const CreateSurveyModal: React.FC<{
 // Survey Analytics
 // ---------------------------------------------------------------------------
 
-function SentimentDonut({ positive, neutral, negative, score }: { positive: number; neutral: number; negative: number; score: number }) {
-  const scoreColor = score >= 70 ? '#22c55e' : score >= 40 ? '#facc15' : '#f87171';
-  const hasData = positive + neutral + negative > 0;
+function RadarChart({ categories }: { categories: { category: string; score: number }[] }) {
+  if (categories.length < 3) return null;
+  const cx = 160, cy = 160, r = 120;
+  const n = categories.length;
+  const levels = [25, 50, 75, 100];
+  const angle = (i: number) => (2 * Math.PI * i) / n - Math.PI / 2;
+  const pt = (i: number, pct: number) => ({
+    x: cx + r * (pct / 100) * Math.cos(angle(i)),
+    y: cy + r * (pct / 100) * Math.sin(angle(i)),
+  });
+  const dataPoints = categories.map((c, i) => pt(i, c.score));
+  const dataPath = dataPoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + 'Z';
+
   return (
-    <div className="relative w-44 h-44 mx-auto">
-      <div
-        className="w-full h-full rounded-full"
-        style={{
-          background: hasData
-            ? `conic-gradient(#22c55e 0% ${positive}%, #facc15 ${positive}% ${positive + neutral}%, #f87171 ${positive + neutral}% 100%)`
-            : '#e5e7eb',
-        }}
-      />
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-24 h-24 rounded-full bg-card-light dark:bg-card-dark flex items-center justify-center shadow-inner">
-          <div className="text-center">
-            <div className="text-3xl font-bold leading-none" style={{ color: scoreColor }}>{score}</div>
-            <div className="text-xs text-text-muted-light dark:text-text-muted-dark font-medium">/100</div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <svg viewBox="0 0 320 320" className="w-full max-w-xs mx-auto">
+      {/* Grid rings */}
+      {levels.map((lvl) => {
+        const ring = categories.map((_, i) => pt(i, lvl)).map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + 'Z';
+        return <path key={lvl} d={ring} fill="none" stroke="currentColor" strokeWidth="0.5" className="text-border-light dark:text-border-dark" />;
+      })}
+      {/* Axis lines */}
+      {categories.map((_, i) => {
+        const end = pt(i, 100);
+        return <line key={i} x1={cx} y1={cy} x2={end.x.toFixed(1)} y2={end.y.toFixed(1)} stroke="currentColor" strokeWidth="0.5" className="text-border-light dark:text-border-dark" />;
+      })}
+      {/* Data polygon */}
+      <path d={dataPath} fill="rgba(99,102,241,0.15)" stroke="rgb(99,102,241)" strokeWidth="2" strokeLinejoin="round" />
+      {/* Data points */}
+      {dataPoints.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={3} fill="rgb(99,102,241)" />
+      ))}
+      {/* Labels */}
+      {categories.map((c, i) => {
+        const labelPt = pt(i, 118);
+        const anchor = Math.abs(labelPt.x - cx) < 5 ? 'middle' : labelPt.x < cx ? 'end' : 'start';
+        const scoreColor = c.score >= 70 ? '#22c55e' : c.score >= 40 ? '#facc15' : '#f87171';
+        return (
+          <g key={i}>
+            <text x={labelPt.x.toFixed(1)} y={(labelPt.y - 6).toFixed(1)} textAnchor={anchor} className="fill-text-muted-light dark:fill-text-muted-dark" fontSize="9" fontWeight="500">
+              {c.category}
+            </text>
+            <text x={labelPt.x.toFixed(1)} y={(labelPt.y + 6).toFixed(1)} textAnchor={anchor} fontSize="9" fontWeight="700" fill={scoreColor}>
+              {c.score}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 
 function SurveyAnalytics({ data }: { data: SentimentOverview }) {
   const { t } = useTranslation(['help']);
   const { overallScore, responseRate, totalResponses, totalEmployees, categoryBreakdown, distribution } = data;
+  const scoreColor = overallScore >= 70 ? 'text-green-500' : overallScore >= 40 ? 'text-yellow-500' : 'text-red-500';
 
   return (
     <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
@@ -364,7 +391,7 @@ function SurveyAnalytics({ data }: { data: SentimentOverview }) {
         {/* Summary stats row */}
         <div className="grid grid-cols-4 gap-3">
           {[
-            { value: String(overallScore), suffix: '/100', label: t('surveyAnalytics.overallScore'), color: overallScore >= 70 ? 'text-green-500' : overallScore >= 40 ? 'text-yellow-500' : 'text-red-500' },
+            { value: String(overallScore), suffix: '/100', label: t('surveyAnalytics.overallScore'), color: scoreColor },
             { value: String(responseRate), suffix: '%', label: t('surveyAnalytics.responseRate'), color: 'text-primary' },
             { value: String(totalResponses), suffix: '', label: t('surveyAnalytics.respondents'), color: 'text-text-light dark:text-text-dark' },
             { value: String(totalEmployees), suffix: '', label: t('surveyAnalytics.totalEmployees'), color: 'text-text-light dark:text-text-dark' },
@@ -378,53 +405,49 @@ function SurveyAnalytics({ data }: { data: SentimentOverview }) {
           ))}
         </div>
 
-        {/* Split layout: donut left, categories right */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left: Donut chart + sentiment legend */}
-          <div className="flex flex-col items-center justify-center gap-4">
-            <SentimentDonut
-              positive={distribution.positive}
-              neutral={distribution.neutral}
-              negative={distribution.negative}
-              score={overallScore}
-            />
-            <div className="flex flex-col gap-2 w-full max-w-[200px]">
+        {/* Split layout: sentiment left, radar right */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+          {/* Left: Sentiment distribution */}
+          <div className="space-y-4">
+            <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide">{t('surveyAnalytics.sentimentDistribution', 'Sentiment Distribution')}</p>
+            {/* Stacked pill bar */}
+            <div className="flex h-5 rounded-full overflow-hidden gap-px">
+              {distribution.positive > 0 && <div style={{ flex: distribution.positive }} className="bg-green-500" />}
+              {distribution.neutral > 0 && <div style={{ flex: distribution.neutral }} className="bg-yellow-400" />}
+              {distribution.negative > 0 && <div style={{ flex: distribution.negative }} className="bg-red-400" />}
+            </div>
+            {/* 3 metric tiles */}
+            <div className="grid grid-cols-3 gap-2">
               {[
-                { label: t('surveyAnalytics.positive'), value: distribution.positive, color: 'bg-green-500' },
-                { label: t('surveyAnalytics.neutral'), value: distribution.neutral, color: 'bg-yellow-400' },
-                { label: t('surveyAnalytics.negative'), value: distribution.negative, color: 'bg-red-400' },
+                { label: t('surveyAnalytics.positive'), value: distribution.positive, bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-600 dark:text-green-400', border: 'border-green-200 dark:border-green-800' },
+                { label: t('surveyAnalytics.neutral'), value: distribution.neutral, bg: 'bg-yellow-50 dark:bg-yellow-900/20', text: 'text-yellow-600 dark:text-yellow-400', border: 'border-yellow-200 dark:border-yellow-800' },
+                { label: t('surveyAnalytics.negative'), value: distribution.negative, bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-600 dark:text-red-400', border: 'border-red-200 dark:border-red-800' },
               ].map((seg) => (
-                <div key={seg.label} className="flex items-center gap-2">
-                  <span className={`w-3 h-3 rounded-full flex-shrink-0 ${seg.color}`} />
-                  <span className="text-xs text-text-light dark:text-text-dark flex-1">{seg.label}</span>
-                  <div className="flex items-center gap-1.5 flex-1">
-                    <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full flex-1 overflow-hidden">
-                      <div className={`h-full rounded-full ${seg.color}`} style={{ width: `${seg.value}%` }} />
-                    </div>
-                    <span className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark w-8 text-right">{seg.value}%</span>
-                  </div>
+                <div key={seg.label} className={`${seg.bg} border ${seg.border} rounded-xl p-3 text-center`}>
+                  <div className={`text-2xl font-bold ${seg.text}`}>{seg.value}<span className="text-sm font-normal">%</span></div>
+                  <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">{seg.label}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Right: Category breakdown */}
-          {categoryBreakdown.length > 0 && (
+          {/* Right: Radar chart for categories */}
+          {categoryBreakdown.length >= 3 && (
             <div>
-              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-3">Category Breakdown</p>
-              <div className="space-y-2">
+              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-2">{t('surveyAnalytics.categoryBreakdown', 'Category Breakdown')}</p>
+              <RadarChart categories={categoryBreakdown} />
+            </div>
+          )}
+
+          {/* Fallback: score tiles if < 3 categories */}
+          {categoryBreakdown.length > 0 && categoryBreakdown.length < 3 && (
+            <div>
+              <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-3">{t('surveyAnalytics.categoryBreakdown', 'Category Breakdown')}</p>
+              <div className="grid grid-cols-2 gap-2">
                 {categoryBreakdown.map((cat) => (
-                  <div key={cat.category}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-text-light dark:text-text-dark font-medium">{cat.category}</span>
-                      <span className={`font-semibold ${cat.score >= 70 ? 'text-green-500' : cat.score >= 40 ? 'text-yellow-500' : 'text-red-500'}`}>{cat.score}/100</span>
-                    </div>
-                    <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${cat.score >= 70 ? 'bg-green-500' : cat.score >= 40 ? 'bg-yellow-400' : 'bg-red-400'}`}
-                        style={{ width: `${cat.score}%` }}
-                      />
-                    </div>
+                  <div key={cat.category} className="p-3 bg-background-light dark:bg-background-dark rounded-xl border border-border-light dark:border-border-dark text-center">
+                    <div className={`text-xl font-bold ${cat.score >= 70 ? 'text-green-500' : cat.score >= 40 ? 'text-yellow-500' : 'text-red-500'}`}>{cat.score}<span className="text-xs font-normal text-text-muted-light dark:text-text-muted-dark">/100</span></div>
+                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5 truncate">{cat.category}</p>
                   </div>
                 ))}
               </div>

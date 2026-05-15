@@ -204,7 +204,7 @@ export const AuditLogs: React.FC = () => {
               placeholder={t('filters.userEmail')}
               value={userEmailInput}
               onChange={(e) => setUserEmailInput(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full pl-8 pr-3 py-2 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm text-text-light dark:text-text-dark placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
           {/* Action */}
@@ -215,7 +215,7 @@ export const AuditLogs: React.FC = () => {
               placeholder={t('filters.action')}
               value={actionInput}
               onChange={(e) => setActionInput(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full pl-8 pr-3 py-2 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm text-text-light dark:text-text-dark placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
           {/* Resource */}
@@ -231,23 +231,17 @@ export const AuditLogs: React.FC = () => {
             onChange={(val) => { setSuccessFilter(val); setPage(1); }}
           />
           {/* Start date */}
-          <div>
-            <label className="block text-xs text-text-muted-light dark:text-text-muted-dark mb-1">{t('filters.from')}</label>
-            <DatePicker
-              value={startDate}
-              onChange={(date) => { setStartDate(date); setPage(1); }}
-              placeholder={t('filters.startDate')}
-            />
-          </div>
+          <DatePicker
+            value={startDate}
+            onChange={(date) => { setStartDate(date); setPage(1); }}
+            placeholder={t('filters.startDate')}
+          />
           {/* End date */}
-          <div>
-            <label className="block text-xs text-text-muted-light dark:text-text-muted-dark mb-1">{t('filters.to')}</label>
-            <DatePicker
-              value={endDate}
-              onChange={(date) => { setEndDate(date); setPage(1); }}
-              placeholder={t('filters.endDate')}
-            />
-          </div>
+          <DatePicker
+            value={endDate}
+            onChange={(date) => { setEndDate(date); setPage(1); }}
+            placeholder={t('filters.endDate')}
+          />
         </div>
       </div>
 
