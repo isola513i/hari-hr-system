@@ -187,6 +187,15 @@
       "qualityResponsibility_1": "How consistently does this employee deliver high-quality work with attention to detail?",
       "qualityResponsibility_2": "How well does this employee take ownership of their tasks and follow through to completion?",
       "qualityResponsibility_3": "How reliably does this employee test and review their own work before submission?"
+    },
+    "toast": {
+      "closedSuccess": "Survey closed successfully",
+      "closeFailed": "Failed to close survey",
+      "reopenedSuccess": "Survey reopened successfully",
+      "reopenFailed": "Failed to reopen survey",
+      "deletedSuccess": "Survey deleted successfully",
+      "deleteFailed": "Failed to delete survey",
+      "createdSuccess": "Survey created successfully!"
     }
   },
   "takeSurvey": {

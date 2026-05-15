@@ -159,7 +159,11 @@
     "actions": "Actions",
     "noPending": "No pending requests",
     "clearedQueue": "You've cleared the queue!",
-    "close": "Close"
+    "close": "Close",
+    "approve": "Approve",
+    "decline": "Decline",
+    "approveAria": "Approve leave request for {{name}}",
+    "declineAria": "Decline leave request for {{name}}"
   },
   "calendar": {
     "teamCalendar": "Team Calendar",
@@ -190,7 +194,8 @@
     "placeholder": "Enter reason for rejecting this leave request...",
     "cancel": "Cancel",
     "rejecting": "Rejecting...",
-    "reject": "Reject Request"
+    "reject": "Reject Request",
+    "explanation": "Please provide a reason for rejecting {{name}}'s leave request."
   },
   "halfDay": {
     "label": "Half Day",

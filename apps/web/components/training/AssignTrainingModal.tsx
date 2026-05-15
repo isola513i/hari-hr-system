@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal } from '../Modal';
 import { TrainingModule } from '../../types';
 
@@ -17,6 +18,7 @@ export const AssignTrainingModal: React.FC<AssignTrainingModalProps> = ({
   onAssign,
   isLoading,
 }) => {
+  const { t } = useTranslation('training');
   const [selectedModule, setSelectedModule] = useState('');
   const [dueDate, setDueDate] = useState('');
 
@@ -37,11 +39,11 @@ export const AssignTrainingModal: React.FC<AssignTrainingModalProps> = ({
   const activeModules = modules.filter(m => m.isActive !== false);
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Assign Training">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('assignModal.title')}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
-            Training Module
+            {t('assignModal.moduleLabel')}
           </label>
           <select
             value={selectedModule}
@@ -49,7 +51,7 @@ export const AssignTrainingModal: React.FC<AssignTrainingModalProps> = ({
             required
             className="w-full px-3 py-2 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
           >
-            <option value="">Select a module...</option>
+            <option value="">{t('assignModal.modulePlaceholder')}</option>
             {activeModules.map((mod) => (
               <option key={mod.id} value={mod.id}>
                 {mod.title} ({mod.type} - {mod.duration})
@@ -58,14 +60,14 @@ export const AssignTrainingModal: React.FC<AssignTrainingModalProps> = ({
           </select>
           {activeModules.length === 0 && (
             <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">
-              No training modules available. Create one first in the Training page.
+              {t('assignModal.noModules')}
             </p>
           )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
-            Due Date (Optional)
+            {t('assignModal.dueDateLabel')}
           </label>
           <input
             type="date"
@@ -81,14 +83,14 @@ export const AssignTrainingModal: React.FC<AssignTrainingModalProps> = ({
             onClick={handleClose}
             className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:hover:text-text-dark"
           >
-            Cancel
+            {t('assignModal.cancel')}
           </button>
           <button
             type="submit"
             disabled={!selectedModule || isLoading}
             className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
-            {isLoading ? 'Assigning...' : 'Assign Training'}
+            {isLoading ? t('assignModal.assigning') : t('assignModal.assignBtn')}
           </button>
         </div>
       </form>

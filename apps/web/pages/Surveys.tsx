@@ -459,27 +459,27 @@ export const Surveys: React.FC = () => {
   const handleClose = async (id: string) => {
     try {
       await closeMutation.mutateAsync(id);
-      showToast('Survey closed successfully');
+      showToast(t('surveys.toast.closedSuccess'));
     } catch (err: any) {
-      showToast(err.message || 'Failed to close survey', 'error');
+      showToast(err.message || t('surveys.toast.closeFailed'), 'error');
     }
   };
 
   const handleReopen = async (id: string) => {
     try {
       await reopenMutation.mutateAsync(id);
-      showToast('Survey reopened successfully');
+      showToast(t('surveys.toast.reopenedSuccess'));
     } catch (err: any) {
-      showToast(err.message || 'Failed to reopen survey', 'error');
+      showToast(err.message || t('surveys.toast.reopenFailed'), 'error');
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await deleteMutation.mutateAsync(id);
-      showToast('Survey deleted successfully');
+      showToast(t('surveys.toast.deletedSuccess'));
     } catch (err: any) {
-      showToast(err.message || 'Failed to delete survey', 'error');
+      showToast(err.message || t('surveys.toast.deleteFailed'), 'error');
     }
   };
 
@@ -659,7 +659,7 @@ export const Surveys: React.FC = () => {
       <CreateSurveyModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onCreated={() => showToast('Survey created successfully!')}
+        onCreated={() => showToast(t('surveys.toast.createdSuccess'))}
       />
 
       {toast.show && (

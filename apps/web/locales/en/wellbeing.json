@@ -69,7 +69,15 @@
     "contentPlaceholder": "Details about the announcement...",
     "typePlaceholder": "Select announcement type",
     "cancel": "Cancel",
-    "post": "Post"
+    "post": "Post",
+    "editTitle": "Edit Announcement",
+    "save": "Save",
+    "updateSuccess": "Announcement updated successfully",
+    "postSuccess": "Announcement posted successfully",
+    "updateError": "Failed to update announcement",
+    "postError": "Failed to post announcement",
+    "deleteSuccess": "Announcement deleted",
+    "deleteError": "Failed to delete announcement"
   },
   "eventModal": {
     "title": "Add New Event",

@@ -32,9 +32,16 @@ function isSameDay(a: Date, b: Date) {
 function formatRange(monday: Date, lang: string): string {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
-  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
-  const locale = lang === 'th' ? 'th-TH' : 'en-US';
-  return `${monday.toLocaleDateString(locale, opts)} – ${sunday.toLocaleDateString(locale, { ...opts, year: 'numeric' })}`;
+  if (lang === 'th') {
+    // "11 พ.ค. – 17 พ.ค. 2569"
+    const s = monday.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+    const e = sunday.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+    return `${s} – ${e}`;
+  }
+  // "11 May – 17 May 2026"
+  const s = monday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  const e = sunday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return `${s} – ${e}`;
 }
 
 export const WeekPicker: React.FC<WeekPickerProps> = ({ weekStart, onChange, className = '' }) => {
@@ -121,32 +128,38 @@ export const WeekPicker: React.FC<WeekPickerProps> = ({ weekStart, onChange, cla
   const DAY_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
   return (
-    <div className={`flex items-center gap-1 ${className}`}>
+    <div className={`inline-flex items-center rounded-xl border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark shadow-sm ${className}`}>
       {/* Prev week */}
       <button
         onClick={() => { const d = new Date(weekStart); d.setDate(d.getDate() - 7); onChange(d); }}
-        className="p-1.5 rounded-lg text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors"
+        className="px-2.5 py-2 text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors"
       >
-        <ChevronLeft size={16} />
+        <ChevronLeft size={15} />
       </button>
+
+      {/* Divider */}
+      <span className="w-px h-4 bg-border-light dark:bg-border-dark" />
 
       {/* Clickable date range label */}
       <div
         ref={triggerRef}
         onClick={open}
-        className="flex items-center px-3 py-1.5 rounded-lg border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark cursor-pointer hover:border-primary/50 transition-colors select-none min-w-[168px] justify-center"
+        className="px-4 py-2 cursor-pointer select-none hover:bg-background-light dark:hover:bg-background-dark transition-colors"
       >
-        <span className="text-sm font-medium text-text-light dark:text-text-dark whitespace-nowrap">
+        <span className="text-sm font-medium text-text-light dark:text-text-dark whitespace-nowrap tabular-nums">
           {formatRange(weekStart, i18n.language)}
         </span>
       </div>
 
+      {/* Divider */}
+      <span className="w-px h-4 bg-border-light dark:bg-border-dark" />
+
       {/* Next week */}
       <button
         onClick={() => { const d = new Date(weekStart); d.setDate(d.getDate() + 7); onChange(d); }}
-        className="p-1.5 rounded-lg text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors"
+        className="px-2.5 py-2 text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors"
       >
-        <ChevronRight size={16} />
+        <ChevronRight size={15} />
       </button>
 
       {/* Calendar popup */}

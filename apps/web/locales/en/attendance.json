@@ -107,5 +107,28 @@
     "employees": "{{present}} / {{total}} employees",
     "arrivedLate": "{{count}} arrived late",
     "avg": "Avg {{value}}%"
+  },
+  "locationPermission": {
+    "requestTitle": "Allow Location Access",
+    "requestDesc": "We need your location to verify you're checking in from the office. Your location is only used during check-in and is never tracked continuously.",
+    "feature1": "Verify office proximity for check-in",
+    "feature2": "One-time permission — remembered by browser",
+    "feature3": "Location not stored after check-in completes",
+    "allowBtn": "Allow Location Access",
+    "notNow": "Not Now",
+    "deniedTitle": "Location Access Blocked",
+    "deniedDesc": "Location access is required for office check-in. Please enable it in your device settings.",
+    "howToEnable": "How to enable",
+    "okBtn": "OK, I'll Enable It",
+    "iosStep1": "Open iPhone Settings",
+    "iosStep2": "Go to Privacy & Security → Location Services",
+    "iosStep3": "Tap Safari Websites",
+    "iosStep4": "Select \"While Using the App\"",
+    "androidStep1": "Tap the lock icon in your browser address bar",
+    "androidStep2": "Tap \"Permissions\" → Location",
+    "androidStep3": "Select \"Allow\"",
+    "desktopStep1": "Click the lock icon in the browser address bar",
+    "desktopStep2": "Find \"Location\" and set it to \"Allow\"",
+    "desktopStep3": "Refresh the page and try again"
   }
 }

@@ -60,5 +60,15 @@
     "deleteFailed": "Failed to delete module",
     "assignedSuccess": "Training assigned to {{count}} employees",
     "assignFailed": "Failed to assign training"
+  },
+  "assignModal": {
+    "title": "Assign Training",
+    "moduleLabel": "Training Module",
+    "modulePlaceholder": "Select a module...",
+    "noModules": "No training modules available. Create one first in the Training page.",
+    "dueDateLabel": "Due Date (Optional)",
+    "cancel": "Cancel",
+    "assignBtn": "Assign Training",
+    "assigning": "Assigning..."
   }
 }

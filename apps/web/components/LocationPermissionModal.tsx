@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { MapPin, Shield, X, Settings, AlertTriangle, CheckCircle } from 'lucide-react';
 
 interface Props {
@@ -41,6 +42,7 @@ export function LocationPermissionModal({ mode, onAllow, onDismiss }: Props) {
 }
 
 function RequestContent({ onAllow, onDismiss }: { onAllow: () => void; onDismiss: () => void }) {
+  const { t } = useTranslation('attendance');
   return (
     <>
       {/* Icon */}
@@ -56,18 +58,18 @@ function RequestContent({ onAllow, onDismiss }: { onAllow: () => void; onDismiss
       </div>
 
       <h2 className="text-xl font-bold text-center text-text-light dark:text-text-dark mb-2">
-        Allow Location Access
+        {t('locationPermission.requestTitle')}
       </h2>
       <p className="text-sm text-center text-text-muted-light dark:text-text-muted-dark mb-5 leading-relaxed">
-        We need your location to verify you're checking in from the office. Your location is only used during check-in and is never tracked continuously.
+        {t('locationPermission.requestDesc')}
       </p>
 
       {/* Permission features */}
       <div className="space-y-2.5 mb-6">
         {[
-          'Verify office proximity for check-in',
-          'One-time permission — remembered by browser',
-          'Location not stored after check-in completes',
+          t('locationPermission.feature1'),
+          t('locationPermission.feature2'),
+          t('locationPermission.feature3'),
         ].map((text) => (
           <div key={text} className="flex items-start gap-2.5">
             <CheckCircle size={16} className="text-green-500 mt-0.5 shrink-0" />
@@ -81,39 +83,40 @@ function RequestContent({ onAllow, onDismiss }: { onAllow: () => void; onDismiss
         onClick={onAllow}
         className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-sm transition-colors mb-3"
       >
-        Allow Location Access
+        {t('locationPermission.allowBtn')}
       </button>
       <button
         onClick={onDismiss}
         className="w-full py-3 rounded-xl text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark text-sm font-medium transition-colors"
       >
-        Not Now
+        {t('locationPermission.notNow')}
       </button>
     </>
   );
 }
 
 function DeniedContent({ onDismiss }: { onDismiss: () => void }) {
+  const { t } = useTranslation('attendance');
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isAndroid = /Android/.test(navigator.userAgent);
 
   const steps = isIOS
     ? [
-        'Open iPhone Settings',
-        'Go to Privacy & Security → Location Services',
-        'Tap Safari Websites',
-        'Select "While Using the App"',
+        t('locationPermission.iosStep1'),
+        t('locationPermission.iosStep2'),
+        t('locationPermission.iosStep3'),
+        t('locationPermission.iosStep4'),
       ]
     : isAndroid
     ? [
-        'Tap the lock icon in your browser address bar',
-        'Tap "Permissions" → Location',
-        'Select "Allow"',
+        t('locationPermission.androidStep1'),
+        t('locationPermission.androidStep2'),
+        t('locationPermission.androidStep3'),
       ]
     : [
-        'Click the lock icon in the browser address bar',
-        'Find "Location" and set it to "Allow"',
-        'Refresh the page and try again',
+        t('locationPermission.desktopStep1'),
+        t('locationPermission.desktopStep2'),
+        t('locationPermission.desktopStep3'),
       ];
 
   return (
@@ -126,10 +129,10 @@ function DeniedContent({ onDismiss }: { onDismiss: () => void }) {
       </div>
 
       <h2 className="text-xl font-bold text-center text-text-light dark:text-text-dark mb-2">
-        Location Access Blocked
+        {t('locationPermission.deniedTitle')}
       </h2>
       <p className="text-sm text-center text-text-muted-light dark:text-text-muted-dark mb-5 leading-relaxed">
-        Location access is required for office check-in. Please enable it in your device settings.
+        {t('locationPermission.deniedDesc')}
       </p>
 
       {/* Steps */}
@@ -137,7 +140,7 @@ function DeniedContent({ onDismiss }: { onDismiss: () => void }) {
         <div className="flex items-center gap-2 mb-3">
           <Settings size={14} className="text-text-muted-light dark:text-text-muted-dark" />
           <span className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide">
-            How to enable
+            {t('locationPermission.howToEnable')}
           </span>
         </div>
         <ol className="space-y-2">
@@ -156,7 +159,7 @@ function DeniedContent({ onDismiss }: { onDismiss: () => void }) {
         onClick={onDismiss}
         className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-semibold text-sm transition-colors"
       >
-        OK, I'll Enable It
+        {t('locationPermission.okBtn')}
       </button>
     </>
   );

@@ -226,7 +226,16 @@
     "adding": "กำลังเพิ่ม...",
     "add": "เพิ่มพนักงาน",
     "success": "เพิ่มพนักงานสำเร็จ!",
-    "failed": "ไม่สามารถเพิ่มพนักงานได้"
+    "failed": "ไม่สามารถเพิ่มพนักงานได้",
+    "emailPlaceholder": "เช่น สมชาย@บริษัท.com",
+    "validation": {
+      "nameRequired": "กรุณากรอกชื่อ-นามสกุล",
+      "roleRequired": "กรุณาเลือกบทบาท",
+      "departmentRequired": "กรุณาเลือกแผนก",
+      "emailRequired": "กรุณากรอกอีเมล",
+      "emailInvalid": "กรุณากรอกอีเมลที่ถูกต้อง",
+      "startDateRequired": "กรุณาระบุวันเริ่มงาน"
+    }
   },
   "modals": {
     "editTitle": "แก้ไขโปรไฟล์พนักงาน",
@@ -381,5 +390,8 @@
     "edit": "แก้ไข",
     "addSubordinate": "เพิ่มผู้ใต้บังคับบัญชา",
     "delete": "ลบ"
+  },
+  "editModal": {
+    "gpsGeofenceNote": "พนักงาน Remote/Hybrid ไม่ต้องผ่านการตรวจสอบ GPS"
   }
 }

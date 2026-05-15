@@ -254,7 +254,7 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                                         ]}
                                     />
                                     <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">
-                                        Remote/Hybrid employees bypass GPS geofence
+                                        {t('employees:editModal.gpsGeofenceNote')}
                                     </p>
                                 </div>
                             )}

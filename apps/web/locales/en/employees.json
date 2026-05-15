@@ -226,7 +226,16 @@
     "adding": "Adding...",
     "add": "Add Employee",
     "success": "Employee added successfully!",
-    "failed": "Failed to add employee"
+    "failed": "Failed to add employee",
+    "emailPlaceholder": "e.g. alex@company.com",
+    "validation": {
+      "nameRequired": "Name is required",
+      "roleRequired": "Role is required",
+      "departmentRequired": "Department is required",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email",
+      "startDateRequired": "Start date is required"
+    }
   },
   "modals": {
     "editTitle": "Edit Employee Profile",
@@ -381,5 +390,8 @@
     "edit": "Edit",
     "addSubordinate": "Add Subordinate",
     "delete": "Delete"
+  },
+  "editModal": {
+    "gpsGeofenceNote": "Remote/Hybrid employees bypass GPS geofence"
   }
 }

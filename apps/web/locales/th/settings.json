@@ -147,5 +147,25 @@
     "errorTooShort": "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร",
     "errorTooWeak": "รหัสผ่านอ่อนเกินไป กรุณาเลือกรหัสผ่านที่แข็งแกร่งกว่านี้",
     "errorFailed": "ไม่สามารถเปลี่ยนรหัสผ่านได้"
+  },
+  "holidayImport": {
+    "title": "นำเข้าวันหยุด",
+    "tabPreset": "🇹🇭 วันหยุดไทย",
+    "tabCsv": "📄 อัปโหลด CSV",
+    "year": "ปี:",
+    "deselectAll": "ยกเลิกทั้งหมด",
+    "selectAll": "เลือกทั้งหมด",
+    "annual": "ประจำปี",
+    "dropZone": "วางไฟล์ CSV ที่นี่หรือคลิกเพื่อเลือก",
+    "columns": "คอลัมน์: name, date (YYYY-MM-DD), endDate, isRecurring",
+    "downloadTemplate": "ดาวน์โหลดตัวอย่าง",
+    "cancel": "ยกเลิก",
+    "nothingSelected": "ยังไม่ได้เลือกรายการ",
+    "toImport": "{{count}} วันหยุดที่จะนำเข้า",
+    "importing": "กำลังนำเข้า...",
+    "import": "นำเข้า {{count}}",
+    "preview": "ตัวอย่าง ({{count}} แถว)",
+    "pastePlaceholder": "หรือวาง CSV ที่นี่:",
+    "importSuccess": "นำเข้า {{created}} วันหยุดสำเร็จ"
   }
 }

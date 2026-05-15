@@ -34,7 +34,7 @@ export const RejectReasonDialog: React.FC<RejectReasonDialogProps> = ({
       <div className="p-6 space-y-4">
         {employeeName && (
           <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
-            Please provide a reason for rejecting <span className="font-medium text-text-light dark:text-text-dark">{employeeName}</span>'s leave request.
+            {t('leave:rejectDialog.explanation', { name: employeeName })}
           </p>
         )}
         <div>

@@ -83,16 +83,16 @@ export const LeaveManagementModal: React.FC<LeaveManagementModalProps> = ({
                         <button
                           onClick={(e) => { e.stopPropagation(); onApprove(request.id); }}
                           className="p-2 text-accent-green bg-accent-green/10 rounded-full hover:bg-accent-green/20 transition-colors"
-                          title="Approve"
-                          aria-label={`Approve leave request for ${request.employeeName}`}
+                          title={t('leave:management.approve', { defaultValue: 'Approve' })}
+                          aria-label={t('leave:management.approveAria', { name: request.employeeName })}
                         >
                           <Check size={16} />
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); onDecline(request.id); }}
                           className="p-2 text-accent-red bg-accent-red/10 rounded-full hover:bg-accent-red/20 transition-colors"
-                          title="Decline"
-                          aria-label={`Decline leave request for ${request.employeeName}`}
+                          title={t('leave:management.decline', { defaultValue: 'Decline' })}
+                          aria-label={t('leave:management.declineAria', { name: request.employeeName })}
                         >
                           <X size={16} />
                         </button>
@@ -137,7 +137,7 @@ export const LeaveManagementModal: React.FC<LeaveManagementModalProps> = ({
                     <button
                       onClick={() => onApprove(request.id)}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-accent-green bg-accent-green/10 rounded-lg hover:bg-accent-green/20 transition-colors"
-                      aria-label={`Approve leave request for ${request.employeeName}`}
+                      aria-label={t('leave:management.approveAria', { name: request.employeeName })}
                     >
                       <Check size={16} />
                       {t('leave:management.approve', { defaultValue: 'Approve' })}
@@ -145,7 +145,7 @@ export const LeaveManagementModal: React.FC<LeaveManagementModalProps> = ({
                     <button
                       onClick={() => onDecline(request.id)}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-accent-red bg-accent-red/10 rounded-lg hover:bg-accent-red/20 transition-colors"
-                      aria-label={`Decline leave request for ${request.employeeName}`}
+                      aria-label={t('leave:management.declineAria', { name: request.employeeName })}
                     >
                       <X size={16} />
                       {t('leave:management.decline', { defaultValue: 'Decline' })}

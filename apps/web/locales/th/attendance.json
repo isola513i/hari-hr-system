@@ -107,5 +107,28 @@
     "employees": "{{present}} / {{total}} คน",
     "arrivedLate": "{{count}} คนมาสาย",
     "avg": "เฉลี่ย {{value}}%"
+  },
+  "locationPermission": {
+    "requestTitle": "อนุญาตการเข้าถึงตำแหน่ง",
+    "requestDesc": "เราต้องการตำแหน่งของคุณเพื่อยืนยันว่าคุณลงเวลาจากออฟฟิศ ตำแหน่งจะถูกใช้เฉพาะระหว่างการลงเวลาเท่านั้น ไม่มีการติดตามต่อเนื่อง",
+    "feature1": "ยืนยันว่าอยู่ในระยะออฟฟิศสำหรับการลงเวลา",
+    "feature2": "อนุญาตครั้งเดียว — เบราว์เซอร์จดจำให้",
+    "feature3": "ไม่บันทึกตำแหน่งหลังจากลงเวลาเสร็จ",
+    "allowBtn": "อนุญาตการเข้าถึงตำแหน่ง",
+    "notNow": "ไม่ตอนนี้",
+    "deniedTitle": "การเข้าถึงตำแหน่งถูกบล็อก",
+    "deniedDesc": "ต้องการการเข้าถึงตำแหน่งสำหรับการลงเวลาที่ออฟฟิศ กรุณาเปิดใช้งานในการตั้งค่าอุปกรณ์ของคุณ",
+    "howToEnable": "วิธีเปิดใช้งาน",
+    "okBtn": "ตกลง ฉันจะเปิดใช้งาน",
+    "iosStep1": "เปิด iPhone Settings",
+    "iosStep2": "ไปที่ Privacy & Security → Location Services",
+    "iosStep3": "แตะ Safari Websites",
+    "iosStep4": "เลือก \"While Using the App\"",
+    "androidStep1": "แตะไอคอนล็อคในแถบที่อยู่เบราว์เซอร์",
+    "androidStep2": "แตะ \"Permissions\" → Location",
+    "androidStep3": "เลือก \"Allow\"",
+    "desktopStep1": "คลิกไอคอนล็อคในแถบที่อยู่เบราว์เซอร์",
+    "desktopStep2": "ค้นหา \"Location\" และตั้งค่าเป็น \"Allow\"",
+    "desktopStep3": "รีเฟรชหน้าและลองอีกครั้ง"
   }
 }

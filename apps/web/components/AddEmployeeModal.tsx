@@ -77,25 +77,25 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
     const errors: ValidationErrors = {};
 
     if (!newEmployee.name.trim()) {
-      errors.name = 'Name is required';
+      errors.name = t('addModal.validation.nameRequired');
     }
 
     if (!newEmployee.role.trim()) {
-      errors.role = 'Role is required';
+      errors.role = t('addModal.validation.roleRequired');
     }
 
     if (!newEmployee.department.trim()) {
-      errors.department = 'Department is required';
+      errors.department = t('addModal.validation.departmentRequired');
     }
 
     if (!newEmployee.email.trim()) {
-      errors.email = 'Email is required';
+      errors.email = t('addModal.validation.emailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmployee.email)) {
-      errors.email = 'Please enter a valid email';
+      errors.email = t('addModal.validation.emailInvalid');
     }
 
     if (!newEmployee.joinDate) {
-      errors.joinDate = 'Start date is required';
+      errors.joinDate = t('addModal.validation.startDateRequired');
     }
 
     setValidationErrors(errors);
@@ -231,7 +231,7 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
               type="email"
               value={newEmployee.email}
               onChange={(e) => updateField('email', e.target.value)}
-              placeholder="e.g. alex@nexus.hr"
+              placeholder={t('addModal.emailPlaceholder')}
               className={`w-full pl-10 pr-10 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
                 validationErrors.email
                   ? 'border-red-500 focus:ring-red-500'

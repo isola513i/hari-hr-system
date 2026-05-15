@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload, Sparkles, CheckSquare, Square, AlertCircle, FileText } from 'lucide-react';
 import { Modal } from './Modal';
 import { useBulkCreateHolidays } from '../hooks/queries';
@@ -107,6 +108,7 @@ interface Props {
 }
 
 export function HolidayImportModal({ onClose, onSuccess }: Props) {
+  const { t } = useTranslation('settings');
   const [tab, setTab] = useState<'preset' | 'csv'>('preset');
   const [year, setYear] = useState(new Date().getFullYear());
   const [selected, setSelected] = useState<Set<number>>(new Set(
@@ -159,7 +161,7 @@ export function HolidayImportModal({ onClose, onSuccess }: Props) {
 
     try {
       const result = await bulkCreate.mutateAsync(rows);
-      onSuccess(`Imported ${result.created} holiday${result.created !== 1 ? 's' : ''}${result.failed > 0 ? ` (${result.failed} failed)` : ''}`);
+      onSuccess(t('holidayImport.importSuccess', { created: result.created, failed: result.failed }));
     } catch {
       // error handled by mutation
     }
@@ -168,21 +170,21 @@ export function HolidayImportModal({ onClose, onSuccess }: Props) {
   const importCount = tab === 'preset' ? selected.size : csvRows.length;
 
   return (
-    <Modal isOpen onClose={onClose} title="Import Holidays" maxWidth="lg">
+    <Modal isOpen onClose={onClose} title={t('holidayImport.title')} maxWidth="lg">
       <div className="p-6 space-y-4">
         {/* Tabs */}
         <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg w-fit">
-          {(['preset', 'csv'] as const).map(t => (
+          {(['preset', 'csv'] as const).map(tabKey => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
+              key={tabKey}
+              onClick={() => setTab(tabKey)}
               className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                tab === t
+                tab === tabKey
                   ? 'bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark shadow-sm'
                   : 'text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark'
               }`}
             >
-              {t === 'preset' ? '🇹🇭 Thai Preset' : '📄 CSV Upload'}
+              {tabKey === 'preset' ? t('holidayImport.tabPreset') : t('holidayImport.tabCsv')}
             </button>
           ))}
         </div>
@@ -191,7 +193,7 @@ export function HolidayImportModal({ onClose, onSuccess }: Props) {
           <div className="space-y-3">
             {/* Year selector */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-text-muted-light dark:text-text-muted-dark">Year:</span>
+              <span className="text-sm text-text-muted-light dark:text-text-muted-dark">{t('holidayImport.year')}</span>
               <div className="flex gap-1">
                 {[2025, 2026, 2027].map(y => (
                   <button
@@ -208,7 +210,7 @@ export function HolidayImportModal({ onClose, onSuccess }: Props) {
                 ))}
               </div>
               <button onClick={toggleAll} className="ml-auto text-xs text-primary hover:underline">
-                {selected.size === presetRows.length ? 'Deselect all' : 'Select all'}
+                {selected.size === presetRows.length ? t('holidayImport.deselectAll') : t('holidayImport.selectAll')}
               </button>
             </div>
 
@@ -236,7 +238,7 @@ export function HolidayImportModal({ onClose, onSuccess }: Props) {
                     {h.endDate ? `${formatDate(h.date)} – ${formatDate(h.endDate)}` : formatDate(h.date)}
                   </span>
                   {h.isRecurring && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shrink-0">Annual</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shrink-0">{t('holidayImport.annual')}</span>
                   )}
                 </button>
               ))}
@@ -259,8 +261,8 @@ export function HolidayImportModal({ onClose, onSuccess }: Props) {
               }`}
             >
               <Upload size={24} className="mx-auto mb-2 text-text-muted-light dark:text-text-muted-dark" />
-              <p className="text-sm text-text-light dark:text-text-dark font-medium">Drop CSV file here or click to browse</p>
-              <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">Columns: name, date (YYYY-MM-DD), endDate, isRecurring</p>
+              <p className="text-sm text-text-light dark:text-text-dark font-medium">{t('holidayImport.dropZone')}</p>
+              <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">{t('holidayImport.columns')}</p>
               <input ref={fileRef} type="file" accept=".csv,.txt" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
             </div>
 
@@ -273,14 +275,14 @@ export function HolidayImportModal({ onClose, onSuccess }: Props) {
               }}
               className="flex items-center gap-1.5 text-xs text-primary hover:underline"
             >
-              <FileText size={12} /> Download template
+              <FileText size={12} /> {t('holidayImport.downloadTemplate')}
             </button>
 
             {/* Manual paste area */}
             <textarea
               value={csvText}
               onChange={e => handleCSVInput(e.target.value)}
-              placeholder={`Or paste CSV here:\n${CSV_TEMPLATE}`}
+              placeholder={`${t('holidayImport.pastePlaceholder')}\n${CSV_TEMPLATE}`}
               rows={5}
               className="w-full px-3 py-2 text-xs font-mono border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none resize-none"
             />
@@ -300,7 +302,7 @@ export function HolidayImportModal({ onClose, onSuccess }: Props) {
             {/* Preview */}
             {csvRows.length > 0 && (
               <div className="space-y-1 max-h-48 overflow-y-auto">
-                <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide">Preview ({csvRows.length} rows)</p>
+                <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide">{t('holidayImport.preview', { count: csvRows.length })}</p>
                 {csvRows.map((h, i) => (
                   <div key={i} className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-sm">
                     <span className="flex-1 text-text-light dark:text-text-dark truncate">{h.name}</span>
@@ -317,11 +319,11 @@ export function HolidayImportModal({ onClose, onSuccess }: Props) {
         {/* Footer */}
         <div className="flex items-center justify-between pt-2 border-t border-border-light dark:border-border-dark">
           <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
-            {importCount > 0 ? `${importCount} holiday${importCount !== 1 ? 's' : ''} to import` : 'Nothing selected'}
+            {importCount > 0 ? t('holidayImport.toImport', { count: importCount }) : t('holidayImport.nothingSelected')}
           </p>
           <div className="flex gap-3">
             <button onClick={onClose} className="px-4 py-2 text-sm text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors">
-              Cancel
+              {t('holidayImport.cancel')}
             </button>
             <button
               onClick={handleImport}
@@ -329,7 +331,7 @@ export function HolidayImportModal({ onClose, onSuccess }: Props) {
               className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Sparkles size={14} />
-              {bulkCreate.isPending ? 'Importing...' : `Import ${importCount > 0 ? importCount : ''}`}
+              {bulkCreate.isPending ? t('holidayImport.importing') : t('holidayImport.import', { count: importCount > 0 ? importCount : '' })}
             </button>
           </div>
         </div>

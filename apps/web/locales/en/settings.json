@@ -147,5 +147,25 @@
     "errorTooShort": "Password must be at least 8 characters",
     "errorTooWeak": "Password is too weak. Please choose a stronger password.",
     "errorFailed": "Failed to update password"
+  },
+  "holidayImport": {
+    "title": "Import Holidays",
+    "tabPreset": "🇹🇭 Thai Preset",
+    "tabCsv": "📄 CSV Upload",
+    "year": "Year:",
+    "deselectAll": "Deselect all",
+    "selectAll": "Select all",
+    "annual": "Annual",
+    "dropZone": "Drop CSV file here or click to browse",
+    "columns": "Columns: name, date (YYYY-MM-DD), endDate, isRecurring",
+    "downloadTemplate": "Download template",
+    "cancel": "Cancel",
+    "nothingSelected": "Nothing selected",
+    "toImport": "{{count}} holiday(s) to import",
+    "importing": "Importing...",
+    "import": "Import {{count}}",
+    "preview": "Preview ({{count}} rows)",
+    "pastePlaceholder": "Or paste CSV here:",
+    "importSuccess": "Imported {{created}} holidays"
   }
 }
