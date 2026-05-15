@@ -49,3 +49,6 @@ debug-*.js
 
 # Database backups
 backups/
+.agents
+.claude
+skills-lock.json
