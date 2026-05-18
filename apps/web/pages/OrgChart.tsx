@@ -84,7 +84,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserStatus } from '../contexts/UserStatusContext';
 import { useOrg } from '../contexts/OrgContext';
-import { Toast } from '../components/Toast';
+import { useToast } from '../contexts/ToastContext';
 import { Dropdown } from '../components/Dropdown';
 import { StatusIndicator } from '../components/StatusIndicator';
 
@@ -155,26 +155,10 @@ export const OrgChart: React.FC = () => {
   const zoomRef = useRef(1);
   const zoomSyncTimer = useRef<number>();
   const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
+  const { showToast } = useToast();
 
   // Use predefined departments for type safety
   const departments: readonly Department[] = DEPARTMENTS;
-
-  // Toast state
-  const [toast, setToast] = useState<{
-    show: boolean;
-    message: string;
-    type: 'success' | 'error' | 'warning' | 'info';
-  }>({
-    show: false,
-    message: '',
-    type: 'success',
-  });
-  const showToast = (
-    message: string,
-    type: 'success' | 'error' | 'warning' | 'info' = 'success'
-  ) => {
-    setToast({ show: true, message, type });
-  };
 
   // Delete confirmation state
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -1099,14 +1083,6 @@ export const OrgChart: React.FC = () => {
         document.body
       )}
 
-      {/* Toast Notification */}
-      {toast.show && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast((prev) => ({ ...prev, show: false }))}
-        />
-      )}
     </div>
   );
 };

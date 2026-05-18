@@ -29,7 +29,7 @@ import {
 import { DocumentItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDate } from '../lib/date';
-import { Toast } from '../components/Toast';
+import { useToast } from '../contexts/ToastContext';
 import { Pagination } from '../components/Pagination';
 
 export const Documents: React.FC = () => {
@@ -37,22 +37,7 @@ export const Documents: React.FC = () => {
   const { user, isAdminView } = useAuth();
   const isAdmin = isAdminView;
 
-  // Toast state
-  const [toast, setToast] = useState<{
-    show: boolean;
-    message: string;
-    type: 'success' | 'error' | 'warning' | 'info';
-  }>({
-    show: false,
-    message: '',
-    type: 'success',
-  });
-  const showToast = (
-    message: string,
-    type: 'success' | 'error' | 'warning' | 'info' = 'success'
-  ) => {
-    setToast({ show: true, message, type });
-  };
+  const { showToast } = useToast();
 
   // Delete confirmation state
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -981,14 +966,6 @@ export const Documents: React.FC = () => {
         </div>
       )}
 
-      {/* Toast Notification */}
-      {toast.show && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast((prev) => ({ ...prev, show: false }))}
-        />
-      )}
     </div>
   );
 };

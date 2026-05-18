@@ -24,7 +24,6 @@ import {
   Shield,
   CalendarCheck,
 } from 'lucide-react';
-import { Toast } from '../components/Toast';
 import { SearchableSelect } from '../components/SearchableSelect';
 import { DatePicker } from '../components/DatePicker';
 import { usePayrollPage, formatCurrency, formatDate } from '../hooks/usePayrollPage';
@@ -57,8 +56,6 @@ export const Payroll: React.FC = () => {
   const {
     t,
     isAdminView,
-    toast,
-    setToast,
     summary,
     showCreate,
     setShowCreate,
@@ -791,10 +788,6 @@ export const Payroll: React.FC = () => {
         document.body
       )}
 
-      {/* Toast */}
-      {toast.show && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast((p) => ({ ...p, show: false }))} />
-      )}
     </div>
   );
 };

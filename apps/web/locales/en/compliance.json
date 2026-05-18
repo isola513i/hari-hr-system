@@ -114,5 +114,14 @@
     "rangeLast30": "Last 30 Days",
     "rangeLast90": "Last 90 Days",
     "rangeThisYear": "This Year"
+  },
+  "toast": {
+    "itemUpdated": "Item updated",
+    "itemCreated": "Item created",
+    "saveFailed": "Failed to save item",
+    "itemDeleted": "Item deleted",
+    "deleteFailed": "Failed to delete item",
+    "statusUpdated": "Status updated",
+    "statusUpdateFailed": "Failed to update status"
   }
 }

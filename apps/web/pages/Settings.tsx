@@ -19,7 +19,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Toast } from '../components/Toast';
+import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import { api, API_HOST, BASE_URL, getAuthToken } from '../lib/api';
 import { queryKeys } from '../lib/queryKeys';
@@ -73,25 +73,10 @@ export const Settings: React.FC = () => {
   const [passwordErrors, setPasswordErrors] = useState<{ [key: string]: string }>({});
   const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
 
-  // Loading and Toast state
+  const { showToast } = useToast();
+  // Loading state
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [toast, setToast] = useState<{
-    show: boolean;
-    message: string;
-    type: 'success' | 'error' | 'warning' | 'info';
-  }>({
-    show: false,
-    message: '',
-    type: 'success',
-  });
-
-  const showToast = (
-    message: string,
-    type: 'success' | 'error' | 'warning' | 'info' = 'success'
-  ) => {
-    setToast({ show: true, message, type });
-  };
 
   // Apply theme to document
   const applyTheme = (themeMode: 'light' | 'dark' | 'system') => {
@@ -932,21 +917,13 @@ export const Settings: React.FC = () => {
           )}
 
           {/* Leave Types Tab (Admin only) */}
-          {activeTab === 'leaveTypes' && isAdminView && <LeaveTypesTab showToast={showToast} />}
+          {activeTab === 'leaveTypes' && isAdminView && <LeaveTypesTab />}
 
           {/* GPS & Attendance Tab (Admin only) */}
-          {activeTab === 'attendance' && isAdminView && <GPSSettingsTab showToast={showToast} />}
+          {activeTab === 'attendance' && isAdminView && <GPSSettingsTab />}
         </div>
       </div>
 
-      {/* Toast Notification */}
-      {toast.show && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast((prev) => ({ ...prev, show: false }))}
-        />
-      )}
     </div>
   );
 };
@@ -955,7 +932,8 @@ export const Settings: React.FC = () => {
 // GPS Settings Tab
 // ---------------------------------------------------------------------------
 
-function GPSSettingsTab({ showToast }: { showToast: (msg: string, type: 'success' | 'error') => void }) {
+function GPSSettingsTab() {
+  const { showToast } = useToast();
   const { data: cfg } = useAttendanceGPSConfig();
   const updateMutation = useUpdateGPSConfig();
 

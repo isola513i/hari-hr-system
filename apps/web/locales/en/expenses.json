@@ -69,7 +69,8 @@
     "titleRequired": "Title is required",
     "categoryRequired": "Please select a category",
     "amountRequired": "Please enter a valid amount",
-    "dateRequired": "Please select a date"
+    "dateRequired": "Please select a date",
+    "actionFailed": "Action failed. Please try again."
   },
   "empty": "No expense claims yet",
   "emptyAdmin": "No expense claims to review",

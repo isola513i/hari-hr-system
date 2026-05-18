@@ -7,8 +7,8 @@ import {
   MessageSquare, CheckCircle2, BarChart3, ClipboardList, ArrowRight, FileText, Users,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { Dropdown } from '../components/Dropdown';
-import { Toast } from '../components/Toast';
 import {
   useSurveyList,
   useCreateSurvey,
@@ -472,12 +472,7 @@ export const Surveys: React.FC = () => {
 
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
-    show: false, message: '', type: 'success',
-  });
-  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
-    setToast({ show: true, message, type });
-  };
+  const { showToast } = useToast();
 
   const handleClose = async (id: string) => {
     try {
@@ -685,13 +680,6 @@ export const Surveys: React.FC = () => {
         onCreated={() => showToast(t('surveys.toast.createdSuccess'))}
       />
 
-      {toast.show && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast((prev) => ({ ...prev, show: false }))}
-        />
-      )}
     </div>
   );
 };

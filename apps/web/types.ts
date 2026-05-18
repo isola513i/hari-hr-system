@@ -114,6 +114,7 @@ export interface StatCardProps {
   icon: React.ReactNode;
   color: 'primary' | 'green' | 'orange' | 'red' | 'teal';
   invertTrend?: boolean;
+  onClick?: () => void;
 }
 
 export interface DocumentItem {

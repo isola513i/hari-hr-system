@@ -13,7 +13,7 @@ import {
   ChevronRight,
   Check,
 } from 'lucide-react';
-import { Toast } from '../components/Toast';
+import { useToast } from '../contexts/ToastContext';
 import { Dropdown } from '../components/Dropdown';
 import {
   useComplianceChecks,
@@ -83,14 +83,7 @@ function formatTimeAgo(dateStr: string, t: (key: string, opts?: Record<string, u
 
 export const Compliance: React.FC = () => {
   const { t } = useTranslation(['compliance', 'common']);
-
-  // Toast state
-  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
-    show: false, message: '', type: 'success',
-  });
-  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
-    setToast({ show: true, message, type });
-  };
+  const { showToast } = useToast();
 
   // Compliance checks
   const { data: checks = [], isLoading: checksLoading } = useComplianceChecks();
@@ -239,14 +232,14 @@ export const Compliance: React.FC = () => {
     try {
       if (editingItem) {
         await updateItemMutation.mutateAsync({ id: editingItem.id, data: itemForm as any });
-        showToast('Item updated', 'success');
+        showToast(t('toast.itemUpdated'), 'success');
       } else {
         await createItemMutation.mutateAsync(itemForm as any);
-        showToast('Item created', 'success');
+        showToast(t('toast.itemCreated'), 'success');
       }
       setIsItemFormOpen(false);
     } catch {
-      showToast('Failed to save item', 'error');
+      showToast(t('toast.saveFailed'), 'error');
     }
   };
 
@@ -256,9 +249,9 @@ export const Compliance: React.FC = () => {
     try {
       await deleteItemMutation.mutateAsync(id);
       setDeleteConfirmId(null);
-      showToast('Item deleted', 'success');
+      showToast(t('toast.itemDeleted'), 'success');
     } catch {
-      showToast('Failed to delete item', 'error');
+      showToast(t('toast.deleteFailed'), 'error');
     }
   };
 
@@ -273,9 +266,9 @@ export const Compliance: React.FC = () => {
       setStatusChangeItem(null);
       setNewStatus('');
       setStatusReason('');
-      showToast('Status updated', 'success');
+      showToast(t('toast.statusUpdated'), 'success');
     } catch {
-      showToast('Failed to update status', 'error');
+      showToast(t('toast.statusUpdateFailed'), 'error');
     }
   };
 
@@ -741,14 +734,6 @@ export const Compliance: React.FC = () => {
         </div>
       </div>
 
-      {/* Toast */}
-      {toast.show && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast((prev) => ({ ...prev, show: false }))}
-        />
-      )}
     </div>
   );
 };

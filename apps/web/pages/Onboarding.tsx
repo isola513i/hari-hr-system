@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { OnboardingTask, Employee, OnboardingDocument } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrg } from '../contexts/OrgContext';
-import { Toast } from '../components/Toast';
+import { useToast } from '../contexts/ToastContext';
 import { Dropdown } from '../components/Dropdown';
 import { api, BASE_URL, getAuthToken } from '../lib/api';
 import { queryKeys } from '../lib/queryKeys';
@@ -25,13 +25,7 @@ export const Onboarding: React.FC = () => {
     const { addNode } = useOrg();
     const qc = useQueryClient();
 
-    // Toast state
-    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
-        show: false, message: '', type: 'success'
-    });
-    const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
-        setToast({ show: true, message, type });
-    };
+    const { showToast } = useToast();
 
     // React Query hooks for data fetching
     const { data: tasks = [] } = useOnboardingTasks();
@@ -534,14 +528,6 @@ export const Onboarding: React.FC = () => {
                 onSubmit={handleInviteSubmit}
             />
 
-            {/* Toast Notification */}
-            {toast.show && (
-                <Toast
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(prev => ({ ...prev, show: false }))}
-                />
-            )}
         </div>
     );
 };

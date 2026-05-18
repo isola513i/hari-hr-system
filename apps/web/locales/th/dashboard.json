@@ -18,6 +18,9 @@
     "pendingLeaveRequests": "คำขอลารอดำเนินการ",
     "pending": "{{count}} รอดำเนินการ",
     "allCaughtUp": "เรียบร้อย! ไม่มีคำขอที่รอดำเนินการ",
+    "viewLeaveHistory": "ดูประวัติการลา",
+    "createAnnouncement": "สร้างประกาศ",
+    "startOnboarding": "เริ่มออนบอร์ดดิ้ง",
     "recentActivity": "กิจกรรมล่าสุด",
     "noRecentActivity": "ไม่มีกิจกรรมล่าสุด",
     "notes": "บันทึก",
@@ -27,7 +30,13 @@
     "recent": "ล่าสุด",
     "unpinNote": "เลิกปักหมุด",
     "pinNote": "ปักหมุด",
-    "deleteNote": "ลบบันทึก"
+    "deleteNote": "ลบบันทึก",
+    "editNote": "แก้ไขบันทึก",
+    "employeeAdded": "เพิ่ม {{name}} เข้าสู่ระบบสำเร็จ!",
+    "employeeAddFailed": "ไม่สามารถเพิ่มพนักงานได้ กรุณาลองใหม่อีกครั้ง",
+    "emailExists": "อีเมลนี้ ({{email}}) ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น",
+    "requiredFields": "ชื่อและอีเมลเป็นข้อมูลที่จำเป็น",
+    "connectionError": "ไม่สามารถเพิ่มพนักงานได้ กรุณาตรวจสอบการเชื่อมต่อและลองใหม่"
   },
   "employee": {
     "greeting": "สวัสดีตอนเช้า {{name}}",
@@ -66,7 +75,12 @@
     "notePinFailed": "ไม่สามารถปักหมุดได้",
     "checkedIn": "ลงเวลาเข้าสำเร็จ!",
     "checkedOut": "ลงเวลาออกสำเร็จ!",
-    "alreadyCheckedIn": "ลงเวลาเข้าแล้ว"
+    "alreadyCheckedIn": "ลงเวลาเข้าแล้ว",
+    "gpsNotSupported": "อุปกรณ์นี้ไม่รองรับ GPS",
+    "locationError": "ไม่สามารถระบุตำแหน่งได้ กรุณาลองใหม่อีกครั้ง",
+    "noOTRequests": "ยังไม่มีคำขอทำงานล่วงเวลา",
+    "submitFirstOT": "ส่งคำขอ OT แรกของคุณ",
+    "gettingGPS": "กำลังรับ GPS..."
   },
   "stats": {
     "activeEmployees": "พนักงานที่ใช้งาน",

@@ -1169,6 +1169,16 @@ export const useAddNote = () => {
   });
 };
 
+export const useUpdateNote = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, content }: { id: string; content: string }) => api.patch(`/notes/${id}`, { content }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.notes.all });
+    },
+  });
+};
+
 export const useDeleteNote = () => {
   const qc = useQueryClient();
   return useMutation({

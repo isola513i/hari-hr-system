@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Megaphone, ScrollText, PartyPopper, ChevronLeft, ChevronRight, Plus, X, Check, Calendar, Type, AlignLeft, BarChart3, Users, TrendingUp, Edit3, Trash2 } from 'lucide-react';
 import { Announcement, UpcomingEvent } from '../types';
-import { Toast } from '../components/Toast';
+import { useToast } from '../contexts/ToastContext';
 import { Dropdown } from '../components/Dropdown';
 import { DatePicker } from '../components/DatePicker';
 import { useAnnouncements, useUpcomingEvents, useAddAnnouncement, useUpdateAnnouncement, useDeleteAnnouncement, useAddEvent, useDeleteEvent, useSentimentOverview, useHolidays, useLeaveRequests } from '../hooks/queries';
@@ -38,13 +38,7 @@ export const Wellbeing: React.FC = () => {
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
 
-  // Toast state
-  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
-    show: false, message: '', type: 'success'
-  });
-  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
-    setToast({ show: true, message, type });
-  };
+  const { showToast } = useToast();
 
   const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
@@ -840,14 +834,6 @@ export const Wellbeing: React.FC = () => {
         document.body
       )}
 
-      {/* Toast Notification */}
-      {toast.show && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(prev => ({ ...prev, show: false }))}
-        />
-      )}
     </div>
   );
 };

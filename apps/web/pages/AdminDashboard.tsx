@@ -1,11 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Users,
   TrendingUp,
   UserPlus,
-  MoreHorizontal,
   CheckCircle2,
   Rocket,
   Calendar as CalendarIcon,
@@ -20,19 +19,21 @@ import {
   StickyNote,
   Cake,
   Pin,
+  Pencil,
   Send,
-  Trash2
+  Trash2,
+  X
 } from 'lucide-react';
 import { ResponsiveContainer, XAxis, YAxis, AreaChart, Area, Tooltip } from 'recharts';
 import { StatCard } from '../components/StatCard';
 import { LeaveGanttCalendar } from '../components/LeaveGanttCalendar';
-import { Toast } from '../components/Toast';
 import { Avatar } from '../components/Avatar';
 import { AddEmployeeModal } from '../components/AddEmployeeModal';
 import QueryErrorState from '../components/QueryErrorState';
 import { LeaveDetailModal } from '../components/LeaveDetailModal';
 import { RejectReasonDialog } from '../components/RejectReasonDialog';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { useLeave } from '../contexts/LeaveContext';
 import { translateLeaveType } from '../lib/leaveTypeConfig';
 import type {
@@ -48,6 +49,7 @@ import {
   useUpcomingEvents,
   useNotes,
   useAddNote,
+  useUpdateNote,
   useDeleteNote,
   useToggleNotePin,
   useAddEmployee,
@@ -58,6 +60,7 @@ import {
 export const AdminDashboard: React.FC = () => {
   const { t, i18n } = useTranslation(['dashboard', 'common']);
   const { user } = useAuth();
+  const { showToast } = useToast();
   const { requests, updateRequestStatus } = useLeave();
   const navigate = useNavigate();
 
@@ -86,6 +89,7 @@ export const AdminDashboard: React.FC = () => {
   const { data: eventsData = [] } = useUpcomingEvents();
   const { data: notesData = [] } = useNotes();
   const addNoteMutation = useAddNote();
+  const updateNoteMutation = useUpdateNote();
   const deleteNoteMutation = useDeleteNote();
   const togglePinMutation = useToggleNotePin();
   const addEmployeeMutation = useAddEmployee();
@@ -94,6 +98,13 @@ export const AdminDashboard: React.FC = () => {
   const isLoading = isEmployeesLoading;
 
   // ----- STATE -----
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  useEffect(() => {
+    const obs = new MutationObserver(() => setIsDark(document.documentElement.classList.contains('dark')));
+    obs.observe(document.documentElement, { attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
+
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
 
   const [detailRequest, setDetailRequest] = useState<LeaveRequest | null>(null);
@@ -101,15 +112,8 @@ export const AdminDashboard: React.FC = () => {
   const [quickNote, setQuickNote] = useState('');
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
-    show: false,
-    message: '',
-    type: 'success'
-  });
-
-  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
-    setToast({ show: true, message, type });
-  };
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [deleteConfirmNoteId, setDeleteConfirmNoteId] = useState<string | null>(null);
 
   // ----- STATS FROM BACKEND -----
   const newHiresCount = adminStats?.newHiresCount ?? 0;
@@ -220,22 +224,22 @@ export const AdminDashboard: React.FC = () => {
 
       await addEmployeeMutation.mutateAsync(payload);
       setIsAddEmployeeModalOpen(false);
-      showToast(`Successfully added ${employeeData.name} to the system!`, 'success');
+      showToast(t('dashboard:admin.employeeAdded', { name: employeeData.name }), 'success');
     } catch (error) {
       const apiError = error as Error;
       console.error('Error adding employee:', apiError);
 
-      let errorMessage = 'Failed to add employee. Please try again.';
+      let errorMessage = t('dashboard:admin.employeeAddFailed');
 
       if (apiError.message) {
-        errorMessage = apiError.message;
-
         if (apiError.message.includes('already exists')) {
-          errorMessage = `This email (${employeeData.email}) is already registered. Please use a different email.`;
+          errorMessage = t('dashboard:admin.emailExists', { email: employeeData.email });
         } else if (apiError.message.includes('required')) {
-          errorMessage = 'Name and Email are required fields.';
+          errorMessage = t('dashboard:admin.requiredFields');
         } else if (apiError.message.includes('Failed to add employee')) {
-          errorMessage = 'Unable to add employee. Please check your connection and try again.';
+          errorMessage = t('dashboard:admin.connectionError');
+        } else {
+          errorMessage = apiError.message;
         }
       }
 
@@ -247,7 +251,12 @@ export const AdminDashboard: React.FC = () => {
     if (!quickNote.trim()) return;
     setIsSavingNote(true);
     try {
-      await addNoteMutation.mutateAsync({ content: quickNote.trim() });
+      if (editingNoteId) {
+        await updateNoteMutation.mutateAsync({ id: editingNoteId, content: quickNote.trim() });
+        setEditingNoteId(null);
+      } else {
+        await addNoteMutation.mutateAsync({ content: quickNote.trim() });
+      }
       showToast(t('dashboard:employee.noteSaved'), "success");
       setQuickNote('');
     } catch (error) {
@@ -260,6 +269,7 @@ export const AdminDashboard: React.FC = () => {
 
   const handleDeleteNote = async (noteId: string) => {
     setDeletingNoteId(noteId);
+    setDeleteConfirmNoteId(null);
     try {
       await deleteNoteMutation.mutateAsync(noteId);
       showToast(t('dashboard:employee.noteDeleted'), "success");
@@ -329,15 +339,6 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <>
-      {/* Toast Notification */}
-      {toast.show && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast({ ...toast, show: false })}
-        />
-      )}
-
       <div className="space-y-6 animate-fade-in pb-8">
         {/* Top Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -423,7 +424,6 @@ export const AdminDashboard: React.FC = () => {
               </div>
               <h2 className="text-base md:text-lg font-bold text-text-light dark:text-text-dark">{t('dashboard:admin.headcountTrends')}</h2>
             </div>
-            <button className="text-text-muted-light hover:text-primary hidden md:block"><MoreHorizontal size={20} /></button>
           </div>
           <div className="flex-grow w-full min-h-[200px]" style={{ minWidth: 300 }}>
             {headcountData && headcountData.length > 0 && !isLoading ? (
@@ -438,7 +438,13 @@ export const AdminDashboard: React.FC = () => {
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#a0aec0', fontSize: 12 }} dy={10} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: '#a0aec0', fontSize: 12 }} />
                   <Tooltip
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                    contentStyle={{
+                      borderRadius: '8px',
+                      border: 'none',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)',
+                      backgroundColor: isDark ? '#1e2433' : '#ffffff',
+                      color: isDark ? '#e2e8f0' : '#1a202c',
+                    }}
                     cursor={{ stroke: '#3498db', strokeWidth: 1, strokeDasharray: '5 5' }}
                   />
                   <Area type="monotone" dataKey="value" stroke="#3498db" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
@@ -504,6 +510,7 @@ export const AdminDashboard: React.FC = () => {
               <div className="flex-1 flex flex-col items-center justify-center text-text-muted-light dark:text-text-muted-dark">
                 <CalendarIcon size={32} className="mb-2 opacity-20" />
                 <p className="text-sm">{t('dashboard:admin.noUpcomingEvents')}</p>
+                <button onClick={() => navigate('/announcements')} className="mt-2 text-xs text-primary hover:underline font-medium">{t('dashboard:admin.createAnnouncement')}</button>
               </div>
             )}
           </div>
@@ -536,7 +543,12 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </li>
               ))}
-              {onboardingSummary.length === 0 && <li className="text-text-muted-light text-sm italic">{t('dashboard:admin.noActiveOnboarding')}</li>}
+              {onboardingSummary.length === 0 && (
+                <li className="flex flex-col items-center justify-center py-4 text-text-muted-light dark:text-text-muted-dark">
+                  <p className="text-sm italic">{t('dashboard:admin.noActiveOnboarding')}</p>
+                  <button onClick={() => navigate('/onboarding')} className="mt-2 text-xs text-primary hover:underline font-medium">{t('dashboard:admin.startOnboarding')}</button>
+                </li>
+              )}
             </ul>
           </div>
         </div>
@@ -620,6 +632,7 @@ export const AdminDashboard: React.FC = () => {
               <div className="flex-1 flex flex-col items-center justify-center py-8 text-text-muted-light dark:text-text-muted-dark">
                 <CheckCircle2 size={32} className="mb-2 opacity-30" />
                 <p>{t('dashboard:admin.allCaughtUp')}</p>
+                <button onClick={() => navigate('/leave')} className="mt-2 text-xs text-primary hover:underline font-medium">{t('dashboard:admin.viewLeaveHistory')}</button>
               </div>
             )}
           </div>
@@ -686,14 +699,21 @@ export const AdminDashboard: React.FC = () => {
                   className="w-full min-h-[70px] px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-sm text-text-light dark:text-text-dark placeholder:text-text-muted-light transition-colors"
                 />
                 <div className="flex items-center justify-between mt-1.5">
-                  <span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">{t('dashboard:admin.chars', { count: quickNote.length })}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">{t('dashboard:admin.chars', { count: quickNote.length })}</span>
+                    {editingNoteId && (
+                      <button onClick={() => { setEditingNoteId(null); setQuickNote(''); }} className="text-[10px] text-text-muted-light hover:text-text-light dark:hover:text-text-dark transition-colors">
+                        {t('common:buttons.cancel')}
+                      </button>
+                    )}
+                  </div>
                   <button
                     onClick={handleSaveNote}
                     disabled={isSavingNote || !quickNote.trim()}
                     className={`flex items-center gap-1.5 text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-hover transition-colors font-medium ${isSavingNote || !quickNote.trim() ? 'opacity-40 cursor-not-allowed' : 'shadow-sm'}`}
                   >
                     <Send size={12} />
-                    {isSavingNote ? t('common:buttons.saving') : t('common:buttons.save')}
+                    {isSavingNote ? t('common:buttons.saving') : editingNoteId ? t('common:buttons.update') : t('common:buttons.save')}
                   </button>
                 </div>
               </div>
@@ -704,40 +724,64 @@ export const AdminDashboard: React.FC = () => {
                     {notesData.slice(0, 3).map(note => (
                       <div
                         key={note.id}
-                        className={`group flex items-center gap-2 py-1 px-1 rounded cursor-pointer transition-colors ${
+                        className={`group flex items-start gap-2 py-1 px-1 rounded transition-colors ${
                           note.pinned ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''
                         }`}
-                        onClick={() => setQuickNote(note.content)}
                       >
                         {note.pinned ? (
-                          <Pin size={10} className="flex-shrink-0 text-amber-500 fill-amber-500" />
+                          <Pin size={10} className="flex-shrink-0 mt-1 text-amber-500 fill-amber-500" />
                         ) : (
-                          <div className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-border-light dark:bg-border-dark"></div>
+                          <div className="flex-shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full bg-border-light dark:bg-border-dark"></div>
                         )}
-                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark truncate group-hover:text-primary transition-colors">
+                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark truncate flex-1">
                           {note.content.substring(0, 40)}{note.content.length > 40 ? '...' : ''}
                         </p>
-                        <div className="flex-shrink-0 ml-auto flex items-center gap-0.5">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleTogglePin(note.id); }}
-                            className={`p-0.5 rounded transition-all ${
-                              note.pinned
-                                ? 'text-amber-500 opacity-100'
-                                : 'text-text-muted-light hover:text-amber-500 opacity-0 group-hover:opacity-100'
-                            }`}
-                            title={note.pinned ? t('dashboard:admin.unpinNote') : t('dashboard:admin.pinNote')}
-                          >
-                            <Pin size={10} className={note.pinned ? 'fill-amber-500' : ''} />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDeleteNote(note.id); }}
-                            disabled={deletingNoteId === note.id}
-                            className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-0.5 text-text-muted-light hover:text-red-500 transition-all"
-                            title={t('dashboard:admin.deleteNote')}
-                          >
-                            <Trash2 size={10} />
-                          </button>
-                        </div>
+                        {deleteConfirmNoteId === note.id ? (
+                          <div className="flex-shrink-0 flex items-center gap-1">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteNote(note.id); }}
+                              disabled={deletingNoteId === note.id}
+                              className="text-[10px] text-red-500 hover:text-red-600 font-medium transition-colors"
+                            >
+                              {t('common:buttons.confirm')}
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setDeleteConfirmNoteId(null); }}
+                              className="p-0.5 text-text-muted-light hover:text-text-light dark:hover:text-text-dark transition-colors"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex-shrink-0 ml-auto flex items-center gap-0.5">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleTogglePin(note.id); }}
+                              className={`p-0.5 rounded transition-all ${
+                                note.pinned
+                                  ? 'text-amber-500 opacity-100'
+                                  : 'text-text-muted-light hover:text-amber-500 opacity-0 group-hover:opacity-100'
+                              }`}
+                              title={note.pinned ? t('dashboard:admin.unpinNote') : t('dashboard:admin.pinNote')}
+                            >
+                              <Pin size={10} className={note.pinned ? 'fill-amber-500' : ''} />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setEditingNoteId(note.id); setQuickNote(note.content); }}
+                              className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-0.5 text-text-muted-light hover:text-primary transition-all"
+                              title={t('dashboard:admin.editNote')}
+                            >
+                              <Pencil size={10} />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setDeleteConfirmNoteId(note.id); }}
+                              disabled={deletingNoteId === note.id}
+                              className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-0.5 text-text-muted-light hover:text-red-500 transition-all"
+                              title={t('dashboard:admin.deleteNote')}
+                            >
+                              <Trash2 size={10} />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

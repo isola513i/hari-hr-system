@@ -20,7 +20,7 @@ import {
     useUpdateTrainingStatus,
     useTrainingModules,
 } from '../hooks/queries';
-import { Toast } from '../components/Toast';
+import { useToast } from '../contexts/ToastContext';
 import { Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -64,13 +64,7 @@ export const EmployeeDetail: React.FC = () => {
 
     const [activeTab, setActiveTab] = useState<EmployeeTab>('overview');
 
-    // Toast State
-    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
-        show: false, message: '', type: 'success'
-    });
-    const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
-        setToast({ show: true, message, type });
-    };
+    const { showToast } = useToast();
 
     // ---------------------------------------------------------------------------
     // React Query hooks
@@ -390,7 +384,7 @@ export const EmployeeDetail: React.FC = () => {
     const handleUpdateTrainingStatus = async (trainingId: string, status: string) => {
         try {
             await updateTrainingStatusMutation.mutateAsync({ id: trainingId, status });
-            showToast(`Training marked as ${status}`, 'success');
+            showToast(t('employees:toast.trainingStatusUpdated', { status }), 'success');
         } catch {
             showToast('Failed to update training status', 'error');
         }
@@ -883,13 +877,6 @@ export const EmployeeDetail: React.FC = () => {
                 isLoading={assignTrainingMutation.isPending}
             />
 
-            {toast.show && (
-                <Toast
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(prev => ({ ...prev, show: false }))}
-                />
-            )}
         </div>
     );
 };

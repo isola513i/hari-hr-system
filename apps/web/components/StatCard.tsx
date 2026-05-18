@@ -2,7 +2,7 @@ import React from 'react';
 import { StatCardProps } from '../types';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
-export const StatCard: React.FC<StatCardProps> = React.memo(({ title, value, trend, icon, color, invertTrend = false }) => {
+export const StatCard: React.FC<StatCardProps> = React.memo(({ title, value, trend, icon, color, invertTrend = false, onClick }) => {
   const colorClasses = {
     primary: 'bg-primary/10 text-primary',
     green: 'bg-accent-green/10 text-accent-green',
@@ -12,7 +12,13 @@ export const StatCard: React.FC<StatCardProps> = React.memo(({ title, value, tre
   };
 
   return (
-    <div className="flex flex-col justify-between rounded-xl p-6 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark shadow-sm transition-transform hover:scale-[1.01]">
+    <div
+      className={`flex flex-col justify-between rounded-xl p-6 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark shadow-sm transition-transform hover:scale-[1.01]${onClick ? ' cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary' : ''}`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } } : undefined}
+    >
       <div className="flex items-center gap-3 mb-4">
         <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
           {icon}

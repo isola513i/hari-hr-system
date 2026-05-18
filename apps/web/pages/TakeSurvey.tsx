@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Star, Send, Shield, CheckCircle2, Heart, Zap, BookOpen, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Toast } from '../components/Toast';
+import { useToast } from '../contexts/ToastContext';
 import { useSurveyDetail, useSubmitSurveyResponse } from '../hooks/queries';
 import type { SurveyQuestion } from '../types';
 
@@ -249,9 +249,7 @@ export const TakeSurvey: React.FC = () => {
   const [submitted, setSubmitted] = useState(false);
   const [retaking, setRetaking] = useState(false);
 
-  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
-    show: false, message: '', type: 'success',
-  });
+  const { showToast } = useToast();
 
   const questions: SurveyQuestion[] = survey?.questions ?? [];
   const isBank = useMemo(() => isBankSurvey(questions), [questions]);
@@ -311,7 +309,7 @@ export const TakeSurvey: React.FC = () => {
       setRetaking(false);
       setSubmitted(true);
     } catch (err: any) {
-      setToast({ show: true, message: err.message || 'Failed to submit', type: 'error' });
+      showToast(err.message || 'Failed to submit', 'error');
     }
   };
 
@@ -541,13 +539,6 @@ export const TakeSurvey: React.FC = () => {
         </div>
       )}
 
-      {toast.show && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast((prev) => ({ ...prev, show: false }))}
-        />
-      )}
     </div>
   );
 };

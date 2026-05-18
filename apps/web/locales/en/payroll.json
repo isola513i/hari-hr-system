@@ -229,6 +229,8 @@
     "invalidAmount": "Please enter a valid amount.",
     "exportFailed": "Failed to export payroll report.",
     "payslipNotFound": "Payslip not found.",
-    "batchFailed": "Failed to generate batch payroll."
+    "batchFailed": "Failed to generate batch payroll.",
+    "payslipEmailed": "Payslip emailed to employee successfully",
+    "payslipEmailFailed": "Failed to email payslip"
   }
 }

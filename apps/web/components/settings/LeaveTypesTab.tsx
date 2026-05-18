@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, Check } from 'lucide-react';
 import { useLeaveTypeConfig, useUpdateLeaveTypeConfig } from '../../hooks/queries';
 import { COLOR_PALETTE, AVAILABLE_COLORS } from '../../lib/leaveTypeConfig';
 import { Modal } from '../Modal';
+import { useToast } from '../../contexts/ToastContext';
 import type { LeaveQuotaConfig } from '../../types';
 
 interface FormState {
@@ -14,8 +15,9 @@ interface FormState {
 
 const emptyForm: FormState = { type: '', total: '', color: 'blue' };
 
-export const LeaveTypesTab: React.FC<{ showToast: (msg: string, type: 'success' | 'error') => void }> = ({ showToast }) => {
+export const LeaveTypesTab: React.FC = () => {
   const { t } = useTranslation(['settings', 'common']);
+  const { showToast } = useToast();
   const { data: configs = [], isPending } = useLeaveTypeConfig();
   const updateMutation = useUpdateLeaveTypeConfig();
 

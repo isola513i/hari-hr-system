@@ -18,6 +18,9 @@
     "pendingLeaveRequests": "Pending Leave Requests",
     "pending": "{{count}} pending",
     "allCaughtUp": "All caught up! No pending requests.",
+    "viewLeaveHistory": "View Leave History",
+    "createAnnouncement": "Create Announcement",
+    "startOnboarding": "Start Onboarding",
     "recentActivity": "Recent Activity",
     "noRecentActivity": "No recent activity",
     "notes": "Notes",
@@ -27,7 +30,13 @@
     "recent": "Recent",
     "unpinNote": "Unpin note",
     "pinNote": "Pin note",
-    "deleteNote": "Delete note"
+    "deleteNote": "Delete note",
+    "editNote": "Edit note",
+    "employeeAdded": "Successfully added {{name}} to the system!",
+    "employeeAddFailed": "Failed to add employee. Please try again.",
+    "emailExists": "This email ({{email}}) is already registered. Please use a different email.",
+    "requiredFields": "Name and Email are required fields.",
+    "connectionError": "Unable to add employee. Please check your connection and try again."
   },
   "employee": {
     "greeting": "Good Morning, {{name}}",
@@ -66,7 +75,12 @@
     "notePinFailed": "Failed to pin note",
     "checkedIn": "Checked in successfully!",
     "checkedOut": "Checked out successfully!",
-    "alreadyCheckedIn": "Already clocked in"
+    "alreadyCheckedIn": "Already clocked in",
+    "gpsNotSupported": "GPS is not supported on this device",
+    "locationError": "Could not get your location. Please try again.",
+    "noOTRequests": "No OT requests yet",
+    "submitFirstOT": "Submit your first OT request",
+    "gettingGPS": "Getting GPS..."
   },
   "stats": {
     "activeEmployees": "Active Employees",

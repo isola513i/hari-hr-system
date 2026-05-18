@@ -12,8 +12,10 @@ import {
   Megaphone,
   MessageSquare,
   Pin,
+  Pencil,
   Send,
   Trash2,
+  X,
   Calendar as CalendarIcon,
   Cake,
   PartyPopper,
@@ -25,12 +27,12 @@ import {
   CheckCircle2,
   XCircle,
 } from 'lucide-react';
-import { Toast } from '../components/Toast';
 import { LeaveGanttCalendar } from '../components/LeaveGanttCalendar';
 import { Avatar } from '../components/Avatar';
 import { StatusIndicator } from '../components/StatusIndicator';
 import { useUserStatus } from '../contexts/UserStatusContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { useLeave } from '../contexts/LeaveContext';
 import { Employee, UpcomingEvent } from '../types';
 import {
@@ -41,6 +43,7 @@ import {
   useMyTeamHierarchy,
   useNotes,
   useAddNote,
+  useUpdateNote,
   useDeleteNote,
   useToggleNotePin,
   useClockIn,
@@ -59,6 +62,7 @@ import { translateLeaveType } from '../lib/leaveTypeConfig';
 export const EmployeeDashboard: React.FC = () => {
   const { t, i18n } = useTranslation(['dashboard', 'common']);
   const { user } = useAuth();
+  const { showToast } = useToast();
   const { getStatus, getStatusMessage } = useUserStatus();
   const { requests } = useLeave();
   const navigate = useNavigate();
@@ -118,6 +122,7 @@ export const EmployeeDashboard: React.FC = () => {
   const { data: gpsConfig } = useAttendanceGPSConfig();
   const { data: myOTRequests = [] } = useMyOTRequests();
   const addNoteMutation = useAddNote();
+  const updateNoteMutation = useUpdateNote();
   const deleteNoteMutation = useDeleteNote();
   const togglePinMutation = useToggleNotePin();
 
@@ -129,19 +134,12 @@ export const EmployeeDashboard: React.FC = () => {
   const [quickNote, setQuickNote] = useState('');
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [deleteConfirmNoteId, setDeleteConfirmNoteId] = useState<string | null>(null);
   const [isClockingIn, setIsClockingIn] = useState(false);
   const [locationModal, setLocationModal] = useState<{ show: boolean; mode: 'request' | 'denied' }>({ show: false, mode: 'request' });
   const [showWFHModal, setShowWFHModal] = useState(false);
   const [showOTModal, setShowOTModal] = useState(false);
-  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
-    show: false,
-    message: '',
-    type: 'success'
-  });
-
-  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
-    setToast({ show: true, message, type });
-  };
 
   // ----- COMPUTED MY TEAM -----
   const myTeam = useMemo<Employee[]>(() => {
@@ -219,7 +217,7 @@ export const EmployeeDashboard: React.FC = () => {
           navigator.geolocation.getCurrentPosition(
             doClockIn,
             () => {
-              showToast('Could not get your location. Please try again.', 'error');
+              showToast(t('dashboard:employee.locationError'), 'error');
               setIsClockingIn(false);
             },
             { timeout: 8000, maximumAge: 60000, enableHighAccuracy: false }
@@ -269,7 +267,7 @@ export const EmployeeDashboard: React.FC = () => {
     }
 
     if (!navigator.geolocation) {
-      showToast('GPS is not supported on this device', 'error');
+      showToast(t('dashboard:employee.gpsNotSupported'), 'error');
       return;
     }
 
@@ -298,7 +296,12 @@ export const EmployeeDashboard: React.FC = () => {
     if (!quickNote.trim()) return;
     setIsSavingNote(true);
     try {
-      await addNoteMutation.mutateAsync({ content: quickNote.trim() });
+      if (editingNoteId) {
+        await updateNoteMutation.mutateAsync({ id: editingNoteId, content: quickNote.trim() });
+        setEditingNoteId(null);
+      } else {
+        await addNoteMutation.mutateAsync({ content: quickNote.trim() });
+      }
       showToast(t('dashboard:employee.noteSaved'), "success");
       setQuickNote('');
     } catch (error) {
@@ -311,6 +314,7 @@ export const EmployeeDashboard: React.FC = () => {
 
   const handleDeleteNote = async (noteId: string) => {
     setDeletingNoteId(noteId);
+    setDeleteConfirmNoteId(null);
     try {
       await deleteNoteMutation.mutateAsync(noteId);
       showToast(t('dashboard:employee.noteDeleted'), "success");
@@ -333,15 +337,6 @@ export const EmployeeDashboard: React.FC = () => {
 
   return (
     <>
-      {/* Toast Notification */}
-      {toast.show && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast({ ...toast, show: false })}
-        />
-      )}
-
       {showWFHModal && (
         <WFHRequestModal
           onClose={() => setShowWFHModal(false)}
@@ -374,10 +369,10 @@ export const EmployeeDashboard: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">{t('dashboard:employee.greeting', { name: user?.name?.split(' ')[0] })}</h1>
           <p className="text-sm sm:text-base text-text-muted-light dark:text-text-muted-dark mt-1">{t('dashboard:employee.pendingRequests', { count: myRequests.filter(r => r.status === 'Pending').length })}</p>
         </div>
-        <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto">
+        <div className="flex flex-col items-end gap-2 w-full sm:w-auto">
           {/* Attendance Status Badge */}
           {attendanceStatus?.clockIn && (
-            <div className="flex items-center gap-2 flex-wrap justify-end">
+            <div className="flex items-center gap-2 flex-wrap">
               <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
                 attendanceStatus.clockOut
                   ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
@@ -436,7 +431,7 @@ export const EmployeeDashboard: React.FC = () => {
             >
               <Clock size={18} />
               {isClockingIn
-                ? (attendanceStatus?.clockIn ? t('common:buttons.loading') : 'Getting GPS...')
+                ? (attendanceStatus?.clockIn ? t('common:buttons.loading') : t('dashboard:employee.gettingGPS'))
                 : attendanceStatus?.clockIn && !attendanceStatus?.clockOut
                 ? t('dashboard:employee.checkOut')
                 : attendanceStatus?.clockOut
@@ -768,14 +763,21 @@ export const EmployeeDashboard: React.FC = () => {
                 className="w-full h-20 px-3 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-sm text-text-light dark:text-text-dark placeholder:text-text-muted-light transition-colors"
               />
               <div className="flex items-center justify-between mt-1.5">
-                <span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">{t('dashboard:admin.chars', { count: quickNote.length })}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">{t('dashboard:admin.chars', { count: quickNote.length })}</span>
+                  {editingNoteId && (
+                    <button onClick={() => { setEditingNoteId(null); setQuickNote(''); }} className="text-[10px] text-text-muted-light hover:text-text-light dark:hover:text-text-dark transition-colors">
+                      {t('common:buttons.cancel')}
+                    </button>
+                  )}
+                </div>
                 <button
                   onClick={handleSaveNote}
                   disabled={isSavingNote || !quickNote.trim()}
                   className={`flex items-center gap-1.5 text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-hover transition-colors font-medium ${isSavingNote || !quickNote.trim() ? 'opacity-40 cursor-not-allowed' : 'shadow-sm'}`}
                 >
                   <Send size={12} />
-                  {isSavingNote ? t('common:buttons.saving') : t('dashboard:employee.saveNote')}
+                  {isSavingNote ? t('common:buttons.saving') : editingNoteId ? t('common:buttons.update') : t('dashboard:employee.saveNote')}
                 </button>
               </div>
             </div>
@@ -788,12 +790,11 @@ export const EmployeeDashboard: React.FC = () => {
                   {notesData.slice(0, 5).map(note => (
                     <div
                       key={note.id}
-                      className={`group flex items-start gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                      className={`group flex items-start gap-2 p-2 rounded-lg transition-colors ${
                         note.pinned
                           ? 'bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30'
                           : 'hover:bg-background-light dark:hover:bg-background-dark'
                       }`}
-                      onClick={() => setQuickNote(note.content)}
                     >
                       <div className="flex-shrink-0 mt-0.5">
                         {note.pinned ? (
@@ -803,7 +804,7 @@ export const EmployeeDashboard: React.FC = () => {
                         )}
                       </div>
                       <div className="flex-grow min-w-0">
-                        <p className="text-xs text-text-light dark:text-text-dark truncate group-hover:text-primary transition-colors">
+                        <p className="text-xs text-text-light dark:text-text-dark truncate">
                           {note.content.substring(0, 60)}{note.content.length > 60 ? '...' : ''}
                         </p>
                         {note.createdAt && (
@@ -812,27 +813,52 @@ export const EmployeeDashboard: React.FC = () => {
                           </p>
                         )}
                       </div>
-                      <div className="flex-shrink-0 flex items-center gap-0.5">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleTogglePin(note.id); }}
-                          className={`p-1 rounded transition-all ${
-                            note.pinned
-                              ? 'text-amber-500 opacity-100'
-                              : 'text-text-muted-light hover:text-amber-500 opacity-0 group-hover:opacity-100'
-                          }`}
-                          title={note.pinned ? t('dashboard:admin.unpinNote') : t('dashboard:admin.pinNote')}
-                        >
-                          <Pin size={12} className={note.pinned ? 'fill-amber-500' : ''} />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDeleteNote(note.id); }}
-                          disabled={deletingNoteId === note.id}
-                          className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-1 text-text-muted-light hover:text-red-500 transition-all rounded"
-                          title={t('dashboard:admin.deleteNote')}
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
+                      {deleteConfirmNoteId === note.id ? (
+                        <div className="flex-shrink-0 flex items-center gap-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteNote(note.id); }}
+                            disabled={deletingNoteId === note.id}
+                            className="text-[10px] text-red-500 hover:text-red-600 font-medium transition-colors"
+                          >
+                            {t('common:buttons.confirm')}
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDeleteConfirmNoteId(null); }}
+                            className="p-0.5 text-text-muted-light hover:text-text-light dark:hover:text-text-dark transition-colors"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex-shrink-0 flex items-center gap-0.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleTogglePin(note.id); }}
+                            className={`p-1 rounded transition-all ${
+                              note.pinned
+                                ? 'text-amber-500 opacity-100'
+                                : 'text-text-muted-light hover:text-amber-500 opacity-0 group-hover:opacity-100'
+                            }`}
+                            title={note.pinned ? t('dashboard:admin.unpinNote') : t('dashboard:admin.pinNote')}
+                          >
+                            <Pin size={12} className={note.pinned ? 'fill-amber-500' : ''} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setEditingNoteId(note.id); setQuickNote(note.content); }}
+                            className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-1 text-text-muted-light hover:text-primary transition-all rounded"
+                            title={t('dashboard:admin.editNote')}
+                          >
+                            <Pencil size={12} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDeleteConfirmNoteId(note.id); }}
+                            disabled={deletingNoteId === note.id}
+                            className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-1 text-text-muted-light hover:text-red-500 transition-all rounded"
+                            title={t('dashboard:admin.deleteNote')}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -869,8 +895,8 @@ export const EmployeeDashboard: React.FC = () => {
           {myOTRequests.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-6 text-text-muted-light dark:text-text-muted-dark">
               <Timer size={28} className="mb-2 opacity-20" />
-              <p className="text-sm">No OT requests yet</p>
-              <button onClick={() => setShowOTModal(true)} className="mt-2 text-xs text-primary hover:underline">Submit your first OT request</button>
+              <p className="text-sm">{t('dashboard:employee.noOTRequests')}</p>
+              <button onClick={() => setShowOTModal(true)} className="mt-2 text-xs text-primary hover:underline font-medium">{t('dashboard:employee.submitFirstOT')}</button>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

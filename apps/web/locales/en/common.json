@@ -103,7 +103,8 @@
     "decline": "Decline",
     "saving": "Saving...",
     "submitting": "Submitting...",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "update": "Update"
   },
   "status": {
     "pending": "Pending",

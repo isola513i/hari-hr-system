@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { getAuthToken, BASE_URL } from '../lib/api';
 import {
   useMyPayslips,
@@ -22,9 +23,7 @@ export function usePayrollPage() {
   const { t } = useTranslation(['payroll', 'common']);
   const { isAdminView } = useAuth();
 
-  // Toast
-  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' }>({ show: false, message: '', type: 'success' });
-  const showToast = (message: string, type: 'success' | 'error' | 'warning' = 'success') => setToast({ show: true, message, type });
+  const { showToast } = useToast();
 
   // Employee payslips
   const { data: myPayslips = [], isLoading: payslipsLoading } = useMyPayslips();
@@ -189,9 +188,9 @@ export function usePayrollPage() {
   const handleEmailPayslip = async (id: string) => {
     try {
       await emailPayslipMutation.mutateAsync(id);
-      showToast('Payslip emailed to employee successfully');
+      showToast(t('errors.payslipEmailed'));
     } catch {
-      showToast('Failed to email payslip', 'error');
+      showToast(t('errors.payslipEmailFailed'), 'error');
     }
   };
 
@@ -261,9 +260,6 @@ export function usePayrollPage() {
   return {
     t,
     isAdminView,
-    toast,
-    setToast,
-    showToast,
     summary,
     showCreate,
     setShowCreate,

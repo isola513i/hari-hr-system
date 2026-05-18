@@ -17,6 +17,7 @@ import {
   DollarSign,
   MessageSquare,
   Clock,
+  ClipboardCheck,
   GraduationCap,
   Star,
   Package,
@@ -72,7 +73,7 @@ export const Sidebar: React.FC = () => {
       key: 'time',
       label: t('nav.timeAttendance', 'Time & Attendance'),
       items: [
-        { icon: <Clock size={20} />, label: t('nav.attendance'), path: '/admin-attendance', allowed: isAdminView && (isHrAdmin || isManager) },
+        { icon: <ClipboardCheck size={20} />, label: t('nav.attendance'), path: '/admin-attendance', allowed: isAdminView && (isHrAdmin || isManager) },
         { icon: <Inbox size={20} />, label: t('nav.requests', 'Requests'), path: '/requests', allowed: isAdminView && (isHrAdmin || isManager), badge: hasPendingRequests },
         { icon: <Calendar size={20} />, label: t('nav.holidays'), path: '/holidays', allowed: isAdminView && isHrAdmin },
         { icon: <CalendarClock size={20} />, label: t('nav.shifts', 'Shifts'), path: '/shift-management', allowed: isAdminView && (isHrAdmin || isManager) },

@@ -4,7 +4,6 @@ import {
   DollarSign, Clock, FileText, Check, X, Plane, Utensils, Monitor, Package, GraduationCap,
   Receipt, Trash2, CheckCircle2, Download,
 } from 'lucide-react';
-import { Toast } from '../Toast';
 import { Modal } from '../Modal';
 import { Avatar } from '../Avatar';
 import { Dropdown } from '../Dropdown';
@@ -41,8 +40,6 @@ export const ExpenseRequestsTab: React.FC = () => {
     setRejectReason,
     deleteConfirmId,
     setDeleteConfirmId,
-    toast,
-    setToast,
     statusFilterOptions,
     handleApprove,
     handleReject,
@@ -303,7 +300,6 @@ export const ExpenseRequestsTab: React.FC = () => {
         </div>
       </Modal>
 
-      {toast.show && <Toast message={toast.message} type={toast.type} onClose={() => setToast(p => ({ ...p, show: false }))} />}
     </div>
   );
 };

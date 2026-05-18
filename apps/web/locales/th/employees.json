@@ -340,7 +340,8 @@
     "quotaUpdated": "อัปเดตโควต้าลาสำเร็จ!",
     "quotaFailed": "ไม่สามารถอัปเดตโควต้าลาได้",
     "quotaResetSuccess": "รีเซ็ตโควต้าเป็นค่าเริ่มต้นแล้ว",
-    "quotaResetFailed": "ไม่สามารถรีเซ็ตโควต้าได้"
+    "quotaResetFailed": "ไม่สามารถรีเซ็ตโควต้าได้",
+    "trainingStatusUpdated": "อัปเดตสถานะการอบรมเป็น {{status}} แล้ว"
   },
   "status": {
     "allStatuses": "ทุกสถานะ",

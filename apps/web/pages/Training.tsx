@@ -7,7 +7,7 @@ import {
 import { Modal } from '../components/Modal';
 import { Dropdown } from '../components/Dropdown';
 import { DatePicker } from '../components/DatePicker';
-import { Toast } from '../components/Toast';
+import { useToast } from '../contexts/ToastContext';
 import {
   useTrainingModules,
   useTrainingAnalytics,
@@ -32,7 +32,7 @@ export const Training: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isBulkAssignOpen, setIsBulkAssignOpen] = useState(false);
   const [editingModule, setEditingModule] = useState<TrainingModule | null>(null);
-  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'info' }>({ show: false, message: '', type: 'success' });
+  const { showToast } = useToast();
 
   // Form state
   const [formTitle, setFormTitle] = useState('');
@@ -44,10 +44,6 @@ export const Training: React.FC = () => {
   const [bulkModuleId, setBulkModuleId] = useState('');
   const [bulkDueDate, setBulkDueDate] = useState('');
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
-
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
-    setToast({ show: true, message, type });
-  };
 
   const openCreateForm = () => {
     setEditingModule(null);
@@ -403,9 +399,6 @@ export const Training: React.FC = () => {
         </div>
       </Modal>
 
-      {toast.show && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(prev => ({ ...prev, show: false }))} />
-      )}
     </div>
   );
 };

@@ -465,9 +465,12 @@ export const LeaveGanttCalendar: React.FC<LeaveCalendarProps> = ({
       {/* ================================================================ */}
       <div className="md:hidden">
         {/* Horizontal Date Strip */}
+        <div className="relative -mx-4">
+          <div className="pointer-events-none absolute left-0 top-0 bottom-3 w-8 z-10 bg-gradient-to-r from-card-light dark:from-card-dark to-transparent" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-3 w-8 z-10 bg-gradient-to-l from-card-light dark:from-card-dark to-transparent" />
         <div
           ref={dateStripRef}
-          className="flex gap-1.5 overflow-x-auto pb-3 -mx-4 px-4 scrollbar-hide"
+          className="flex gap-1.5 overflow-x-auto pb-3 px-4 scrollbar-hide"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {mobileDates.map((date) => {
@@ -502,6 +505,7 @@ export const LeaveGanttCalendar: React.FC<LeaveCalendarProps> = ({
               </button>
             );
           })}
+        </div>
         </div>
 
         {/* Employee List */}

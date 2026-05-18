@@ -114,5 +114,14 @@
     "rangeLast30": "30 วันที่ผ่านมา",
     "rangeLast90": "90 วันที่ผ่านมา",
     "rangeThisYear": "ปีนี้"
+  },
+  "toast": {
+    "itemUpdated": "อัปเดตรายการแล้ว",
+    "itemCreated": "สร้างรายการแล้ว",
+    "saveFailed": "ไม่สามารถบันทึกรายการได้",
+    "itemDeleted": "ลบรายการแล้ว",
+    "deleteFailed": "ไม่สามารถลบรายการได้",
+    "statusUpdated": "อัปเดตสถานะแล้ว",
+    "statusUpdateFailed": "ไม่สามารถอัปเดตสถานะได้"
   }
 }

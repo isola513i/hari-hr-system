@@ -340,7 +340,8 @@
     "quotaUpdated": "Leave quotas updated successfully!",
     "quotaFailed": "Failed to update leave quotas",
     "quotaResetSuccess": "quota reset to default",
-    "quotaResetFailed": "Failed to reset quota"
+    "quotaResetFailed": "Failed to reset quota",
+    "trainingStatusUpdated": "Training marked as {{status}}"
   },
   "status": {
     "allStatuses": "All Statuses",

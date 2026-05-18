@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import {
   useExpenseClaims, useExpenseSummary, useAdminExpenseSummary,
   useCreateExpenseClaim, useUpdateExpenseClaimStatus, useCancelExpenseClaim, useDeleteExpenseClaim,
@@ -32,7 +33,7 @@ export function useExpensePage() {
   const [rejectReason, setRejectReason] = useState('');
   const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({ show: false, message: '', type: 'success' });
+  const { showToast } = useToast();
 
   // Form state
   const [formTitle, setFormTitle] = useState('');
@@ -44,8 +45,6 @@ export function useExpensePage() {
 
   // Inline form validation errors
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
-
-  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => setToast({ show: true, message, type });
 
   const statusFilterOptions: DropdownOption[] = [
     { value: 'All', label: t('expenses:filterAll') },
@@ -90,22 +89,22 @@ export function useExpensePage() {
   };
 
   const handleApprove = async (id: string) => {
-    try { await statusMutation.mutateAsync({ id, status: 'Approved' }); showToast(t('expenses:toast.approveSuccess')); } catch { showToast('Failed', 'error'); }
+    try { await statusMutation.mutateAsync({ id, status: 'Approved' }); showToast(t('expenses:toast.approveSuccess')); } catch { showToast(t('expenses:toast.actionFailed'), 'error'); }
   };
   const handleReject = async () => {
     if (!rejectModalId) return;
-    try { await statusMutation.mutateAsync({ id: rejectModalId, status: 'Rejected', rejectionReason: rejectReason }); showToast(t('expenses:toast.rejectSuccess')); setRejectModalId(null); setRejectReason(''); } catch { showToast('Failed', 'error'); }
+    try { await statusMutation.mutateAsync({ id: rejectModalId, status: 'Rejected', rejectionReason: rejectReason }); showToast(t('expenses:toast.rejectSuccess')); setRejectModalId(null); setRejectReason(''); } catch { showToast(t('expenses:toast.actionFailed'), 'error'); }
   };
   const handleReimburse = async (id: string) => {
-    try { await statusMutation.mutateAsync({ id, status: 'Reimbursed' }); showToast(t('expenses:toast.reimbursedSuccess')); } catch { showToast('Failed', 'error'); }
+    try { await statusMutation.mutateAsync({ id, status: 'Reimbursed' }); showToast(t('expenses:toast.reimbursedSuccess')); } catch { showToast(t('expenses:toast.actionFailed'), 'error'); }
   };
   const handleCancel = async () => {
     if (!cancelConfirmId) return;
-    try { await cancelMutation.mutateAsync(cancelConfirmId); showToast(t('expenses:toast.cancelSuccess')); setCancelConfirmId(null); } catch { showToast('Failed', 'error'); }
+    try { await cancelMutation.mutateAsync(cancelConfirmId); showToast(t('expenses:toast.cancelSuccess')); setCancelConfirmId(null); } catch { showToast(t('expenses:toast.actionFailed'), 'error'); }
   };
   const handleDelete = async () => {
     if (!deleteConfirmId) return;
-    try { await deleteMutation.mutateAsync(deleteConfirmId); showToast(t('expenses:toast.deleteSuccess')); setDeleteConfirmId(null); } catch { showToast('Failed', 'error'); }
+    try { await deleteMutation.mutateAsync(deleteConfirmId); showToast(t('expenses:toast.deleteSuccess')); setDeleteConfirmId(null); } catch { showToast(t('expenses:toast.actionFailed'), 'error'); }
   };
 
   const formatAmount = (n: number) => `฿${n.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
@@ -130,8 +129,6 @@ export function useExpensePage() {
     setCancelConfirmId,
     deleteConfirmId,
     setDeleteConfirmId,
-    toast,
-    setToast,
     formTitle,
     setFormTitle,
     formCategory,
@@ -158,6 +155,5 @@ export function useExpensePage() {
     handleCancel,
     handleDelete,
     formatAmount,
-    showToast,
   };
 }

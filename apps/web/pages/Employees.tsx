@@ -3,8 +3,8 @@ import { MoreHorizontal, Mail, MapPin, Eye, User, Briefcase, Users, Calendar, Ch
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { useEmployeeList, useAddEmployee, useDeleteEmployee } from '../hooks/queries';
-import { Toast } from '../components/Toast';
 import { Modal } from '../components/Modal';
 import { Dropdown, DropdownOption } from '../components/Dropdown';
 import { Avatar } from '../components/Avatar';
@@ -18,16 +18,9 @@ import { BASE_URL, getAuthToken } from '../lib/api';
 export const Employees: React.FC = () => {
   const { t } = useTranslation(['employees', 'common']);
   const { user, isAdminView } = useAuth();
+  const { showToast } = useToast();
   const { getStatus, getStatusMessage } = useUserStatus();
   const isAdmin = isAdminView;
-
-  // Toast state
-  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' | 'info' }>({
-    show: false, message: '', type: 'success'
-  });
-  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
-    setToast({ show: true, message, type });
-  };
 
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState<string>('All');
@@ -692,14 +685,6 @@ export const Employees: React.FC = () => {
         </div>
       </Modal>
 
-      {/* Toast Notification */}
-      {toast.show && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(prev => ({ ...prev, show: false }))}
-        />
-      )}
     </div>
   );
 };

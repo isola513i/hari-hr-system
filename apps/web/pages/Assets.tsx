@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Package, Plus, X, Pencil, UserCheck, UserX, Trash2, Search, Monitor, Smartphone, Car, Wrench } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAssets, useCreateAsset, useUpdateAsset, useAssignAsset, useUnassignAsset, useDeleteAsset, useAllEmployees } from '../hooks/queries';
-import { Toast } from '../components/Toast';
+import { useToast } from '../contexts/ToastContext';
 import { Dropdown } from '../components/Dropdown';
 import type { CompanyAsset, AssetStatus } from '../types';
 
@@ -189,9 +189,7 @@ export function Assets() {
   const [showForm, setShowForm] = useState(false);
   const [editAsset, setEditAsset] = useState<CompanyAsset | null>(null);
   const [assignAsset, setAssignAsset] = useState<CompanyAsset | null>(null);
-  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => setToast({ show: true, message, type });
+  const { showToast } = useToast();
 
   const STATUS_FILTER_OPTIONS = [
     { value: '', label: t('statusFilter.allStatuses') },
@@ -395,9 +393,6 @@ export function Assets() {
       )}
       {assignAsset && (
         <AssignModal asset={assignAsset} onClose={() => setAssignAsset(null)} onAssign={handleAssign} />
-      )}
-      {toast.show && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(p => ({ ...p, show: false }))} />
       )}
     </div>
   );

@@ -17,7 +17,7 @@ import {
   AlignLeft,
 } from 'lucide-react';
 import { Announcement } from '../types';
-import { Toast } from '../components/Toast';
+import { useToast } from '../contexts/ToastContext';
 import { Dropdown } from '../components/Dropdown';
 import {
   useAnnouncements,
@@ -50,16 +50,7 @@ export const Announcements: React.FC = () => {
   const [formData, setFormData] = useState<Partial<Announcement>>(EMPTY_ANNOUNCEMENT);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Toast
-  const [toast, setToast] = useState<{
-    show: boolean;
-    message: string;
-    type: 'success' | 'error' | 'warning' | 'info';
-  }>({ show: false, message: '', type: 'success' });
-
-  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
-    setToast({ show: true, message, type });
-  };
+  const { showToast } = useToast();
 
   // ---------------------------------------------------------------------------
   // Filtering & search
@@ -187,15 +178,6 @@ export const Announcements: React.FC = () => {
   // ---------------------------------------------------------------------------
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Toast */}
-      {toast.show && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast({ ...toast, show: false })}
-        />
-      )}
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl font-bold text-text-light dark:text-text-dark tracking-tight">
