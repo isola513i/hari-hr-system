@@ -150,7 +150,9 @@
     "justNow": "เมื่อสักครู่",
     "minsAgo": "{{count}} นาทีที่แล้ว",
     "hoursAgo": "{{count}} ชั่วโมงที่แล้ว",
-    "daysAgo": "{{count}} วันที่แล้ว"
+    "hoursAgo_one": "{{count}} ชั่วโมงที่แล้ว",
+    "daysAgo": "{{count}} วันที่แล้ว",
+    "daysAgo_one": "{{count}} วันที่แล้ว"
   },
   "months": {
     "january": "มกราคม",

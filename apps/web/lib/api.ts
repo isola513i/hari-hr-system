@@ -1,5 +1,4 @@
 import { LoginCredentials, AuthResponse } from '../types';
-import { retryFetch } from '../utils/retry';
 import errorLogging from '../services/errorLogging';
 
 // Use environment variable for API URL, fallback to /api for local development with proxy
@@ -160,26 +159,13 @@ const handleResponse = async (response: Response, retryFn?: () => Promise<Respon
 export const api = {
     get: async <T>(endpoint: string): Promise<T> => {
         try {
-            const response = await retryFetch(
-                `${BASE_URL}${endpoint}`,
-                {
-                    method: 'GET',
-                    headers: getHeaders(),
-                    cache: 'no-store',
-                },
-                {
-                    maxRetries: 3,
-                    onRetry: (attempt, error) => {
-                        console.log(`Retrying request to ${endpoint} (attempt ${attempt}):`, error.message);
-                        errorLogging.logWarning(`API retry attempt ${attempt} for ${endpoint}`, {
-                            endpoint,
-                            error: error.message,
-                        });
-                    },
-                }
-            );
+            const response = await fetch(`${BASE_URL}${endpoint}`, {
+                method: 'GET',
+                headers: getHeaders(),
+                cache: 'no-store',
+            });
             return handleResponse(response, () =>
-                retryFetch(`${BASE_URL}${endpoint}`, { method: 'GET', headers: getHeaders(), cache: 'no-store' }, { maxRetries: 0 })
+                fetch(`${BASE_URL}${endpoint}`, { method: 'GET', headers: getHeaders(), cache: 'no-store' })
             );
         } catch (error: any) {
             errorLogging.logError(error, { endpoint, method: 'GET' });

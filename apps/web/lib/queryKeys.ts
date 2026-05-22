@@ -145,6 +145,12 @@ export const queryKeys = {
     list: () => ['expenseClaims', 'list'] as const,
     summary: (id: string) => ['expenseClaims', 'summary', id] as const,
     adminSummary: () => ['expenseClaims', 'adminSummary'] as const,
+    managerQueue: () => ['expenseClaims', 'managerQueue'] as const,
+  },
+  wfhRequests: {
+    all: ['wfhRequests'] as const,
+    my: () => ['wfhRequests', 'my'] as const,
+    admin: (filters?: Record<string, unknown>) => ['wfhRequests', 'admin', filters] as const,
   },
   userStatuses: {
     all: ['userStatuses'] as const,

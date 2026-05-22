@@ -69,6 +69,8 @@
     "confirmRequired": "Please confirm your new password",
     "mismatch": "Passwords do not match",
     "passwordsMatch": "Passwords match",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "strength": {
       "weak": "Weak",
       "fair": "Fair",

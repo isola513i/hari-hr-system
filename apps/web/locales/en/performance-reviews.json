@@ -2,6 +2,7 @@
   "page": {
     "title": "Performance Reviews",
     "subtitle": "Manage performance evaluations",
+    "reviewsNeedAttention": "{{count}} reviews need attention",
     "reviewsNeedAttention_one": "{{count}} review needs attention",
     "reviewsNeedAttention_other": "{{count}} reviews need attention"
   },

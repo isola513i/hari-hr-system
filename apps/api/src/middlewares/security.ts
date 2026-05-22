@@ -242,9 +242,17 @@ export const validateResetPassword = [
 // Sanitize HTML to prevent XSS
 export const sanitizeHtml = (text: string): string => {
   return text
+    // Strip HTML tags entirely
+    .replace(/<[^>]*>/g, '')
+    // Encode remaining HTML special characters
+    .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;');
+    // Block javascript: and data: URI schemes that could execute code
+    .replace(/javascript\s*:/gi, '')
+    .replace(/data\s*:/gi, '')
+    // Strip JS event handler attributes (onerror=, onclick=, etc.)
+    .replace(/\bon\w+\s*=/gi, '');
 };

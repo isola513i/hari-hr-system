@@ -7,7 +7,7 @@ import { cacheMiddleware, invalidateCache } from '../middlewares/cache';
 import { avatarUpload, csvUpload, generateStorageKey, getFileBuffer } from '../middlewares/upload';
 import { storageService } from '../services/StorageService';
 import { getStatusMap } from '../socket';
-import { query } from '../db';
+import pool, { query } from '../db';
 import { safeErrorMessage } from '../utils/errorResponse';
 import { generateEmployeeReportPdf } from '../services/EmployeeReportPdfService';
 import SystemConfigService from '../services/SystemConfigService';
@@ -95,6 +95,10 @@ router.post('/import-csv', requireAdmin, apiLimiter, csvUpload.single('file'), i
             return res.status(400).json({ error: 'CSV file is empty' });
         }
 
+        if (records.length > 1000) {
+            return res.status(400).json({ error: 'CSV file exceeds maximum of 1000 rows per import' });
+        }
+
         // Validate required columns
         const requiredColumns = ['name', 'email', 'role', 'department'];
         const headers = Object.keys(records[0]);
@@ -103,44 +107,67 @@ router.post('/import-csv', requireAdmin, apiLimiter, csvUpload.single('file'), i
             return res.status(400).json({ error: `Missing required columns: ${missingColumns.join(', ')}` });
         }
 
-        const results = { created: 0, skipped: 0, errors: [] as string[] };
-        const EmployeeService = (await import('../services/EmployeeService')).default;
-
+        // Pre-validate all rows before touching the database
+        const validationErrors: string[] = [];
         for (let i = 0; i < records.length; i++) {
             const row = records[i];
-            const rowNum = i + 2; // +2 because row 1 is header, data starts at row 2
-
-            try {
-                if (!row.name?.trim() || !row.email?.trim()) {
-                    results.errors.push(`Row ${rowNum}: Missing name or email`);
-                    results.skipped++;
-                    continue;
-                }
-
-                await EmployeeService.createEmployee({
-                    name: row.name.trim(),
-                    email: row.email.trim(),
-                    role: row.role?.trim() || 'Employee',
-                    department: row.department?.trim() || 'General',
-                    joinDate: row.joinDate?.trim() || row.join_date?.trim() || new Date().toISOString().split('T')[0],
-                    salary: row.salary ? parseFloat(row.salary) : undefined,
-                });
-                results.created++;
-            } catch (error: any) {
-                const msg = error.message || 'Unknown error';
-                if (msg.includes('already exists')) {
-                    results.errors.push(`Row ${rowNum}: ${row.email} already exists`);
-                } else {
-                    results.errors.push(`Row ${rowNum}: ${msg}`);
-                }
-                results.skipped++;
+            const rowNum = i + 2;
+            if (!row.name?.trim() || !row.email?.trim()) {
+                validationErrors.push(`Row ${rowNum}: Missing name or email`);
             }
+        }
+        if (validationErrors.length > 0) {
+            return res.status(400).json({ error: 'Validation failed', errors: validationErrors });
+        }
+
+        // Import all rows in a single transaction — all-or-nothing
+        const client = await pool.connect();
+        let created = 0;
+        try {
+            await client.query('BEGIN');
+
+            const codeResult = await client.query(
+                `SELECT COALESCE(MAX(CAST(SUBSTRING(employee_code FROM 5) AS INTEGER)), 0) AS max_num FROM employees WHERE employee_code LIKE 'EMP-%'`
+            );
+            let nextNum = parseInt(codeResult.rows[0].max_num, 10) + 1;
+
+            for (const row of records) {
+                const name = row.name.trim();
+                const email = row.email.trim().toLowerCase();
+                const role = row.role?.trim() || 'Employee';
+                const department = row.department?.trim() || 'General';
+                const joinDate = row.joinDate?.trim() || row.join_date?.trim() || new Date().toISOString().split('T')[0];
+                const salary = row.salary ? parseFloat(row.salary) : null;
+                const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+                const employeeCode = `EMP-${String(nextNum).padStart(4, '0')}`;
+
+                await client.query(
+                    `INSERT INTO employees (name, email, role, department, join_date, avatar, status, employee_code, salary)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+                    [name, email, role, department, joinDate, avatar, 'Active', employeeCode, salary]
+                );
+                nextNum++;
+                created++;
+            }
+
+            await client.query('COMMIT');
+        } catch (dbError: any) {
+            await client.query('ROLLBACK');
+            const msg = dbError.message || 'Unknown error';
+            if (msg.includes('duplicate key') || msg.includes('unique constraint')) {
+                return res.status(409).json({ error: 'Import failed: one or more emails already exist. No records were imported.' });
+            }
+            throw dbError;
+        } finally {
+            client.release();
         }
 
         res.json({
             success: true,
-            message: `Import complete: ${results.created} created, ${results.skipped} skipped`,
-            ...results,
+            message: `Import complete: ${created} created`,
+            created,
+            skipped: 0,
+            errors: [],
         });
     } catch (error: any) {
         console.error('CSV import error:', error);
@@ -217,13 +244,30 @@ router.get('/:id/report', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Leave summary
-    const leaveResult = await query(
-      `SELECT leave_type, status, COUNT(*) AS cnt
-       FROM leave_requests WHERE employee_id = $1
-       GROUP BY leave_type, status`,
-      [req.params.id]
-    );
+    const [leaveResult, attResult, perfResult, trainResult, companyName] = await Promise.all([
+      query(
+        `SELECT leave_type, status, COUNT(*) AS cnt
+         FROM leave_requests WHERE employee_id = $1
+         GROUP BY leave_type, status`,
+        [req.params.id]
+      ),
+      query(
+        `SELECT status, COUNT(*) AS cnt FROM attendance_records
+         WHERE employee_id = $1 AND date >= CURRENT_DATE - INTERVAL '90 days'
+         GROUP BY status`,
+        [req.params.id]
+      ),
+      query(
+        `SELECT TO_CHAR(date, 'YYYY-MM-DD') AS date, reviewer, rating, notes FROM performance_reviews WHERE employee_id = $1 ORDER BY date DESC LIMIT 5`,
+        [req.params.id]
+      ),
+      query(
+        `SELECT title, status, TO_CHAR(completion_date, 'YYYY-MM-DD') AS completion_date, score FROM employee_training WHERE employee_id = $1 ORDER BY assigned_at DESC`,
+        [req.params.id]
+      ),
+      SystemConfigService.getConfigValue('system', 'app_name', 'HARI HR System'),
+    ]);
+
     const leaveSummary = {
       totalApproved: leaveResult.rows.filter((r: any) => r.status === 'Approved').reduce((s: number, r: any) => s + parseInt(r.cnt), 0),
       totalPending: leaveResult.rows.filter((r: any) => r.status === 'Pending').reduce((s: number, r: any) => s + parseInt(r.cnt), 0),
@@ -236,13 +280,6 @@ router.get('/:id/report', async (req: Request, res: Response) => {
       ) as Array<{ type: string; count: number }>,
     };
 
-    // Attendance summary (last 90 days)
-    const attResult = await query(
-      `SELECT status, COUNT(*) AS cnt FROM attendance_records
-       WHERE employee_id = $1 AND date >= CURRENT_DATE - INTERVAL '90 days'
-       GROUP BY status`,
-      [req.params.id]
-    );
     const attMap: Record<string, number> = {};
     attResult.rows.forEach((r: any) => { attMap[r.status] = parseInt(r.cnt); });
     const attendanceSummary = {
@@ -251,20 +288,6 @@ router.get('/:id/report', async (req: Request, res: Response) => {
       late: attMap['Late'] || 0,
       total: attResult.rows.reduce((s: number, r: any) => s + parseInt(r.cnt), 0),
     };
-
-    // Performance reviews
-    const perfResult = await query(
-      `SELECT TO_CHAR(date, 'YYYY-MM-DD') AS date, reviewer, rating, notes FROM performance_reviews WHERE employee_id = $1 ORDER BY date DESC LIMIT 5`,
-      [req.params.id]
-    );
-
-    // Training records
-    const trainResult = await query(
-      `SELECT title, status, TO_CHAR(completion_date, 'YYYY-MM-DD') AS completion_date, score FROM employee_training WHERE employee_id = $1 ORDER BY assigned_at DESC`,
-      [req.params.id]
-    );
-
-    const companyName = await SystemConfigService.getConfigValue('system', 'app_name', 'HARI HR System');
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="report-${emp.name?.replace(/\s+/g, '-')}.pdf"`);

@@ -2,7 +2,9 @@
   "page": {
     "title": "การประเมินผลการทำงาน",
     "subtitle": "จัดการการประเมินผลการทำงาน",
-    "reviewsNeedAttention": "{{count}} รายการต้องดำเนินการ"
+    "reviewsNeedAttention": "{{count}} รายการต้องดำเนินการ",
+    "reviewsNeedAttention_one": "{{count}} รายการต้องดำเนินการ",
+    "reviewsNeedAttention_other": "{{count}} รายการต้องดำเนินการ"
   },
   "status": {
     "draft": "ร่าง",

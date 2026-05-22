@@ -39,10 +39,16 @@ export const initializeSocket = (httpServer: HTTPServer): SocketIOServer => {
   io.on('connection', (socket: Socket) => {
     console.log(`Socket connected: ${socket.id}`);
 
-    // Client joins with their employeeId
-    socket.on('user-status:join', (employeeId: unknown) => {
+    // Client joins with their employeeId and a role-based room
+    socket.on('user-status:join', (employeeId: unknown, role?: unknown) => {
       if (!employeeId || typeof employeeId !== 'string') return;
       socketToEmployee.set(socket.id, employeeId);
+
+      // Join role-based room for targeted broadcasts
+      if (typeof role === 'string' && ['HR_ADMIN', 'MANAGER', 'FINANCE', 'EMPLOYEE'].includes(role)) {
+        socket.join(`room:${role.toLowerCase()}`);
+      }
+      socket.join(`employee:${employeeId}`);
 
       // If user had no status in memory, set to online
       if (!statusMap.has(employeeId)) {
@@ -59,9 +65,10 @@ export const initializeSocket = (httpServer: HTTPServer): SocketIOServer => {
         }
       }
 
-      // Broadcast this user's current status
+      // Broadcast this user's current status (HR admin and managers need to see all)
       const userStatus = statusMap.get(employeeId)!;
-      io!.emit('user-status:changed', { employeeId, ...userStatus });
+      io!.to('room:hr_admin').to('room:manager').emit('user-status:changed', { employeeId, ...userStatus });
+      socket.emit('user-status:changed', { employeeId, ...userStatus });
 
       // Send the full status map to the newly connected client
       const allStatuses: Record<string, UserStatus> = {};
@@ -87,8 +94,9 @@ export const initializeSocket = (httpServer: HTTPServer): SocketIOServer => {
       // Persist to DB
       persistStatus(employeeId, status, statusMessage);
 
-      // Broadcast to all clients
-      io!.emit('user-status:changed', { employeeId, status, statusMessage, updatedAt: now });
+      // Broadcast to HR admin and managers only (targeted instead of all clients)
+      io!.to('room:hr_admin').to('room:manager').emit('user-status:changed', { employeeId, status, statusMessage, updatedAt: now });
+      socket.emit('user-status:changed', { employeeId, status, statusMessage, updatedAt: now });
     });
 
     socket.on('disconnect', () => {
@@ -108,7 +116,7 @@ export const initializeSocket = (httpServer: HTTPServer): SocketIOServer => {
             updatedAt: now,
           });
           persistStatus(employeeId, 'offline', current?.statusMessage ?? '');
-          io!.emit('user-status:changed', {
+          io!.to('room:hr_admin').to('room:manager').emit('user-status:changed', {
             employeeId,
             status: 'offline',
             statusMessage: current?.statusMessage ?? '',
@@ -218,5 +226,47 @@ export const emitExpenseClaimDeleted = (id: string) => {
 export const emitAttendanceUpdated = (attendance: any) => {
   if (io) {
     io.emit('attendance:updated', attendance);
+  }
+};
+
+// Event emitters for employee profile changes
+export const emitEmployeeUpdated = (employee: any) => {
+  if (io) {
+    io.emit('employee:updated', employee);
+  }
+};
+
+// Event emitters for org chart changes
+export const emitOrgChartUpdated = () => {
+  if (io) {
+    io.emit('orgchart:updated');
+  }
+};
+
+// Event emitters for payroll processing
+export const emitPayrollProcessed = (payroll: any) => {
+  if (io) {
+    io.emit('payroll:processed', payroll);
+  }
+};
+
+// Event emitters for performance review assignments
+export const emitPerformanceReviewAssigned = (review: any) => {
+  if (io) {
+    io.emit('performance-review:assigned', review);
+  }
+};
+
+// Event emitters for training completion
+export const emitTrainingCompleted = (training: any) => {
+  if (io) {
+    io.emit('training:completed', training);
+  }
+};
+
+// Event emitters for compliance status changes
+export const emitComplianceStatusChanged = (item: any) => {
+  if (io) {
+    io.emit('compliance:status-changed', item);
   }
 };

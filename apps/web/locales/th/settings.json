@@ -69,6 +69,8 @@
     "confirmRequired": "กรุณายืนยันรหัสผ่านใหม่",
     "mismatch": "รหัสผ่านไม่ตรงกัน",
     "passwordsMatch": "รหัสผ่านตรงกัน",
+    "showPassword": "แสดงรหัสผ่าน",
+    "hidePassword": "ซ่อนรหัสผ่าน",
     "strength": {
       "weak": "อ่อน",
       "fair": "พอใช้",

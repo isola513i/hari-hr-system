@@ -18,21 +18,22 @@ import {
   X,
   MapPin,
 } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
-import { api, API_HOST, BASE_URL, getAuthToken } from '../lib/api';
-import { queryKeys } from '../lib/queryKeys';
 import { LeaveTypesTab } from '../components/settings/LeaveTypesTab';
-import { PHONE_COUNTRY_CODES, parsePhoneNumber } from '../lib/phoneUtils';
+import { PHONE_COUNTRY_CODES } from '../lib/phoneUtils';
 import { useAttendanceGPSConfig, useUpdateGPSConfig } from '../hooks/queries';
 import { usePushNotifications } from '../hooks/usePushNotifications';
+import { useProfileSettings } from '../hooks/useProfileSettings';
+import { usePasswordChange } from '../hooks/usePasswordChange';
+import { useAppearanceSettings } from '../hooks/useAppearanceSettings';
+import { useNotificationSettings } from '../hooks/useNotificationSettings';
 
 export const Settings: React.FC = () => {
   const { t, i18n } = useTranslation('settings');
-  const { user, updateUser, isAdminView } = useAuth();
-  const qc = useQueryClient();
+  const { isAdminView } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<
     'general' | 'notifications' | 'security' | 'appearance' | 'leaveTypes' | 'attendance'
@@ -44,61 +45,42 @@ export const Settings: React.FC = () => {
       setActiveTab('general');
     }
   }, [isAdminView, activeTab]);
-  const [emailNotifications, setEmailNotifications] = useState(
-    () => user?.emailNotifications ?? true
-  );
-  const [isSavingNotif, setIsSavingNotif] = useState(false);
+
   const { state: pushState, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications();
 
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
+  // Profile hook
+  const {
+    profile,
+    setProfile,
+    countryCode,
+    setCountryCode,
+    avatarPreview,
+    isSaving,
+    handleAvatarChange,
+    handleSaveProfile,
+  } = useProfileSettings();
 
-  // Profile state
-  const [profile, setProfile] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    bio: '',
-  });
-  const [countryCode, setCountryCode] = useState('+66'); // Default to Thailand
-  const [avatarPreview, setAvatarPreview] = useState('https://picsum.photos/id/338/200/200');
-  const [avatarRawPath, setAvatarRawPath] = useState<string | null>(null);
+  // Password hook
+  const {
+    passwords,
+    setPasswords,
+    passwordErrors,
+    setPasswordErrors,
+    showPasswords,
+    setShowPasswords,
+    isChangingPassword,
+    handlePasswordChange,
+  } = usePasswordChange();
 
-  // Password state
-  const [passwords, setPasswords] = useState({
-    current: '',
-    new: '',
-    confirm: '',
-  });
-  const [passwordErrors, setPasswordErrors] = useState<{ [key: string]: string }>({});
-  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
+  // Appearance hook
+  const { theme, setTheme, applyTheme } = useAppearanceSettings();
 
-  const { showToast } = useToast();
-  // Loading state
-  const [isSaving, setIsSaving] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-
-  // Apply theme to document
-  const applyTheme = (themeMode: 'light' | 'dark' | 'system') => {
-    const root = document.documentElement;
-
-    if (themeMode === 'system') {
-      // Detect system preference
-      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (systemPrefersDark) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
-    } else if (themeMode === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-
-    // Save to localStorage
-    localStorage.setItem('theme', themeMode);
-  };
+  // Notification hook
+  const {
+    emailNotifications,
+    isSavingNotif,
+    handleSaveNotifications: handleEmailNotificationToggle,
+  } = useNotificationSettings();
 
   // Handle theme change
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
@@ -114,255 +96,9 @@ export const Settings: React.FC = () => {
     showToast(t('appearance.languageChanged', { language: languageNames[newLanguage] }), 'success');
   };
 
-  // Load theme from localStorage on mount
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
-
-    if (savedTheme) {
-      setTheme(savedTheme);
-      applyTheme(savedTheme);
-    } else {
-      applyTheme('system'); // Default to system
-    }
-  }, []);
-
-  // Listen for system theme changes
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleSystemThemeChange = () => {
-      if (theme === 'system') {
-        applyTheme('system');
-      }
-    };
-
-    mediaQuery.addEventListener('change', handleSystemThemeChange);
-    return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
-  }, [theme]);
-
-  // Load user profile on mount
-  useEffect(() => {
-    if (user) {
-      const names = (user.name || '').split(' ');
-
-      // Parse phone number to extract country code if it exists
-      let phoneNumber = '';
-      let extractedCountryCode = '+66'; // Default
-
-      // Parse phone number to extract country code
-      const parsed = parsePhoneNumber(user.phone || '');
-      extractedCountryCode = parsed.code;
-      phoneNumber = parsed.number;
-
-      setProfile({
-        firstName: names[0] || '',
-        lastName: names.slice(1).join(' ') || '',
-        email: user.email || '',
-        phone: phoneNumber, // Just the number without country code
-        bio: user.bio || '', // Load bio from user if exists
-      });
-      setCountryCode(extractedCountryCode);
-
-      if (user.avatar) {
-        // Prepend API URL if avatar is a relative path
-        const fullAvatarUrl = user.avatar.startsWith('/')
-          ? `${API_HOST}${user.avatar}`
-          : user.avatar;
-        setAvatarPreview(fullAvatarUrl);
-      }
-    }
-  }, [user]);
-
-  // Sync emailNotifications from user object when user data loads
-  useEffect(() => {
-    if (user?.emailNotifications !== undefined) {
-      setEmailNotifications(user.emailNotifications);
-    }
-  }, [user?.emailNotifications]);
-
-  const handleEmailNotificationToggle = async () => {
-    const newValue = !emailNotifications;
-    setEmailNotifications(newValue);
-    setIsSavingNotif(true);
-    try {
-      await api.patch('/auth/notification-preferences', { emailNotifications: newValue });
-      updateUser({ emailNotifications: newValue });
-    } catch {
-      setEmailNotifications(!newValue); // revert on error
-      showToast(t('notifications.saveFailed'), 'error');
-    } finally {
-      setIsSavingNotif(false);
-    }
-  };
-
-  // Handle Save Changes (Profile)
-  const handleSaveChanges = async () => {
-    if (!user?.employeeId) {
-      showToast(t('general.noUser'), 'error');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const fullName = `${profile.firstName} ${profile.lastName}`.trim();
-
-      // Combine country code and phone number
-      const fullPhoneNumber = profile.phone ? `${countryCode}${profile.phone}` : '';
-
-      // Only include avatar if user uploaded a new one this session
-      const patchPayload: Record<string, unknown> = {
-        name: fullName,
-        email: profile.email,
-        phone: fullPhoneNumber,
-        bio: profile.bio,
-      };
-
-      if (avatarRawPath) {
-        patchPayload.avatar = avatarRawPath; // relative path from upload
-      }
-
-      await api.patch(`/employees/${user.employeeId}`, patchPayload);
-
-      // Update AuthContext (only include avatar if changed)
-      const contextUpdate: Record<string, unknown> = {
-        name: fullName,
-        email: profile.email,
-        phone: fullPhoneNumber,
-        bio: profile.bio,
-      };
-      if (avatarRawPath) {
-        contextUpdate.avatar = avatarRawPath;
-      }
-      updateUser(contextUpdate as any);
-
-      showToast(t('general.profileSaved'), 'success');
-
-      // Invalidate React Query caches so employee lists stay in sync
-      qc.invalidateQueries({ queryKey: queryKeys.employees.all });
-    } catch (error: any) {
-      let errorMessage = t('general.saveFailed');
-      if (error.message) {
-        errorMessage = error.message;
-      }
-      showToast(errorMessage, 'error');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Handle Avatar Change
+  // Handle Avatar Click
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
-  };
-
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      showToast(t('general.avatarTooLarge'), 'error');
-      return;
-    }
-
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
-      showToast(t('general.avatarInvalidType'), 'error');
-      return;
-    }
-
-    // Show preview immediately
-    const previewUrl = URL.createObjectURL(file);
-    setAvatarPreview(previewUrl);
-
-    try {
-      // Upload the file to the server
-      const formData = new FormData();
-      formData.append('avatar', file);
-
-      const response = await fetch(`${BASE_URL}/employees/upload-avatar`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${getAuthToken()}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to upload avatar');
-      }
-
-      const data = await response.json();
-
-      // Store the raw relative path for DB save, but display with full URL
-      setAvatarRawPath(data.avatarUrl);
-      const fullAvatarUrl = data.avatarUrl.startsWith('/')
-        ? `${API_HOST}${data.avatarUrl}`
-        : data.avatarUrl;
-      setAvatarPreview(fullAvatarUrl);
-
-      showToast(t('general.avatarUploaded'), 'success');
-    } catch (error) {
-      console.error('Avatar upload error:', error);
-      showToast(t('general.avatarFailed'), 'error');
-      // Revert to original avatar on error
-      setAvatarPreview(user?.avatar || `https://ui-avatars.com/api/?name=${user?.name}`);
-    }
-  };
-
-  // Handle Password Change
-  const validatePasswords = (): boolean => {
-    const errors: { [key: string]: string } = {};
-
-    if (!passwords.current) {
-      errors.current = t('security.currentRequired');
-    }
-    if (!passwords.new) {
-      errors.new = t('security.newRequired');
-    } else if (passwords.new.length < 6) {
-      errors.new = t('security.minLength');
-    }
-    if (!passwords.confirm) {
-      errors.confirm = t('security.confirmRequired');
-    } else if (passwords.new !== passwords.confirm) {
-      errors.confirm = t('security.mismatch');
-    }
-
-    setPasswordErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleChangePassword = async () => {
-    if (!validatePasswords()) {
-      showToast(t('security.fixErrors'), 'warning');
-      return;
-    }
-
-    setIsChangingPassword(true);
-    try {
-      await api.post('/auth/change-password', {
-        currentPassword: passwords.current,
-        newPassword: passwords.new,
-      });
-      showToast(t('security.passwordChanged'), 'success');
-      setPasswords({ current: '', new: '', confirm: '' });
-      setPasswordErrors({});
-      setShowPasswords({ current: false, new: false, confirm: false });
-    } catch (error: any) {
-      let errorMessage = t('security.changeFailed');
-      if (error.message) {
-        if (error.message.includes('Incorrect current password')) {
-          errorMessage = t('security.incorrectCurrent');
-        } else if (error.message.includes('must be different')) {
-          errorMessage = t('security.samePassword');
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      showToast(errorMessage, 'error');
-    } finally {
-      setIsChangingPassword(false);
-    }
   };
 
   // Password strength checker
@@ -496,6 +232,7 @@ export const Settings: React.FC = () => {
                   />
                   <button
                     onClick={handleAvatarClick}
+                    aria-label={t('general.changeAvatar')}
                     className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Camera size={24} className="text-white" />
@@ -609,7 +346,7 @@ export const Settings: React.FC = () => {
               {/* Save Changes Button - Only in General Tab */}
               <div className="flex justify-end pt-4 border-t border-border-light dark:border-border-dark">
                 <button
-                  onClick={handleSaveChanges}
+                  onClick={handleSaveProfile}
                   disabled={isSaving}
                   className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-medium rounded-lg text-sm shadow-sm hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -754,7 +491,7 @@ export const Settings: React.FC = () => {
               <input type="password" name="fake_pass" style={{ display: 'none' }} autoComplete="new-password" readOnly tabIndex={-1} />
 
               <form
-                onSubmit={(e) => { e.preventDefault(); handleChangePassword(); }}
+                onSubmit={(e) => { e.preventDefault(); handlePasswordChange(); }}
                 autoComplete="off"
                 className="space-y-5"
               >
@@ -783,6 +520,7 @@ export const Settings: React.FC = () => {
                     />
                     <button
                       type="button"
+                      aria-label={showPasswords.current ? t('security.hidePassword') : t('security.showPassword')}
                       onClick={() => setShowPasswords(p => ({ ...p, current: !p.current }))}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted-light hover:text-text-light dark:hover:text-text-dark transition-colors"
                       tabIndex={-1}
@@ -820,6 +558,7 @@ export const Settings: React.FC = () => {
                     />
                     <button
                       type="button"
+                      aria-label={showPasswords.new ? t('security.hidePassword') : t('security.showPassword')}
                       onClick={() => setShowPasswords(p => ({ ...p, new: !p.new }))}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted-light hover:text-text-light dark:hover:text-text-dark transition-colors"
                       tabIndex={-1}
@@ -883,6 +622,7 @@ export const Settings: React.FC = () => {
                     />
                     <button
                       type="button"
+                      aria-label={showPasswords.confirm ? t('security.hidePassword') : t('security.showPassword')}
                       onClick={() => setShowPasswords(p => ({ ...p, confirm: !p.confirm }))}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted-light hover:text-text-light dark:hover:text-text-dark transition-colors"
                       tabIndex={-1}

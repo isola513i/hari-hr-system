@@ -46,7 +46,18 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
             return res.status(401).json({ error: 'Invalid or expired token' });
         }
 
-        // Type assertion: we know the structure of our JWT payload
+        // Runtime validation — reject tokens with missing or malformed claims
+        const VALID_ROLES: UserRole[] = ['HR_ADMIN', 'EMPLOYEE', 'MANAGER', 'FINANCE'];
+        if (
+            !decoded ||
+            typeof decoded !== 'object' ||
+            typeof (decoded as Record<string, unknown>).userId !== 'string' ||
+            typeof (decoded as Record<string, unknown>).email !== 'string' ||
+            !VALID_ROLES.includes((decoded as Record<string, unknown>).role as UserRole)
+        ) {
+            return res.status(401).json({ error: 'Invalid token claims' });
+        }
+
         req.user = decoded as {
             userId: string;
             email: string;

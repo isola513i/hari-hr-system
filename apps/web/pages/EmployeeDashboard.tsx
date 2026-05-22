@@ -58,6 +58,7 @@ import { OTRequestModal } from '../components/OTRequestModal';
 import { LocationPermissionModal } from '../components/LocationPermissionModal';
 import { queryKeys } from '../lib/queryKeys';
 import { translateLeaveType } from '../lib/leaveTypeConfig';
+import { SkeletonRow } from '../components/Skeleton';
 
 export const EmployeeDashboard: React.FC = () => {
   const { t, i18n } = useTranslation(['dashboard', 'common']);
@@ -114,7 +115,7 @@ export const EmployeeDashboard: React.FC = () => {
   const { data: announcementsData = [] } = useAnnouncements();
   const { data: attendanceStatus } = useAttendanceToday(true);
   const { data: employeeStatsData } = useDashboardEmployeeStats(true);
-  const { data: teamHierarchyData } = useMyTeamHierarchy(true);
+  const { data: teamHierarchyData, isPending: isTeamLoading } = useMyTeamHierarchy(true);
   const { data: notesData = [] } = useNotes();
   const { data: eventsData = [] } = useUpcomingEvents();
   const clockInMutation = useClockIn();
@@ -578,8 +579,15 @@ export const EmployeeDashboard: React.FC = () => {
             )}
           </div>
           <div className="p-4 space-y-3">
+            {isTeamLoading && (
+              <>
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+              </>
+            )}
             {/* Manager info */}
-            {teamHierarchy?.manager && (
+            {!isTeamLoading && teamHierarchy?.manager && (
               <div className="flex items-center gap-3 pb-3 border-b border-border-light dark:border-border-dark">
                 <div className="relative">
                   <Avatar
@@ -604,7 +612,7 @@ export const EmployeeDashboard: React.FC = () => {
             )}
 
             {/* Team members */}
-            {myTeam.map(teammate => (
+            {!isTeamLoading && myTeam.map(teammate => (
               <div key={teammate.id} className="flex items-center gap-3">
                 <div className="relative">
                   <Avatar src={teammate.avatar} name={teammate.name} size="lg" />
@@ -622,7 +630,7 @@ export const EmployeeDashboard: React.FC = () => {
                 </div>
               </div>
             ))}
-            {myTeam.length === 0 && !teamHierarchy?.manager && (
+            {!isTeamLoading && myTeam.length === 0 && !teamHierarchy?.manager && (
               <p className="text-sm text-text-muted-light dark:text-text-muted-dark text-center py-2">{t('dashboard:employee.noTeamMembers')}</p>
             )}
           </div>

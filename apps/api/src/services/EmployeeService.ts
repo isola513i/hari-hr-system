@@ -275,25 +275,39 @@ export class EmployeeService {
             return existing;
         }
 
-        // If terminating, reassign subordinates to the employee's manager
-        if (data.status === 'Terminated' && existing.status !== 'Terminated') {
-            const emp = await query('SELECT manager_id FROM employees WHERE id = $1', [id]);
-            const parentManagerId: string | null = emp.rows[0]?.manager_id || null;
-            await query(
-                'UPDATE employees SET manager_id = $1 WHERE manager_id = $2',
-                [parentManagerId, id],
-            );
-        }
-
-        // Detect role/department changes for auto-tracking
+        // Detect role/department changes for auto-tracking (before DB write)
         const roleChanged = data.role !== undefined && data.role !== existing.role;
         const deptChanged = data.department !== undefined && data.department !== existing.department;
 
         values.push(id);
         const updateQuery = `UPDATE employees SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
 
-        const result = await query(updateQuery, values);
-        const updated = this.mapRowToEmployee(result.rows[0]);
+        let updated: Employee;
+
+        if (data.status === 'Terminated' && existing.status !== 'Terminated') {
+            // Wrap termination + subordinate reassignment in a single transaction
+            const client = await pool.connect();
+            try {
+                await client.query('BEGIN');
+                const emp = await client.query('SELECT manager_id FROM employees WHERE id = $1', [id]);
+                const parentManagerId: string | null = emp.rows[0]?.manager_id || null;
+                await client.query(
+                    'UPDATE employees SET manager_id = $1 WHERE manager_id = $2',
+                    [parentManagerId, id],
+                );
+                const result = await client.query(updateQuery, values);
+                updated = this.mapRowToEmployee(result.rows[0]);
+                await client.query('COMMIT');
+            } catch (err) {
+                await client.query('ROLLBACK');
+                throw err;
+            } finally {
+                client.release();
+            }
+        } else {
+            const result = await query(updateQuery, values);
+            updated = this.mapRowToEmployee(result.rows[0]);
+        }
 
         // Auto-create job history when role or department changes
         if (roleChanged || deptChanged) {

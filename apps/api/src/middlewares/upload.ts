@@ -112,7 +112,7 @@ const csvFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCa
 
 export const csvUpload = multer({
     storage: useR2 ? multer.memoryStorage() : buildDiskStorage('csv-imports'),
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
     fileFilter: csvFilter,
 });
 

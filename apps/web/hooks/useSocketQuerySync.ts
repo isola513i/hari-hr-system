@@ -67,6 +67,27 @@ export const useSocketQuerySync = () => {
       qc.invalidateQueries({ queryKey: queryKeys.notifications.list() });
     };
 
+    // -- New domain events --
+    const onEmployeeUpdated = () => {
+      qc.invalidateQueries({ queryKey: queryKeys.employees.all });
+      qc.invalidateQueries({ queryKey: queryKeys.orgChart.all });
+    };
+    const onOrgChartUpdated = () => {
+      qc.invalidateQueries({ queryKey: queryKeys.orgChart.all });
+    };
+    const onPayrollProcessed = () => {
+      qc.invalidateQueries({ queryKey: queryKeys.payroll.all });
+    };
+    const onPerformanceReviewAssigned = () => {
+      qc.invalidateQueries({ queryKey: queryKeys.performanceReviews.all });
+    };
+    const onTrainingCompleted = () => {
+      qc.invalidateQueries({ queryKey: queryKeys.training.all });
+    };
+    const onComplianceStatusChanged = () => {
+      qc.invalidateQueries({ queryKey: queryKeys.compliance.all });
+    };
+
     socket.on('leave-request:created', onLeaveCreated);
     socket.on('leave-request:updated', onLeaveUpdated);
     socket.on('leave-request:deleted', onLeaveDeleted);
@@ -76,6 +97,12 @@ export const useSocketQuerySync = () => {
     socket.on('expense-claim:created', onExpenseCreated);
     socket.on('expense-claim:updated', onExpenseUpdated);
     socket.on('expense-claim:deleted', onExpenseDeleted);
+    socket.on('employee:updated', onEmployeeUpdated);
+    socket.on('orgchart:updated', onOrgChartUpdated);
+    socket.on('payroll:processed', onPayrollProcessed);
+    socket.on('performance-review:assigned', onPerformanceReviewAssigned);
+    socket.on('training:completed', onTrainingCompleted);
+    socket.on('compliance:status-changed', onComplianceStatusChanged);
 
     return () => {
       socket.off('leave-request:created', onLeaveCreated);
@@ -87,6 +114,12 @@ export const useSocketQuerySync = () => {
       socket.off('expense-claim:created', onExpenseCreated);
       socket.off('expense-claim:updated', onExpenseUpdated);
       socket.off('expense-claim:deleted', onExpenseDeleted);
+      socket.off('employee:updated', onEmployeeUpdated);
+      socket.off('orgchart:updated', onOrgChartUpdated);
+      socket.off('payroll:processed', onPayrollProcessed);
+      socket.off('performance-review:assigned', onPerformanceReviewAssigned);
+      socket.off('training:completed', onTrainingCompleted);
+      socket.off('compliance:status-changed', onComplianceStatusChanged);
     };
   }, [qc]);
 };
