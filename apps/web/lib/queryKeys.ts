@@ -171,4 +171,9 @@ export const queryKeys = {
     schedule: (filters: Record<string, unknown>) => [...queryKeys.shifts.all, 'schedule', filters] as const,
     mySchedule: (filters: Record<string, unknown>) => [...queryKeys.shifts.all, 'my', filters] as const,
   },
+  offboarding: {
+    all: ['offboarding'] as const,
+    byEmployee: (id: string) => [...queryKeys.offboarding.all, 'employee', id] as const,
+    exitInterview: (id: string) => [...queryKeys.offboarding.all, 'exit-interview', id] as const,
+  },
 } as const;

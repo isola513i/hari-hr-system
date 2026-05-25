@@ -18,6 +18,7 @@ export * from './shifts';
 export * from './notes';
 export * from './documents';
 export * from './onboarding';
+export * from './offboarding';
 export * from './performance';
 export * from './notifications';
 export * from './announcements';

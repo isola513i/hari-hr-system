@@ -13,7 +13,8 @@
     "db:restore": "ts-node src/scripts/backup-db.ts restore",
     "db:migrate:soft-delete": "ts-node src/scripts/add-soft-delete-columns.ts",
     "db:migrate:totp": "ts-node src/scripts/add-totp-columns.ts",
-    "db:migrate:pii": "ts-node src/scripts/alter-pii-columns.ts"
+    "db:migrate:pii": "ts-node src/scripts/alter-pii-columns.ts",
+    "db:migrate:offboarding": "ts-node src/scripts/add-offboarding-columns.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.996.0",

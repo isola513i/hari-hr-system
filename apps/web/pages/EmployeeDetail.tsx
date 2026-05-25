@@ -19,6 +19,10 @@ import {
     useDeleteTraining,
     useUpdateTrainingStatus,
     useTrainingModules,
+    useOffboarding,
+    useInitiateOffboarding,
+    useUpdateOffboardingTask,
+    useSaveExitInterview,
 } from '../hooks/queries';
 import { useToast } from '../contexts/ToastContext';
 import { Users } from 'lucide-react';
@@ -33,6 +37,7 @@ import {
     PerformanceTab,
     EmployeeModals,
     LeaveQuotaTab,
+    OffboardingTab,
 } from '../components/employee-detail';
 import type { EmployeePermissions, EmployeeTab } from '../components/employee-detail';
 import { AssignTrainingModal } from '../components/training/AssignTrainingModal';
@@ -155,6 +160,23 @@ export const EmployeeDetail: React.FC = () => {
     const [isTransferOpen, setIsTransferOpen] = useState(false);
     const [transferDepartment, setTransferDepartment] = useState('');
     const [isTerminateOpen, setIsTerminateOpen] = useState(false);
+    const [terminateForm, setTerminateForm] = useState({
+        terminationReason: '',
+        lastWorkingDay: '',
+        terminationNotes: '',
+    });
+
+    // Offboarding hooks — only fetched when admin + employee is in Notice Period or Terminated
+    const isOffboardingEmployee = Boolean(
+        employee && (employee.status === 'Notice Period' || employee.status === 'Terminated')
+    );
+    const { data: offboardingData, isLoading: offboardingLoading } = useOffboarding(
+        id ?? '',
+        isAdmin && isOffboardingEmployee
+    );
+    const initiateOffboardingMutation = useInitiateOffboarding();
+    const updateOffboardingTaskMutation = useUpdateOffboardingTask();
+    const saveExitInterviewMutation = useSaveExitInterview();
 
     // Profile Edit Handlers
     const handleEditProfileClick = () => {
@@ -580,24 +602,27 @@ export const EmployeeDetail: React.FC = () => {
 
     const handleConfirmTerminate = async () => {
         if (!employee || !id) return;
+        if (!terminateForm.terminationReason || !terminateForm.lastWorkingDay) {
+            showToast('Please fill in all required fields', 'error');
+            return;
+        }
         try {
-            const today = new Date().toISOString().split('T')[0];
-            await api.patch(`/employees/${id}`, { status: 'Terminated' });
-            await api.post('/job-history', {
+            await initiateOffboardingMutation.mutateAsync({
                 employeeId: id,
-                role: employee.role,
-                department: employee.department,
-                startDate: today,
-                endDate: today,
-                description: 'Employment terminated',
+                payload: {
+                    terminationReason: terminateForm.terminationReason,
+                    lastWorkingDay: terminateForm.lastWorkingDay,
+                    terminationNotes: terminateForm.terminationNotes || undefined,
+                },
             });
             setIsTerminateOpen(false);
-            showToast(t('employees:toast.terminated'), 'success');
+            setTerminateForm({ terminationReason: '', lastWorkingDay: '', terminationNotes: '' });
+            showToast('Offboarding initiated — employee is now in Notice Period', 'success');
             qc.invalidateQueries({ queryKey: queryKeys.employees.all });
             qc.invalidateQueries({ queryKey: queryKeys.orgChart.all });
-            navigate('/employees');
-        } catch (error) {
-            showToast((error as Error).message || t('employees:toast.terminateFailed'), 'error');
+        } catch (error: any) {
+            const msg = error?.message || 'Failed to initiate offboarding';
+            showToast(msg, 'error');
         }
     };
 
@@ -762,6 +787,15 @@ export const EmployeeDetail: React.FC = () => {
                                     {t('employees:detail.leaveQuota')}
                                 </button>
                             )}
+                            {/* Offboarding tab — visible to HR_ADMIN when employee is in Notice Period or Terminated (Refinement #4) */}
+                            {isAdmin && isOffboardingEmployee && (
+                                <button
+                                    className={`flex-1 min-w-[110px] px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'offboarding' ? 'border-red-500 text-red-600 dark:text-red-400' : 'border-transparent text-text-muted-light hover:text-text-light dark:hover:text-text-dark'}`}
+                                    onClick={() => setActiveTab('offboarding')}
+                                >
+                                    Offboarding
+                                </button>
+                            )}
                         </div>
 
                         <div className="p-6 flex-grow">
@@ -828,6 +862,29 @@ export const EmployeeDetail: React.FC = () => {
                                     showToast={showToast}
                                 />
                             )}
+                            {activeTab === 'offboarding' && isAdmin && isOffboardingEmployee && (
+                                <OffboardingTab
+                                    employee={employee}
+                                    tasks={offboardingData?.tasks ?? []}
+                                    exitInterview={offboardingData?.exitInterview ?? null}
+                                    progress={offboardingData?.progress ?? { total: 0, completed: 0, percentage: 0 }}
+                                    isLoading={offboardingLoading}
+                                    onUpdateTask={(taskId, payload) =>
+                                        updateOffboardingTaskMutation.mutateAsync({
+                                            taskId,
+                                            employeeId: id!,
+                                            payload,
+                                        })
+                                    }
+                                    onSaveExitInterview={(payload) =>
+                                        saveExitInterviewMutation.mutateAsync({
+                                            employeeId: id!,
+                                            payload,
+                                        })
+                                    }
+                                    showToast={showToast}
+                                />
+                            )}
                         </div>
                     </div>
                 </div>
@@ -865,7 +922,12 @@ export const EmployeeDetail: React.FC = () => {
                 onCloseTransfer={() => setIsTransferOpen(false)}
                 onConfirmTransfer={handleConfirmTransfer}
                 isTerminateOpen={isTerminateOpen}
-                onCloseTerminate={() => setIsTerminateOpen(false)}
+                terminateForm={terminateForm}
+                onTerminateFormChange={(field, value) => setTerminateForm(prev => ({ ...prev, [field]: value }))}
+                onCloseTerminate={() => {
+                    setIsTerminateOpen(false);
+                    setTerminateForm({ terminationReason: '', lastWorkingDay: '', terminationNotes: '' });
+                }}
                 onConfirmTerminate={handleConfirmTerminate}
             />
 

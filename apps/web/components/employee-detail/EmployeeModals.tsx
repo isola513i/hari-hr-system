@@ -71,8 +71,10 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
     onCloseTransfer,
     onConfirmTransfer,
 
-    // Terminate Modal
+    // Terminate / Initiate Offboarding Modal
     isTerminateOpen,
+    terminateForm,
+    onTerminateFormChange,
     onCloseTerminate,
     onConfirmTerminate,
 }) => {
@@ -705,32 +707,104 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                 document.body
             )}
 
-            {/* Terminate Confirmation Modal */}
+            {/* Initiate Offboarding Modal (replaces simple yes/no terminate) */}
             {isTerminateOpen && createPortal(
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="p-6 text-center">
-                            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                                <AlertTriangle className="text-red-600 dark:text-red-400" size={24} />
+                    <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-border-light dark:border-border-dark">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                    <AlertTriangle className="text-red-600 dark:text-red-400" size={18} />
+                                </div>
+                                <h3 className="font-bold text-base text-text-light dark:text-text-dark">
+                                    Initiate Offboarding
+                                </h3>
                             </div>
-                            <h3 className="font-bold text-lg text-text-light dark:text-text-dark mb-2">
-                                {t('employees:modals.terminateTitle')}
-                            </h3>
+                            <button onClick={onCloseTerminate} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Form */}
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                onConfirmTerminate();
+                            }}
+                            className="p-6 space-y-4"
+                        >
                             <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
-                                {t('employees:modals.terminateDescription')}
+                                This will move the employee to <span className="font-semibold text-amber-600 dark:text-amber-400">Notice Period</span> and create an offboarding checklist. They will be fully terminated only after all tasks are completed.
                             </p>
-                        </div>
-                        <div className="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-center gap-3 bg-gray-50 dark:bg-gray-800/50">
-                            <button onClick={onCloseTerminate} className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:text-text-muted-dark dark:hover:text-text-dark">
-                                {t('employees:modals.cancel')}
-                            </button>
-                            <button
-                                onClick={onConfirmTerminate}
-                                className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 flex items-center gap-2"
-                            >
-                                <AlertTriangle size={16} /> {t('employees:modals.terminateConfirm')}
-                            </button>
-                        </div>
+
+                            {/* Termination Reason */}
+                            <div>
+                                <label className="block text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-1.5">
+                                    Reason for Termination <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    value={terminateForm.terminationReason}
+                                    onChange={(e) => onTerminateFormChange('terminationReason', e.target.value)}
+                                    required
+                                    className="w-full px-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                >
+                                    <option value="">Select a reason...</option>
+                                    <option value="Resignation">Resignation</option>
+                                    <option value="Performance">Performance</option>
+                                    <option value="Restructuring">Restructuring</option>
+                                    <option value="Retirement">Retirement</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            {/* Last Working Day */}
+                            <div>
+                                <label className="block text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-1.5">
+                                    Last Working Day <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="date"
+                                    value={terminateForm.lastWorkingDay}
+                                    onChange={(e) => onTerminateFormChange('lastWorkingDay', e.target.value)}
+                                    required
+                                    min={new Date().toISOString().split('T')[0]}
+                                    className="w-full px-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                />
+                            </div>
+
+                            {/* Notes */}
+                            <div>
+                                <label className="block text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-1.5">
+                                    Notes <span className="text-text-muted-light dark:text-text-muted-dark font-normal">(HR only, optional)</span>
+                                </label>
+                                <textarea
+                                    value={terminateForm.terminationNotes}
+                                    onChange={(e) => onTerminateFormChange('terminationNotes', e.target.value)}
+                                    rows={3}
+                                    placeholder="Any additional context for the offboarding..."
+                                    className="w-full px-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                                />
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={onCloseTerminate}
+                                    className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:text-text-muted-dark dark:hover:text-text-dark"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 flex items-center gap-2 disabled:opacity-50"
+                                    disabled={!terminateForm.terminationReason || !terminateForm.lastWorkingDay}
+                                >
+                                    <AlertTriangle size={16} /> Initiate Offboarding
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>,
                 document.body

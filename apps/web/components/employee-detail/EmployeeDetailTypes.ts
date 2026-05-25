@@ -1,4 +1,4 @@
-import { Employee, JobHistoryItem, PerformanceReview, DocumentItem } from '../../types';
+import { Employee, JobHistoryItem, PerformanceReview, DocumentItem, OffboardingTask, ExitInterview, OffboardingProgress } from '../../types';
 
 // Shared types
 export interface EmployeePermissions {
@@ -9,7 +9,7 @@ export interface EmployeePermissions {
     canViewSensitiveTabs: boolean;
 }
 
-export type EmployeeTab = 'overview' | 'history' | 'documents' | 'training' | 'performance' | 'leave-quotas';
+export type EmployeeTab = 'overview' | 'history' | 'documents' | 'training' | 'performance' | 'leave-quotas' | 'offboarding';
 
 export type ShowToastFn = (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 
@@ -82,6 +82,17 @@ export interface PerformanceTabProps {
     onDeleteReview: (reviewId: string) => void;
 }
 
+export interface OffboardingTabProps {
+    employee: Employee;
+    tasks: OffboardingTask[];
+    exitInterview: ExitInterview | null;
+    progress: OffboardingProgress;
+    isLoading: boolean;
+    onUpdateTask: (taskId: string, payload: { completed: boolean }) => void;
+    onSaveExitInterview: (payload: Record<string, unknown>) => void;
+    showToast: ShowToastFn;
+}
+
 export interface EmployeeModalsProps {
     // Edit Profile Modal
     isEditProfileOpen: boolean;
@@ -125,8 +136,14 @@ export interface EmployeeModalsProps {
     onCloseTransfer: () => void;
     onConfirmTransfer: () => void;
 
-    // Terminate Modal
+    // Terminate / Initiate Offboarding Modal
     isTerminateOpen: boolean;
+    terminateForm: {
+        terminationReason: string;
+        lastWorkingDay: string;
+        terminationNotes: string;
+    };
+    onTerminateFormChange: (field: 'terminationReason' | 'lastWorkingDay' | 'terminationNotes', value: string) => void;
     onCloseTerminate: () => void;
     onConfirmTerminate: () => void;
 }

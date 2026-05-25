@@ -88,7 +88,7 @@ export interface Employee {
   department: string;
   email: string;
   avatar: string;
-  status: 'Active' | 'On Leave' | 'Terminated';
+  status: 'Active' | 'On Leave' | 'Notice Period' | 'Terminated';
   onboardingStatus: 'Not Started' | 'In Progress' | 'Completed';
   joinDate: string;
   birthDate?: string;
@@ -109,6 +109,58 @@ export interface Employee {
   nationalId?: string | null;
   /** Decrypted bank account number — only present when the viewer has canEditSensitiveInfo */
   bankAccountNumber?: string | null;
+  // Offboarding / termination metadata
+  terminationDate?: string | null;
+  lastWorkingDay?: string | null;
+  terminationReason?: string | null;
+  terminationNotes?: string | null;
+  terminatedBy?: string | null;
+  offboardingInitiatedAt?: string | null;
+}
+
+// ==========================================
+// Offboarding Types
+// ==========================================
+
+export interface OffboardingTask {
+  id: string;
+  employeeId: string;
+  title: string;
+  description: string;
+  stage: 'Pre-Exit' | 'Last Week' | 'Post-Exit';
+  assignee: 'HR' | 'IT' | 'Manager' | 'Employee' | 'Finance';
+  dueDate: string | null;
+  completed: boolean;
+  priority: 'High' | 'Medium' | 'Low';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExitInterview {
+  id: string;
+  employeeId: string;
+  reasonForLeaving: string | null;
+  satisfactionRating: number | null;
+  wouldRehire: boolean | null;
+  feedback: string | null;
+  improvementsSuggested: string | null;
+  conductedBy: string | null;
+  conductedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OffboardingProgress {
+  total: number;
+  completed: number;
+  percentage: number;
+}
+
+export interface OffboardingData {
+  employee: Employee;
+  tasks: OffboardingTask[];
+  exitInterview: ExitInterview | null;
+  progress: OffboardingProgress;
 }
 
 export interface StatCardProps {

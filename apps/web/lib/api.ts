@@ -268,5 +268,34 @@ export const api = {
         /** POST /auth/2fa/admin-reset — HR_ADMIN: reset 2FA for any user */
         adminResetTotp: (userId: string): Promise<{ message: string }> =>
             api.post('/auth/2fa/admin-reset', { userId }),
-    }
+    },
+
+    offboarding: {
+        /** POST /employees/:id/offboarding/initiate */
+        initiate: (
+            id: string,
+            payload: { terminationReason: string; lastWorkingDay: string; terminationNotes?: string },
+        ) => api.post(`/employees/${id}/offboarding/initiate`, payload as Record<string, unknown>),
+
+        /** GET /employees/:id/offboarding */
+        getByEmployee: (id: string) => api.get(`/employees/${id}/offboarding`),
+
+        /** POST /employees/:id/offboarding/tasks */
+        createTask: (id: string, payload: Record<string, unknown>) =>
+            api.post(`/employees/${id}/offboarding/tasks`, payload),
+
+        /** PATCH /offboarding/tasks/:taskId */
+        updateTask: (taskId: string, payload: Record<string, unknown>) =>
+            api.patch(`/offboarding/tasks/${taskId}`, payload),
+
+        /** DELETE /offboarding/tasks/:taskId */
+        deleteTask: (taskId: string) => api.delete(`/offboarding/tasks/${taskId}`),
+
+        /** GET /employees/:id/offboarding/exit-interview */
+        getExitInterview: (id: string) => api.get(`/employees/${id}/offboarding/exit-interview`),
+
+        /** POST /employees/:id/offboarding/exit-interview */
+        saveExitInterview: (id: string, payload: Record<string, unknown>) =>
+            api.post(`/employees/${id}/offboarding/exit-interview`, payload),
+    },
 };
