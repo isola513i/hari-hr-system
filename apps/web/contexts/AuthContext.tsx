@@ -5,6 +5,9 @@ import { api, API_HOST, BASE_URL } from '../lib/api';
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<boolean>;
+  /** Defined when login() returns totp_required:true — cleared after verifyTotp() */
+  totpRequired: boolean;
+  verifyTotp: (code: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
   isAuthenticated: boolean;
@@ -22,6 +25,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [viewMode, setViewMode] = useState<'admin' | 'employee'>(
     () => (sessionStorage.getItem('viewMode') as 'admin' | 'employee') || 'admin'
   );
+  // TOTP state — held in memory only, never persisted
+  const [totpRequired, setTotpRequired] = useState(false);
+  const [pendingTotpToken, setPendingTotpToken] = useState<string | null>(null);
+  const [pendingRememberMe, setPendingRememberMe] = useState<boolean | undefined>(undefined);
 
   const isAdminView = ['HR_ADMIN', 'MANAGER', 'FINANCE'].includes(user?.role || '') && viewMode === 'admin';
 
@@ -62,44 +69,69 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setLoading(false);
   }, []);
 
+  /** Persist tokens + user after a successful auth (login or TOTP verify) */
+  const _persistSession = (data: { token: string; accessToken: string; refreshToken: string; user: { userId: string; employeeId: string; email: string; name: string; role: string; avatar?: string; jobTitle?: string; bio?: string; phone?: string } }, rememberMe?: boolean) => {
+    const avatarUrl = data.user.avatar
+      ? (data.user.avatar.startsWith('/') ? `${API_HOST}${data.user.avatar}` : data.user.avatar)
+      : 'https://ui-avatars.com/api/?name=User';
+
+    const userObj: User = {
+      id: data.user.employeeId || data.user.userId,
+      userId: data.user.userId,
+      employeeId: data.user.employeeId,
+      email: data.user.email,
+      name: data.user.name || 'User',
+      role: data.user.role as UserRole,
+      avatar: avatarUrl,
+      jobTitle: data.user.jobTitle || 'Employee',
+      bio: data.user.bio,
+      phone: data.user.phone,
+    };
+
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('refreshToken');
+    sessionStorage.removeItem('user');
+
+    const storage = rememberMe ? localStorage : sessionStorage;
+    storage.setItem('token', data.accessToken || data.token);
+    storage.setItem('refreshToken', data.refreshToken);
+    storage.setItem('user', JSON.stringify(userObj));
+    setUser(userObj);
+  };
+
   const login = async (email: string, password: string, rememberMe?: boolean): Promise<boolean> => {
     try {
       const data = await api.auth.login({ email, password, rememberMe });
 
-      // Backend returns: { token, user: BackendUser }
-      // Map BackendUser to frontend User type
-      // Transform relative avatar URL to absolute URL
-      const avatarUrl = data.user.avatar
-        ? (data.user.avatar.startsWith('/') ? `${API_HOST}${data.user.avatar}` : data.user.avatar)
-        : 'https://ui-avatars.com/api/?name=User';
+      // 2FA required — hold pending token in memory only, signal the UI
+      if ('totp_required' in data && data.totp_required) {
+        setPendingTotpToken(data.pending_token);
+        setPendingRememberMe(rememberMe);
+        setTotpRequired(true);
+        return false; // not fully authenticated yet
+      }
 
-      const userObj: User = {
-        id: data.user.employeeId || data.user.userId,
-        userId: data.user.userId,
-        employeeId: data.user.employeeId,
-        email: data.user.email,
-        name: data.user.name || 'User',
-        role: data.user.role as UserRole,
-        avatar: avatarUrl,
-        jobTitle: data.user.jobTitle || 'Employee',
-        bio: data.user.bio,
-        phone: data.user.phone
-      };
+      _persistSession(data as { token: string; accessToken: string; refreshToken: string; user: any }, rememberMe);
+      return true;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
+  };
 
-      // Clear both storages first to prevent stale tokens
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('refreshToken');
-      sessionStorage.removeItem('user');
-
-      // Store in localStorage (persists) or sessionStorage (clears on browser close)
-      const storage = rememberMe ? localStorage : sessionStorage;
-      storage.setItem('token', data.accessToken || data.token);
-      storage.setItem('refreshToken', data.refreshToken);
-      storage.setItem('user', JSON.stringify(userObj));
-      setUser(userObj);
+  /** Complete the TOTP login step using the code entered by the user. */
+  const verifyTotp = async (code: string): Promise<boolean> => {
+    if (!pendingTotpToken) return false;
+    try {
+      const data = await api.auth.verifyTotp(pendingTotpToken, code, pendingRememberMe);
+      _persistSession(data as { token: string; accessToken: string; refreshToken: string; user: any }, pendingRememberMe);
+      // Clear TOTP state
+      setTotpRequired(false);
+      setPendingTotpToken(null);
+      setPendingRememberMe(undefined);
       return true;
     } catch (err) {
       console.error(err);
@@ -147,7 +179,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser, isAuthenticated: !!user, loading, viewMode, isAdminView, toggleViewMode }}>
+    <AuthContext.Provider value={{ user, login, totpRequired, verifyTotp, logout, updateUser, isAuthenticated: !!user, loading, viewMode, isAdminView, toggleViewMode }}>
       {children}
     </AuthContext.Provider>
   );

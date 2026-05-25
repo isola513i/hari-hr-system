@@ -1,6 +1,13 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import {
+  generateSecret as totpGenerateSecret,
+  generateSync as totpGenerateSync,
+  verifySync as totpVerifySync,
+  generateURI as totpGenerateURI,
+} from "otplib";
+import QRCode from "qrcode";
 import { query } from "../db";
 import {
   User,
@@ -11,6 +18,10 @@ import {
 } from "../models/User";
 import NotificationService from "./NotificationService";
 import EmailService from "./EmailService";
+import { encrypt, decrypt } from "../utils/encryption";
+
+// ── TOTP Configuration ────────────────────────────────────────────────────────
+// Clock-drift tolerance (±1 step = ±30 s) is passed directly to verifySync().
 
 // Security: Fail fast if JWT_SECRET is not set or too weak
 if (!process.env.JWT_SECRET) {
@@ -89,14 +100,28 @@ export class AuthService {
       throw new Error("Invalid credentials");
     }
 
-    // 3. Get Employee Info (for frontend convenience)
+    // 3. If 2FA is enabled, do NOT issue the full token pair yet.
+    //    Return a short-lived "pending" JWT so the frontend can submit the
+    //    TOTP code via POST /auth/2fa/verify to complete authentication.
+    if (user.totp_enabled) {
+      const pendingToken = jwt.sign(
+        { userId: user.id, totp_pending: true },
+        JWT_SECRET,
+        { expiresIn: "5m" },
+      );
+      // Cast: the route handler returns this as a plain object; the
+      // frontend detects `totp_required` and never accesses `token` fields.
+      return { totp_required: true, pending_token: pendingToken } as unknown as AuthResponse;
+    }
+
+    // 4. Get Employee Info (for frontend convenience)
     const empResult = await query(
       "SELECT id, name, role, department, avatar, bio, phone FROM employees WHERE user_id = $1",
       [user.id],
     );
     const employee = empResult.rows[0] || {};
 
-    // 4. Generate token pair
+    // 5. Generate token pair
     const jwtPayload = {
       userId: user.id,
       email: user.email,
@@ -543,6 +568,245 @@ export class AuthService {
   async revokeRefreshToken(rawRefreshToken: string): Promise<void> {
     const tokenHash = crypto.createHash("sha256").update(rawRefreshToken).digest("hex");
     await query(`UPDATE refresh_tokens SET revoked = TRUE WHERE token_hash = $1`, [tokenHash]);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // TOTP / 2FA METHODS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Generate a new TOTP secret + QR code for display in the setup wizard.
+   * The secret is NOT stored yet — it is only persisted after the user
+   * verifies the first code via enableTotp().
+   */
+  async setupTotp(userId: string): Promise<{ secret: string; qrCodeDataUrl: string; manualKey: string }> {
+    const result = await query("SELECT email FROM users WHERE id = $1", [userId]);
+    if (result.rows.length === 0) {
+      throw new Error("User not found");
+    }
+    const { email } = result.rows[0];
+
+    const secret = totpGenerateSecret();
+    const otpAuthUrl = totpGenerateURI({ label: email, issuer: "HARI HR", secret });
+    const qrCodeDataUrl = await QRCode.toDataURL(otpAuthUrl);
+
+    return { secret, qrCodeDataUrl, manualKey: secret };
+  }
+
+  /**
+   * Verify the user's first TOTP code and enable 2FA.
+   * Encrypts + stores the secret, then generates 8 backup codes.
+   * Returns the plaintext backup codes (shown once, never again).
+   */
+  async enableTotp(userId: string, secret: string, token: string): Promise<string[]> {
+    const { valid: isValid } = totpVerifySync({ token, secret, epochTolerance: 30 });
+    if (!isValid) {
+      throw new Error("Invalid verification code. Please try again.");
+    }
+
+    const encryptedSecret = encrypt(secret);
+    await query(
+      `UPDATE users SET totp_enabled = TRUE, totp_secret = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+      [encryptedSecret, userId],
+    );
+
+    return this._generateAndStoreBackupCodes(userId);
+  }
+
+  /**
+   * Disable 2FA for the calling user. Requires their current password.
+   */
+  async disableTotp(userId: string, password: string): Promise<void> {
+    const result = await query("SELECT password_hash FROM users WHERE id = $1", [userId]);
+    if (result.rows.length === 0) {
+      throw new Error("User not found");
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, result.rows[0].password_hash);
+    if (!isPasswordValid) {
+      throw new Error("Incorrect password");
+    }
+
+    await query(
+      `UPDATE users SET totp_enabled = FALSE, totp_secret = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+      [userId],
+    );
+    await query(`DELETE FROM totp_backup_codes WHERE user_id = $1`, [userId]);
+  }
+
+  /**
+   * HR_ADMIN emergency reset — disable 2FA for any user without their password.
+   * Intended for account recovery when a user loses their authenticator device.
+   */
+  async adminDisableTotp(targetUserId: string): Promise<void> {
+    const result = await query("SELECT id FROM users WHERE id = $1", [targetUserId]);
+    if (result.rows.length === 0) {
+      throw new Error("User not found");
+    }
+
+    await query(
+      `UPDATE users SET totp_enabled = FALSE, totp_secret = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+      [targetUserId],
+    );
+    await query(`DELETE FROM totp_backup_codes WHERE user_id = $1`, [targetUserId]);
+  }
+
+  /**
+   * Complete the TOTP login step.
+   * Accepts either a 6-digit TOTP code or a single-use backup code.
+   * Validates the pending JWT issued by login(), then issues the full token pair.
+   */
+  async verifyTotpLogin(pendingToken: string, code: string, rememberMe?: boolean): Promise<AuthResponse> {
+    // Validate the short-lived pending JWT
+    let decoded: { userId?: string; totp_pending?: boolean };
+    try {
+      decoded = jwt.verify(pendingToken, JWT_SECRET) as { userId?: string; totp_pending?: boolean };
+    } catch {
+      throw new Error("Pending session expired. Please login again.");
+    }
+
+    if (!decoded.totp_pending || !decoded.userId) {
+      throw new Error("Invalid pending token.");
+    }
+
+    const userResult = await query("SELECT * FROM users WHERE id = $1", [decoded.userId]);
+    if (userResult.rows.length === 0) {
+      throw new Error("User not found");
+    }
+    const user = userResult.rows[0];
+
+    if (!user.totp_enabled || !user.totp_secret) {
+      throw new Error("Two-factor authentication is not enabled for this account.");
+    }
+
+    const secret = decrypt(user.totp_secret);
+    let verified = false;
+
+    // Try as a 6-digit TOTP code first
+    if (/^\d{6}$/.test(code.trim())) {
+      verified = totpVerifySync({ token: code.trim(), secret, epochTolerance: 30 }).valid;
+    }
+
+    // Fall back to backup code check
+    if (!verified) {
+      const normalizedCode = code.trim().toUpperCase();
+      const unusedCodes = await query(
+        `SELECT id, code_hash FROM totp_backup_codes WHERE user_id = $1 AND used_at IS NULL`,
+        [user.id],
+      );
+
+      for (const row of unusedCodes.rows) {
+        const match = await bcrypt.compare(normalizedCode, row.code_hash);
+        if (match) {
+          await query(`UPDATE totp_backup_codes SET used_at = NOW() WHERE id = $1`, [row.id]);
+          verified = true;
+          break;
+        }
+      }
+    }
+
+    if (!verified) {
+      throw new Error("Invalid verification code.");
+    }
+
+    // Issue the full token pair
+    const empResult = await query(
+      "SELECT id, name, role, department, avatar, bio, phone FROM employees WHERE user_id = $1",
+      [user.id],
+    );
+    const employee = empResult.rows[0] || {};
+
+    const jwtPayload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      employeeId: employee.id || null,
+    };
+    const { accessToken, refreshToken } = await this.generateTokenPair(jwtPayload, rememberMe);
+
+    const userResponse: User = {
+      userId: user.id,
+      employeeId: employee.id || user.id,
+      email: user.email,
+      name: employee.name || user.email,
+      role: user.role,
+      avatar:
+        employee.avatar ||
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.name || user.email)}&background=random`,
+      jobTitle: employee.role,
+      department: employee.department,
+      bio: employee.bio,
+      phone: employee.phone,
+      emailNotifications: user.email_notifications ?? true,
+    };
+
+    return { token: accessToken, accessToken, refreshToken, user: userResponse };
+  }
+
+  /**
+   * Get 2FA status for the current user.
+   */
+  async getTotpStatus(userId: string): Promise<{ enabled: boolean; backupCodesRemaining: number }> {
+    const userResult = await query("SELECT totp_enabled FROM users WHERE id = $1", [userId]);
+    if (userResult.rows.length === 0) {
+      throw new Error("User not found");
+    }
+
+    const codesResult = await query(
+      `SELECT COUNT(*) AS count FROM totp_backup_codes WHERE user_id = $1 AND used_at IS NULL`,
+      [userId],
+    );
+
+    return {
+      enabled: userResult.rows[0].totp_enabled,
+      backupCodesRemaining: parseInt(codesResult.rows[0].count, 10),
+    };
+  }
+
+  /**
+   * Regenerate backup codes. Requires an active TOTP code.
+   * Deletes all existing codes and creates 8 fresh ones.
+   */
+  async regenerateBackupCodes(userId: string, token: string): Promise<string[]> {
+    const result = await query("SELECT totp_enabled, totp_secret FROM users WHERE id = $1", [userId]);
+    if (result.rows.length === 0) {
+      throw new Error("User not found");
+    }
+
+    const { totp_enabled, totp_secret } = result.rows[0];
+    if (!totp_enabled || !totp_secret) {
+      throw new Error("Two-factor authentication is not enabled.");
+    }
+
+    const secret = decrypt(totp_secret);
+    if (!totpVerifySync({ token, secret, epochTolerance: 30 }).valid) {
+      throw new Error("Invalid verification code.");
+    }
+
+    await query(`DELETE FROM totp_backup_codes WHERE user_id = $1`, [userId]);
+    return this._generateAndStoreBackupCodes(userId);
+  }
+
+  /**
+   * Internal helper: generate 8 backup codes, hash, and persist them.
+   * Returns the plaintext codes.
+   */
+  private async _generateAndStoreBackupCodes(userId: string): Promise<string[]> {
+    const codes: string[] = [];
+    for (let i = 0; i < 8; i++) {
+      const raw = crypto.randomBytes(10).toString("base64url").slice(0, 10).toUpperCase();
+      codes.push(`${raw.slice(0, 5)}-${raw.slice(5, 10)}`);
+    }
+
+    for (const code of codes) {
+      const codeHash = await bcrypt.hash(code, 10);
+      await query(
+        `INSERT INTO totp_backup_codes (user_id, code_hash) VALUES ($1, $2)`,
+        [userId, codeHash],
+      );
+    }
+
+    return codes;
   }
 }
 

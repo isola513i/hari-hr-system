@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
-import { Lock, Mail, Check, CheckCircle, Eye, EyeOff, Users, BarChart3, Clock, Shield } from "lucide-react";
+import { Lock, Mail, Check, CheckCircle, Eye, EyeOff, Users, BarChart3, Clock, Shield, ShieldCheck, ArrowLeft, KeyRound } from "lucide-react";
 
 interface LocationState {
   registrationSuccess?: boolean;
@@ -18,7 +18,15 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem("rememberedEmail"));
   const [successMessage, setSuccessMessage] = useState("");
-  const { login } = useAuth();
+
+  // TOTP step state
+  const [totpCode, setTotpCode] = useState("");
+  const [useBackupCode, setUseBackupCode] = useState(false);
+  const [totpLoading, setTotpLoading] = useState(false);
+  const [totpError, setTotpError] = useState("");
+  const totpInputRef = useRef<HTMLInputElement>(null);
+
+  const { login, totpRequired, verifyTotp } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation('auth');
@@ -63,6 +71,16 @@ const Login: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
+  // Auto-focus TOTP input when TOTP step appears
+  useEffect(() => {
+    if (totpRequired) {
+      setTotpCode("");
+      setTotpError("");
+      setUseBackupCode(false);
+      setTimeout(() => totpInputRef.current?.focus(), 100);
+    }
+  }, [totpRequired]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -82,9 +100,28 @@ const Login: React.FC = () => {
     const success = await login(email, password, rememberMe);
     if (success) {
       navigate("/");
-    } else {
+    } else if (!totpRequired) {
+      // Only show error if it's not a TOTP redirect
       setError(t('login.invalidCredentials'));
       setLoading(false);
+    } else {
+      setLoading(false);
+    }
+  };
+
+  const handleTotpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!totpCode.trim()) return;
+    setTotpError("");
+    setTotpLoading(true);
+    const success = await verifyTotp(totpCode.trim());
+    if (success) {
+      navigate("/");
+    } else {
+      setTotpError("Invalid code. Please try again.");
+      setTotpCode("");
+      setTotpLoading(false);
+      totpInputRef.current?.focus();
     }
   };
 
@@ -200,118 +237,206 @@ const Login: React.FC = () => {
 
           {/* Login Card */}
           <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 p-8 border border-border-light dark:border-border-dark animate-fade-in-up">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center h-14 w-14 bg-gradient-to-br from-primary to-primary-dark text-white rounded-xl shadow-lg shadow-primary/30 mb-4">
-                <Lock size={26} />
-              </div>
-              <h2 className="text-2xl font-bold text-text-light dark:text-text-dark">{t('login.welcomeTitle')}</h2>
-              <p className="text-text-muted-light dark:text-text-muted-dark mt-2">{t('login.welcomeSubtitle')}</p>
-            </div>
 
-            {successMessage && (
-              <div className="bg-accent-green/10 text-accent-green p-4 rounded-xl text-sm mb-6 border border-accent-green/20 flex items-center gap-3 animate-slide-in-right">
-                <CheckCircle size={20} />
-                <span>{successMessage}</span>
-              </div>
-            )}
-
-            {error && (
-              <div className="bg-accent-red/10 text-accent-red p-4 rounded-xl text-sm mb-6 border border-accent-red/20 animate-slide-in-right">
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} noValidate className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">
-                  {t('login.emailLabel')}
-                </label>
-                <div className="relative group">
-                  <Mail
-                    className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${fieldErrors.email ? "text-accent-red" : "text-text-muted-light dark:text-text-muted-dark group-focus-within:text-primary"}`}
-                    size={20}
-                  />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => { setEmail(e.target.value); setFieldErrors((prev) => ({ ...prev, email: undefined })); }}
-                    className={`w-full pl-12 pr-4 py-3 bg-background-light dark:bg-background-dark border rounded-xl focus:ring-2 focus:border-transparent outline-none transition-all text-text-light dark:text-text-dark placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark ${fieldErrors.email ? "border-accent-red focus:ring-accent-red/30" : "border-border-light dark:border-border-dark focus:ring-primary"}`}
-                    placeholder={t('login.emailPlaceholder')}
-                  />
+            {totpRequired ? (
+              /* ── TOTP Step ──────────────────────────────────────────────── */
+              <>
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center h-14 w-14 bg-gradient-to-br from-primary to-primary-dark text-white rounded-xl shadow-lg shadow-primary/30 mb-4">
+                    <ShieldCheck size={26} />
+                  </div>
+                  <h2 className="text-2xl font-bold text-text-light dark:text-text-dark">Two-Factor Auth</h2>
+                  <p className="text-text-muted-light dark:text-text-muted-dark mt-2">
+                    {useBackupCode
+                      ? "Enter one of your backup recovery codes"
+                      : "Enter the 6-digit code from your authenticator app"}
+                  </p>
                 </div>
-                {fieldErrors.email && (
-                  <p className="mt-1.5 text-sm text-accent-red">{fieldErrors.email}</p>
-                )}
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">
-                  {t('login.passwordLabel')}
-                </label>
-                <div className="relative group">
-                  <Lock
-                    className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${fieldErrors.password ? "text-accent-red" : "text-text-muted-light dark:text-text-muted-dark group-focus-within:text-primary"}`}
-                    size={20}
-                  />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, password: undefined })); }}
-                    className={`w-full pl-12 pr-14 py-3 bg-background-light dark:bg-background-dark border rounded-xl focus:ring-2 focus:border-transparent outline-none transition-all text-text-light dark:text-text-dark placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark ${fieldErrors.password ? "border-accent-red focus:ring-accent-red/30" : "border-border-light dark:border-border-dark focus:ring-primary"}`}
-                    placeholder={t('login.passwordPlaceholder')}
-                  />
+                {totpError && (
+                  <div className="bg-accent-red/10 text-accent-red p-4 rounded-xl text-sm mb-6 border border-accent-red/20 animate-slide-in-right">
+                    {totpError}
+                  </div>
+                )}
+
+                <form onSubmit={handleTotpSubmit} noValidate className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">
+                      {useBackupCode ? "Backup Code" : "Authenticator Code"}
+                    </label>
+                    <div className="relative group">
+                      <KeyRound
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark group-focus-within:text-primary transition-colors"
+                        size={20}
+                      />
+                      <input
+                        ref={totpInputRef}
+                        type={useBackupCode ? "text" : "tel"}
+                        inputMode={useBackupCode ? "text" : "numeric"}
+                        pattern={useBackupCode ? undefined : "[0-9]*"}
+                        maxLength={useBackupCode ? 11 : 6}
+                        value={totpCode}
+                        onChange={(e) => setTotpCode(e.target.value.replace(useBackupCode ? /[^A-Za-z0-9-]/ : /\D/g, ""))}
+                        className="w-full pl-12 pr-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-text-light dark:text-text-dark placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark tracking-widest text-lg font-mono text-center"
+                        placeholder={useBackupCode ? "XXXXX-XXXXX" : "000000"}
+                        autoComplete="one-time-code"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={totpLoading || (!useBackupCode ? totpCode.length !== 6 : totpCode.length < 5)}
+                    className="w-full bg-gradient-to-r from-primary to-primary-dark hover:from-primary-hover hover:to-primary text-white py-3.5 rounded-xl font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                  >
+                    {totpLoading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Verifying…
+                      </span>
+                    ) : "Verify"}
+                  </button>
+                </form>
+
+                <div className="mt-6 flex flex-col items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors"
+                    onClick={() => { setUseBackupCode(!useBackupCode); setTotpCode(""); setTotpError(""); setTimeout(() => totpInputRef.current?.focus(), 50); }}
+                    className="text-sm text-primary hover:text-primary-hover font-medium transition-colors flex items-center gap-1.5"
                   >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    <KeyRound size={14} />
+                    {useBackupCode ? "Use authenticator app instead" : "Use backup code instead"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="text-sm text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors flex items-center gap-1.5"
+                  >
+                    <ArrowLeft size={14} />
+                    Back to login
                   </button>
                 </div>
-                {fieldErrors.password && (
-                  <p className="mt-1.5 text-sm text-accent-red">{fieldErrors.password}</p>
+              </>
+            ) : (
+              /* ── Password Step (default) ────────────────────────────────── */
+              <>
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center h-14 w-14 bg-gradient-to-br from-primary to-primary-dark text-white rounded-xl shadow-lg shadow-primary/30 mb-4">
+                    <Lock size={26} />
+                  </div>
+                  <h2 className="text-2xl font-bold text-text-light dark:text-text-dark">{t('login.welcomeTitle')}</h2>
+                  <p className="text-text-muted-light dark:text-text-muted-dark mt-2">{t('login.welcomeSubtitle')}</p>
+                </div>
+
+                {successMessage && (
+                  <div className="bg-accent-green/10 text-accent-green p-4 rounded-xl text-sm mb-6 border border-accent-green/20 flex items-center gap-3 animate-slide-in-right">
+                    <CheckCircle size={20} />
+                    <span>{successMessage}</span>
+                  </div>
                 )}
-              </div>
 
-              <div className="flex items-center justify-between">
-                <button type="button" onClick={() => setRememberMe(!rememberMe)} className="flex items-center gap-2.5 cursor-pointer select-none group">
-                  <span className={`flex items-center justify-center w-[18px] h-[18px] rounded border transition-all duration-200 ${rememberMe ? "bg-primary border-primary" : "border-border-light dark:border-border-dark group-hover:border-primary/50"}`}>
-                    {rememberMe && <Check size={12} className="text-white" strokeWidth={3} />}
-                  </span>
-                  <span className="text-sm text-text-muted-light dark:text-text-muted-dark">{t('login.rememberMe')}</span>
-                </button>
-                <Link to="/forgot-password" className="text-sm text-primary hover:text-primary-hover font-medium transition-colors">
-                  {t('login.forgotPassword')}
-                </Link>
-              </div>
+                {error && (
+                  <div className="bg-accent-red/10 text-accent-red p-4 rounded-xl text-sm mb-6 border border-accent-red/20 animate-slide-in-right">
+                    {error}
+                  </div>
+                )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className={`w-full bg-gradient-to-r from-primary to-primary-dark hover:from-primary-hover hover:to-primary text-white py-3.5 rounded-xl font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 transform hover:-translate-y-0.5 ${
-                  loading ? "opacity-70 cursor-not-allowed transform-none" : ""
-                }`}
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    {t('login.signingIn')}
-                  </span>
-                ) : t('login.signIn')}
-              </button>
-            </form>
+                <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">
+                      {t('login.emailLabel')}
+                    </label>
+                    <div className="relative group">
+                      <Mail
+                        className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${fieldErrors.email ? "text-accent-red" : "text-text-muted-light dark:text-text-muted-dark group-focus-within:text-primary"}`}
+                        size={20}
+                      />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => { setEmail(e.target.value); setFieldErrors((prev) => ({ ...prev, email: undefined })); }}
+                        className={`w-full pl-12 pr-4 py-3 bg-background-light dark:bg-background-dark border rounded-xl focus:ring-2 focus:border-transparent outline-none transition-all text-text-light dark:text-text-dark placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark ${fieldErrors.email ? "border-accent-red focus:ring-accent-red/30" : "border-border-light dark:border-border-dark focus:ring-primary"}`}
+                        placeholder={t('login.emailPlaceholder')}
+                      />
+                    </div>
+                    {fieldErrors.email && (
+                      <p className="mt-1.5 text-sm text-accent-red">{fieldErrors.email}</p>
+                    )}
+                  </div>
 
-            <div className="hidden lg:block mt-8 pt-6 border-t border-border-light dark:border-border-dark text-center">
-              <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
-                {t('login.newEmployee')}{" "}
-                <Link to="/register" className="text-primary font-semibold hover:text-primary-hover transition-colors">
-                  {t('login.createAccount')}
-                </Link>
-              </p>
-            </div>
+                  <div>
+                    <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">
+                      {t('login.passwordLabel')}
+                    </label>
+                    <div className="relative group">
+                      <Lock
+                        className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${fieldErrors.password ? "text-accent-red" : "text-text-muted-light dark:text-text-muted-dark group-focus-within:text-primary"}`}
+                        size={20}
+                      />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => { setPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, password: undefined })); }}
+                        className={`w-full pl-12 pr-14 py-3 bg-background-light dark:bg-background-dark border rounded-xl focus:ring-2 focus:border-transparent outline-none transition-all text-text-light dark:text-text-dark placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark ${fieldErrors.password ? "border-accent-red focus:ring-accent-red/30" : "border-border-light dark:border-border-dark focus:ring-primary"}`}
+                        placeholder={t('login.passwordPlaceholder')}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    {fieldErrors.password && (
+                      <p className="mt-1.5 text-sm text-accent-red">{fieldErrors.password}</p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <button type="button" onClick={() => setRememberMe(!rememberMe)} className="flex items-center gap-2.5 cursor-pointer select-none group">
+                      <span className={`flex items-center justify-center w-[18px] h-[18px] rounded border transition-all duration-200 ${rememberMe ? "bg-primary border-primary" : "border-border-light dark:border-border-dark group-hover:border-primary/50"}`}>
+                        {rememberMe && <Check size={12} className="text-white" strokeWidth={3} />}
+                      </span>
+                      <span className="text-sm text-text-muted-light dark:text-text-muted-dark">{t('login.rememberMe')}</span>
+                    </button>
+                    <Link to="/forgot-password" className="text-sm text-primary hover:text-primary-hover font-medium transition-colors">
+                      {t('login.forgotPassword')}
+                    </Link>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className={`w-full bg-gradient-to-r from-primary to-primary-dark hover:from-primary-hover hover:to-primary text-white py-3.5 rounded-xl font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 transform hover:-translate-y-0.5 ${
+                      loading ? "opacity-70 cursor-not-allowed transform-none" : ""
+                    }`}
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        {t('login.signingIn')}
+                      </span>
+                    ) : t('login.signIn')}
+                  </button>
+                </form>
+
+                <div className="hidden lg:block mt-8 pt-6 border-t border-border-light dark:border-border-dark text-center">
+                  <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
+                    {t('login.newEmployee')}{" "}
+                    <Link to="/register" className="text-primary font-semibold hover:text-primary-hover transition-colors">
+                      {t('login.createAccount')}
+                    </Link>
+                  </p>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Additional Info */}

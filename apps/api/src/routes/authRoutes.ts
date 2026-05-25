@@ -8,7 +8,7 @@ import {
   validateResetPassword,
   validateRequest,
 } from "../middlewares/security";
-import { authenticateToken } from "../middlewares/auth";
+import { authenticateToken, requireRole } from "../middlewares/auth";
 
 const router = Router();
 
@@ -78,6 +78,58 @@ router.patch(
   "/notification-preferences",
   authenticateToken,
   AuthController.updateNotificationPreferences.bind(AuthController),
+);
+
+// ── 2FA / TOTP Routes ───────────────────────────────────────────────────────
+
+// GET  /api/auth/2fa/setup — generate QR code + secret (not yet persisted)
+router.get(
+  "/2fa/setup",
+  authenticateToken,
+  AuthController.setupTotp.bind(AuthController),
+);
+
+// POST /api/auth/2fa/enable — verify first code + persist secret + return backup codes
+router.post(
+  "/2fa/enable",
+  authenticateToken,
+  AuthController.enableTotp.bind(AuthController),
+);
+
+// POST /api/auth/2fa/disable — self-service disable (requires current password)
+router.post(
+  "/2fa/disable",
+  authenticateToken,
+  AuthController.disableTotp.bind(AuthController),
+);
+
+// GET  /api/auth/2fa/status — get 2FA enabled status + backup code count
+router.get(
+  "/2fa/status",
+  authenticateToken,
+  AuthController.getTotpStatus.bind(AuthController),
+);
+
+// POST /api/auth/2fa/backup-codes — regenerate backup codes (requires active TOTP code)
+router.post(
+  "/2fa/backup-codes",
+  authenticateToken,
+  AuthController.regenerateBackupCodes.bind(AuthController),
+);
+
+// POST /api/auth/2fa/verify — public, rate-limited: complete the TOTP login step
+router.post(
+  "/2fa/verify",
+  authLimiter,
+  AuthController.verifyTotpLogin.bind(AuthController),
+);
+
+// POST /api/auth/2fa/admin-reset — HR_ADMIN only: emergency 2FA reset for any user
+router.post(
+  "/2fa/admin-reset",
+  authenticateToken,
+  requireRole("HR_ADMIN"),
+  AuthController.adminResetTotp.bind(AuthController),
 );
 
 export default router;

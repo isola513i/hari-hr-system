@@ -190,6 +190,127 @@ export class AuthController {
       res.status(500).json({ error: error.message || "Failed to update preferences" });
     }
   }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // TOTP / 2FA HANDLERS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /** GET /auth/2fa/setup — generate QR code + secret (not yet persisted) */
+  async setupTotp(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user!.userId;
+      const result = await AuthService.setupTotp(userId);
+      res.json(result);
+    } catch (error: any) {
+      console.error("TOTP setup error:", error);
+      res.status(500).json({ error: error.message || "Failed to setup 2FA" });
+    }
+  }
+
+  /** POST /auth/2fa/enable — verify first code + persist secret + return backup codes */
+  async enableTotp(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user!.userId;
+      const { secret, token } = req.body;
+
+      if (!secret || !token) {
+        res.status(400).json({ error: "secret and token are required" });
+        return;
+      }
+
+      const backupCodes = await AuthService.enableTotp(userId, secret, token);
+      res.json({ message: "Two-factor authentication enabled", backupCodes });
+    } catch (error: any) {
+      console.error("TOTP enable error:", error);
+      res.status(400).json({ error: error.message || "Failed to enable 2FA" });
+    }
+  }
+
+  /** POST /auth/2fa/disable — self-service disable (requires password) */
+  async disableTotp(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user!.userId;
+      const { password } = req.body;
+
+      if (!password) {
+        res.status(400).json({ error: "password is required" });
+        return;
+      }
+
+      await AuthService.disableTotp(userId, password);
+      res.json({ message: "Two-factor authentication disabled" });
+    } catch (error: any) {
+      console.error("TOTP disable error:", error);
+      res.status(400).json({ error: error.message || "Failed to disable 2FA" });
+    }
+  }
+
+  /** POST /auth/2fa/admin-reset — HR_ADMIN emergency reset for any user */
+  async adminResetTotp(req: Request, res: Response): Promise<void> {
+    try {
+      const { userId } = req.body;
+
+      if (!userId) {
+        res.status(400).json({ error: "userId is required" });
+        return;
+      }
+
+      await AuthService.adminDisableTotp(userId);
+      res.json({ message: "Two-factor authentication has been reset for the user" });
+    } catch (error: any) {
+      console.error("TOTP admin reset error:", error);
+      res.status(400).json({ error: error.message || "Failed to reset 2FA" });
+    }
+  }
+
+  /** POST /auth/2fa/verify — public, rate-limited: complete TOTP login */
+  async verifyTotpLogin(req: Request, res: Response): Promise<void> {
+    try {
+      const { pending_token, code, rememberMe } = req.body;
+
+      if (!pending_token || !code) {
+        res.status(400).json({ error: "pending_token and code are required" });
+        return;
+      }
+
+      const authResponse = await AuthService.verifyTotpLogin(pending_token, code, rememberMe);
+      res.json(authResponse);
+    } catch (error: any) {
+      console.error("TOTP verify login error:", error);
+      res.status(401).json({ error: error.message || "Verification failed" });
+    }
+  }
+
+  /** GET /auth/2fa/status — get 2FA status + backup code count */
+  async getTotpStatus(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user!.userId;
+      const status = await AuthService.getTotpStatus(userId);
+      res.json(status);
+    } catch (error: any) {
+      console.error("TOTP status error:", error);
+      res.status(500).json({ error: error.message || "Failed to get 2FA status" });
+    }
+  }
+
+  /** POST /auth/2fa/backup-codes — regenerate backup codes (requires active TOTP code) */
+  async regenerateBackupCodes(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user!.userId;
+      const { token } = req.body;
+
+      if (!token) {
+        res.status(400).json({ error: "token is required" });
+        return;
+      }
+
+      const backupCodes = await AuthService.regenerateBackupCodes(userId, token);
+      res.json({ message: "Backup codes regenerated", backupCodes });
+    } catch (error: any) {
+      console.error("TOTP backup codes error:", error);
+      res.status(400).json({ error: error.message || "Failed to regenerate backup codes" });
+    }
+  }
 }
 
 export default new AuthController();

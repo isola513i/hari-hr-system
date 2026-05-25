@@ -17,6 +17,9 @@ import {
   Check,
   X,
   MapPin,
+  ShieldCheck,
+  ShieldOff,
+  KeyRound,
 } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -28,6 +31,10 @@ import { useProfileSettings } from '../hooks/useProfileSettings';
 import { usePasswordChange } from '../hooks/usePasswordChange';
 import { useAppearanceSettings } from '../hooks/useAppearanceSettings';
 import { useNotificationSettings } from '../hooks/useNotificationSettings';
+import { useTwoFactor } from '../hooks/useTwoFactor';
+import { TotpSetupModal } from '../components/TwoFactor/TotpSetupModal';
+import { TotpDisableModal } from '../components/TwoFactor/TotpDisableModal';
+import { BackupCodesModal } from '../components/TwoFactor/BackupCodesModal';
 
 export const Settings: React.FC = () => {
   const { t, i18n } = useTranslation('settings');
@@ -74,6 +81,19 @@ export const Settings: React.FC = () => {
 
   // Appearance hook
   const { theme, setTheme, applyTheme } = useAppearanceSettings();
+
+  // 2FA hook + modal state
+  const { status: totpStatus, statusLoading: totpStatusLoading, fetchStatus: fetchTotpStatus } = useTwoFactor();
+  const [showSetupModal, setShowSetupModal] = useState(false);
+  const [showDisableModal, setShowDisableModal] = useState(false);
+  const [showBackupCodesModal, setShowBackupCodesModal] = useState(false);
+
+  // Fetch 2FA status when security tab is opened
+  useEffect(() => {
+    if (activeTab === 'security' && totpStatus === null && !totpStatusLoading) {
+      fetchTotpStatus();
+    }
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Notification hook
   const {
@@ -653,7 +673,91 @@ export const Settings: React.FC = () => {
                   </button>
                 </div>
               </form>
+
+              {/* ── Two-Factor Authentication ───────────────────────────── */}
+              <div className="border-t border-border-light dark:border-border-dark pt-6 space-y-4">
+                <div>
+                  <h3 className="font-semibold text-text-light dark:text-text-dark">Two-Factor Authentication</h3>
+                  <p className="text-sm text-text-muted-light dark:text-text-muted-dark mt-0.5">
+                    Add an extra layer of security to your account using an authenticator app.
+                  </p>
+                </div>
+
+                <div className="bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl p-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    {totpStatusLoading ? (
+                      <div className="h-10 w-10 rounded-xl bg-border-light dark:bg-border-dark animate-pulse" />
+                    ) : totpStatus?.enabled ? (
+                      <div className="flex items-center justify-center h-10 w-10 bg-accent-green/10 rounded-xl">
+                        <ShieldCheck size={20} className="text-accent-green" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-10 w-10 bg-text-muted-light/10 dark:bg-text-muted-dark/10 rounded-xl">
+                        <ShieldOff size={20} className="text-text-muted-light dark:text-text-muted-dark" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-medium text-text-light dark:text-text-dark">
+                        {totpStatus?.enabled ? '2FA Enabled' : '2FA Disabled'}
+                      </p>
+                      {totpStatus?.enabled && (
+                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
+                          {totpStatus.backupCodesRemaining} backup code{totpStatus.backupCodesRemaining !== 1 ? 's' : ''} remaining
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {totpStatus?.enabled ? (
+                      <>
+                        <button
+                          onClick={() => setShowBackupCodesModal(true)}
+                          className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark hover:bg-card-light dark:hover:bg-card-dark transition-colors"
+                        >
+                          <KeyRound size={14} />
+                          Backup Codes
+                        </button>
+                        <button
+                          onClick={() => setShowDisableModal(true)}
+                          className="flex items-center gap-1.5 px-3 py-2 text-sm border border-accent-red/30 rounded-lg text-accent-red hover:bg-accent-red/10 transition-colors"
+                        >
+                          <ShieldOff size={14} />
+                          Disable
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setShowSetupModal(true)}
+                        className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
+                      >
+                        <ShieldCheck size={14} />
+                        Enable 2FA
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
+          )}
+
+          {/* 2FA Modals */}
+          <TotpSetupModal
+            isOpen={showSetupModal}
+            onClose={() => setShowSetupModal(false)}
+            onEnabled={() => { fetchTotpStatus(); setShowSetupModal(false); showToast('Two-factor authentication enabled!', 'success'); }}
+          />
+          <TotpDisableModal
+            isOpen={showDisableModal}
+            onClose={() => setShowDisableModal(false)}
+            onDisabled={() => { fetchTotpStatus(); showToast('Two-factor authentication disabled', 'info'); }}
+          />
+          {totpStatus && (
+            <BackupCodesModal
+              isOpen={showBackupCodesModal}
+              onClose={() => setShowBackupCodesModal(false)}
+              backupCodesRemaining={totpStatus.backupCodesRemaining}
+            />
           )}
 
           {/* Leave Types Tab (Admin only) */}

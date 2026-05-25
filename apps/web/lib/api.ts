@@ -1,4 +1,4 @@
-import { LoginCredentials, AuthResponse } from '../types';
+import { LoginCredentials, AuthResponse, TotpLoginResponse, TotpSetupResponse, TotpStatusResponse } from '../types';
 import errorLogging from '../services/errorLogging';
 
 // Use environment variable for API URL, fallback to /api for local development with proxy
@@ -218,7 +218,7 @@ export const api = {
 
     // Specifically for login which might not need token header or needs custom handling
     auth: {
-        login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
+        login: async (credentials: LoginCredentials): Promise<AuthResponse | TotpLoginResponse> => {
             const response = await fetch(`${BASE_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -229,6 +229,44 @@ export const api = {
                 throw new Error(error.error || error.message || 'Login failed');
             }
             return response.json();
-        }
+        },
+
+        // ── 2FA / TOTP ──────────────────────────────────────────────────────
+
+        /** POST /auth/2fa/verify — complete TOTP login with pending_token + code */
+        verifyTotp: async (pending_token: string, code: string, rememberMe?: boolean): Promise<AuthResponse> => {
+            const response = await fetch(`${BASE_URL}/auth/2fa/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pending_token, code, rememberMe }),
+            });
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.error || error.message || 'Verification failed');
+            }
+            return response.json();
+        },
+
+        /** GET /auth/2fa/setup — generate QR code + secret (protected) */
+        setupTotp: (): Promise<TotpSetupResponse> => api.get('/auth/2fa/setup'),
+
+        /** POST /auth/2fa/enable — verify first code + enable 2FA */
+        enableTotp: (secret: string, token: string): Promise<{ message: string; backupCodes: string[] }> =>
+            api.post('/auth/2fa/enable', { secret, token }),
+
+        /** POST /auth/2fa/disable — self-service disable (requires password) */
+        disableTotp: (password: string): Promise<{ message: string }> =>
+            api.post('/auth/2fa/disable', { password }),
+
+        /** GET /auth/2fa/status — get 2FA enabled state + backup code count */
+        getTotpStatus: (): Promise<TotpStatusResponse> => api.get('/auth/2fa/status'),
+
+        /** POST /auth/2fa/backup-codes — regenerate backup codes */
+        regenerateBackupCodes: (token: string): Promise<{ message: string; backupCodes: string[] }> =>
+            api.post('/auth/2fa/backup-codes', { token }),
+
+        /** POST /auth/2fa/admin-reset — HR_ADMIN: reset 2FA for any user */
+        adminResetTotp: (userId: string): Promise<{ message: string }> =>
+            api.post('/auth/2fa/admin-reset', { userId }),
     }
 };

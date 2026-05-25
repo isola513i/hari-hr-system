@@ -451,6 +451,28 @@ export interface AuthResponse {
 }
 
 /**
+ * Intermediate response when the account has 2FA enabled.
+ * The frontend must follow up with POST /auth/2fa/verify.
+ */
+export interface TotpLoginResponse {
+  totp_required: true;
+  pending_token: string;
+}
+
+/** Response from GET /auth/2fa/setup */
+export interface TotpSetupResponse {
+  secret: string;
+  qrCodeDataUrl: string;
+  manualKey: string;
+}
+
+/** Response from GET /auth/2fa/status */
+export interface TotpStatusResponse {
+  enabled: boolean;
+  backupCodesRemaining: number;
+}
+
+/**
  * Generic API response wrapper
  */
 export interface ApiResponse<T = unknown> {

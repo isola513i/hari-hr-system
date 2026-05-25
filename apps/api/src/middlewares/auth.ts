@@ -46,6 +46,24 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
             return res.status(401).json({ error: 'Invalid or expired token' });
         }
 
+        // Defense-in-depth: explicitly block TOTP pending tokens from all
+        // protected routes. These short-lived tokens (issued after password
+        // validation but BEFORE 2FA verification) must only be accepted by
+        // POST /auth/2fa/verify — which is a public endpoint and never calls
+        // authenticateToken. If this check were ever removed, the role
+        // validation below would still reject such tokens (they carry no role),
+        // but an explicit 403 is clearer for developers and audit logs.
+        if (
+            decoded &&
+            typeof decoded === 'object' &&
+            (decoded as Record<string, unknown>).totp_pending === true
+        ) {
+            return res.status(403).json({
+                error: 'Two-factor authentication required. Please complete 2FA verification.',
+                code: 'TOTP_PENDING',
+            });
+        }
+
         // Runtime validation — reject tokens with missing or malformed claims
         const VALID_ROLES: UserRole[] = ['HR_ADMIN', 'EMPLOYEE', 'MANAGER', 'FINANCE'];
         if (
