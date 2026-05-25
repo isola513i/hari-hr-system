@@ -31,6 +31,10 @@ export interface Employee {
     onboardingPercentage?: number;
     bannerColor?: string | null;
     workType?: 'office' | 'remote' | 'hybrid';
+    /** Decrypted National ID — null when not set or decrypt failed */
+    nationalId?: string | null;
+    /** Decrypted bank account number — null when not set or decrypt failed */
+    bankAccountNumber?: string | null;
 }
 
 export interface CreateEmployeeDTO {
@@ -41,6 +45,8 @@ export interface CreateEmployeeDTO {
     joinDate: string;
     salary?: number;
     password?: string;
+    nationalId?: string | null;
+    bankAccountNumber?: string | null;
 }
 
 export interface UpdateEmployeeDTO extends Partial<CreateEmployeeDTO> {
@@ -59,4 +65,6 @@ export interface UpdateEmployeeDTO extends Partial<CreateEmployeeDTO> {
     bannerColor?: string | null;
     workType?: 'office' | 'remote' | 'hybrid';
     birthDate?: string | null;
+    nationalId?: string | null;
+    bankAccountNumber?: string | null;
 }

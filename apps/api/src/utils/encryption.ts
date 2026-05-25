@@ -51,6 +51,23 @@ export function encrypt(plaintext: string): string {
 }
 
 /**
+ * HMAC-SHA-256 blind index for PII fields.
+ *
+ * Deterministic (same input → same output) so it can be stored in a UNIQUE
+ * index and used for duplicate-detection — without exposing the plaintext.
+ * Using HMAC (keyed) instead of plain SHA-256 means the hash is useless to an
+ * attacker who has the DB dump but not the TOTP_ENCRYPTION_KEY.
+ *
+ * Returns a 64-char lowercase hex string.
+ */
+export function hashPII(plaintext: string): string {
+    return crypto
+        .createHmac('sha256', ENCRYPTION_KEY)
+        .update(plaintext.trim())
+        .digest('hex');
+}
+
+/**
  * Decrypt a ciphertext string previously produced by `encrypt()`.
  * Throws if the ciphertext has been tampered with (authTag mismatch).
  */

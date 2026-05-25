@@ -4,6 +4,22 @@ import { Employee, CreateEmployeeDTO, UpdateEmployeeDTO } from '../models/Employ
 import SystemConfigService from './SystemConfigService';
 import { PaginationParams, PaginatedResult, createPaginatedResult } from '../utils/pagination';
 import JobHistoryService from './JobHistoryService';
+import { encrypt, decrypt, hashPII } from '../utils/encryption';
+
+/**
+ * Silently decrypt a ciphertext produced by encrypt().
+ * Returns null for nullish values and on any decryption error (tampered ciphertext,
+ * plaintext accidentally stored, etc.) — callers always receive a safe value.
+ */
+function safeTryDecrypt(value: string | null | undefined): string | null {
+    if (!value) return null;
+    try {
+        return decrypt(value);
+    } catch {
+        console.error('PII decrypt failed — returning null for field');
+        return null;
+    }
+}
 
 export interface EmployeeFilters {
     department?: string;
@@ -131,7 +147,7 @@ export class EmployeeService {
     }
 
     async createEmployee(employeeData: CreateEmployeeDTO): Promise<Employee> {
-        const { name, email, role, department, joinDate, salary, password } = employeeData;
+        const { name, email, role, department, joinDate, salary, password, nationalId, bankAccountNumber } = employeeData;
 
         // Check if email already exists
         const existingEmployee = await query(
@@ -141,6 +157,18 @@ export class EmployeeService {
 
         if (existingEmployee.rows.length > 0) {
             throw new Error('Email already exists');
+        }
+
+        // Duplicate National ID check via blind index (before writing any data)
+        if (nationalId) {
+            const hashVal = hashPII(nationalId);
+            const dup = await query(
+                'SELECT id FROM employees WHERE national_id_hash = $1',
+                [hashVal]
+            );
+            if (dup.rows.length > 0) {
+                throw new Error('An employee with this National ID already exists');
+            }
         }
 
         // Hash password - use default from config if not provided
@@ -159,12 +187,24 @@ export class EmployeeService {
         const nextNum = codeResult.rows[0].next_num;
         const employeeCode = `EMP-${String(nextNum).padStart(4, '0')}`;
 
-        // Insert employee
+        // Prepare encrypted PII values
+        const encryptedNationalId     = nationalId        ? encrypt(nationalId)        : null;
+        const nationalIdHash          = nationalId        ? hashPII(nationalId)         : null;
+        const encryptedBankAccount    = bankAccountNumber ? encrypt(bankAccountNumber)  : null;
+
+        // Insert employee (includes PII columns — NULL when not provided)
         const result = await query(
-            `INSERT INTO employees (name, email, role, department, join_date, avatar, status, employee_code)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `INSERT INTO employees
+                (name, email, role, department, join_date, avatar, status, employee_code,
+                 national_id, national_id_hash, bank_account_number)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
              RETURNING *`,
-            [name, email, role, department, joinDate, avatar, 'Active', employeeCode]
+            [
+                name, email, role, department, joinDate, avatar, 'Active', employeeCode,
+                encryptedNationalId,   // $9  — AES-256-GCM ciphertext or NULL
+                nationalIdHash,        // $10 — HMAC-SHA-256 blind index or NULL
+                encryptedBankAccount,  // $11 — AES-256-GCM ciphertext or NULL
+            ]
         );
 
         return this.mapRowToEmployee(result.rows[0]);
@@ -269,6 +309,35 @@ export class EmployeeService {
         if (data.workType !== undefined) {
             updates.push(`work_type = $${paramIndex++}`);
             values.push(data.workType);
+        }
+
+        // PII fields — encrypt ciphertext + update blind index
+        if (data.nationalId !== undefined) {
+            if (data.nationalId) {
+                // Duplicate check: exclude the employee being updated (self-update is allowed)
+                const hashVal = hashPII(data.nationalId);
+                const dup = await query(
+                    'SELECT id FROM employees WHERE national_id_hash = $1 AND id != $2',
+                    [hashVal, id]
+                );
+                if (dup.rows.length > 0) {
+                    throw new Error('An employee with this National ID already exists');
+                }
+                updates.push(`national_id = $${paramIndex++}`);
+                values.push(encrypt(data.nationalId));
+                updates.push(`national_id_hash = $${paramIndex++}`);
+                values.push(hashVal);
+            } else {
+                // Empty string or explicit null → clear both columns
+                updates.push(`national_id = $${paramIndex++}`);
+                values.push(null);
+                updates.push(`national_id_hash = $${paramIndex++}`);
+                values.push(null);
+            }
+        }
+        if (data.bankAccountNumber !== undefined) {
+            updates.push(`bank_account_number = $${paramIndex++}`);
+            values.push(data.bankAccountNumber ? encrypt(data.bankAccountNumber) : null);
         }
 
         if (updates.length === 0) {
@@ -390,6 +459,9 @@ export class EmployeeService {
             onboardingPercentage: row.onboarding_percentage || 0,
             bannerColor: row.banner_color || null,
             workType: row.work_type || 'office',
+            // PII fields: transparently decrypt on read; null if not set or decrypt error
+            nationalId: safeTryDecrypt(row.national_id),
+            bankAccountNumber: safeTryDecrypt(row.bank_account_number),
         };
     }
 

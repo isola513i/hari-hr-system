@@ -105,6 +105,10 @@ export interface Employee {
   address?: EmployeeAddress | null;
   bannerColor?: string;
   workType?: 'office' | 'remote' | 'hybrid';
+  /** Decrypted National ID — only present when the viewer has canEditSensitiveInfo */
+  nationalId?: string | null;
+  /** Decrypted bank account number — only present when the viewer has canEditSensitiveInfo */
+  bankAccountNumber?: string | null;
 }
 
 export interface StatCardProps {

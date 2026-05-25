@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import EmployeeService from '../services/EmployeeService';
 import { getPaginationParams, getSortParams } from '../utils/pagination';
+import AuditLogService from '../services/AuditLogService';
 
 export class EmployeeController {
     /**
@@ -110,6 +111,31 @@ export class EmployeeController {
             }
 
             const employee = await EmployeeService.updateEmployee(updateData);
+
+            // Explicit PII audit log — fired whenever national_id or bank_account_number
+            // is included in the request payload (value changed OR explicitly cleared).
+            const piiChanged = req.body.nationalId !== undefined || req.body.bankAccountNumber !== undefined;
+            if (piiChanged) {
+                AuditLogService.create({
+                    userId:    user?.userId ?? null,
+                    userEmail: user?.email  ?? null,
+                    action:    'EMPLOYEE_PII_UPDATED',
+                    resource:  `employee:${id}`,
+                    method:    req.method,
+                    path:      req.path,
+                    ip:        req.ip ?? '',
+                    userAgent: req.headers['user-agent'] ?? '',
+                    success:   true,
+                    details: {
+                        employeeId: id,
+                        fields: [
+                            ...(req.body.nationalId        !== undefined ? ['national_id']         : []),
+                            ...(req.body.bankAccountNumber !== undefined ? ['bank_account_number']  : []),
+                        ],
+                    },
+                }).catch((err) => console.error('PII audit log failed:', err));
+            }
+
             res.json(employee);
         } catch (error: any) {
             console.error('Update employee error:', error);

@@ -15,6 +15,8 @@ import {
     TrendingUp,
     ArrowRightLeft,
     AlertTriangle,
+    CreditCard,
+    IdCard,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { DatePicker } from '../../components/DatePicker';
@@ -359,6 +361,45 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                                 value={editForm.address}
                                 onChange={(addr) => onProfileChange('address', addr)}
                             />
+
+                            {/* PII Fields — admin only */}
+                            {canEditSensitiveInfo && (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                                            National ID
+                                        </label>
+                                        <div className="relative">
+                                            <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
+                                            <input
+                                                type="text"
+                                                value={editForm.nationalId ?? ''}
+                                                onChange={(e) => onProfileChange('nationalId', e.target.value)}
+                                                className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark font-mono"
+                                                placeholder="e.g. 1234567890123"
+                                                maxLength={20}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                                            Bank Account Number
+                                        </label>
+                                        <div className="relative">
+                                            <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
+                                            <input
+                                                type="text"
+                                                value={editForm.bankAccountNumber ?? ''}
+                                                onChange={(e) => onProfileChange('bankAccountNumber', e.target.value)}
+                                                className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark font-mono"
+                                                placeholder="e.g. 123-4-56789-0"
+                                                maxLength={30}
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         <div className="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-end gap-3 bg-gray-50 dark:bg-gray-800/50">

@@ -1,12 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone, Mail, MapPin, HeartPulse, Home } from 'lucide-react';
+import { Phone, Mail, MapPin, HeartPulse, Home, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { EmployeeSidebarProps } from './EmployeeDetailTypes';
 import { EmployeeAddress } from '../../types';
 import { Avatar } from '../Avatar';
 import { StatusIndicator } from '../StatusIndicator';
 import { useUserStatus } from '../../contexts/UserStatusContext';
+
+/** Show last 3 characters of the National ID, mask the rest */
+function maskNationalId(id: string): string {
+    return id.length > 3 ? '*'.repeat(id.length - 3) + id.slice(-3) : id;
+}
+
+/** Show last 4 characters of the bank account number, mask the rest */
+function maskBankAccount(acct: string): string {
+    return acct.length > 4 ? '*'.repeat(acct.length - 4) + acct.slice(-4) : acct;
+}
 
 function formatAddress(address: EmployeeAddress): string {
     const parts = [
@@ -28,7 +38,11 @@ export const EmployeeSidebar: React.FC<EmployeeSidebarProps> = ({
     const { t } = useTranslation(['employees', 'common']);
     const navigate = useNavigate();
     const { getStatus, getStatusMessage } = useUserStatus();
-    const { canViewSensitiveTabs } = permissions;
+    const { canViewSensitiveTabs, canEditSensitiveInfo } = permissions;
+
+    // Toggle visibility of masked PII fields (shoulder-surf protection)
+    const [showNationalId, setShowNationalId]   = useState(false);
+    const [showBankAccount, setShowBankAccount] = useState(false);
 
     return (
         <div className="space-y-6">
@@ -73,6 +87,51 @@ export const EmployeeSidebar: React.FC<EmployeeSidebarProps> = ({
                                 <HeartPulse size={16} className="text-accent-red" />
                                 {employee.emergencyContact}
                             </div>
+                        </div>
+                    )}
+
+                    {/* Sensitive PII — only visible to HR_ADMIN (canEditSensitiveInfo) */}
+                    {canEditSensitiveInfo && (employee.nationalId || employee.bankAccountNumber) && (
+                        <div className="border-t border-border-light dark:border-border-dark pt-4 mt-2 space-y-3">
+                            <p className="text-xs font-semibold uppercase text-text-muted-light dark:text-text-muted-dark tracking-wider flex items-center gap-1">
+                                <ShieldCheck size={12} /> Sensitive Information
+                            </p>
+
+                            {employee.nationalId && (
+                                <div>
+                                    <p className="text-text-muted-light dark:text-text-muted-dark text-xs mb-0.5">National ID</p>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-mono text-text-light dark:text-text-dark">
+                                            {showNationalId ? employee.nationalId : maskNationalId(employee.nationalId)}
+                                        </span>
+                                        <button
+                                            onClick={() => setShowNationalId((v) => !v)}
+                                            className="text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors"
+                                            title={showNationalId ? 'Hide National ID' : 'Show National ID'}
+                                        >
+                                            {showNationalId ? <EyeOff size={14} /> : <Eye size={14} />}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {employee.bankAccountNumber && (
+                                <div>
+                                    <p className="text-text-muted-light dark:text-text-muted-dark text-xs mb-0.5">Bank Account</p>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-mono text-text-light dark:text-text-dark">
+                                            {showBankAccount ? employee.bankAccountNumber : maskBankAccount(employee.bankAccountNumber)}
+                                        </span>
+                                        <button
+                                            onClick={() => setShowBankAccount((v) => !v)}
+                                            className="text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors"
+                                            title={showBankAccount ? 'Hide bank account' : 'Show bank account'}
+                                        >
+                                            {showBankAccount ? <EyeOff size={14} /> : <Eye size={14} />}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
