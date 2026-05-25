@@ -150,14 +150,14 @@ export class OffboardingService {
         actor: { userId: string; email: string },
     ): Promise<{ employee: Employee; tasks: OffboardingTaskResponse[] }> {
 
-        // Guard clause (Refinement #2) — block double-initiation
+        // Block double-initiation (guard clause)
         const existing = await EmployeeService.getEmployeeById(employeeId);
         if (!existing) throw new Error('Employee not found');
         if (existing.status === 'Notice Period' || existing.status === 'Terminated') {
             throw new Error('Employee is already offboarding or terminated');
         }
 
-        // Write termination metadata + flip status to 'Notice Period'
+        const now = new Date().toISOString();
         await query(
             `UPDATE employees
              SET status                    = 'Notice Period',
@@ -176,15 +176,21 @@ export class OffboardingService {
             ],
         );
 
-        // Seed default tasks relative to lastWorkingDay
         const tasks = await this._seedDefaultTasks(employeeId, dto.lastWorkingDay);
 
-        // Notify task assignees (Refinement #3)
-        await this._notifyAssignees(employeeId, existing, tasks);
+        // Patch the fetched object with known new values — avoids a second DB round-trip
+        const updated: Employee = {
+            ...existing,
+            status: 'Notice Period',
+            terminationReason: dto.terminationReason,
+            lastWorkingDay: dto.lastWorkingDay,
+            terminationNotes: dto.terminationNotes ?? null,
+            terminatedBy: actor.userId,
+            offboardingInitiatedAt: now,
+        };
 
-        // Return refreshed employee + tasks
-        const updated = await EmployeeService.getEmployeeById(employeeId);
-        return { employee: updated!, tasks };
+        await this._notifyAssignees(employeeId, updated, tasks);
+        return { employee: updated, tasks };
     }
 
     /**
@@ -256,7 +262,6 @@ export class OffboardingService {
 
         if (setClauses.length === 0) return null;
 
-        // Always bump updated_at
         setClauses.push(`updated_at = NOW()`);
         values.push(id);
 
@@ -411,141 +416,102 @@ export class OffboardingService {
     }
 
     /**
-     * After a task is marked completed, recompute progress.
-     * If 100% and employee is still in 'Notice Period', auto-finalize → 'Terminated'.
-     * Refinement #1: subordinate reassignment fires inside EmployeeService.updateEmployee.
+     * Auto-finalize: triggered after any task completion.
+     * Uses an aggregate query instead of fetching all tasks — avoids a full scan
+     * on each of the 7 intermediate completions that don't reach 100%.
+     * Employee is only fetched when we actually need to finalize.
+     * Subordinate reassignment fires inside EmployeeService.updateEmployee
+     * when status flips Terminated (Task 1.2 transaction).
      */
     private async _checkAndFinalize(employeeId: string): Promise<void> {
-        const tasks = await this._getTasksByEmployee(employeeId);
-        const progress = this._computeProgressFromTasks(tasks);
-
-        if (progress.percentage < 100) return;
+        const countResult = await query(
+            `SELECT COUNT(*) FILTER (WHERE NOT completed) AS pending
+             FROM offboarding_tasks WHERE employee_id = $1`,
+            [employeeId],
+        );
+        const pending = parseInt(countResult.rows[0].pending, 10);
+        if (pending > 0) return;
 
         const emp = await EmployeeService.getEmployeeById(employeeId);
         if (!emp || emp.status !== 'Notice Period') return;
 
-        // Flip to Terminated — triggers Task 1.2 subordinate-reassignment transaction
         await EmployeeService.updateEmployee({ id: employeeId, status: 'Terminated' });
-
-        // Record termination date (separate from the EmployeeService call)
         await query(
             `UPDATE employees SET termination_date = CURRENT_DATE WHERE id = $1`,
             [employeeId],
         );
 
-        // Notify HR admins of auto-finalization
-        await this._notifyHrAdmins(
-            `${emp.name} offboarding complete`,
-            `All offboarding tasks have been completed. ${emp.name} is now terminated. Subordinates have been reassigned.`,
-            `/employees/${employeeId}?tab=offboarding`,
-        );
+        NotificationService.notifyAdmins({
+            title: `${emp.name} offboarding complete`,
+            message: `All offboarding tasks completed. ${emp.name} is now terminated. Subordinates have been reassigned.`,
+            type: 'info',
+            link: `/employees/${employeeId}?tab=offboarding`,
+        }).catch((err) => console.error('Offboarding finalization notify failed:', err));
     }
 
     /**
-     * Resolve task assignee string to real user IDs and dispatch notifications.
-     * Refinement #3 dynamic routing:
-     *   'HR'       → users WHERE role = 'HR_ADMIN'
-     *   'Finance'  → users WHERE role = 'FINANCE'
-     *   'IT'       → users WHERE role = 'HR_ADMIN'  (fallback; no SUPER_ADMIN role exists)
-     *   'Manager'  → employee.manager_id → users table
-     *   'Employee' → employee.user_id
+     * Resolve task assignee strings to real user IDs and dispatch notifications.
+     * Dynamic routing (IT has no dedicated role — falls back to HR_ADMIN):
+     *   'HR' | 'IT' → users WHERE role = 'HR_ADMIN'  (queried once, reused for both)
+     *   'Finance'   → users WHERE role = 'FINANCE'
+     *   'Manager'   → employees.user_id WHERE id = employee.managerId
+     *   'Employee'  → employees.user_id WHERE id = employeeId
      */
     private async _notifyAssignees(
         employeeId: string,
         employee: Employee,
         tasks: OffboardingTaskResponse[],
     ): Promise<void> {
-        // Build a map: assignee → Set<userId>
-        const assigneeUserIds = new Map<string, Set<string>>();
+        const assigneeTypes = [...new Set(tasks.map((t) => t.assignee))];
 
-        for (const task of tasks) {
-            if (!assigneeUserIds.has(task.assignee)) {
-                assigneeUserIds.set(task.assignee, new Set<string>());
+        // Resolve role-based types in parallel; cache HR_ADMIN ids for both 'HR' and 'IT'
+        const [hrAdminIds, financeIds, managerUserId, employeeUserId] = await Promise.all([
+            assigneeTypes.some((a) => a === 'HR' || a === 'IT')
+                ? query(`SELECT id FROM users WHERE role = 'HR_ADMIN'`).then((r) => r.rows.map((row) => row.id as string))
+                : Promise.resolve([] as string[]),
+            assigneeTypes.includes('Finance')
+                ? query(`SELECT id FROM users WHERE role = 'FINANCE'`).then((r) => r.rows.map((row) => row.id as string))
+                : Promise.resolve([] as string[]),
+            assigneeTypes.includes('Manager') && employee.managerId
+                ? query(`SELECT user_id FROM employees WHERE id = $1`, [employee.managerId]).then((r) => r.rows[0]?.user_id as string | undefined)
+                : Promise.resolve(undefined),
+            assigneeTypes.includes('Employee')
+                ? query(`SELECT user_id FROM employees WHERE id = $1`, [employeeId]).then((r) => r.rows[0]?.user_id as string | undefined)
+                : Promise.resolve(undefined),
+        ]);
+
+        const resolveIds = (assignee: string): string[] => {
+            switch (assignee) {
+                case 'HR':
+                case 'IT':       return hrAdminIds;
+                case 'Finance':  return financeIds;
+                case 'Manager':  return managerUserId ? [managerUserId] : [];
+                case 'Employee': return employeeUserId ? [employeeUserId] : [];
+                default:         return [];
             }
-        }
+        };
 
-        for (const [assignee, userIdSet] of assigneeUserIds) {
-            try {
-                let resolvedIds: string[] = [];
-
-                if (assignee === 'HR' || assignee === 'IT') {
-                    // IT falls back to HR_ADMIN (no SUPER_ADMIN/IT role in schema)
-                    const r = await query(
-                        `SELECT id FROM users WHERE role = 'HR_ADMIN'`,
-                    );
-                    resolvedIds = r.rows.map((row) => row.id as string);
-                } else if (assignee === 'Finance') {
-                    const r = await query(
-                        `SELECT id FROM users WHERE role = 'FINANCE'`,
-                    );
-                    resolvedIds = r.rows.map((row) => row.id as string);
-                } else if (assignee === 'Manager') {
-                    if (employee.managerId) {
-                        const r = await query(
-                            `SELECT user_id FROM employees WHERE id = $1`,
-                            [employee.managerId],
-                        );
-                        if (r.rows[0]?.user_id) resolvedIds = [r.rows[0].user_id as string];
-                    }
-                } else if (assignee === 'Employee') {
-                    const r = await query(
-                        `SELECT user_id FROM employees WHERE id = $1`,
-                        [employeeId],
-                    );
-                    if (r.rows[0]?.user_id) resolvedIds = [r.rows[0].user_id as string];
-                }
-
-                for (const uid of resolvedIds) {
-                    userIdSet.add(uid);
-                }
-            } catch (err) {
-                console.error(`Offboarding: failed to resolve assignee ${assignee}:`, err);
-            }
-        }
-
-        // Count tasks per assignee for summary notification
         const taskCountByAssignee = new Map<string, number>();
         for (const task of tasks) {
             taskCountByAssignee.set(task.assignee, (taskCountByAssignee.get(task.assignee) ?? 0) + 1);
         }
 
-        // Fire one notification per unique user per assignee group
-        for (const [assignee, userIdSet] of assigneeUserIds) {
-            const count = taskCountByAssignee.get(assignee) ?? 0;
-            const highPriorityTasks = tasks.filter(
-                (t) => t.assignee === assignee && t.priority === 'High',
-            );
+        for (const assignee of assigneeTypes) {
+            const userIds = resolveIds(assignee);
+            if (userIds.length === 0) continue;
 
-            for (const userId of userIdSet) {
+            const count = taskCountByAssignee.get(assignee) ?? 0;
+            const hasHighPriority = tasks.some((t) => t.assignee === assignee && t.priority === 'High');
+
+            for (const userId of userIds) {
                 NotificationService.create({
                     user_id: userId,
                     title: `Offboarding tasks assigned: ${employee.name}`,
                     message: `You have ${count} offboarding task${count !== 1 ? 's' : ''} for ${employee.name}'s departure.`,
-                    type: highPriorityTasks.length > 0 ? 'warning' : 'info',
+                    type: hasHighPriority ? 'warning' : 'info',
                     link: `/employees/${employeeId}?tab=offboarding`,
                 }).catch((err) => console.error('Offboarding notification failed:', err));
             }
-        }
-    }
-
-    private async _notifyHrAdmins(
-        title: string,
-        message: string,
-        link: string,
-    ): Promise<void> {
-        try {
-            const result = await query(`SELECT id FROM users WHERE role = 'HR_ADMIN'`);
-            for (const row of result.rows) {
-                NotificationService.create({
-                    user_id: row.id as string,
-                    title,
-                    message,
-                    type: 'info',
-                    link,
-                }).catch((err) => console.error('HR admin offboarding notification failed:', err));
-            }
-        } catch (err) {
-            console.error('Failed to notify HR admins:', err);
         }
     }
 }

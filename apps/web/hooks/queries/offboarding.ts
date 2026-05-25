@@ -80,21 +80,16 @@ export const useCreateOffboardingTask = () => {
 export const useUpdateOffboardingTask = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: ({
-            taskId,
-            employeeId: _employeeId,
-            payload,
-        }: {
+        mutationFn: (variables: {
             taskId: string;
             employeeId: string;
             payload: Record<string, unknown>;
         }) =>
-            api.offboarding.updateTask(taskId, payload) as Promise<OffboardingTask>,
+            api.offboarding.updateTask(variables.taskId, variables.payload) as Promise<OffboardingTask>,
         onSuccess: (_data, { employeeId }) => {
             qc.invalidateQueries({ queryKey: queryKeys.offboarding.byEmployee(employeeId) });
             // Employee status may have changed (auto-finalized to Terminated)
             qc.invalidateQueries({ queryKey: queryKeys.employees.detail(employeeId) });
-            qc.invalidateQueries({ queryKey: queryKeys.employees.lists() });
         },
     });
 };
@@ -103,14 +98,11 @@ export const useUpdateOffboardingTask = () => {
 export const useDeleteOffboardingTask = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: ({
-            taskId,
-            employeeId: _employeeId,
-        }: {
+        mutationFn: (variables: {
             taskId: string;
             employeeId: string;
         }) =>
-            api.offboarding.deleteTask(taskId),
+            api.offboarding.deleteTask(variables.taskId),
         onSuccess: (_data, { employeeId }) => {
             qc.invalidateQueries({ queryKey: queryKeys.offboarding.byEmployee(employeeId) });
         },

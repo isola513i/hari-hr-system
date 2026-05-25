@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     CheckSquare,
     Square,
@@ -17,19 +17,14 @@ import {
 } from 'lucide-react';
 import { OffboardingTabProps } from './EmployeeDetailTypes';
 import type { OffboardingTask, ExitInterview } from '../../types';
+import { formatDate as _formatDate } from '../../lib/date';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────────────────────────────────────
 
-function formatDate(dateStr: string | null | undefined): string {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
-}
+/** Null-safe wrapper around the locale-aware formatDate from lib/date */
+const formatDate = (d: string | null | undefined): string => (d ? _formatDate(d) : '—');
 
 function stageBadgeClass(stage: string): string {
     switch (stage) {
@@ -47,10 +42,6 @@ function priorityDot(priority: string): string {
         case 'Low':    return 'bg-green-500';
         default:       return 'bg-gray-400';
     }
-}
-
-function assigneeLabel(assignee: string): string {
-    return assignee;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -134,7 +125,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({ stage, tasks, onToggle, updatingI
                                     )}
                                     <span className="flex items-center gap-1 text-xs text-text-muted-light dark:text-text-muted-dark">
                                         <User size={11} />
-                                        {assigneeLabel(task.assignee)}
+                                        {task.assignee}
                                     </span>
                                     <span className="flex items-center gap-1 text-xs">
                                         <span className={`inline-block w-1.5 h-1.5 rounded-full ${priorityDot(task.priority)}`} />
@@ -417,10 +408,13 @@ export const OffboardingTab: React.FC<OffboardingTabProps> = ({
         );
     }
 
-    const tasksByStage = STAGES.reduce<Record<string, OffboardingTask[]>>((acc, stage) => {
-        acc[stage] = tasks.filter((t) => t.stage === stage);
-        return acc;
-    }, {});
+    const tasksByStage = useMemo(
+        () => STAGES.reduce<Record<string, OffboardingTask[]>>((acc, stage) => {
+            acc[stage] = tasks.filter((t) => t.stage === stage);
+            return acc;
+        }, {}),
+        [tasks],
+    );
 
     return (
         <div className="space-y-6">

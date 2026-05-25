@@ -462,6 +462,13 @@ export class EmployeeService {
             // PII fields: transparently decrypt on read; null if not set or decrypt error
             nationalId: safeTryDecrypt(row.national_id),
             bankAccountNumber: safeTryDecrypt(row.bank_account_number),
+            // Offboarding / termination metadata
+            terminationDate: row.termination_date || null,
+            lastWorkingDay: row.last_working_day || null,
+            terminationReason: row.termination_reason || null,
+            terminationNotes: row.termination_notes || null,
+            terminatedBy: row.terminated_by || null,
+            offboardingInitiatedAt: row.offboarding_initiated_at || null,
         };
     }
 

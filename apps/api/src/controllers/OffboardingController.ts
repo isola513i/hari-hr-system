@@ -12,18 +12,18 @@ export class OffboardingController {
     async initiateOffboarding(req: Request, res: Response): Promise<void> {
         try {
             const { id } = req.params;
-            const user = (req as any).user;
+            const user = req.user!;
 
             const { employee, tasks } = await OffboardingService.initiateOffboarding(
                 id,
                 req.body,
-                { userId: user?.userId ?? '', email: user?.email ?? '' },
+                { userId: user.userId, email: user.email },
             );
 
             // Audit log — controller layer has req context
             AuditLogService.create({
-                userId:    user?.userId ?? null,
-                userEmail: user?.email  ?? null,
+                userId:    user.userId,
+                userEmail: user.email,
                 action:    'EMPLOYEE_OFFBOARDING_INITIATED',
                 resource:  `employee:${id}`,
                 method:    req.method,
@@ -94,11 +94,11 @@ export class OffboardingController {
     async updateTask(req: Request, res: Response): Promise<void> {
         try {
             const { taskId } = req.params;
-            const user = (req as any).user;
+            const user = req.user!;
 
             const task = await OffboardingService.updateTask(taskId, req.body, {
-                userId: user?.userId ?? '',
-                email:  user?.email  ?? '',
+                userId: user.userId,
+                email:  user.email,
             });
 
             if (!task) {
@@ -109,8 +109,8 @@ export class OffboardingController {
             // Audit log when a task is completed
             if (req.body.completed === true) {
                 AuditLogService.create({
-                    userId:    user?.userId ?? null,
-                    userEmail: user?.email  ?? null,
+                    userId:    user.userId,
+                    userEmail: user.email,
                     action:    'OFFBOARDING_TASK_COMPLETED',
                     resource:  `offboarding_task:${taskId}`,
                     method:    req.method,
@@ -162,17 +162,17 @@ export class OffboardingController {
     async saveExitInterview(req: Request, res: Response): Promise<void> {
         try {
             const { id } = req.params;
-            const user = (req as any).user;
+            const user = req.user!;
 
             const interview = await OffboardingService.saveExitInterview(
                 id,
                 req.body,
-                user?.userId ?? '',
+                user.userId,
             );
 
             AuditLogService.create({
-                userId:    user?.userId ?? null,
-                userEmail: user?.email  ?? null,
+                userId:    user.userId,
+                userEmail: user.email,
                 action:    'EXIT_INTERVIEW_COMPLETED',
                 resource:  `employee:${id}`,
                 method:    req.method,

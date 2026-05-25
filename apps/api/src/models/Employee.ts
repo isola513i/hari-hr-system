@@ -35,6 +35,13 @@ export interface Employee {
     nationalId?: string | null;
     /** Decrypted bank account number — null when not set or decrypt failed */
     bankAccountNumber?: string | null;
+    // Offboarding / termination metadata
+    terminationDate?: string | null;
+    lastWorkingDay?: string | null;
+    terminationReason?: string | null;
+    terminationNotes?: string | null;
+    terminatedBy?: string | null;
+    offboardingInitiatedAt?: string | null;
 }
 
 export interface CreateEmployeeDTO {
