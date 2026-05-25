@@ -175,9 +175,9 @@ export class AttendanceService {
     const now = new Date();
     const today = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
 
-    // Check if already clocked in today
+    // Check if already clocked in today (exclude soft-deleted records)
     const existing = await query(
-      'SELECT * FROM attendance_records WHERE employee_id = $1 AND date = $2',
+      'SELECT * FROM attendance_records WHERE employee_id = $1 AND date = $2 AND deleted_at IS NULL',
       [employeeId, today]
     );
 
@@ -288,9 +288,9 @@ export class AttendanceService {
     // Today's date in Bangkok timezone (YYYY-MM-DD) for the DB date column
     const today = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
 
-    // Find today's attendance record
+    // Find today's attendance record (exclude soft-deleted)
     const existing = await query(
-      'SELECT * FROM attendance_records WHERE employee_id = $1 AND date = $2',
+      'SELECT * FROM attendance_records WHERE employee_id = $1 AND date = $2 AND deleted_at IS NULL',
       [employeeId, today]
     );
 
@@ -335,7 +335,7 @@ export class AttendanceService {
     startDate?: string,
     endDate?: string
   ): Promise<AttendanceRecord[]> {
-    let queryText = 'SELECT * FROM attendance_records WHERE employee_id = $1';
+    let queryText = 'SELECT * FROM attendance_records WHERE employee_id = $1 AND deleted_at IS NULL';
     const params: unknown[] = [employeeId];
     let paramIndex = 2;
 
@@ -362,7 +362,7 @@ export class AttendanceService {
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
 
     const result = await query(
-      'SELECT * FROM attendance_records WHERE employee_id = $1 AND date = $2',
+      'SELECT * FROM attendance_records WHERE employee_id = $1 AND date = $2 AND deleted_at IS NULL',
       [employeeId, today]
     );
 
@@ -399,7 +399,7 @@ export class AttendanceService {
         COALESCE(SUM(total_hours), 0) as total_hours,
         COALESCE(SUM(overtime_hours), 0) as overtime_hours
        FROM attendance_records
-       WHERE employee_id = $1 AND date BETWEEN $2 AND $3`,
+       WHERE employee_id = $1 AND date BETWEEN $2 AND $3 AND deleted_at IS NULL`,
       [employeeId, startDate, endDate]
     );
 
@@ -434,10 +434,11 @@ export class AttendanceService {
         (SELECT COUNT(DISTINCT lr.employee_id)
          FROM leave_requests lr
          JOIN employees e ON lr.employee_id = e.id AND e.status = 'Active'
-         WHERE lr.status = 'Approved' AND $1::date BETWEEN lr.start_date AND lr.end_date) AS on_leave,
+         WHERE lr.status = 'Approved' AND lr.deleted_at IS NULL
+           AND $1::date BETWEEN lr.start_date AND lr.end_date) AS on_leave,
         (SELECT COUNT(*) FROM employees WHERE status = 'Active') AS total
        FROM attendance_records
-       WHERE date = $1`,
+       WHERE date = $1 AND deleted_at IS NULL`,
       [today]
     );
 
@@ -515,7 +516,7 @@ export class AttendanceService {
 
     const fromClause = `
       FROM employees e
-      LEFT JOIN attendance_records ar ON ar.employee_id = e.id AND ar.date = $1
+      LEFT JOIN attendance_records ar ON ar.employee_id = e.id AND ar.date = $1 AND ar.deleted_at IS NULL
       LEFT JOIN LATERAL (
         SELECT lr2.id FROM leave_requests lr2
         WHERE lr2.employee_id = e.id AND lr2.status = 'Approved'
@@ -638,6 +639,9 @@ export class AttendanceService {
          modified_by = $8,
          overtime_hours = COALESCE($9, attendance_records.overtime_hours),
          early_departure = COALESCE($10, attendance_records.early_departure),
+         -- Restore a previously soft-deleted record when admin creates a new entry
+         -- for the same employee+date (the unique constraint fires on the same slot)
+         deleted_at = NULL,
          updated_at = CURRENT_TIMESTAMP
        RETURNING *`,
       [employeeId, date, clockIn || null, clockOut || null, totalHours, status || 'On-time', notes || null, modifiedBy, overtimeHours, earlyDeparture]
@@ -647,11 +651,13 @@ export class AttendanceService {
   }
 
   /**
-   * Delete an attendance record by ID
+   * Soft-delete an attendance record by ID.
+   * Attendance records (time tracking) must never be permanently removed —
+   * they are needed for payroll calculations and labour-law compliance audits.
    */
   async adminDeleteAttendance(recordId: string): Promise<void> {
     const result = await query(
-      'DELETE FROM attendance_records WHERE id = $1',
+      'UPDATE attendance_records SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL',
       [recordId]
     );
     if (result.rowCount === 0) {
@@ -694,6 +700,7 @@ export class AttendanceService {
        FROM attendance_records
        WHERE date >= $1 AND date <= $2
          AND clock_in IS NOT NULL
+         AND deleted_at IS NULL
        ORDER BY date`,
       [startDate, endDate]
     );
@@ -721,7 +728,7 @@ export class AttendanceService {
            COUNT(ar.id) FILTER (WHERE ar.clock_in IS NOT NULL AND ar.status NOT IN ('On-leave','Absent')) AS present,
            COUNT(ar.id) FILTER (WHERE ar.status = 'Late') AS late
          FROM generate_series($1::date, $2::date, '1 day'::interval) AS ds(date)
-         LEFT JOIN attendance_records ar ON ar.date = ds.date
+         LEFT JOIN attendance_records ar ON ar.date = ds.date AND ar.deleted_at IS NULL
          GROUP BY ds.date
          ORDER BY ds.date ASC`,
         [start, nowBKK]
@@ -730,7 +737,7 @@ export class AttendanceService {
         `SELECT e.id AS employee_id, e.name, e.avatar, COUNT(*) AS late_count
          FROM attendance_records ar
          JOIN employees e ON ar.employee_id = e.id
-         WHERE ar.status = 'Late' AND ar.date >= $1
+         WHERE ar.status = 'Late' AND ar.date >= $1 AND ar.deleted_at IS NULL
          GROUP BY e.id, e.name, e.avatar
          ORDER BY late_count DESC
          LIMIT 5`,

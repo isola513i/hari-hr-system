@@ -129,7 +129,7 @@ class TrainingService {
       `SELECT et.*, tm.type, tm.thumbnail, tm.progress as module_progress
        FROM employee_training et
        LEFT JOIN training_modules tm ON et.module_id = tm.id
-       WHERE et.employee_id = $1
+       WHERE et.employee_id = $1 AND et.deleted_at IS NULL
        ORDER BY et.created_at DESC NULLS LAST`,
       [employeeId]
     );
@@ -235,7 +235,12 @@ class TrainingService {
   }
 
   async deleteTraining(id: string): Promise<void> {
-    const result = await query('DELETE FROM employee_training WHERE id = $1', [id]);
+    // Soft delete — training completion records must be preserved for compliance
+    // and certification audits; hard deletes could erase proof of employee training.
+    const result = await query(
+      'UPDATE employee_training SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL',
+      [id]
+    );
     if (result.rowCount === 0) {
       throw new BusinessError('Training record not found');
     }
@@ -252,7 +257,8 @@ class TrainingService {
       `SELECT COUNT(*) AS total,
               COUNT(*) FILTER (WHERE status = 'Completed') AS completed,
               COUNT(*) FILTER (WHERE due_date < CURRENT_DATE AND status != 'Completed') AS overdue
-       FROM employee_training`
+       FROM employee_training
+       WHERE deleted_at IS NULL`
     );
 
     const totalAssignments = parseInt(assignmentsResult.rows[0].total, 10);
@@ -264,7 +270,7 @@ class TrainingService {
               COUNT(et.id) FILTER (WHERE et.status = 'Completed') AS completed
        FROM employee_training et
        JOIN employees e ON et.employee_id = e.id
-       WHERE e.department IS NOT NULL
+       WHERE e.department IS NOT NULL AND et.deleted_at IS NULL
        GROUP BY e.department
        ORDER BY e.department`
     );
@@ -275,6 +281,7 @@ class TrainingService {
               COUNT(et.id) FILTER (WHERE et.status = 'Completed') AS completed
        FROM employee_training et
        LEFT JOIN training_modules tm ON et.module_id = tm.id
+       WHERE et.deleted_at IS NULL
        GROUP BY et.module_id, COALESCE(tm.title, et.title)
        ORDER BY total DESC
        LIMIT 20`

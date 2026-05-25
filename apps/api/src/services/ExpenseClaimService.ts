@@ -9,6 +9,7 @@ export class ExpenseClaimService {
             `SELECT ec.*, e.name AS employee_name, e.avatar
              FROM expense_claims ec
              JOIN employees e ON ec.employee_id = e.id
+             WHERE ec.deleted_at IS NULL
              ORDER BY ec.created_at DESC`
         );
         return result.rows.map(this.mapRowToExpenseClaim);
@@ -19,7 +20,7 @@ export class ExpenseClaimService {
             `SELECT ec.*, e.name AS employee_name, e.avatar
              FROM expense_claims ec
              JOIN employees e ON ec.employee_id = e.id
-             WHERE ec.id = $1`,
+             WHERE ec.id = $1 AND ec.deleted_at IS NULL`,
             [id]
         );
         if (result.rows.length === 0) {
@@ -62,9 +63,9 @@ export class ExpenseClaimService {
     }
 
     async editExpenseClaim(id: string, employeeId: string, updates: Partial<CreateExpenseClaimDTO>): Promise<ExpenseClaim | null> {
-        // Verify ownership and pending status
+        // Verify ownership and pending status (exclude soft-deleted)
         const existing = await query(
-            'SELECT * FROM expense_claims WHERE id = $1',
+            'SELECT * FROM expense_claims WHERE id = $1 AND deleted_at IS NULL',
             [id]
         );
 
@@ -126,7 +127,7 @@ export class ExpenseClaimService {
 
     async cancelExpenseClaim(id: string, employeeId: string): Promise<ExpenseClaim | null> {
         const existing = await query(
-            'SELECT * FROM expense_claims WHERE id = $1',
+            'SELECT * FROM expense_claims WHERE id = $1 AND deleted_at IS NULL',
             [id]
         );
 
@@ -140,8 +141,15 @@ export class ExpenseClaimService {
         }
 
         if (claim.status === 'Pending') {
-            // Hard delete for pending claims
-            await query('DELETE FROM expense_claims WHERE id = $1', [id]);
+            // Soft delete — HR financial records must never be permanently removed.
+            // Set both deleted_at and status so the record is clearly marked as cancelled
+            // and excluded from all active queries.
+            await query(
+                `UPDATE expense_claims
+                 SET deleted_at = NOW(), status = 'Cancelled', updated_at = NOW()
+                 WHERE id = $1`,
+                [id]
+            );
             return this.mapRowToExpenseClaim({ ...claim, status: 'Cancelled' });
         } else if (claim.status === 'Approved') {
             // Soft cancel for approved claims
@@ -156,7 +164,10 @@ export class ExpenseClaimService {
     }
 
     async managerApprove(id: string, managerEmployeeId: string): Promise<ExpenseClaim> {
-        const existing = await query('SELECT * FROM expense_claims WHERE id = $1', [id]);
+        const existing = await query(
+            'SELECT * FROM expense_claims WHERE id = $1 AND deleted_at IS NULL',
+            [id]
+        );
         if (existing.rows.length === 0) throw new BusinessError('Expense claim not found');
 
         const claim = existing.rows[0];
@@ -195,7 +206,7 @@ export class ExpenseClaimService {
             `SELECT ec.*, e.name AS employee_name, e.avatar
              FROM expense_claims ec
              JOIN employees e ON ec.employee_id = e.id
-             WHERE e.manager_id = $1 AND ec.status = 'Pending'
+             WHERE e.manager_id = $1 AND ec.status = 'Pending' AND ec.deleted_at IS NULL
              ORDER BY ec.created_at DESC`,
             [managerEmployeeId]
         );
@@ -203,7 +214,13 @@ export class ExpenseClaimService {
     }
 
     async deleteExpenseClaim(id: string): Promise<void> {
-        const result = await query('DELETE FROM expense_claims WHERE id = $1', [id]);
+        // Soft delete — expense records must be preserved for financial audit
+        const result = await query(
+            `UPDATE expense_claims
+             SET deleted_at = NOW(), updated_at = NOW()
+             WHERE id = $1 AND deleted_at IS NULL`,
+            [id]
+        );
         if (result.rowCount === 0) {
             throw new BusinessError('Expense claim not found');
         }
@@ -218,14 +235,14 @@ export class ExpenseClaimService {
         const reimbursedResult = await query(
             `SELECT COALESCE(SUM(amount), 0) AS total
              FROM expense_claims
-             WHERE employee_id = $1 AND status = 'Reimbursed'`,
+             WHERE employee_id = $1 AND status = 'Reimbursed' AND deleted_at IS NULL`,
             [employeeId]
         );
 
         const pendingResult = await query(
             `SELECT COUNT(*) AS count, COALESCE(SUM(amount), 0) AS total
              FROM expense_claims
-             WHERE employee_id = $1 AND status = 'Pending'`,
+             WHERE employee_id = $1 AND status = 'Pending' AND deleted_at IS NULL`,
             [employeeId]
         );
 
@@ -233,7 +250,8 @@ export class ExpenseClaimService {
             `SELECT COUNT(*) AS count
              FROM expense_claims
              WHERE employee_id = $1
-               AND created_at >= date_trunc('month', CURRENT_DATE)`,
+               AND created_at >= date_trunc('month', CURRENT_DATE)
+               AND deleted_at IS NULL`,
             [employeeId]
         );
 
@@ -253,14 +271,15 @@ export class ExpenseClaimService {
         const pendingResult = await query(
             `SELECT COUNT(*) AS count, COALESCE(SUM(amount), 0) AS total
              FROM expense_claims
-             WHERE status = 'Pending'`
+             WHERE status = 'Pending' AND deleted_at IS NULL`
         );
 
         const reimbursedResult = await query(
             `SELECT COALESCE(SUM(amount), 0) AS total
              FROM expense_claims
              WHERE status = 'Reimbursed'
-               AND updated_at >= date_trunc('month', CURRENT_DATE)`
+               AND updated_at >= date_trunc('month', CURRENT_DATE)
+               AND deleted_at IS NULL`
         );
 
         return {

@@ -28,7 +28,8 @@ const BASE_SELECT = `
            lr.is_half_day, lr.half_day_period
     FROM leave_requests lr
     LEFT JOIN employees e ON lr.employee_id = e.id
-    LEFT JOIN employees he ON lr.handover_employee_id = he.id`;
+    LEFT JOIN employees he ON lr.handover_employee_id = he.id
+    WHERE lr.deleted_at IS NULL`;
 
 export class LeaveRequestService {
     static async calculateBusinessDays(startDate: string, endDate: string): Promise<number> {
@@ -64,6 +65,7 @@ export class LeaveRequestService {
             ${BASE_SELECT}
             ORDER BY lr.created_at DESC
         `);
+        // BASE_SELECT already filters deleted_at IS NULL
         return result.rows.map(this.mapRowToLeaveRequest);
     }
 
@@ -76,6 +78,9 @@ export class LeaveRequestService {
         const whereClauses: string[] = [];
         const params: any[] = [];
         let paramCount = 0;
+
+        // Always exclude soft-deleted records
+        whereClauses.push('lr.deleted_at IS NULL');
 
         if (filters.status) {
             paramCount++;
@@ -95,7 +100,7 @@ export class LeaveRequestService {
             params.push(filters.type);
         }
 
-        const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+        const whereClause = `WHERE ${whereClauses.join(' AND ')}`;
 
         const fieldMapping: Record<string, string> = {
             'created_at': 'lr.created_at',
@@ -135,9 +140,10 @@ export class LeaveRequestService {
     }
 
     async getLeaveRequestById(id: string): Promise<LeaveRequest | null> {
+        // BASE_SELECT already includes WHERE deleted_at IS NULL, so AND is appended
         const result = await query(
             `${BASE_SELECT}
-             WHERE lr.id = $1`,
+             AND lr.id = $1`,
             [id]
         );
         if (result.rows.length === 0) {
@@ -176,7 +182,8 @@ export class LeaveRequestService {
             const usedResult = await query(
                 `SELECT COALESCE(SUM(COALESCE(business_days, (end_date::date - start_date::date) + 1)), 0) as used_days
                  FROM leave_requests
-                 WHERE employee_id = $1 AND leave_type = $2 AND status IN ('Approved', 'Pending')`,
+                 WHERE employee_id = $1 AND leave_type = $2 AND status IN ('Approved', 'Pending')
+                   AND deleted_at IS NULL`,
                 [employeeId, type]
             );
             const usedDays = parseFloat(usedResult.rows[0]?.used_days || '0');
@@ -328,7 +335,8 @@ export class LeaveRequestService {
                 const usedResult = await txQuery(
                     `SELECT COALESCE(SUM(COALESCE(business_days, (end_date::date - start_date::date) + 1)), 0) as used_days
                      FROM leave_requests
-                     WHERE employee_id = $1 AND leave_type = $2 AND status IN ('Approved', 'Pending') AND id != $3`,
+                     WHERE employee_id = $1 AND leave_type = $2 AND status IN ('Approved', 'Pending')
+                       AND id != $3 AND deleted_at IS NULL`,
                     [employeeId, editData.type, id]
                 );
                 const usedDays = parseFloat(usedResult.rows[0]?.used_days || '0');
@@ -460,9 +468,10 @@ export class LeaveRequestService {
     }
 
     async cancelLeaveRequest(id: string, employeeId: string): Promise<{ action: 'deleted' | 'cancel_requested'; leaveRequest?: LeaveRequest }> {
+        // BASE_SELECT already has WHERE deleted_at IS NULL → use AND for additional filter
         const existing = await query(
             `${BASE_SELECT}
-             WHERE lr.id = $1`,
+             AND lr.id = $1`,
             [id]
         );
 
@@ -483,8 +492,15 @@ export class LeaveRequestService {
         const status = row.status;
 
         if (status === 'Pending' || status === 'Manager Approved') {
+            // Snapshot to history BEFORE soft-deleting so the record is still
+            // accessible via the FK during the INSERT into leave_request_history
             await this.snapshotToHistory(id, 'cancel_requested', employeeId);
-            await query('DELETE FROM leave_requests WHERE id = $1', [id]);
+            // Soft delete — preserves the row for audit; quota & overlap queries
+            // exclude rows where deleted_at IS NOT NULL
+            await query(
+                'UPDATE leave_requests SET deleted_at = NOW() WHERE id = $1',
+                [id]
+            );
             return { action: 'deleted' };
         }
 
@@ -534,7 +550,7 @@ export class LeaveRequestService {
 
     async handleCancelDecision(id: string, decision: 'approve_cancel' | 'reject_cancel', approverEmployeeId: string): Promise<{ action: string; leaveRequest?: LeaveRequest }> {
         const existing = await query(
-            'SELECT * FROM leave_requests WHERE id = $1',
+            'SELECT * FROM leave_requests WHERE id = $1 AND deleted_at IS NULL',
             [id]
         );
 
@@ -555,7 +571,11 @@ export class LeaveRequestService {
         await this.snapshotToHistory(id, 'status_change', approverEmployeeId);
 
         if (decision === 'approve_cancel') {
-            await query('DELETE FROM leave_requests WHERE id = $1', [id]);
+            // Soft delete — record is preserved for audit trail
+            await query(
+                'UPDATE leave_requests SET deleted_at = NOW() WHERE id = $1',
+                [id]
+            );
 
             // Notify employee
             try {
@@ -621,6 +641,7 @@ export class LeaveRequestService {
              WHERE employee_id = $1
              AND status IN ('Pending', 'Approved')
              AND start_date <= $3::date AND end_date >= $2::date
+             AND deleted_at IS NULL
              ${excludeClause}`,
             params
         );
@@ -643,7 +664,11 @@ export class LeaveRequestService {
     }
 
     async deleteLeaveRequest(id: string): Promise<void> {
-        const result = await query('DELETE FROM leave_requests WHERE id = $1', [id]);
+        // Soft delete — HR records must never be permanently removed
+        const result = await query(
+            'UPDATE leave_requests SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL',
+            [id]
+        );
         if (result.rowCount === 0) {
             throw new Error('Leave request not found');
         }
@@ -654,7 +679,7 @@ export class LeaveRequestService {
             `SELECT leave_type,
                     SUM(COALESCE(business_days, (end_date::date - start_date::date) + 1)) as used_days
              FROM leave_requests
-             WHERE employee_id = $1 AND status = 'Approved'
+             WHERE employee_id = $1 AND status = 'Approved' AND deleted_at IS NULL
              GROUP BY leave_type`,
             [employeeId]
         );
