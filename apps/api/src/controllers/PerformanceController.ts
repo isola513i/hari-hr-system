@@ -1,15 +1,29 @@
 import { Request, Response } from 'express';
 import PerformanceService from '../services/PerformanceService';
+import type { AuditContext } from '../services/PerformanceService';
 import { safeErrorMessage } from '../utils/errorResponse';
+
+function buildAudit(req: Request): AuditContext {
+  const user = req.user!;
+  return {
+    userId:    user.userId,
+    email:     user.email,
+    ip:        req.ip ?? '',
+    userAgent: req.headers['user-agent'] ?? '',
+    method:    req.method,
+    path:      req.path,
+  };
+}
 
 class PerformanceController {
   async getReviews(req: Request, res: Response): Promise<void> {
     const user = req.user!;
-    const { employeeId, status } = req.query;
+    const { employeeId, status, reviewPeriod } = req.query;
     try {
       const reviews = await PerformanceService.list({
         employeeId: employeeId as string | undefined,
         status: status as string | undefined,
+        reviewPeriod: reviewPeriod as string | undefined,
         role: user.role,
         callerEmployeeId: user.employeeId ?? undefined,
       });
@@ -33,7 +47,7 @@ class PerformanceController {
         reviewerUserId: user.userId,
         rating: rating !== undefined ? Number(rating) : undefined,
         notes, reviewPeriod, selfReview,
-      });
+      }, buildAudit(req));
       res.status(201).json(review);
     } catch (err: any) {
       console.error('Error creating performance review:', err);
@@ -58,6 +72,7 @@ class PerformanceController {
         employeeId: user.employeeId,
         selfReview, reviewPeriod,
         callerUserId: user.userId,
+        audit: buildAudit(req),
       });
       res.status(201).json(review);
     } catch (err: any) {
@@ -71,7 +86,7 @@ class PerformanceController {
     const user = req.user!;
     const { id } = req.params;
     try {
-      const review = await PerformanceService.submitSelfReview(id, user.userId);
+      const review = await PerformanceService.submitSelfReview(id, user.userId, buildAudit(req));
       res.json(review);
     } catch (err: any) {
       console.error('Error submitting self-review:', err);
@@ -99,6 +114,7 @@ class PerformanceController {
         managerComment,
         managerUserId: user.userId,
         managerEmployeeId: user.employeeId,
+        audit: buildAudit(req),
       });
       res.json(review);
     } catch (err: any) {
@@ -114,7 +130,7 @@ class PerformanceController {
     const { hrComment } = req.body;
     try {
       const review = await PerformanceService.hrApprove({
-        id, hrComment, hrUserId: user.userId,
+        id, hrComment, hrUserId: user.userId, audit: buildAudit(req),
       });
       res.json(review);
     } catch (err: any) {
@@ -130,7 +146,7 @@ class PerformanceController {
     const { reason } = req.body;
     try {
       const review = await PerformanceService.reject({
-        id, reason, callerUserId: user.userId, role: user.role,
+        id, reason, callerUserId: user.userId, role: user.role, audit: buildAudit(req),
       });
       res.json(review);
     } catch (err: any) {
@@ -145,7 +161,7 @@ class PerformanceController {
     const { id } = req.params;
     const { rating, notes, reviewer, date } = req.body;
     try {
-      const review = await PerformanceService.update(id, { rating, notes, reviewer, date }, user.userId, user.role);
+      const review = await PerformanceService.update(id, { rating, notes, reviewer, date }, user.userId, user.role, buildAudit(req));
       res.json(review);
     } catch (err: any) {
       console.error('Error updating performance review:', err);
@@ -158,7 +174,7 @@ class PerformanceController {
     const user = req.user!;
     const { id } = req.params;
     try {
-      await PerformanceService.delete(id, user.userId, user.role);
+      await PerformanceService.delete(id, user.userId, user.role, buildAudit(req));
       res.json({ message: 'Review deleted successfully' });
     } catch (err: any) {
       console.error('Error deleting performance review:', err);

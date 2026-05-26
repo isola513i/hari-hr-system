@@ -1,6 +1,16 @@
 import { query } from '../db';
 import { BusinessError } from '../utils/errorResponse';
 import NotificationService from './NotificationService';
+import AuditLogService from './AuditLogService';
+
+export interface AuditContext {
+  userId: string;
+  email: string;
+  ip: string;
+  userAgent: string;
+  method: string;
+  path: string;
+}
 
 export interface PerformanceReview {
   id: string;
@@ -42,6 +52,7 @@ export class PerformanceService {
     role: string;
     callerEmployeeId?: string;
     status?: string;
+    reviewPeriod?: string;
   }): Promise<PerformanceReview[]> {
     const conditions: string[] = [];
     const params: unknown[] = [];
@@ -54,6 +65,10 @@ export class PerformanceService {
     if (filters.status) {
       conditions.push(`pr.status = $${i++}`);
       params.push(filters.status);
+    }
+    if (filters.reviewPeriod) {
+      conditions.push(`pr.review_period = $${i++}`);
+      params.push(filters.reviewPeriod);
     }
     // Manager: only sees direct reports
     if (filters.role === 'MANAGER' && filters.callerEmployeeId && !filters.employeeId) {
@@ -92,7 +107,7 @@ export class PerformanceService {
     return this.mapRow(result.rows[0]);
   }
 
-  async create(data: CreateReviewData): Promise<PerformanceReview> {
+  async create(data: CreateReviewData, audit?: AuditContext): Promise<PerformanceReview> {
     const { employeeId, date, reviewer, reviewerUserId, rating, notes, reviewPeriod, selfReview } = data;
 
     // Prevent self-review when reviewer is the same user
@@ -116,6 +131,21 @@ export class PerformanceService {
 
     const row = result.rows[0];
 
+    if (audit) {
+      AuditLogService.create({
+        userId:    audit.userId,
+        userEmail: audit.email,
+        action:    'PERFORMANCE_REVIEW_CREATED',
+        resource:  `performance_review:${row.id}`,
+        method:    audit.method,
+        path:      audit.path,
+        ip:        audit.ip,
+        userAgent: audit.userAgent,
+        success:   true,
+        details:   { employeeId, rating: rating ?? null, reviewPeriod: reviewPeriod ?? null },
+      }).catch((err) => console.error('Performance review created audit log failed:', err));
+    }
+
     // Notify employee
     if (empCheck.rows[0]?.user_id) {
       NotificationService.create({
@@ -135,8 +165,9 @@ export class PerformanceService {
     selfReview: string;
     reviewPeriod?: string;
     callerUserId: string;
+    audit?: AuditContext;
   }): Promise<PerformanceReview> {
-    const { employeeId, selfReview, reviewPeriod, callerUserId } = data;
+    const { employeeId, selfReview, reviewPeriod, callerUserId, audit } = data;
 
     // Verify caller is the employee
     const empCheck = await query('SELECT user_id, name, manager_id FROM employees WHERE id = $1', [employeeId]);
@@ -152,10 +183,25 @@ export class PerformanceService {
       [employeeId, empCheck.rows[0].name, callerUserId, selfReview, reviewPeriod ?? null]
     );
 
+    if (audit) {
+      AuditLogService.create({
+        userId:    audit.userId,
+        userEmail: audit.email,
+        action:    'SELF_REVIEW_CREATED',
+        resource:  `performance_review:${result.rows[0].id}`,
+        method:    audit.method,
+        path:      audit.path,
+        ip:        audit.ip,
+        userAgent: audit.userAgent,
+        success:   true,
+        details:   { employeeId, reviewPeriod: reviewPeriod ?? null },
+      }).catch((err) => console.error('Self-review created audit log failed:', err));
+    }
+
     return this.mapRow(result.rows[0]);
   }
 
-  async submitSelfReview(id: string, callerUserId: string): Promise<PerformanceReview> {
+  async submitSelfReview(id: string, callerUserId: string, audit?: AuditContext): Promise<PerformanceReview> {
     const existing = await query('SELECT * FROM performance_reviews WHERE id = $1', [id]);
     if (!existing.rows[0]) throw new BusinessError('Review not found');
     const row = existing.rows[0];
@@ -175,6 +221,21 @@ export class PerformanceService {
        WHERE id = $1 RETURNING *`,
       [id]
     );
+
+    if (audit) {
+      AuditLogService.create({
+        userId:    audit.userId,
+        userEmail: audit.email,
+        action:    'SELF_REVIEW_SUBMITTED',
+        resource:  `performance_review:${id}`,
+        method:    audit.method,
+        path:      audit.path,
+        ip:        audit.ip,
+        userAgent: audit.userAgent,
+        success:   true,
+        details:   { reviewId: id, employeeId: existing.rows[0].employee_id },
+      }).catch((err) => console.error('Self-review submitted audit log failed:', err));
+    }
 
     // Notify manager
     if (empCheck.rows[0]?.manager_id) {
@@ -199,8 +260,9 @@ export class PerformanceService {
     managerComment: string;
     managerUserId: string;
     managerEmployeeId: string;
+    audit?: AuditContext;
   }): Promise<PerformanceReview> {
-    const { id, rating, managerComment, managerUserId, managerEmployeeId } = data;
+    const { id, rating, managerComment, managerUserId, managerEmployeeId, audit } = data;
 
     const existing = await query('SELECT * FROM performance_reviews WHERE id = $1', [id]);
     if (!existing.rows[0]) throw new BusinessError('Review not found');
@@ -233,6 +295,21 @@ export class PerformanceService {
       [rating, managerComment, managerUserId, managerEmployeeId, id]
     );
 
+    if (audit) {
+      AuditLogService.create({
+        userId:    audit.userId,
+        userEmail: audit.email,
+        action:    'PERFORMANCE_REVIEW_MANAGER_REVIEWED',
+        resource:  `performance_review:${id}`,
+        method:    audit.method,
+        path:      audit.path,
+        ip:        audit.ip,
+        userAgent: audit.userAgent,
+        success:   true,
+        details:   { reviewId: id, employeeId: row.employee_id, rating, previousStatus: row.status },
+      }).catch((err) => console.error('Manager review audit log failed:', err));
+    }
+
     // Notify HR admins
     NotificationService.notifyAdmins({
       title: 'Performance Review Needs HR Approval',
@@ -248,8 +325,9 @@ export class PerformanceService {
     id: string;
     hrComment?: string;
     hrUserId: string;
+    audit?: AuditContext;
   }): Promise<PerformanceReview> {
-    const { id, hrComment, hrUserId } = data;
+    const { id, hrComment, hrUserId, audit } = data;
 
     const existing = await query('SELECT * FROM performance_reviews WHERE id = $1', [id]);
     if (!existing.rows[0]) throw new BusinessError('Review not found');
@@ -264,6 +342,21 @@ export class PerformanceService {
        WHERE id = $3 RETURNING *`,
       [hrComment ?? null, hrUserId, id]
     );
+
+    if (audit) {
+      AuditLogService.create({
+        userId:    audit.userId,
+        userEmail: audit.email,
+        action:    'PERFORMANCE_REVIEW_HR_APPROVED',
+        resource:  `performance_review:${id}`,
+        method:    audit.method,
+        path:      audit.path,
+        ip:        audit.ip,
+        userAgent: audit.userAgent,
+        success:   true,
+        details:   { reviewId: id, employeeId: existing.rows[0].employee_id, rating: result.rows[0].rating },
+      }).catch((err) => console.error('HR approve audit log failed:', err));
+    }
 
     // Notify employee
     const empUser = await query('SELECT user_id FROM employees WHERE id = $1', [existing.rows[0].employee_id]);
@@ -285,8 +378,9 @@ export class PerformanceService {
     reason?: string;
     callerUserId: string;
     role: string;
+    audit?: AuditContext;
   }): Promise<PerformanceReview> {
-    const { id, reason, callerUserId, role } = data;
+    const { id, reason, callerUserId, role, audit } = data;
 
     if (!['HR_ADMIN', 'MANAGER'].includes(role)) {
       throw new BusinessError('Only managers and HR admins can reject reviews');
@@ -304,6 +398,21 @@ export class PerformanceService {
     );
     if (!result.rows[0]) throw new BusinessError('Review not found');
 
+    if (audit) {
+      AuditLogService.create({
+        userId:    audit.userId,
+        userEmail: audit.email,
+        action:    'PERFORMANCE_REVIEW_REJECTED',
+        resource:  `performance_review:${id}`,
+        method:    audit.method,
+        path:      audit.path,
+        ip:        audit.ip,
+        userAgent: audit.userAgent,
+        success:   true,
+        details:   { reviewId: id, employeeId: result.rows[0].employee_id, reason: reason ?? null, byRole: role },
+      }).catch((err) => console.error('Review rejected audit log failed:', err));
+    }
+
     // Notify employee
     const empUser = await query('SELECT user_id FROM employees WHERE id = $1', [result.rows[0].employee_id]);
     if (empUser.rows[0]?.user_id) {
@@ -319,7 +428,7 @@ export class PerformanceService {
     return this.mapRow(result.rows[0]);
   }
 
-  async update(id: string, data: { rating?: number; notes?: string; reviewer?: string; date?: string }, callerUserId: string, role: string): Promise<PerformanceReview> {
+  async update(id: string, data: { rating?: number; notes?: string; reviewer?: string; date?: string }, callerUserId: string, role: string, audit?: AuditContext): Promise<PerformanceReview> {
     if (role !== 'HR_ADMIN') {
       const existing = await query('SELECT reviewer_user_id, status FROM performance_reviews WHERE id = $1', [id]);
       if (!existing.rows[0] || existing.rows[0].reviewer_user_id !== callerUserId) {
@@ -342,18 +451,49 @@ export class PerformanceService {
       [data.rating, data.notes, data.reviewer, data.date, id]
     );
     if (!result.rows[0]) throw new BusinessError('Review not found');
+
+    if (audit) {
+      AuditLogService.create({
+        userId:    audit.userId,
+        userEmail: audit.email,
+        action:    'PERFORMANCE_REVIEW_UPDATED',
+        resource:  `performance_review:${id}`,
+        method:    audit.method,
+        path:      audit.path,
+        ip:        audit.ip,
+        userAgent: audit.userAgent,
+        success:   true,
+        details:   { reviewId: id, changedFields: Object.keys(data).filter((k) => data[k as keyof typeof data] !== undefined) },
+      }).catch((err) => console.error('Review updated audit log failed:', err));
+    }
+
     return this.mapRow(result.rows[0]);
   }
 
-  async delete(id: string, callerUserId: string, role: string): Promise<void> {
+  async delete(id: string, callerUserId: string, role: string, audit?: AuditContext): Promise<void> {
     if (role !== 'HR_ADMIN') {
       const existing = await query('SELECT reviewer_user_id FROM performance_reviews WHERE id = $1', [id]);
       if (!existing.rows[0] || existing.rows[0].reviewer_user_id !== callerUserId) {
         throw new BusinessError('You can only delete your own reviews');
       }
     }
-    const result = await query('DELETE FROM performance_reviews WHERE id = $1 RETURNING id', [id]);
+    const result = await query('DELETE FROM performance_reviews WHERE id = $1 RETURNING id, employee_id', [id]);
     if (!result.rows[0]) throw new BusinessError('Review not found');
+
+    if (audit) {
+      AuditLogService.create({
+        userId:    audit.userId,
+        userEmail: audit.email,
+        action:    'PERFORMANCE_REVIEW_DELETED',
+        resource:  `performance_review:${id}`,
+        method:    audit.method,
+        path:      audit.path,
+        ip:        audit.ip,
+        userAgent: audit.userAgent,
+        success:   true,
+        details:   { reviewId: id, employeeId: result.rows[0].employee_id },
+      }).catch((err) => console.error('Review deleted audit log failed:', err));
+    }
   }
 
   private mapRow(row: Record<string, unknown>): PerformanceReview {

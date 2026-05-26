@@ -73,13 +73,9 @@ export interface TrainingTabProps {
 }
 
 export interface PerformanceTabProps {
+    employeeId: string;
     isAdmin: boolean;
-    canAddReview: boolean;
-    currentUserId?: string;
-    reviewsList: PerformanceReview[];
-    onAddReview: () => void;
-    onEditReview: (review: PerformanceReview) => void;
-    onDeleteReview: (reviewId: string) => void;
+    onAddReview?: () => void;
 }
 
 export interface OffboardingTabProps {

@@ -10,7 +10,7 @@ router.use(authenticateToken);
 router.get('/reviews', PerformanceController.getReviews.bind(PerformanceController));
 
 // POST /api/performance/reviews - manager/admin creates review for employee
-router.post('/reviews', PerformanceController.createReview.bind(PerformanceController));
+router.post('/reviews', requireAdminOrManager, PerformanceController.createReview.bind(PerformanceController));
 
 // POST /api/performance/reviews/self - employee creates own self-review (draft)
 router.post('/reviews/self', PerformanceController.createSelfReview.bind(PerformanceController));

@@ -8,7 +8,6 @@ import { queryKeys } from '../lib/queryKeys';
 import {
     useEmployeeDetail,
     useJobHistory,
-    usePerformanceReviews,
     useEmployeeTraining,
     useEmployeeDocuments,
     useEmployeeManager,
@@ -76,7 +75,6 @@ export const EmployeeDetail: React.FC = () => {
     // ---------------------------------------------------------------------------
     const employeeQ = useEmployeeDetail(id);
     const historyQ = useJobHistory(id);
-    const reviewsQ = usePerformanceReviews(id);
     const trainingQ = useEmployeeTraining(id);
     const docsQ = useEmployeeDocuments(id);
     const managerQ = useEmployeeManager(id);
@@ -102,12 +100,10 @@ export const EmployeeDetail: React.FC = () => {
     // Local state synced from query data (needed for UI editing)
     // ---------------------------------------------------------------------------
     const [historyList, setHistoryList] = useState<JobHistoryItem[]>([]);
-    const [reviewsList, setReviewsList] = useState<PerformanceReview[]>([]);
     const [documentsList, setDocumentsList] = useState<DocumentItem[]>([]);
     const [currentSkills, setCurrentSkills] = useState<string[]>([]);
 
     useEffect(() => { if (historyQ.data) setHistoryList(historyQ.data); }, [historyQ.data]);
-    useEffect(() => { if (reviewsQ.data) setReviewsList(reviewsQ.data); }, [reviewsQ.data]);
     useEffect(() => {
         if (docsQ.data && employee) {
             setDocumentsList(docsQ.data.filter((d: any) =>
@@ -499,7 +495,7 @@ export const EmployeeDetail: React.FC = () => {
         }
     };
 
-    // Performance Review Handlers
+    // Performance Review Handlers (HR backfill only)
     const handleAddReview = () => {
         setReviewForm({
             employeeId: id,
@@ -511,20 +507,10 @@ export const EmployeeDetail: React.FC = () => {
         setIsReviewModalOpen(true);
     };
 
-    const handleEditReview = (review: PerformanceReview) => {
-        setReviewForm({ ...review });
-        setIsReviewModalOpen(true);
-    };
-
-    const handleDeleteReview = (reviewId: string) => {
-        setDeleteConfirmId(reviewId);
-    };
-
     const confirmDeleteReview = async () => {
         if (!deleteConfirmId) return;
         try {
             await api.delete(`/performance/reviews/${deleteConfirmId}`);
-            setReviewsList(reviewsList.filter(r => r.id !== deleteConfirmId));
             showToast(t('employees:toast.reviewDeleted'), 'success');
             qc.invalidateQueries({ queryKey: queryKeys.performanceReviews.byEmployee(id!) });
         } catch (error) {
@@ -631,22 +617,20 @@ export const EmployeeDetail: React.FC = () => {
 
         try {
             if (reviewForm.id) {
-                const updated = await api.put<PerformanceReview>(`/performance/reviews/${reviewForm.id}`, {
+                await api.put<PerformanceReview>(`/performance/reviews/${reviewForm.id}`, {
                     rating: reviewForm.rating,
                     notes: reviewForm.notes,
                     reviewer: reviewForm.reviewer,
                     date: reviewForm.date,
                 });
-                setReviewsList(prev => prev.map(r => r.id === updated.id ? updated : r));
             } else {
-                const created = await api.post<PerformanceReview>('/performance/reviews', {
+                await api.post<PerformanceReview>('/performance/reviews', {
                     employeeId: id,
                     date: reviewForm.date,
                     reviewer: reviewForm.reviewer,
                     rating: reviewForm.rating || 0,
                     notes: reviewForm.notes || '',
                 });
-                setReviewsList(prev => [created, ...prev]);
             }
             setIsReviewModalOpen(false);
             showToast(reviewForm.id ? t('employees:toast.reviewUpdated') : t('employees:toast.reviewAdded'), 'success');
@@ -845,15 +829,11 @@ export const EmployeeDetail: React.FC = () => {
                                     onUpdateStatus={handleUpdateTrainingStatus}
                                 />
                             )}
-                            {activeTab === 'performance' && (
+                            {activeTab === 'performance' && id && (
                                 <PerformanceTab
+                                    employeeId={id}
                                     isAdmin={isAdmin}
-                                    canAddReview={isAdmin || !isOwnProfile}
-                                    currentUserId={user?.userId || user?.id}
-                                    reviewsList={reviewsList}
-                                    onAddReview={handleAddReview}
-                                    onEditReview={handleEditReview}
-                                    onDeleteReview={handleDeleteReview}
+                                    onAddReview={isAdmin ? handleAddReview : undefined}
                                 />
                             )}
                             {activeTab === 'leave-quotas' && isAdmin && id && (

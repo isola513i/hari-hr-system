@@ -40,12 +40,13 @@ export const usePerformanceReviews = (id: string | undefined) => {
   });
 };
 
-export const useAllPerformanceReviews = (filters?: { status?: string }) => {
+export const useAllPerformanceReviews = (filters?: { status?: string; reviewPeriod?: string }) => {
   return useQuery({
     queryKey: queryKeys.performanceReviews.list(filters),
     queryFn: () => {
       const params = new URLSearchParams();
       if (filters?.status) params.set('status', filters.status);
+      if (filters?.reviewPeriod) params.set('reviewPeriod', filters.reviewPeriod);
       return api.get<PerformanceReview[]>(`/performance/reviews?${params.toString()}`);
     },
     staleTime: 30000,
