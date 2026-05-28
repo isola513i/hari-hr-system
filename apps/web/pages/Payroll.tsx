@@ -145,13 +145,13 @@ export const Payroll: React.FC = () => {
           <SummaryCard
             icon={<Banknote size={20} />}
             label={t('admin.summary.totalPayroll')}
-            value={`฿${formatCurrency(summary.totalPayroll)}`}
+            value={`฿ ${formatCurrency(summary.totalPayroll)}`}
             color="text-accent-green bg-accent-green/10"
           />
           <SummaryCard
             icon={<Receipt size={20} />}
             label={t('admin.summary.totalTax')}
-            value={`฿${formatCurrency(summary.totalTax)}`}
+            value={`฿ ${formatCurrency(summary.totalTax)}`}
             color="text-accent-orange bg-accent-orange/10"
           />
           <SummaryCard
@@ -209,19 +209,19 @@ export const Payroll: React.FC = () => {
           <SummaryCard
             icon={<Wallet size={20} />}
             label={t('employee.summary.latestNetPay')}
-            value={`฿${formatCurrency(employeeSummary.latestNetPay)}`}
+            value={`฿ ${formatCurrency(employeeSummary.latestNetPay)}`}
             color="text-accent-green bg-accent-green/10"
           />
           <SummaryCard
             icon={<Receipt size={20} />}
             label={t('employee.summary.ytdTax')}
-            value={`฿${formatCurrency(employeeSummary.ytdTax)}`}
+            value={`฿ ${formatCurrency(employeeSummary.ytdTax)}`}
             color="text-accent-red bg-accent-red/10"
           />
           <SummaryCard
             icon={<Shield size={20} />}
             label={t('employee.summary.ytdSSF')}
-            value={`฿${formatCurrency(employeeSummary.ytdSSF)}`}
+            value={`฿ ${formatCurrency(employeeSummary.ytdSSF)}`}
             color="text-blue-500 bg-blue-500/10"
           />
           <SummaryCard
@@ -274,11 +274,11 @@ export const Payroll: React.FC = () => {
                       {formatDate(record.payPeriodStart)} — {formatDate(record.payPeriodEnd)}
                     </p>
                     <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">
-                      {t('form.baseSalary')}: ฿{formatCurrency(record.baseSalary)}
+                      {t('form.baseSalary')}: ฿ {formatCurrency(record.baseSalary)}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-bold text-text-light dark:text-text-dark">฿{formatCurrency(record.netPay)}</p>
+                    <p className="text-sm font-bold text-text-light dark:text-text-dark">฿ {formatCurrency(record.netPay)}</p>
                     <div className="flex items-center gap-1 justify-end mt-0.5">
                       {statusIcon(record.status)}
                       {statusBadge(record.status, t(`status.${record.status.toLowerCase()}`))}
@@ -292,18 +292,18 @@ export const Payroll: React.FC = () => {
                   <div className="px-4 pb-4">
                     <div className="bg-background-light dark:bg-background-dark rounded-lg p-4">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <DetailItem label={t('form.baseSalary')} value={`฿${formatCurrency(record.baseSalary)}`} />
+                        <DetailItem label={t('form.baseSalary')} value={`฿ ${formatCurrency(record.baseSalary)}`} />
                         <DetailItem label={t('form.overtimeHours')} value={`${record.overtimeHours}h`} />
-                        <DetailItem label={t('employee.detail.overtimePay')} value={`฿${formatCurrency(record.overtimePay)}`} />
-                        <DetailItem label={t('form.bonus')} value={`฿${formatCurrency(record.bonus)}`} positive />
-                        <DetailItem label={t('form.leaveDeduction')} value={`-฿${formatCurrency(record.leaveDeduction)}`} negative />
-                        <DetailItem label={t('form.otherDeductions')} value={`-฿${formatCurrency(record.deductions)}`} negative />
-                        <DetailItem label={t('form.taxAmount')} value={`-฿${formatCurrency(record.taxAmount)}`} negative />
-                        <DetailItem label={t('employee.detail.ssfEmployee')} value={`-฿${formatCurrency(record.ssfEmployee)}`} negative />
-                        <DetailItem label={t('employee.detail.pvfEmployee')} value={`-฿${formatCurrency(record.pvfEmployee)}`} negative />
-                        <DetailItem label={t('employee.detail.ssfEmployer')} value={`฿${formatCurrency(record.ssfEmployer)}`} />
-                        <DetailItem label={t('employee.detail.pvfEmployer')} value={`฿${formatCurrency(record.pvfEmployer)}`} />
-                        <DetailItem label={t('form.netPay')} value={`฿${formatCurrency(record.netPay)}`} bold />
+                        <DetailItem label={t('employee.detail.overtimePay')} value={`฿ ${formatCurrency(record.overtimePay)}`} />
+                        <DetailItem label={t('form.bonus')} value={`฿ ${formatCurrency(record.bonus)}`} positive />
+                        <DetailItem label={t('form.leaveDeduction')} value={`-฿ ${formatCurrency(record.leaveDeduction)}`} negative />
+                        <DetailItem label={t('form.otherDeductions')} value={`-฿ ${formatCurrency(record.deductions)}`} negative />
+                        <DetailItem label={t('form.taxAmount')} value={`-฿ ${formatCurrency(record.taxAmount)}`} negative />
+                        <DetailItem label={t('employee.detail.ssfEmployee')} value={`-฿ ${formatCurrency(record.ssfEmployee)}`} negative />
+                        <DetailItem label={t('employee.detail.pvfEmployee')} value={`-฿ ${formatCurrency(record.pvfEmployee)}`} negative />
+                        <DetailItem label={t('employee.detail.ssfEmployer')} value={`฿ ${formatCurrency(record.ssfEmployer)}`} />
+                        <DetailItem label={t('employee.detail.pvfEmployer')} value={`฿ ${formatCurrency(record.pvfEmployer)}`} />
+                        <DetailItem label={t('form.netPay')} value={`฿ ${formatCurrency(record.netPay)}`} bold />
                         <DetailItem label={t('form.paymentMethod')} value={record.paymentMethod || '-'} />
                       </div>
                       {record.paymentDate && (

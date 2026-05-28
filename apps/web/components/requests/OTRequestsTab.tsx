@@ -171,7 +171,7 @@ export const OTRequestsTab: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-text-muted-light dark:text-text-muted-dark">{t('ot.stats.totalOTHours')}</p>
-              <p className="text-3xl font-bold text-text-light dark:text-text-dark mt-1">{stats.totalOTHours.toFixed(1)}h</p>
+              <p className="text-3xl font-bold text-text-light dark:text-text-dark mt-1">{stats.totalOTHours.toFixed(1)} h</p>
               <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">{t('ot.stats.thisMonth')}</p>
             </div>
             <div className="flex flex-col items-center gap-1">

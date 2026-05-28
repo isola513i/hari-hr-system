@@ -107,7 +107,7 @@ export function useExpensePage() {
     try { await deleteMutation.mutateAsync(deleteConfirmId); showToast(t('expenses:toast.deleteSuccess')); setDeleteConfirmId(null); } catch { showToast(t('expenses:toast.actionFailed'), 'error'); }
   };
 
-  const formatAmount = (n: number) => `฿${n.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
+  const formatAmount = (n: number) => `฿ ${n.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
 
   return {
     t,
