@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Package, Plus, X, Pencil, UserCheck, UserX, Trash2, Search, Monitor, Smartphone, Car, Wrench } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -388,11 +389,13 @@ export function Assets() {
         )}
       </div>
 
-      {(showForm || editAsset) && (
-        <AssetFormModal asset={editAsset} onClose={() => { setShowForm(false); setEditAsset(null); }} onSave={handleSave} />
+      {(showForm || editAsset) && createPortal(
+        <AssetFormModal asset={editAsset} onClose={() => { setShowForm(false); setEditAsset(null); }} onSave={handleSave} />,
+        document.body
       )}
-      {assignAsset && (
-        <AssignModal asset={assignAsset} onClose={() => setAssignAsset(null)} onAssign={handleAssign} />
+      {assignAsset && createPortal(
+        <AssignModal asset={assignAsset} onClose={() => setAssignAsset(null)} onAssign={handleAssign} />,
+        document.body
       )}
     </div>
   );
