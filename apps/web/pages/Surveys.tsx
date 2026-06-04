@@ -338,7 +338,7 @@ function RadarChart({ categories }: { categories: { category: string; score: num
   const dataPath = dataPoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + 'Z';
 
   return (
-    <svg viewBox="0 0 320 320" className="w-full max-w-[260px] mx-auto">
+    <svg viewBox="0 0 320 320" className="w-full max-w-xs mx-auto">
       {/* Grid rings */}
       {levels.map((lvl) => {
         const ring = categories.map((_, i) => pt(i, lvl)).map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + 'Z';
@@ -406,12 +406,12 @@ function SurveyAnalytics({ data }: { data: SentimentOverview }) {
         </div>
 
         {/* Split layout: sentiment left, radar right */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-          {/* Left: Sentiment distribution + category scores */}
-          <div className="space-y-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          {/* Left: Sentiment distribution */}
+          <div className="space-y-4">
             <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide">{t('surveyAnalytics.sentimentDistribution', 'Sentiment Distribution')}</p>
             {/* Stacked pill bar */}
-            <div className="flex h-4 rounded-full overflow-hidden gap-px">
+            <div className="flex h-5 rounded-full overflow-hidden gap-px">
               {distribution.positive > 0 && <div style={{ flex: distribution.positive }} className="bg-green-500" />}
               {distribution.neutral > 0 && <div style={{ flex: distribution.neutral }} className="bg-yellow-400" />}
               {distribution.negative > 0 && <div style={{ flex: distribution.negative }} className="bg-red-400" />}
@@ -429,25 +429,6 @@ function SurveyAnalytics({ data }: { data: SentimentOverview }) {
                 </div>
               ))}
             </div>
-            {/* Category score rows to fill height alongside radar */}
-            {categoryBreakdown.length >= 3 && (
-              <div className="space-y-1.5 pt-1">
-                {categoryBreakdown.map((cat) => {
-                  const pct = cat.score;
-                  const barColor = pct >= 70 ? 'bg-green-500' : pct >= 40 ? 'bg-yellow-400' : 'bg-red-400';
-                  const textColor = pct >= 70 ? 'text-green-600 dark:text-green-400' : pct >= 40 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-500';
-                  return (
-                    <div key={cat.category} className="flex items-center gap-2">
-                      <span className="text-xs text-text-muted-light dark:text-text-muted-dark w-24 truncate flex-shrink-0">{cat.category}</span>
-                      <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
-                      </div>
-                      <span className={`text-xs font-semibold w-8 text-right ${textColor}`}>{pct}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
 
           {/* Right: Radar chart for categories */}
