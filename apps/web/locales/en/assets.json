@@ -50,6 +50,17 @@
     "Under Maintenance": "Under Maintenance",
     "Retired": "Retired"
   },
+  "assetType": {
+    "Laptop": "Laptop",
+    "Desktop": "Desktop",
+    "Monitor": "Monitor",
+    "Phone": "Phone",
+    "Tablet": "Tablet",
+    "Vehicle": "Vehicle",
+    "Equipment": "Equipment",
+    "Furniture": "Furniture",
+    "Other": "Other"
+  },
   "statusFilter": {
     "allStatuses": "All Statuses"
   },

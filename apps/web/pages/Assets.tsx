@@ -69,7 +69,7 @@ function AssetFormModal({
   );
   const [saving, setSaving] = useState(false);
 
-  const ASSET_TYPE_OPTIONS = ASSET_TYPES.map(tp => ({ value: tp, label: tp }));
+  const ASSET_TYPE_OPTIONS = ASSET_TYPES.map(tp => ({ value: tp, label: t(`assetType.${tp}`) }));
   const ASSET_STATUS_OPTIONS = ASSET_STATUSES.map(s => ({ value: s, label: t(`status.${s}`) }));
 
   const handle = async (e: React.FormEvent) => {
@@ -341,7 +341,7 @@ export function Assets() {
                       </td>
                       <td className="px-4 py-3">
                         <span className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
-                          {getIcon(asset.assetType)} {asset.assetType}
+                          {getIcon(asset.assetType)} {t(`assetType.${asset.assetType}`)}
                         </span>
                       </td>
                       <td className="px-4 py-3">
