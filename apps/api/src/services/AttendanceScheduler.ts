@@ -88,6 +88,19 @@ async function autoMarkAbsent(): Promise<void> {
     return;
   }
 
+  // Skip public holidays
+  const holidayCheck = await query(
+    `SELECT 1 FROM holidays
+     WHERE (is_recurring = FALSE AND $1::date BETWEEN date AND COALESCE(end_date, date))
+        OR (is_recurring = TRUE  AND TO_CHAR($1::date, 'MM-DD') BETWEEN TO_CHAR(date, 'MM-DD') AND TO_CHAR(COALESCE(end_date, date), 'MM-DD'))
+     LIMIT 1`,
+    [prevDate]
+  );
+  if (holidayCheck.rows.length > 0) {
+    console.log(`[AttendanceScheduler] Auto-absent: skipping public holiday (${prevDate})`);
+    return;
+  }
+
   try {
     // Insert Absent records for active employees with no attendance record and no approved leave
     const result = await query(
