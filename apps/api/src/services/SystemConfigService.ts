@@ -72,21 +72,18 @@ export class SystemConfigService {
      * Update existing config
      */
     async updateConfig(category: string, key: string, updateData: UpdateSystemConfigDTO): Promise<SystemConfig> {
-        const { value, description } = updateData;
+        const { value, description, dataType } = updateData;
 
         const result = await query(
-            `UPDATE system_configs
-             SET value = $1,
-                 description = COALESCE($2, description),
+            `INSERT INTO system_configs (category, key, value, data_type, description)
+             VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (category, key) DO UPDATE
+             SET value = EXCLUDED.value,
+                 description = COALESCE(EXCLUDED.description, system_configs.description),
                  updated_at = CURRENT_TIMESTAMP
-             WHERE category = $3 AND key = $4
              RETURNING *`,
-            [value, description, category, key]
+            [category, key, value, dataType ?? 'string', description ?? null]
         );
-
-        if (result.rows.length === 0) {
-            throw new Error(`Config ${category}.${key} not found`);
-        }
 
         return this.mapRowToConfig(result.rows[0]);
     }
