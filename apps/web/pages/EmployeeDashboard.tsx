@@ -889,14 +889,14 @@ export const EmployeeDashboard: React.FC = () => {
             <div className="p-1.5 bg-amber-100 dark:bg-amber-900/20 text-amber-500 rounded-lg">
               <Timer size={16} />
             </div>
-            <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">My OT Requests</h2>
+            <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">{t('dashboard:employee.myOTRequests')}</h2>
           </div>
           <button
             onClick={() => setShowOTModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
           >
             <Timer size={12} />
-            Request OT
+            {t('dashboard:employee.requestOT')}
           </button>
         </div>
         <div className="p-4">
@@ -930,7 +930,7 @@ export const EmployeeDashboard: React.FC = () => {
                     : req.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400'
                     : 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400'
                   }`}>
-                    {req.status}
+                    {t(`dashboard:employee.otStatus.${req.status}`, req.status)}
                   </span>
                 </div>
               ))}

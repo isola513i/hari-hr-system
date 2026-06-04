@@ -78,8 +78,15 @@
     "alreadyCheckedIn": "Already clocked in",
     "gpsNotSupported": "GPS is not supported on this device",
     "locationError": "Could not get your location. Please try again.",
+    "myOTRequests": "My OT Requests",
+    "requestOT": "Request OT",
     "noOTRequests": "No OT requests yet",
     "submitFirstOT": "Submit your first OT request",
+    "otStatus": {
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "pending": "Pending"
+    },
     "gettingGPS": "Getting GPS..."
   },
   "stats": {
