@@ -261,6 +261,74 @@ export class PayrollService {
   }
 
   /**
+   * Count weekday (Mon–Fri) working days in a date range, excluding public holidays.
+   * Used to compute the daily rate for absent deductions.
+   */
+  private async getWorkingDays(
+    payPeriodStart: string,
+    payPeriodEnd: string,
+    client?: { query: (sql: string, params: any[]) => Promise<any> }
+  ): Promise<number> {
+    const db = client || { query };
+    const result = await db.query(
+      `SELECT COUNT(*)::int AS working_days
+       FROM generate_series($1::date, $2::date, '1 day'::interval) AS d(day)
+       WHERE EXTRACT(DOW FROM d.day) NOT IN (0, 6)
+         AND NOT EXISTS (
+           SELECT 1 FROM holidays h
+           WHERE h.date = d.day::date
+         )`,
+      [payPeriodStart, payPeriodEnd]
+    );
+    return result.rows[0]?.working_days ?? 1;
+  }
+
+  /**
+   * Calculate leave (absent) deduction from attendance records.
+   * Counts Absent-status days + days with no record (excluding weekends and holidays).
+   * Returns deduction amount = (baseSalary / workingDays) × absentDays.
+   */
+  async calcLeaveDeduction(
+    employeeId: string,
+    payPeriodStart: string,
+    payPeriodEnd: string,
+    baseSalary: number,
+    client?: { query: (sql: string, params: any[]) => Promise<any> }
+  ): Promise<number> {
+    const db = client || { query };
+    const workingDays = await this.getWorkingDays(payPeriodStart, payPeriodEnd, client);
+    const result = await db.query(
+      `SELECT COUNT(*)::int AS absent_days
+       FROM generate_series($2::date, $3::date, '1 day'::interval) AS d(day)
+       WHERE EXTRACT(DOW FROM d.day) NOT IN (0, 6)
+         AND NOT EXISTS (
+           SELECT 1 FROM holidays h WHERE h.date = d.day::date
+         )
+         AND NOT EXISTS (
+           SELECT 1 FROM leave_requests lr
+           WHERE lr.employee_id = $1 AND lr.status = 'Approved'
+             AND d.day::date BETWEEN lr.start_date AND lr.end_date
+         )
+         AND (
+           NOT EXISTS (
+             SELECT 1 FROM attendance_records ar
+             WHERE ar.employee_id = $1 AND ar.date = d.day::date AND ar.deleted_at IS NULL
+           )
+           OR EXISTS (
+             SELECT 1 FROM attendance_records ar
+             WHERE ar.employee_id = $1 AND ar.date = d.day::date
+               AND ar.status = 'Absent' AND ar.deleted_at IS NULL
+           )
+         )`,
+      [employeeId, payPeriodStart, payPeriodEnd]
+    );
+    const absentDays: number = result.rows[0]?.absent_days ?? 0;
+    if (absentDays === 0 || workingDays === 0) return 0;
+    const dailyRate = baseSalary / workingDays;
+    return Math.round(dailyRate * absentDays * 100) / 100;
+  }
+
+  /**
    * Create payroll record for an employee
    */
   async createPayroll(data: CreatePayrollData): Promise<PayrollRecord> {
@@ -270,7 +338,6 @@ export class PayrollService {
       payPeriodEnd,
       baseSalary,
       bonus = 0,
-      leaveDeduction = 0,
       deductions = 0,
     } = data;
 
@@ -278,6 +345,11 @@ export class PayrollService {
     const overtimeHours = data.overtimeHours != null
       ? data.overtimeHours
       : await OTRequestService.getApprovedOTHours(employeeId, payPeriodStart, payPeriodEnd);
+
+    // Auto-calculate leave deduction from attendance when not explicitly provided
+    const leaveDeduction = data.leaveDeduction != null
+      ? data.leaveDeduction
+      : await this.calcLeaveDeduction(employeeId, payPeriodStart, payPeriodEnd, baseSalary);
 
     // Validate date range
     if (payPeriodEnd <= payPeriodStart) {
@@ -591,9 +663,9 @@ export class PayrollService {
       let skipped = 0;
       const skippedEmployees: string[] = [];
 
-      // Calculate values in JS loop (no queries)
+      // Calculate values in JS loop
       const insertValues: any[] = [];
-      const PARAMS_PER_ROW = 10;
+      const PARAMS_PER_ROW = 11;
 
       for (const emp of employees.rows) {
         const isIntern = emp.role && emp.role.toLowerCase().includes('intern');
@@ -625,11 +697,16 @@ export class PayrollService {
           }
         }
 
-        const { monthlyTax: batchTax, netPay, ssfEmployee, ssfEmployer, pvfEmployee, pvfEmployer } = isIntern
-          ? this.calculateInternPayroll(effectiveSalary, 0, 0, 0, 0, config)
-          : this.calculatePayrollAmounts(effectiveSalary, 0, 0, 0, 0, config);
+        // Auto-calculate absent deduction from attendance (interns already paid per day)
+        const leaveDeduction = isIntern
+          ? 0
+          : await this.calcLeaveDeduction(emp.id, payPeriodStart, payPeriodEnd, effectiveSalary, client);
 
-        insertValues.push(emp.id, payPeriodStart, payPeriodEnd, effectiveSalary, batchTax, ssfEmployee, ssfEmployer, pvfEmployee, pvfEmployer, netPay);
+        const { monthlyTax: batchTax, netPay, ssfEmployee, ssfEmployer, pvfEmployee, pvfEmployer } = isIntern
+          ? this.calculateInternPayroll(effectiveSalary, 0, 0, leaveDeduction, 0, config)
+          : this.calculatePayrollAmounts(effectiveSalary, 0, 0, leaveDeduction, 0, config);
+
+        insertValues.push(emp.id, payPeriodStart, payPeriodEnd, effectiveSalary, leaveDeduction, batchTax, ssfEmployee, ssfEmployer, pvfEmployee, pvfEmployer, netPay);
         created++;
       }
 
@@ -638,7 +715,7 @@ export class PayrollService {
         const rows: string[] = [];
         for (let i = 0; i < created; i++) {
           const o = i * PARAMS_PER_ROW;
-          rows.push(`($${o+1},$${o+2},$${o+3},$${o+4},0,0,0,0,0,$${o+5},$${o+6},$${o+7},$${o+8},$${o+9},$${o+10})`);
+          rows.push(`($${o+1},$${o+2},$${o+3},$${o+4},0,0,0,$${o+5},0,$${o+6},$${o+7},$${o+8},$${o+9},$${o+10},$${o+11})`);
         }
         await client.query(
           `INSERT INTO payroll_records (employee_id,pay_period_start,pay_period_end,base_salary,overtime_hours,overtime_pay,bonus,leave_deduction,deductions,tax_amount,ssf_employee,ssf_employer,pvf_employee,pvf_employer,net_pay) VALUES ${rows.join(',')}`,

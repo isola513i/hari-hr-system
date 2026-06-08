@@ -124,7 +124,7 @@
   },
   "expense": {
     "exportCsv": "Export CSV",
-    "searchPlaceholder": "Search employee or title...",
+    "searchPlaceholder": "Search employee...",
     "awaitingApproval": "Awaiting approval",
     "ofAllClaims": "{{rate}}% of all claims",
     "thisMonth": "This month",

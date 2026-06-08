@@ -169,9 +169,10 @@ const Attendance: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">{formatDate(record.date)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">{formatTime(record.clockIn)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">
-                      {formatTime(record.clockOut)}
-                      {record.autoCheckout && (
-                        <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-medium rounded bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">{t('common:auto')}</span>
+                      {record.autoCheckout ? (
+                        <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">ไม่ได้เช็คเอ้าท์</span>
+                      ) : (
+                        formatTime(record.clockOut)
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">{record.totalHours != null ? `${Number(record.totalHours).toFixed(1)}h` : '-'}</td>
@@ -225,7 +226,11 @@ const Attendance: React.FC = () => {
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-xs text-text-muted-light dark:text-text-muted-dark w-10 shrink-0">{t('attendance:employee.out')}</span>
-                    <span className="text-sm font-medium text-text-light dark:text-text-dark">{formatTime(record.clockOut)}</span>
+                    {record.autoCheckout ? (
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">ไม่ได้เช็คเอ้าท์</span>
+                    ) : (
+                      <span className="text-sm font-medium text-text-light dark:text-text-dark">{formatTime(record.clockOut)}</span>
+                    )}
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-xs text-text-muted-light dark:text-text-muted-dark w-10 shrink-0">{t('common:time.hours')}</span>

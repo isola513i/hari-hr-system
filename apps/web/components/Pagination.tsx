@@ -28,77 +28,45 @@ export const Pagination: React.FC<PaginationProps> = ({
     const showEllipsis = totalPages > 7;
 
     if (!showEllipsis) {
-      // Show all pages if total is 7 or less
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
-      // Always show first page
       pages.push(1);
-
-      if (currentPage > 3) {
-        pages.push('...');
-      }
-
-      // Show pages around current page
+      if (currentPage > 3) pages.push('...');
       const start = Math.max(2, currentPage - 1);
       const end = Math.min(totalPages - 1, currentPage + 1);
-
-      for (let i = start; i <= end; i++) {
-        pages.push(i);
-      }
-
-      if (currentPage < totalPages - 2) {
-        pages.push('...');
-      }
-
-      // Always show last page
-      if (totalPages > 1) {
-        pages.push(totalPages);
-      }
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (currentPage < totalPages - 2) pages.push('...');
+      if (totalPages > 1) pages.push(totalPages);
     }
-
     return pages;
   };
 
-  if (totalPages <= 1) {
-    return null;
-  }
+  if (totalPages <= 1) return null;
 
   return (
     <div className={`flex items-center justify-between ${className}`}>
-      {/* Items count */}
       {totalItems && itemsPerPage && (
-        <div className="text-sm text-text-muted-light dark:text-text-muted-dark">
-          {t('pagination.showing')} {startItem} {t('pagination.to')} {endItem} {t('pagination.of')} {totalItems} {t('pagination.results')}
-        </div>
+        <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
+          {startItem}–{endItem} {t('pagination.of')} {totalItems}
+        </p>
       )}
 
-      {/* Page buttons */}
-      <div className="flex items-center gap-2">
-        {/* Previous button */}
+      <div className="flex items-center gap-1">
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="p-2 rounded-lg border border-border-light dark:border-border-dark
-                     hover:bg-surface-light dark:hover:bg-surface-dark
-                     disabled:opacity-50 disabled:cursor-not-allowed
-                     transition-colors"
+          className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded"
           aria-label="Previous page"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft size={15} />
         </button>
 
-        {/* Page numbers */}
-        <div className="flex gap-1">
+        <div className="flex items-center gap-0.5">
           {getPageNumbers().map((page, index) => {
             if (page === '...') {
               return (
-                <span
-                  key={`ellipsis-${index}`}
-                  className="px-3 py-2 text-text-muted-light dark:text-text-muted-dark"
-                >
-                  ...
+                <span key={`ellipsis-${index}`} className="w-7 text-center text-xs text-text-muted-light dark:text-text-muted-dark">
+                  ···
                 </span>
               );
             }
@@ -110,29 +78,28 @@ export const Pagination: React.FC<PaginationProps> = ({
               <button
                 key={pageNum}
                 onClick={() => onPageChange(pageNum)}
-                className={`px-3 py-2 rounded-lg border transition-colors ${
+                className={`relative w-7 h-7 text-xs rounded transition-colors ${
                   isActive
-                    ? 'bg-primary text-white border-primary'
-                    : 'border-border-light dark:border-border-dark hover:bg-surface-light dark:hover:bg-surface-dark'
+                    ? 'text-primary font-semibold'
+                    : 'text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
               >
                 {pageNum}
+                {isActive && (
+                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+                )}
               </button>
             );
           })}
         </div>
 
-        {/* Next button */}
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="p-2 rounded-lg border border-border-light dark:border-border-dark
-                     hover:bg-surface-light dark:hover:bg-surface-dark
-                     disabled:opacity-50 disabled:cursor-not-allowed
-                     transition-colors"
+          className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded"
           aria-label="Next page"
         >
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight size={15} />
         </button>
       </div>
     </div>

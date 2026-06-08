@@ -84,7 +84,7 @@
     "cancelApproved": "อนุมัติการยกเลิกลาแล้ว",
     "cancelRejected": "ปฏิเสธการยกเลิกลาแล้ว",
     "cancelFailed": "ไม่สามารถดำเนินการยกเลิกได้",
-    "searchEmployee": "ค้นหาชื่อ...",
+    "searchEmployee": "ค้นหาพนักงาน...",
     "exportCSV": "ส่งออก CSV",
     "selectAll": "เลือกทั้งหมด",
     "selected": "เลือก {{count}} รายการ",

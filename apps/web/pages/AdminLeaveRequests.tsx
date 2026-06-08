@@ -246,6 +246,7 @@ export const AdminLeaveRequests: React.FC = () => {
 
   // Select all pending on page
   const pendingOnPage = paginatedRequests.filter(r => r.status === 'Pending');
+  const hasPendingOnPage = pendingOnPage.length > 0;
   const allPageSelected = pendingOnPage.length > 0 && pendingOnPage.every(r => selectedIds.has(r.id));
   const toggleSelectAll = () => {
     if (allPageSelected) {
@@ -280,7 +281,7 @@ export const AdminLeaveRequests: React.FC = () => {
       ];
     });
     const csv = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -462,15 +463,17 @@ export const AdminLeaveRequests: React.FC = () => {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-800 border-b border-border-light dark:border-border-dark">
               <tr>
-                <th className="px-3 py-3 w-10">
-                  <input
-                    type="checkbox"
-                    checked={allPageSelected}
-                    onChange={toggleSelectAll}
-                    className="w-4 h-4 text-primary border-border-light dark:border-border-dark rounded focus:ring-primary"
-                    title={t('leave:admin.selectAll')}
-                  />
-                </th>
+                {hasPendingOnPage && (
+                  <th className="px-3 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={allPageSelected}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 text-primary border-border-light dark:border-border-dark rounded focus:ring-primary"
+                      title={t('leave:admin.selectAll')}
+                    />
+                  </th>
+                )}
                 <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
                   {t('leave:admin.employee')}
                 </th>
@@ -492,7 +495,7 @@ export const AdminLeaveRequests: React.FC = () => {
               {paginatedRequests.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={hasPendingOnPage ? 6 : 5}
                     className="px-6 py-12 text-center text-text-muted-light dark:text-text-muted-dark"
                   >
                     {t('leave:admin.noRequests')}
@@ -509,16 +512,18 @@ export const AdminLeaveRequests: React.FC = () => {
                       onClick={() => setDetailRequest(request)}
                       className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
                     >
-                      <td className="px-3 py-4" onClick={(e) => e.stopPropagation()}>
-                        {request.status === 'Pending' && (
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.has(request.id)}
-                            onChange={() => toggleSelect(request.id)}
-                            className="w-4 h-4 text-primary border-border-light dark:border-border-dark rounded focus:ring-primary"
-                          />
-                        )}
-                      </td>
+                      {hasPendingOnPage && (
+                        <td className="px-3 py-4" onClick={(e) => e.stopPropagation()}>
+                          {request.status === 'Pending' && (
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(request.id)}
+                              onChange={() => toggleSelect(request.id)}
+                              className="w-4 h-4 text-primary border-border-light dark:border-border-dark rounded focus:ring-primary"
+                            />
+                          )}
+                        </td>
+                      )}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <Avatar

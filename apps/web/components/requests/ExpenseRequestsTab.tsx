@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import {
   DollarSign, Clock, FileText, Check, X, Plane, Utensils, Monitor, Package, GraduationCap,
-  Receipt, Trash2, CheckCircle2, Download,
+  Receipt, Trash2, CheckCircle2, Download, Search,
 } from 'lucide-react';
 import { Modal } from '../Modal';
 import { Avatar } from '../Avatar';
@@ -69,8 +69,8 @@ export const ExpenseRequestsTab: React.FC = () => {
   const exportCSV = () => {
     const headers = ['Employee', 'Title', 'Category', 'Amount', 'Date', 'Status'];
     const rows = filtered.map(c => [c.employeeName, c.title, c.category, c.amount, c.expenseDate, c.status]);
-    const csv = [headers, ...rows].map(row => row.map(v => `"${v}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const csv = [headers, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -97,13 +97,25 @@ export const ExpenseRequestsTab: React.FC = () => {
             {t('expenses:page.adminSubtitle')}
           </p>
         </div>
-        <button
-          onClick={exportCSV}
-          className="flex items-center gap-2 px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-text-light dark:text-text-dark transition-colors self-start sm:self-auto"
-        >
-          <Download size={16} />
-          {tReq('expense.exportCsv')}
-        </button>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted-light dark:text-text-muted-dark" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={tReq('searchPlaceholder')}
+              className="pl-9 pr-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary focus:outline-none w-full sm:w-48"
+            />
+          </div>
+          <button
+            onClick={exportCSV}
+            className="flex items-center gap-2 px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-text-light dark:text-text-dark transition-colors"
+          >
+            <Download size={16} />
+            {tReq('expense.exportCsv')}
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -149,11 +161,7 @@ export const ExpenseRequestsTab: React.FC = () => {
 
       {/* Table Card */}
       <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm overflow-hidden">
-        <FilterToolbar
-          searchValue={search}
-          onSearchChange={(e) => setSearch(e.target.value)}
-          searchPlaceholder={tReq('expense.searchPlaceholder')}
-        >
+        <FilterToolbar>
           <Dropdown options={statusFilterOptions} value={statusFilter} onChange={setStatusFilter} width="w-auto" />
         </FilterToolbar>
 

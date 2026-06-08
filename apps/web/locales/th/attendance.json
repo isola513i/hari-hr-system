@@ -35,6 +35,7 @@
     "checkOut": "ออก",
     "hours": "ชั่วโมง",
     "ot": "OT",
+    "type": "ประเภท",
     "status": "สถานะ",
     "actions": "จัดการ",
     "loading": "กำลังโหลดบันทึกการลงเวลา...",
@@ -106,7 +107,9 @@
     "noLateArrivals": "ไม่มีการมาสายในเดือนนี้",
     "employees": "{{present}} / {{total}} คน",
     "arrivedLate": "{{count}} คนมาสาย",
-    "avg": "เฉลี่ย {{value}}%"
+    "avg": "เฉลี่ย {{value}}%",
+    "attendanceRate": "{{rate}}% มาทำงาน",
+    "lateCount": "{{count}} ครั้ง"
   },
   "locationPermission": {
     "requestTitle": "อนุญาตการเข้าถึงตำแหน่ง",

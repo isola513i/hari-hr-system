@@ -124,7 +124,7 @@
   },
   "expense": {
     "exportCsv": "ส่งออก CSV",
-    "searchPlaceholder": "ค้นหาพนักงานหรือหัวข้อ...",
+    "searchPlaceholder": "ค้นหาพนักงาน...",
     "awaitingApproval": "รออนุมัติ",
     "ofAllClaims": "{{rate}}% ของทั้งหมด",
     "thisMonth": "เดือนนี้",

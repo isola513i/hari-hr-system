@@ -25,9 +25,9 @@ const isHoliday = (dateStr: string, holidays: PublicHoliday[]) => {
   });
 };
 
-const formatChartDate = (dateStr: string) => {
+const formatChartDate = (dateStr: string, locale: string) => {
   const d = new Date(dateStr.slice(0, 10) + 'T00:00:00Z');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  return d.toLocaleDateString(locale === 'th' ? 'th-TH' : 'en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 };
 
 const CustomTooltip = ({ active, payload, label }: {
@@ -54,7 +54,7 @@ const CustomTooltip = ({ active, payload, label }: {
 };
 
 export const AttendanceAnalyticsPanel: React.FC<Props> = ({ data, holidays = [] }) => {
-  const { t } = useTranslation(['attendance']);
+  const { t, i18n } = useTranslation(['attendance']);
 
   const chartData = data.dailyRate.map((d) => {
     const off = isWeekend(d.date) || isHoliday(d.date, holidays);
@@ -66,7 +66,7 @@ export const AttendanceAnalyticsPanel: React.FC<Props> = ({ data, holidays = [] 
           return date >= start && date <= end;
         })?.name
       : undefined;
-    return { ...d, label: formatChartDate(d.date), isOff: off, holidayName: holiday };
+    return { ...d, label: formatChartDate(d.date, i18n.language), isOff: off, holidayName: holiday };
   });
 
   // Exclude weekends + holidays from average
@@ -178,7 +178,7 @@ export const AttendanceAnalyticsPanel: React.FC<Props> = ({ data, holidays = [] 
                 <Avatar src={emp.avatar} name={emp.name} size="sm" />
                 <p className="flex-1 text-sm font-medium text-text-light dark:text-text-dark truncate">{emp.name}</p>
                 <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
-                  {emp.lateCount}×
+                  {t('analytics.lateCount', { count: emp.lateCount })}
                 </span>
               </li>
             ))}

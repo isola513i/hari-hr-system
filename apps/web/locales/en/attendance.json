@@ -35,6 +35,7 @@
     "checkOut": "Check Out",
     "hours": "Hours",
     "ot": "OT",
+    "type": "Type",
     "status": "Status",
     "actions": "Actions",
     "loading": "Loading attendance records...",
@@ -106,7 +107,9 @@
     "noLateArrivals": "No late arrivals this month",
     "employees": "{{present}} / {{total}} employees",
     "arrivedLate": "{{count}} arrived late",
-    "avg": "Avg {{value}}%"
+    "avg": "Avg {{value}}%",
+    "attendanceRate": "{{rate}}% attendance",
+    "lateCount": "{{count}} times"
   },
   "locationPermission": {
     "requestTitle": "Allow Location Access",

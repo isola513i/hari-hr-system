@@ -720,6 +720,9 @@ export interface AdminAttendanceRecord {
   earlyDeparture: boolean;
   overtimeHours: number | null;
   checkInType?: string;
+  clockInLat?: number | null;
+  clockInLng?: number | null;
+  clockInAccuracy?: number | null;
 }
 
 export interface AttendanceSnapshot {

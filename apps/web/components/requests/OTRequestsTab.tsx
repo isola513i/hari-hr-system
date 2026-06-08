@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Clock, CheckCircle2, XCircle, Timer, Download } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, Timer, Download, Search } from 'lucide-react';
 import { Avatar } from '../Avatar';
 import { Dropdown, DropdownOption } from '../Dropdown';
 import { FilterToolbar } from '../FilterToolbar';
@@ -102,8 +102,8 @@ export const OTRequestsTab: React.FC = () => {
       r.reason || '',
       r.status,
     ]);
-    const csv = [headers, ...rows].map(row => row.map(c => `"${c}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const csv = [headers, ...rows].map(row => row.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -131,13 +131,25 @@ export const OTRequestsTab: React.FC = () => {
             {t('ot.subtitle')}
           </p>
         </div>
-        <button
-          onClick={exportCSV}
-          className="flex items-center gap-2 px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-text-light dark:text-text-dark transition-colors self-start sm:self-auto"
-        >
-          <Download size={16} />
-          {t('exportCsv')}
-        </button>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted-light dark:text-text-muted-dark" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('searchPlaceholder')}
+              className="pl-9 pr-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary focus:outline-none w-full sm:w-48"
+            />
+          </div>
+          <button
+            onClick={exportCSV}
+            className="flex items-center gap-2 px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-text-light dark:text-text-dark transition-colors"
+          >
+            <Download size={16} />
+            {t('exportCsv')}
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -183,11 +195,7 @@ export const OTRequestsTab: React.FC = () => {
 
       {/* Table Card */}
       <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm overflow-hidden">
-        <FilterToolbar
-          searchValue={search}
-          onSearchChange={(e) => setSearch(e.target.value)}
-          searchPlaceholder={t('searchPlaceholder')}
-        >
+        <FilterToolbar>
           <Dropdown options={OT_STATUS_OPTIONS} value={statusFilter} onChange={setStatusFilter} width="w-auto" />
         </FilterToolbar>
 

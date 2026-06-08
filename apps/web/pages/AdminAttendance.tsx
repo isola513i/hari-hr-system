@@ -12,12 +12,14 @@ import {
   Search,
   MoreVertical,
   Download,
+  MapPin,
 } from 'lucide-react';
 import { AttendanceAnalyticsPanel } from '../components/AttendanceAnalyticsPanel';
 import { Dropdown, DropdownOption } from '../components/Dropdown';
 import { DatePicker } from '../components/DatePicker';
 import { Pagination } from '../components/Pagination';
 import { UpsertAttendanceModal } from '../components/UpsertAttendanceModal';
+import { LocationMapModal } from '../components/LocationMapModal';
 import { useToast } from '../contexts/ToastContext';
 import {
   useAdminAttendanceSnapshot,
@@ -71,6 +73,88 @@ const CheckInTypeBadge: React.FC<{ type?: string }> = ({ type }) => {
   );
 };
 
+type StatusDotVariant = 'late' | 'early' | 'no-checkout';
+
+const DOT_COLOR: Record<StatusDotVariant, string> = {
+  late: 'bg-orange-500',
+  early: 'bg-yellow-500',
+  'no-checkout': 'bg-slate-400',
+};
+
+interface AvatarDotsProps {
+  avatar: string | null;
+  name: string;
+  isLate: boolean;
+  isEarlyDeparture: boolean;
+  isAutoCheckout: boolean;
+  lateLabel: string;
+  earlyLabel: string;
+  noCheckoutLabel: string;
+}
+
+const AvatarWithStatusDots: React.FC<AvatarDotsProps> = ({ avatar, name, isLate, isEarlyDeparture, isAutoCheckout, lateLabel, earlyLabel, noCheckoutLabel }) => {
+  // Priority: Late > early departure > no checkout — single dot, most critical wins
+  const variant: StatusDotVariant | null = isLate ? 'late' : isEarlyDeparture ? 'early' : isAutoCheckout ? 'no-checkout' : null;
+
+  // Tooltip lists ALL active supplementary statuses
+  const activeLabels = [
+    isLate && lateLabel,
+    isEarlyDeparture && earlyLabel,
+    isAutoCheckout && noCheckoutLabel,
+  ].filter(Boolean).join(' · ');
+
+  return (
+    <div className="relative shrink-0 overflow-visible">
+      {avatar ? (
+        <img src={avatar} alt={name} className="w-8 h-8 rounded-full object-cover" />
+      ) : (
+        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
+          {name.charAt(0)}
+        </div>
+      )}
+      {variant && (
+        <span className={`group/dot absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ${DOT_COLOR[variant]} ring-2 ring-card-light dark:ring-card-dark cursor-default overflow-visible`}>
+          <span className="pointer-events-none absolute bottom-full left-0 mb-1.5 px-2 py-1 rounded-md bg-gray-900 dark:bg-gray-700 text-white text-[10px] whitespace-nowrap opacity-0 group-hover/dot:opacity-100 transition-opacity z-[9999] shadow-md">
+            {activeLabels}
+          </span>
+        </span>
+      )}
+    </div>
+  );
+};
+
+const HoursCell: React.FC<{ totalHours: number | null; breakDuration?: number }> = ({ totalHours, breakDuration = 0 }) => {
+  const hours = totalHours != null ? Number(totalHours) : null;
+  const requiresBreak = hours != null && hours >= 5;
+  const legalBreakMin = 60;
+  const actualBreakMin = breakDuration || 0;
+  const breakNote = requiresBreak
+    ? actualBreakMin >= legalBreakMin
+      ? `พัก ${actualBreakMin} นาที (ตรงตามกฎหมาย ≥60 นาที)`
+      : actualBreakMin > 0
+        ? `พัก ${actualBreakMin} นาที ⚠️ (กฎหมายกำหนด ≥60 นาที เมื่อทำงาน ≥5 ชม.)`
+        : `ไม่มีข้อมูลพัก (กฎหมายกำหนดพัก ≥60 นาที เมื่อทำงาน ≥5 ชม.)`
+    : actualBreakMin > 0
+      ? `พัก ${actualBreakMin} นาที`
+      : null;
+
+  if (hours == null) return <span className="text-text-muted-light dark:text-text-muted-dark">-</span>;
+
+  return (
+    <span className="group relative inline-flex items-center gap-1 cursor-default">
+      <span>{hours.toFixed(1)}h</span>
+      {breakNote && (
+        <>
+          <span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">☕</span>
+          <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-xs rounded-lg bg-gray-900 dark:bg-gray-700 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-pre-wrap text-center shadow-lg">
+            {breakNote}
+          </span>
+        </>
+      )}
+    </span>
+  );
+};
+
 const AdminAttendance: React.FC = () => {
   const { t } = useTranslation(['attendance', 'common']);
   const { showToast } = useToast();
@@ -113,6 +197,7 @@ const AdminAttendance: React.FC = () => {
   const [editingRecord, setEditingRecord] = useState<AdminAttendanceRecord | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
+  const [locationRecord, setLocationRecord] = useState<AdminAttendanceRecord | null>(null);
 
   // Debounce search
   useEffect(() => {
@@ -298,7 +383,7 @@ const AdminAttendance: React.FC = () => {
             filterValue="Present"
             activeFilter={status}
             onClick={handleCardClick}
-            subtitle={snapshot.total > 0 ? `${Math.round((snapshot.presentToday / snapshot.total) * 100)}% attendance` : undefined}
+            subtitle={snapshot.total > 0 ? t('attendance:analytics.attendanceRate', { rate: Math.round((snapshot.presentToday / snapshot.total) * 100) }) : undefined}
           />
           <SnapshotCard
             icon={<Activity size={20} />}
@@ -401,7 +486,7 @@ const AdminAttendance: React.FC = () => {
                   {t('attendance:admin.ot')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
-                  Type
+                  {t('attendance:admin.type')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
                   {t('attendance:admin.status')}
@@ -430,20 +515,16 @@ const AdminAttendance: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <div className="relative shrink-0">
-                          {record.employeeAvatar ? (
-                            <img
-                              src={record.employeeAvatar}
-                              alt={record.employeeName}
-                              className="w-8 h-8 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
-                              {record.employeeName.charAt(0)}
-                            </div>
-                          )}
-                          {record.status === 'Late' && record.clockIn && (
-                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-orange-500 ring-2 ring-card-light dark:ring-card-dark" title="Late" />
-                          )}
+                          <AvatarWithStatusDots
+                            avatar={record.employeeAvatar}
+                            name={record.employeeName}
+                            isLate={record.status === 'Late' && !!record.clockIn}
+                            isEarlyDeparture={record.earlyDeparture}
+                            isAutoCheckout={record.autoCheckout}
+                            lateLabel={t('common:status.late')}
+                            earlyLabel={t('common:status.early')}
+                            noCheckoutLabel="ไม่ได้เช็คเอ้าท์"
+                          />
                         </div>
                         <span className="text-sm font-medium text-text-light dark:text-text-dark">
                           {record.employeeName}
@@ -457,13 +538,14 @@ const AdminAttendance: React.FC = () => {
                       {formatTime(record.clockIn)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">
-                      {formatTime(record.clockOut)}
-                      {record.autoCheckout && (
-                        <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-medium rounded bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">({t('common:auto')})</span>
+                      {record.autoCheckout ? (
+                        <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">ไม่ได้เช็คเอ้าท์</span>
+                      ) : (
+                        formatTime(record.clockOut)
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">
-                      {record.totalHours != null ? `${Number(record.totalHours).toFixed(1)}h` : '-'}
+                      <HoursCell totalHours={record.totalHours} breakDuration={record.breakDuration} />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {record.overtimeHours != null && record.overtimeHours > 0
@@ -487,9 +569,6 @@ const AdminAttendance: React.FC = () => {
                             </span>
                           );
                         })()}
-                        {record.earlyDeparture && (
-                          <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">{t('common:status.early')}</span>
-                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -503,7 +582,16 @@ const AdminAttendance: React.FC = () => {
                         {actionMenuId === record.id && (
                           <>
                             <div className="fixed inset-0 z-10" onClick={() => setActionMenuId(null)} />
-                            <div className="absolute right-0 top-full mt-1 w-36 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg shadow-lg z-20 py-1">
+                            <div className="absolute right-0 top-full mt-1 w-40 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg shadow-lg z-20 py-1">
+                              {record.clockInLat != null && record.clockInLng != null && (
+                                <button
+                                  onClick={() => { setLocationRecord(record); setActionMenuId(null); }}
+                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                >
+                                  <MapPin size={14} />
+                                  ดูตำแหน่ง
+                                </button>
+                              )}
                               <button
                                 onClick={() => { handleOpenEdit(record); setActionMenuId(null); }}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -566,22 +654,16 @@ const AdminAttendance: React.FC = () => {
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="relative shrink-0">
-                        {record.employeeAvatar ? (
-                          <img
-                            src={record.employeeAvatar}
-                            alt={record.employeeName}
-                            className="w-8 h-8 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
-                            {record.employeeName.charAt(0)}
-                          </div>
-                        )}
-                        {record.status === 'Late' && record.clockIn && (
-                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-orange-500 ring-2 ring-card-light dark:ring-card-dark" title="Late" />
-                        )}
-                      </div>
+                      <AvatarWithStatusDots
+                        avatar={record.employeeAvatar}
+                        name={record.employeeName}
+                        isLate={record.status === 'Late' && !!record.clockIn}
+                        isEarlyDeparture={record.earlyDeparture}
+                        isAutoCheckout={record.autoCheckout}
+                        lateLabel={t('common:status.late')}
+                        earlyLabel={t('common:status.early')}
+                        noCheckoutLabel="ไม่ได้เช็คเอ้าท์"
+                      />
                       <div>
                         <p className="text-sm font-medium text-text-light dark:text-text-dark">
                           {record.employeeName}
@@ -602,12 +684,6 @@ const AdminAttendance: React.FC = () => {
                           </span>
                         );
                       })()}
-                      {record.autoCheckout && (
-                        <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">{t('common:auto')}</span>
-                      )}
-                      {record.earlyDeparture && (
-                        <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">{t('common:status.early')}</span>
-                      )}
                     </div>
                   </div>
 
@@ -619,11 +695,15 @@ const AdminAttendance: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-text-muted-light dark:text-text-muted-dark">{t('attendance:admin.checkOut')}</p>
-                      <p className="font-medium text-text-light dark:text-text-dark">{formatTime(record.clockOut)}</p>
+                      {record.autoCheckout ? (
+                        <span className="inline-block mt-0.5 px-1.5 py-0.5 text-[10px] font-medium rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">ไม่ได้เช็คเอ้าท์</span>
+                      ) : (
+                        <p className="font-medium text-text-light dark:text-text-dark">{formatTime(record.clockOut)}</p>
+                      )}
                     </div>
                     <div>
                       <p className="text-text-muted-light dark:text-text-muted-dark">{t('attendance:admin.hours')}</p>
-                      <p className="font-medium text-text-light dark:text-text-dark">{record.totalHours != null ? `${Number(record.totalHours).toFixed(1)}h` : '-'}</p>
+                      <HoursCell totalHours={record.totalHours} breakDuration={record.breakDuration} />
                     </div>
                     <div>
                       <p className="text-text-muted-light dark:text-text-muted-dark">{t('attendance:admin.ot')}</p>
@@ -634,6 +714,15 @@ const AdminAttendance: React.FC = () => {
                   </div>
 
                   <div className="flex justify-end gap-2 pt-2 border-t border-border-light dark:border-border-dark">
+                    {record.clockInLat != null && record.clockInLng != null && (
+                      <button
+                        onClick={() => setLocationRecord(record)}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                      >
+                        <MapPin size={14} />
+                        ดูตำแหน่ง
+                      </button>
+                    )}
                     <button
                       onClick={() => handleOpenEdit(record)}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
@@ -695,6 +784,13 @@ const AdminAttendance: React.FC = () => {
         employees={allEmployees}
         editingRecord={editingRecord}
         isPending={upsertMutation.isPending}
+      />
+
+      {/* Location Map Modal */}
+      <LocationMapModal
+        isOpen={locationRecord != null}
+        onClose={() => setLocationRecord(null)}
+        record={locationRecord}
       />
     </div>
   );

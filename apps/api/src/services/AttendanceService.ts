@@ -187,16 +187,14 @@ export class AttendanceService {
 
     // GPS / Geofence validation
     const gpsConfig = await getGPSConfig();
-    let checkInType = 'office';
+    const empResult = await query('SELECT work_type FROM employees WHERE id = $1', [employeeId]);
+    const workType: string = empResult.rows[0]?.work_type || 'office';
 
-    if (gpsConfig.gpsRequired) {
-      // Determine if employee bypasses geofence (remote/hybrid or approved WFH)
-      const empResult = await query('SELECT work_type FROM employees WHERE id = $1', [employeeId]);
-      const workType: string = empResult.rows[0]?.work_type || 'office';
+    // Remote employees always check in as remote regardless of GPS setting
+    let checkInType = workType === 'remote' ? 'remote' : 'office';
 
-      if (workType === 'remote') {
-        checkInType = 'remote';
-      } else if (workType === 'hybrid') {
+    if (gpsConfig.gpsRequired && workType !== 'remote') {
+      if (workType === 'hybrid') {
         // Hybrid: attempt geofence — record 'office' if within range, 'remote' if outside
         const hasGps = latitude != null && longitude != null;
         const isOfficeIp = clientIp != null && gpsConfig.officeIps.length > 0 && gpsConfig.officeIps.includes(clientIp);
@@ -540,6 +538,7 @@ export class AttendanceService {
         ar.break_duration, ar.total_hours, ar.status AS ar_status,
         ar.notes, ar.modified_by, ar.created_at AS ar_created_at,
         ar.auto_checkout, ar.early_departure, ar.overtime_hours,
+        ar.clock_in_lat, ar.clock_in_lng, ar.clock_in_accuracy, ar.check_in_type,
         e.id AS employee_id, e.name AS employee_name,
         e.department AS employee_department, e.avatar AS employee_avatar,
         CASE WHEN lr.id IS NOT NULL THEN true ELSE false END AS is_on_leave

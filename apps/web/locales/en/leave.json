@@ -84,7 +84,7 @@
     "cancelApproved": "Leave cancellation approved",
     "cancelRejected": "Leave cancellation rejected",
     "cancelFailed": "Failed to process cancellation",
-    "searchEmployee": "Search by name...",
+    "searchEmployee": "Search employee...",
     "exportCSV": "Export CSV",
     "selectAll": "Select All",
     "selected": "{{count}} selected",
