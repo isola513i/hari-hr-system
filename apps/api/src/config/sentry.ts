@@ -1,118 +1,65 @@
 import * as Sentry from '@sentry/node';
-import { ProfilingIntegration } from '@sentry/profiling-node';
+import type { Express } from 'express';
 
 /**
- * Initialize Sentry for backend error tracking
+ * Initialize Sentry for backend error tracking.
  *
- * Setup Instructions:
- * 1. Create account at https://sentry.io
- * 2. Create new project for Node.js
- * 3. Copy your DSN from project settings
- * 4. Add SENTRY_DSN to .env file
- * 5. Uncomment the initialization code below
+ * Setup:
+ * 1. Create a Node.js project at https://sentry.io
+ * 2. Copy the DSN from project settings → Client Keys (DSN)
+ * 3. Set SENTRY_DSN in Render env vars (and locally in .env)
+ *
+ * MUST be called at the very top of index.ts, before importing any
+ * instrumented modules.
  */
+export const initSentry = (): void => {
+  const dsn = process.env.SENTRY_DSN;
+  const env = process.env.NODE_ENV ?? 'development';
+  const isProd = env === 'production';
 
-export const initSentry = () => {
-  // Only initialize in production
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('Sentry: Skipped (not in production)');
+  if (!dsn) {
+    if (isProd) console.warn('[Sentry] SENTRY_DSN not configured — error tracking disabled.');
     return;
   }
 
-  const sentryDsn = process.env.SENTRY_DSN;
-
-  if (!sentryDsn) {
-    console.warn('Sentry DSN not configured. Set SENTRY_DSN in .env file.');
-    return;
-  }
-
-  // Uncomment to enable Sentry
-  /*
   Sentry.init({
-    dsn: sentryDsn,
-    environment: process.env.NODE_ENV,
-
-    // Performance Monitoring
-    integrations: [
-      // Profiling
-      new ProfilingIntegration(),
-    ],
-
-    // Set tracesSampleRate to 1.0 to capture 100% of transactions
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-
-    // Set sampling rate for profiling
-    profilesSampleRate: 0.1,
-
-    // Capture unhandled promise rejections
+    dsn,
+    environment: env,
+    tracesSampleRate: isProd ? 0.1 : 1.0,
     attachStacktrace: true,
+    sendDefaultPii: false,
 
-    // Filter out sensitive data
-    beforeSend(event, hint) {
-      // Remove sensitive data
+    beforeSend(event) {
+      // Strip sensitive data before sending
       if (event.request) {
-        // Remove authorization headers
         if (event.request.headers) {
           delete event.request.headers['authorization'];
           delete event.request.headers['cookie'];
         }
-
-        // Remove sensitive body data
-        if (event.request.data) {
-          const data = event.request.data as any;
-          if (data.password) data.password = '[REDACTED]';
-          if (data.currentPassword) data.currentPassword = '[REDACTED]';
-          if (data.newPassword) data.newPassword = '[REDACTED]';
+        const data = event.request.data as Record<string, unknown> | undefined;
+        if (data && typeof data === 'object') {
+          for (const k of ['password', 'currentPassword', 'newPassword', 'token', 'refreshToken', 'secret']) {
+            if (k in data) data[k] = '[REDACTED]';
+          }
         }
       }
-
       return event;
     },
 
-    // Ignore specific errors
-    ignoreErrors: [
-      'ECONNREFUSED',
-      'ENOTFOUND',
-      'ETIMEDOUT',
-    ],
+    ignoreErrors: ['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT'],
   });
-
-  console.log('Sentry initialized successfully');
-  */
-
-  console.log('Sentry: Ready (uncomment init code to enable)');
 };
 
 /**
- * Express error handler middleware for Sentry
+ * Attach Sentry's Express integration to an app instance.
+ * Call AFTER all routes are registered but BEFORE your own errorHandler middleware.
  */
-export const sentryErrorHandler = () => {
-  // return Sentry.Handlers.errorHandler();
-  return (err: any, req: any, res: any, next: any) => {
-    // Placeholder - would capture to Sentry
-    console.log('Sentry would capture:', err.message);
-    next(err);
-  };
+export const registerSentryExpress = (app: Express): void => {
+  if (!process.env.SENTRY_DSN) return;
+  Sentry.setupExpressErrorHandler(app);
 };
 
-/**
- * Express request handler middleware for Sentry
- */
-export const sentryRequestHandler = () => {
-  // return Sentry.Handlers.requestHandler();
-  return (req: any, res: any, next: any) => {
-    // Placeholder - would add request context
-    next();
-  };
-};
-
-/**
- * Express tracing middleware for performance monitoring
- */
-export const sentryTracingHandler = () => {
-  // return Sentry.Handlers.tracingHandler();
-  return (req: any, res: any, next: any) => {
-    // Placeholder - would track performance
-    next();
-  };
+/** Manually capture an error to Sentry. */
+export const captureError = (error: Error, context?: Record<string, unknown>): void => {
+  Sentry.captureException(error, context ? { extra: context } : undefined);
 };

@@ -1,135 +1,81 @@
 import * as Sentry from '@sentry/react';
-import { BrowserTracing } from '@sentry/tracing';
 
 /**
- * Initialize Sentry for error tracking in production
+ * Initialize Sentry for frontend error tracking.
  *
- * Setup Instructions:
- * 1. Create account at https://sentry.io
- * 2. Create new project for React
- * 3. Copy your DSN from project settings
- * 4. Add VITE_SENTRY_DSN to .env file
- * 5. Uncomment the initialization code below
+ * Setup:
+ * 1. Create a React project at https://sentry.io
+ * 2. Copy the DSN from project settings → Client Keys (DSN)
+ * 3. Set VITE_SENTRY_DSN in Vercel env vars (and locally in .env)
+ *
+ * No-op in development unless VITE_SENTRY_DSN is set.
  */
+export const initSentry = (): void => {
+  const dsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
+  const mode = import.meta.env.MODE;
+  const isProd = mode === 'production';
 
-export const initSentry = () => {
-  // Only initialize in production
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('Sentry: Skipped (not in production)');
+  if (!dsn) {
+    if (isProd) console.warn('[Sentry] VITE_SENTRY_DSN not configured — error tracking disabled.');
     return;
   }
 
-  const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
-
-  if (!sentryDsn) {
-    console.warn('Sentry DSN not configured. Set VITE_SENTRY_DSN in .env file.');
-    return;
-  }
-
-  // Uncomment to enable Sentry
-  /*
   Sentry.init({
-    dsn: sentryDsn,
-    environment: process.env.NODE_ENV,
-
-    // Performance Monitoring
-    integrations: [
-      new BrowserTracing(),
-    ],
-
-    // Set tracesSampleRate to 1.0 to capture 100% of transactions
-    // In production, consider lowering this value to reduce costs
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-
-    // Capture unhandled promise rejections
+    dsn,
+    environment: mode,
+    integrations: [Sentry.browserTracingIntegration()],
+    tracesSampleRate: isProd ? 0.1 : 1.0,
     attachStacktrace: true,
+    sendDefaultPii: false,
 
-    // Release tracking (optional)
-    // release: 'hari-hr-system@' + process.env.npm_package_version,
-
-    // Filter out sensitive data
-    beforeSend(event, hint) {
-      // Remove sensitive data from error reports
+    beforeSend(event) {
+      // Strip sensitive request data before sending
       if (event.request) {
         delete event.request.cookies;
-        delete event.request.headers?.['authorization'];
-        delete event.request.headers?.['cookie'];
+        if (event.request.headers) {
+          delete event.request.headers['authorization'];
+          delete event.request.headers['cookie'];
+        }
       }
-
-      // Filter out non-error events in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Would send to Sentry:', event);
-        return null; // Don't actually send in dev
-      }
-
       return event;
     },
 
-    // Ignore specific errors
     ignoreErrors: [
-      // Browser extensions
+      // Browser extensions / framework chrome
       'top.GLOBALS',
       'canvas.contentDocument',
-      // Network errors that are expected
+      // Expected network failures (offline, user navigated away)
       'Network request failed',
       'NetworkError',
-      // User cancelled actions
       'AbortError',
+      // Vite HMR chunk-load misses on deploy
+      'Loading chunk',
+      'Failed to fetch dynamically imported module',
     ],
-
-    // Sample rate for error events
-    sampleRate: 1.0,
   });
-
-  console.log('Sentry initialized successfully');
-  */
-
-  console.log('Sentry: Ready (uncomment init code to enable)');
 };
 
-/**
- * Manually capture an error to Sentry
- */
-export const captureError = (error: Error, context?: Record<string, any>) => {
-  if (process.env.NODE_ENV === 'production') {
-    // Sentry.captureException(error, { extra: context });
-    console.log('Would capture error to Sentry:', error, context);
-  }
+/** Capture an error to Sentry with optional structured context. */
+export const captureError = (error: Error, context?: Record<string, unknown>): void => {
+  Sentry.captureException(error, context ? { extra: context } : undefined);
 };
 
-/**
- * Set user context for error tracking
- */
-export const setUserContext = (user: { id: string; email?: string; name?: string }) => {
-  if (process.env.NODE_ENV === 'production') {
-    // Sentry.setUser(user);
-    console.log('Would set Sentry user:', user);
-  }
+/** Attach the current user to subsequent error reports. */
+export const setUserContext = (user: { id: string; email?: string; name?: string }): void => {
+  Sentry.setUser(user);
 };
 
-/**
- * Clear user context (on logout)
- */
-export const clearUserContext = () => {
-  if (process.env.NODE_ENV === 'production') {
-    // Sentry.setUser(null);
-    console.log('Would clear Sentry user');
-  }
+/** Clear user context on logout. */
+export const clearUserContext = (): void => {
+  Sentry.setUser(null);
 };
 
-/**
- * Add breadcrumb for tracking user actions
- */
-export const addBreadcrumb = (message: string, data?: Record<string, any>) => {
-  if (process.env.NODE_ENV === 'production') {
-    /*
-    Sentry.addBreadcrumb({
-      message,
-      data,
-      level: 'info',
-      timestamp: Date.now() / 1000,
-    });
-    */
-    console.log('Would add Sentry breadcrumb:', message, data);
-  }
+/** Add a breadcrumb (chronological trail leading up to an error). */
+export const addBreadcrumb = (message: string, data?: Record<string, unknown>): void => {
+  Sentry.addBreadcrumb({
+    message,
+    data,
+    level: 'info',
+    timestamp: Date.now() / 1000,
+  });
 };

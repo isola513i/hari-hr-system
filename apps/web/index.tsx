@@ -2,10 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './lib/i18n';
 import { initAnalytics } from './lib/analytics';
+import { initSentry } from './config/sentry';
 import App from './App';
 import './src/fonts.css';
 import './index.css';
 
+initSentry();
 initAnalytics();
 
 // Register service worker for push notifications

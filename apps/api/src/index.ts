@@ -1,7 +1,13 @@
+// Sentry must be initialized before any other imports so OpenTelemetry
+// can instrument modules at load time.
+import dotenv from "dotenv";
+dotenv.config();
+import { initSentry, registerSentryExpress } from "./config/sentry";
+initSentry();
+
 import express, { Request, Response } from "express";
 import cors from "cors";
 import compression from "compression";
-import dotenv from "dotenv";
 import http from "http";
 import { query } from "./db";
 import fs from "fs";
@@ -49,7 +55,7 @@ import { runMigration } from "./scripts/init-db";
 import { initAttendanceScheduler } from "./services/AttendanceScheduler";
 import { initMilestoneScheduler } from "./services/MilestoneScheduler";
 
-dotenv.config();
+// dotenv.config() is called above (before Sentry init).
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -140,8 +146,17 @@ app.get("/api-docs.json", (_req, res) => {
 // ==========================================
 // HEALTH CHECK (for cron jobs / keep-alive)
 // ==========================================
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+app.get("/api/health", async (_req, res) => {
+  // Returns 503 when the DB is unreachable so external uptime monitors
+  // (UptimeRobot, Render's probe) actually detect outages instead of seeing
+  // a misleading 200.
+  try {
+    await query("SELECT 1");
+    res.json({ status: "ok", db: "ok", timestamp: new Date().toISOString() });
+  } catch (err) {
+    console.error("[Health] DB check failed:", err);
+    res.status(503).json({ status: "error", db: "down", timestamp: new Date().toISOString() });
+  }
 });
 
 // ==========================================
@@ -806,6 +821,9 @@ const runLightMigrations = async () => {
 
 // Global error handlers (must be after all routes)
 app.use(notFoundHandler);
+// Sentry's Express handler must be registered before our errorHandler so it
+// captures the exception, then re-throws to let our handler send the response.
+registerSentryExpress(app);
 app.use(errorHandler);
 
 // Create HTTP server for Socket.io

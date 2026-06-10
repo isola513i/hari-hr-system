@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
+import { captureError } from '../config/sentry';
 
 export interface ApiError extends Error {
   statusCode?: number;
@@ -49,6 +50,16 @@ export const errorHandler = (
   // Determine status code
   const statusCode = err.statusCode || 500;
   const message = statusCode === 500 ? 'Internal Server Error' : err.message;
+
+  // Only send 5xx errors to Sentry — 4xx are usually expected (validation,
+  // auth failures, etc.) and would just create noise.
+  if (statusCode >= 500) {
+    captureError(err, {
+      url: req.url,
+      method: req.method,
+      statusCode,
+    });
+  }
 
   // Never send stack traces or internal details to the client
   res.status(statusCode).json({
