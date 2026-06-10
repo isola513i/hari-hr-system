@@ -50,6 +50,17 @@
     "Under Maintenance": "ซ่อมบำรุง",
     "Retired": "เลิกใช้แล้ว"
   },
+  "assetType": {
+    "Laptop": "แล็ปท็อป",
+    "Desktop": "คอมพิวเตอร์ตั้งโต๊ะ",
+    "Monitor": "จอมอนิเตอร์",
+    "Phone": "โทรศัพท์",
+    "Tablet": "แท็บเล็ต",
+    "Vehicle": "ยานพาหนะ",
+    "Equipment": "อุปกรณ์",
+    "Furniture": "เฟอร์นิเจอร์",
+    "Other": "อื่นๆ"
+  },
   "statusFilter": {
     "allStatuses": "ทุกสถานะ"
   },

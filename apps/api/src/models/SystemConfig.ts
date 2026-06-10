@@ -20,6 +20,7 @@ export interface CreateSystemConfigDTO {
 export interface UpdateSystemConfigDTO {
     value: string;
     description?: string;
+    dataType?: string;
 }
 
 // Typed config getters for better type safety

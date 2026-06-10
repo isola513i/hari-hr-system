@@ -812,125 +812,123 @@ function GPSSettingsTab() {
     }
   };
 
+  const inputCls = "w-full px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30";
+  const labelCls = "block text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-1";
+
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
+    <div className="p-6 space-y-5 animate-fade-in">
+      {/* Header */}
       <div className="border-b border-border-light dark:border-border-dark pb-4">
-        <h2 className="text-xl font-bold text-text-light dark:text-text-dark">GPS & Attendance Settings</h2>
-        <p className="text-sm text-text-muted-light dark:text-text-muted-dark mt-1">
+        <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">GPS & Attendance</h2>
+        <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">
           Configure office location and geofence for employee check-in
         </p>
       </div>
 
       {/* GPS Required Toggle */}
-      <div className="flex items-center justify-between py-3 border-b border-border-light dark:border-border-dark">
+      <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-text-light dark:text-text-dark">Require GPS for Check-in</p>
           <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">
-            When enabled, employees must be within the geofence to clock in (unless Remote/WFH)
+            Employees must be within the geofence to clock in (except Remote/WFH)
           </p>
         </div>
         <button
           onClick={() => setGpsRequired((v) => !v)}
-          className={`relative w-11 h-6 rounded-full transition-colors ${gpsRequired ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}
+          className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors ${gpsRequired ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}
         >
           <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${gpsRequired ? 'translate-x-5' : ''}`} />
         </button>
       </div>
 
-      {/* Office Coordinates */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-text-light dark:text-text-dark flex items-center gap-2">
-          <MapPin size={15} /> Office Location
-        </h3>
-        <p className="text-xs text-text-muted-light dark:text-text-muted-dark -mt-2">
-          Current default: Vanit Place Aree, 304 Phahonyothin Rd, Bangkok
-          {' · '}
+      {/* Office Location */}
+      <div className="space-y-3 pt-1 border-t border-border-light dark:border-border-dark">
+        <div className="flex items-center justify-between pt-1">
+          <h3 className="text-sm font-medium text-text-light dark:text-text-dark flex items-center gap-1.5">
+            <MapPin size={14} className="text-text-muted-light dark:text-text-muted-dark" /> Office Location
+          </h3>
           <a
             href="https://maps.google.com/?q=Vanit+Place+Aree+Bangkok"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary underline"
+            className="text-xs text-primary hover:underline"
           >
             View on map
           </a>
-        </p>
+        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">Latitude</label>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={labelCls}>Latitude</label>
             <input
               type="number"
               step="0.000001"
               value={officeLat}
               onChange={(e) => setOfficeLat(e.target.value)}
               placeholder="13.78"
-              className="w-full px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className={inputCls}
             />
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">Longitude</label>
+          <div>
+            <label className={labelCls}>Longitude</label>
             <input
               type="number"
               step="0.000001"
               value={officeLng}
               onChange={(e) => setOfficeLng(e.target.value)}
               placeholder="100.5427"
-              className="w-full px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className={inputCls}
             />
           </div>
         </div>
 
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">
-            Geofence Radius (meters)
-          </label>
-          <input
-            type="number"
-            min="50"
-            max="5000"
-            value={geofenceRadius}
-            onChange={(e) => setGeofenceRadius(e.target.value)}
-            className="w-full sm:w-48 px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-          <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
-            Employees must be within this distance from the office to clock in
-          </p>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={labelCls}>Geofence Radius (meters)</label>
+            <input
+              type="number"
+              min="50"
+              max="5000"
+              value={geofenceRadius}
+              onChange={(e) => setGeofenceRadius(e.target.value)}
+              className={inputCls}
+            />
+          </div>
+          <div />
         </div>
       </div>
 
       {/* Office IP Allowlist */}
-      <div className="space-y-3 pt-2 border-t border-border-light dark:border-border-dark">
-        <div>
-          <h3 className="text-sm font-semibold text-text-light dark:text-text-dark">Office IP Allowlist</h3>
+      <div className="space-y-3 pt-1 border-t border-border-light dark:border-border-dark">
+        <div className="pt-1">
+          <h3 className="text-sm font-medium text-text-light dark:text-text-dark">Office IP Allowlist</h3>
           <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">
-            PC / laptop users on this network can clock in without GPS. Separate multiple IPs with commas.
+            Desktop users on this network can clock in without GPS
           </p>
         </div>
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">
-            Office Public IP(s)
-          </label>
+        <div>
+          <label className={labelCls}>Office Public IP(s) — separate with commas</label>
           <input
             type="text"
             value={officeIp}
             onChange={(e) => setOfficeIp(e.target.value)}
             placeholder="e.g. 203.0.113.10, 203.0.113.11"
-            className="w-full px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className={inputCls}
           />
-          <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
-            Leave blank to disable IP-based check-in.
+          <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">
+            Leave blank to disable IP-based check-in
           </p>
         </div>
       </div>
 
-      <div className="flex justify-end pt-2">
+      <div className="flex justify-end pt-1">
         <button
           onClick={handleSave}
           disabled={updateMutation.isPending}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50"
         >
-          <Save size={15} />
-          {updateMutation.isPending ? 'Saving...' : 'Save GPS Settings'}
+          <Save size={14} />
+          {updateMutation.isPending ? 'Saving…' : 'Save GPS Settings'}
         </button>
       </div>
     </div>

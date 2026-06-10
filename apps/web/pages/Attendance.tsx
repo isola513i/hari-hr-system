@@ -16,7 +16,7 @@ interface AttendanceSummary {
 }
 
 const Attendance: React.FC = () => {
-  const { t } = useTranslation(['attendance', 'common']);
+  const { t, i18n } = useTranslation(['attendance', 'common']);
   const { user } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -36,7 +36,7 @@ const Attendance: React.FC = () => {
   const formatTime = formatTimeTH;
 
   const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    new Date(dateString).toLocaleDateString(i18n.language === 'th' ? 'th-TH' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
   const statusKey = (status: string) => status.toLowerCase().replace(/-/g, '').replace(/ /g, '');
 

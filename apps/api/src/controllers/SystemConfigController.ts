@@ -87,9 +87,9 @@ export class SystemConfigController {
     async updateConfig(req: Request, res: Response): Promise<void> {
         try {
             const { category, key } = req.params;
-            const { value, description } = req.body;
+            const { value, description, dataType } = req.body;
 
-            if (!value) {
+            if (value === undefined || value === null) {
                 res.status(400).json({ error: 'Missing required field: value' });
                 return;
             }
@@ -97,6 +97,7 @@ export class SystemConfigController {
             const config = await SystemConfigService.updateConfig(category, key, {
                 value,
                 description,
+                dataType,
             });
 
             if (category === 'attendance') {

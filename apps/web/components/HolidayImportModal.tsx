@@ -6,6 +6,7 @@ import { useBulkCreateHolidays } from '../hooks/queries';
 
 interface HolidayRow {
   name: string;
+  nameTh?: string;
   date: string;
   endDate?: string | null;
   isRecurring: boolean;
@@ -14,52 +15,52 @@ interface HolidayRow {
 // Thai public holidays by year
 const THAI_PRESETS: Record<number, HolidayRow[]> = {
   2025: [
-    { name: "New Year's Day", date: '2025-01-01', isRecurring: true },
-    { name: 'Makha Bucha', date: '2025-02-12', isRecurring: false },
-    { name: 'Chakri Memorial Day', date: '2025-04-06', isRecurring: true },
-    { name: 'Songkran', date: '2025-04-13', endDate: '2025-04-15', isRecurring: true },
-    { name: 'National Labour Day', date: '2025-05-01', isRecurring: true },
-    { name: 'Coronation Day', date: '2025-05-04', isRecurring: true },
-    { name: 'Visakha Bucha', date: '2025-05-12', isRecurring: false },
-    { name: "H.M. Queen's Birthday", date: '2025-08-12', isRecurring: true },
-    { name: 'Asahna Bucha', date: '2025-08-10', isRecurring: false },
-    { name: 'H.M. Late King Bhumibol Memorial Day', date: '2025-10-13', isRecurring: true },
-    { name: 'Chulalongkorn Memorial Day', date: '2025-10-23', isRecurring: true },
-    { name: "H.M. King's Birthday", date: '2025-12-05', isRecurring: true },
-    { name: 'Constitution Day', date: '2025-12-10', isRecurring: true },
-    { name: "New Year's Eve", date: '2025-12-31', isRecurring: true },
+    { name: "New Year's Day", nameTh: 'วันปีใหม่', date: '2025-01-01', isRecurring: true },
+    { name: 'Makha Bucha', nameTh: 'วันมาฆบูชา', date: '2025-02-12', isRecurring: false },
+    { name: 'Chakri Memorial Day', nameTh: 'วันจักรี', date: '2025-04-06', isRecurring: true },
+    { name: 'Songkran', nameTh: 'วันสงกรานต์', date: '2025-04-13', endDate: '2025-04-15', isRecurring: true },
+    { name: 'National Labour Day', nameTh: 'วันแรงงานแห่งชาติ', date: '2025-05-01', isRecurring: true },
+    { name: 'Coronation Day', nameTh: 'วันฉัตรมงคล', date: '2025-05-04', isRecurring: true },
+    { name: 'Visakha Bucha', nameTh: 'วันวิสาขบูชา', date: '2025-05-12', isRecurring: false },
+    { name: 'Asahna Bucha', nameTh: 'วันอาสาฬหบูชา', date: '2025-08-10', isRecurring: false },
+    { name: "H.M. Queen's Birthday", nameTh: 'วันเฉลิมพระชนมพรรษาสมเด็จพระนางเจ้าฯ', date: '2025-08-12', isRecurring: true },
+    { name: 'H.M. Late King Bhumibol Memorial Day', nameTh: 'วันคล้ายวันสวรรคต ร.9', date: '2025-10-13', isRecurring: true },
+    { name: 'Chulalongkorn Memorial Day', nameTh: 'วันปิยมหาราช', date: '2025-10-23', isRecurring: true },
+    { name: "H.M. King's Birthday", nameTh: 'วันเฉลิมพระชนมพรรษา ร.10', date: '2025-12-05', isRecurring: true },
+    { name: 'Constitution Day', nameTh: 'วันรัฐธรรมนูญ', date: '2025-12-10', isRecurring: true },
+    { name: "New Year's Eve", nameTh: 'วันสิ้นปี', date: '2025-12-31', isRecurring: true },
   ],
   2026: [
-    { name: "New Year's Day", date: '2026-01-01', isRecurring: true },
-    { name: 'Makha Bucha', date: '2026-03-04', isRecurring: false },
-    { name: 'Chakri Memorial Day', date: '2026-04-06', isRecurring: true },
-    { name: 'Songkran', date: '2026-04-13', endDate: '2026-04-15', isRecurring: true },
-    { name: 'National Labour Day', date: '2026-05-01', isRecurring: true },
-    { name: 'Coronation Day', date: '2026-05-04', isRecurring: true },
-    { name: 'Visakha Bucha', date: '2026-06-01', isRecurring: false },
-    { name: 'Asahna Bucha', date: '2026-07-28', isRecurring: false },
-    { name: "H.M. Queen's Birthday", date: '2026-08-12', isRecurring: true },
-    { name: 'H.M. Late King Bhumibol Memorial Day', date: '2026-10-13', isRecurring: true },
-    { name: 'Chulalongkorn Memorial Day', date: '2026-10-23', isRecurring: true },
-    { name: "H.M. King's Birthday", date: '2026-12-05', isRecurring: true },
-    { name: 'Constitution Day', date: '2026-12-10', isRecurring: true },
-    { name: "New Year's Eve", date: '2026-12-31', isRecurring: true },
+    { name: "New Year's Day", nameTh: 'วันปีใหม่', date: '2026-01-01', isRecurring: true },
+    { name: 'Makha Bucha', nameTh: 'วันมาฆบูชา', date: '2026-03-04', isRecurring: false },
+    { name: 'Chakri Memorial Day', nameTh: 'วันจักรี', date: '2026-04-06', isRecurring: true },
+    { name: 'Songkran', nameTh: 'วันสงกรานต์', date: '2026-04-13', endDate: '2026-04-15', isRecurring: true },
+    { name: 'National Labour Day', nameTh: 'วันแรงงานแห่งชาติ', date: '2026-05-01', isRecurring: true },
+    { name: 'Coronation Day', nameTh: 'วันฉัตรมงคล', date: '2026-05-04', isRecurring: true },
+    { name: 'Visakha Bucha', nameTh: 'วันวิสาขบูชา', date: '2026-06-01', isRecurring: false },
+    { name: 'Asahna Bucha', nameTh: 'วันอาสาฬหบูชา', date: '2026-07-28', isRecurring: false },
+    { name: "H.M. Queen's Birthday", nameTh: 'วันเฉลิมพระชนมพรรษาสมเด็จพระนางเจ้าฯ', date: '2026-08-12', isRecurring: true },
+    { name: 'H.M. Late King Bhumibol Memorial Day', nameTh: 'วันคล้ายวันสวรรคต ร.9', date: '2026-10-13', isRecurring: true },
+    { name: 'Chulalongkorn Memorial Day', nameTh: 'วันปิยมหาราช', date: '2026-10-23', isRecurring: true },
+    { name: "H.M. King's Birthday", nameTh: 'วันเฉลิมพระชนมพรรษา ร.10', date: '2026-12-05', isRecurring: true },
+    { name: 'Constitution Day', nameTh: 'วันรัฐธรรมนูญ', date: '2026-12-10', isRecurring: true },
+    { name: "New Year's Eve", nameTh: 'วันสิ้นปี', date: '2026-12-31', isRecurring: true },
   ],
   2027: [
-    { name: "New Year's Day", date: '2027-01-01', isRecurring: true },
-    { name: 'Makha Bucha', date: '2027-02-21', isRecurring: false },
-    { name: 'Chakri Memorial Day', date: '2027-04-06', isRecurring: true },
-    { name: 'Songkran', date: '2027-04-13', endDate: '2027-04-15', isRecurring: true },
-    { name: 'National Labour Day', date: '2027-05-01', isRecurring: true },
-    { name: 'Coronation Day', date: '2027-05-04', isRecurring: true },
-    { name: 'Visakha Bucha', date: '2027-05-21', isRecurring: false },
-    { name: 'Asahna Bucha', date: '2027-07-18', isRecurring: false },
-    { name: "H.M. Queen's Birthday", date: '2027-08-12', isRecurring: true },
-    { name: 'H.M. Late King Bhumibol Memorial Day', date: '2027-10-13', isRecurring: true },
-    { name: 'Chulalongkorn Memorial Day', date: '2027-10-23', isRecurring: true },
-    { name: "H.M. King's Birthday", date: '2027-12-05', isRecurring: true },
-    { name: 'Constitution Day', date: '2027-12-10', isRecurring: true },
-    { name: "New Year's Eve", date: '2027-12-31', isRecurring: true },
+    { name: "New Year's Day", nameTh: 'วันปีใหม่', date: '2027-01-01', isRecurring: true },
+    { name: 'Makha Bucha', nameTh: 'วันมาฆบูชา', date: '2027-02-21', isRecurring: false },
+    { name: 'Chakri Memorial Day', nameTh: 'วันจักรี', date: '2027-04-06', isRecurring: true },
+    { name: 'Songkran', nameTh: 'วันสงกรานต์', date: '2027-04-13', endDate: '2027-04-15', isRecurring: true },
+    { name: 'National Labour Day', nameTh: 'วันแรงงานแห่งชาติ', date: '2027-05-01', isRecurring: true },
+    { name: 'Coronation Day', nameTh: 'วันฉัตรมงคล', date: '2027-05-04', isRecurring: true },
+    { name: 'Visakha Bucha', nameTh: 'วันวิสาขบูชา', date: '2027-05-21', isRecurring: false },
+    { name: 'Asahna Bucha', nameTh: 'วันอาสาฬหบูชา', date: '2027-07-18', isRecurring: false },
+    { name: "H.M. Queen's Birthday", nameTh: 'วันเฉลิมพระชนมพรรษาสมเด็จพระนางเจ้าฯ', date: '2027-08-12', isRecurring: true },
+    { name: 'H.M. Late King Bhumibol Memorial Day', nameTh: 'วันคล้ายวันสวรรคต ร.9', date: '2027-10-13', isRecurring: true },
+    { name: 'Chulalongkorn Memorial Day', nameTh: 'วันปิยมหาราช', date: '2027-10-23', isRecurring: true },
+    { name: "H.M. King's Birthday", nameTh: 'วันเฉลิมพระชนมพรรษา ร.10', date: '2027-12-05', isRecurring: true },
+    { name: 'Constitution Day', nameTh: 'วันรัฐธรรมนูญ', date: '2027-12-10', isRecurring: true },
+    { name: "New Year's Eve", nameTh: 'วันสิ้นปี', date: '2027-12-31', isRecurring: true },
   ],
 };
 
@@ -99,8 +100,9 @@ function parseCSV(text: string): { rows: HolidayRow[]; errors: string[] } {
   return { rows, errors };
 }
 
-const formatDate = (d: string) => new Date(d.slice(0, 10) + 'T00:00:00Z')
-  .toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+const formatDate = (d: string, locale = 'en-US') =>
+  new Date(d.slice(0, 10) + 'T00:00:00Z')
+    .toLocaleDateString(locale, { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 interface Props {
   onClose: () => void;
@@ -108,7 +110,11 @@ interface Props {
 }
 
 export function HolidayImportModal({ onClose, onSuccess }: Props) {
-  const { t } = useTranslation('settings');
+  const { t, i18n } = useTranslation('settings');
+  const isThai = i18n.language === 'th';
+  const locale = isThai ? 'th-TH' : 'en-US';
+  const localName = (h: HolidayRow) => (isThai && h.nameTh) ? h.nameTh : h.name;
+  const fmtDate = (d: string) => formatDate(d, locale);
   const [tab, setTab] = useState<'preset' | 'csv'>('preset');
   const [year, setYear] = useState(new Date().getFullYear());
   const [selected, setSelected] = useState<Set<number>>(new Set(
@@ -154,7 +160,7 @@ export function HolidayImportModal({ onClose, onSuccess }: Props) {
 
   const handleImport = async () => {
     const rows = tab === 'preset'
-      ? presetRows.filter((_, i) => selected.has(i))
+      ? presetRows.filter((_, i) => selected.has(i)).map(h => ({ ...h, name: localName(h) }))
       : csvRows;
 
     if (rows.length === 0) return;
@@ -233,9 +239,9 @@ export function HolidayImportModal({ onClose, onSuccess }: Props) {
                   {selected.has(i)
                     ? <CheckSquare size={16} className="text-primary shrink-0" />
                     : <Square size={16} className="text-text-muted-light dark:text-text-muted-dark shrink-0" />}
-                  <span className="flex-1 text-sm text-text-light dark:text-text-dark">{h.name}</span>
+                  <span className="flex-1 text-sm text-text-light dark:text-text-dark">{localName(h)}</span>
                   <span className="text-xs text-text-muted-light dark:text-text-muted-dark shrink-0">
-                    {h.endDate ? `${formatDate(h.date)} – ${formatDate(h.endDate)}` : formatDate(h.date)}
+                    {h.endDate ? `${fmtDate(h.date)} – ${fmtDate(h.endDate)}` : fmtDate(h.date)}
                   </span>
                   {h.isRecurring && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shrink-0">{t('holidayImport.annual')}</span>
@@ -307,7 +313,7 @@ export function HolidayImportModal({ onClose, onSuccess }: Props) {
                   <div key={i} className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-sm">
                     <span className="flex-1 text-text-light dark:text-text-dark truncate">{h.name}</span>
                     <span className="text-xs text-text-muted-light dark:text-text-muted-dark shrink-0">
-                      {h.endDate ? `${formatDate(h.date)} – ${formatDate(h.endDate)}` : formatDate(h.date)}
+                      {h.endDate ? `${fmtDate(h.date)} – ${fmtDate(h.endDate)}` : fmtDate(h.date)}
                     </span>
                   </div>
                 ))}
@@ -331,7 +337,7 @@ export function HolidayImportModal({ onClose, onSuccess }: Props) {
               className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Sparkles size={14} />
-              {bulkCreate.isPending ? t('holidayImport.importing') : t('holidayImport.import', { count: importCount > 0 ? importCount : '' })}
+              {bulkCreate.isPending ? t('holidayImport.importing') : t('holidayImport.import', { count: importCount })}
             </button>
           </div>
         </div>

@@ -78,8 +78,15 @@
     "alreadyCheckedIn": "ลงเวลาเข้าแล้ว",
     "gpsNotSupported": "อุปกรณ์นี้ไม่รองรับ GPS",
     "locationError": "ไม่สามารถระบุตำแหน่งได้ กรุณาลองใหม่อีกครั้ง",
+    "myOTRequests": "คำขอ OT ของฉัน",
+    "requestOT": "ขอ OT",
     "noOTRequests": "ยังไม่มีคำขอทำงานล่วงเวลา",
     "submitFirstOT": "ส่งคำขอ OT แรกของคุณ",
+    "otStatus": {
+      "approved": "อนุมัติแล้ว",
+      "rejected": "ปฏิเสธแล้ว",
+      "pending": "รอดำเนินการ"
+    },
     "gettingGPS": "กำลังรับ GPS..."
   },
   "stats": {

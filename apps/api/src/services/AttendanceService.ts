@@ -333,7 +333,17 @@ export class AttendanceService {
     startDate?: string,
     endDate?: string
   ): Promise<AttendanceRecord[]> {
-    let queryText = 'SELECT * FROM attendance_records WHERE employee_id = $1 AND deleted_at IS NULL';
+    let queryText = `SELECT * FROM attendance_records
+      WHERE employee_id = $1
+        AND deleted_at IS NULL
+        AND NOT (
+          status = 'Absent' AND notes = 'Auto-marked absent'
+          AND EXISTS (
+            SELECT 1 FROM holidays h
+            WHERE (h.is_recurring = FALSE AND attendance_records.date BETWEEN h.date AND COALESCE(h.end_date, h.date))
+               OR (h.is_recurring = TRUE  AND TO_CHAR(attendance_records.date, 'MM-DD') BETWEEN TO_CHAR(h.date, 'MM-DD') AND TO_CHAR(COALESCE(h.end_date, h.date), 'MM-DD'))
+          )
+        )`;
     const params: unknown[] = [employeeId];
     let paramIndex = 2;
 
@@ -397,7 +407,15 @@ export class AttendanceService {
         COALESCE(SUM(total_hours), 0) as total_hours,
         COALESCE(SUM(overtime_hours), 0) as overtime_hours
        FROM attendance_records
-       WHERE employee_id = $1 AND date BETWEEN $2 AND $3 AND deleted_at IS NULL`,
+       WHERE employee_id = $1 AND date BETWEEN $2 AND $3 AND deleted_at IS NULL
+         AND NOT (
+           status = 'Absent' AND notes = 'Auto-marked absent'
+           AND EXISTS (
+             SELECT 1 FROM holidays h
+             WHERE (h.is_recurring = FALSE AND attendance_records.date BETWEEN h.date AND COALESCE(h.end_date, h.date))
+                OR (h.is_recurring = TRUE  AND TO_CHAR(attendance_records.date, 'MM-DD') BETWEEN TO_CHAR(h.date, 'MM-DD') AND TO_CHAR(COALESCE(h.end_date, h.date), 'MM-DD'))
+           )
+         )`,
       [employeeId, startDate, endDate]
     );
 

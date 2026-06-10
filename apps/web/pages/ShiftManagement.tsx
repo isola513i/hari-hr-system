@@ -103,13 +103,6 @@ function toISO(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function formatWeekRange(start: Date): string {
-  const end = addDays(start, 6);
-  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
-  return `${start.toLocaleDateString('en-US', opts)} – ${end.toLocaleDateString('en-US', { ...opts, year: 'numeric' })}`;
-}
-
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 // ---------------------------------------------------------------------------
 // Shift Template Modal
@@ -211,13 +204,14 @@ interface AssignModalProps {
   preSelectedEmployee?: string;
   preSelectedDate?: string;
   weekDates: string[];
+  dayLabels: string[];
   onClose: () => void;
   onAssign: (data: { employeeIds: string[]; shiftId: string; dates: string[] }) => void;
   saving: boolean;
 }
 
 const AssignModal: React.FC<AssignModalProps> = ({
-  shifts, employees, preSelectedEmployee, preSelectedDate, weekDates, onClose, onAssign, saving,
+  shifts, employees, preSelectedEmployee, preSelectedDate, weekDates, dayLabels, onClose, onAssign, saving,
 }) => {
   const { t } = useTranslation(['shifts']);
   const [shiftId, setShiftId] = useState(shifts[0]?.id ?? '');
@@ -279,7 +273,7 @@ const AssignModal: React.FC<AssignModalProps> = ({
             <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">{t('assignModal.days')}</label>
             <div className="flex gap-1.5">
               {weekDates.map((d, i) => {
-                const label = DAY_LABELS[i];
+                const label = dayLabels[i];
                 const dayNum = new Date(d + 'T00:00:00').getDate();
                 return (
                   <button
@@ -351,6 +345,7 @@ const AssignModal: React.FC<AssignModalProps> = ({
 // ---------------------------------------------------------------------------
 export const ShiftManagement: React.FC = () => {
   const { t } = useTranslation(['shifts']);
+  const dayLabels = t('days.short', { returnObjects: true }) as string[];
   const { showToast } = useToast();
   const [tab, setTab] = useState<'shifts' | 'schedule'>('schedule');
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
@@ -610,7 +605,7 @@ export const ShiftManagement: React.FC = () => {
                       const isWeekend = i >= 5;
                       return (
                         <th key={d} className={`px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider ${isToday ? 'text-primary' : isWeekend ? 'text-text-muted-light/60 dark:text-text-muted-dark/60' : 'text-text-muted-light dark:text-text-muted-dark'}`}>
-                          <div>{DAY_LABELS[i]}</div>
+                          <div>{dayLabels[i]}</div>
                           <div className={`text-sm font-bold mt-0.5 ${isToday ? 'bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center mx-auto' : ''}`}>
                             {new Date(d + 'T00:00:00').getDate()}
                           </div>
@@ -726,6 +721,7 @@ export const ShiftManagement: React.FC = () => {
           preSelectedEmployee={assignModal.preEmp}
           preSelectedDate={assignModal.preDate}
           weekDates={weekDates}
+          dayLabels={dayLabels}
           onClose={() => setAssignModal({ open: false })}
           onAssign={handleAssign}
           saving={assignShift.isPending}

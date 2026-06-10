@@ -42,6 +42,9 @@
     "assign": "Assign",
     "assigning": "Assigning…"
   },
+  "days": {
+    "short": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+  },
   "filters": {
     "allDepartments": "All departments"
   },
