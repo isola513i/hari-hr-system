@@ -1,5 +1,5 @@
-import React from 'react';
-import { MapPin, ExternalLink, Navigation } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { MapPin, ExternalLink, Navigation, Loader2 } from 'lucide-react';
 import { Modal } from './Modal';
 import type { AdminAttendanceRecord } from '../types';
 import { formatTimeTH } from '../lib/date';
@@ -10,21 +10,48 @@ interface LocationMapModalProps {
   record: AdminAttendanceRecord | null;
 }
 
-export const LocationMapModal: React.FC<LocationMapModalProps> = ({ isOpen, onClose, record }) => {
-  if (!record) return null;
+type IframeStatus = 'loading' | 'loaded' | 'error';
 
-  const lat = record.clockInLat;
-  const lng = record.clockInLng;
-  const accuracy = record.clockInAccuracy;
+// onError doesn't fire reliably when OSM tiles are blocked by network/CSP — fall back via timeout.
+const LOAD_TIMEOUT_MS = 8000;
+
+export const LocationMapModal: React.FC<LocationMapModalProps> = ({ isOpen, onClose, record }) => {
+  const [iframeStatus, setIframeStatus] = useState<IframeStatus>('loading');
+  const timeoutRef = useRef<number | null>(null);
+
+  const lat = record?.clockInLat ?? null;
+  const lng = record?.clockInLng ?? null;
+  const accuracy = record?.clockInAccuracy;
   const hasLocation = lat != null && lng != null;
+
+  useEffect(() => {
+    if (!isOpen || !hasLocation) return;
+    setIframeStatus('loading');
+    timeoutRef.current = window.setTimeout(() => {
+      setIframeStatus(prev => (prev === 'loading' ? 'error' : prev));
+    }, LOAD_TIMEOUT_MS);
+    return () => {
+      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    };
+  }, [isOpen, record?.id, hasLocation]);
+
+  if (!record) return null;
 
   const mapUrl = hasLocation
     ? `https://www.openstreetmap.org/export/embed.html?bbox=${lng! - 0.004},${lat! - 0.003},${lng! + 0.004},${lat! + 0.003}&layer=mapnik&marker=${lat},${lng}`
     : null;
 
-  const googleMapsUrl = hasLocation
-    ? `https://www.google.com/maps?q=${lat},${lng}`
-    : null;
+  const googleMapsUrl = hasLocation ? `https://www.google.com/maps?q=${lat},${lng}` : null;
+
+  const handleIframeLoad = () => {
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    setIframeStatus('loaded');
+  };
+
+  const handleIframeError = () => {
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    setIframeStatus('error');
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="ตำแหน่งเช็คอิน" maxWidth="lg">
@@ -48,15 +75,35 @@ export const LocationMapModal: React.FC<LocationMapModalProps> = ({ isOpen, onCl
 
         {hasLocation ? (
           <>
-            {/* Map iframe */}
-            <div className="rounded-lg overflow-hidden border border-border-light dark:border-border-dark h-72">
-              <iframe
-                src={mapUrl!}
-                className="w-full h-full"
-                title="ตำแหน่งเช็คอิน"
-                loading="lazy"
-              />
-            </div>
+            {/* Map iframe — hidden on error, replaced by fallback panel below */}
+            {iframeStatus !== 'error' && (
+              <div className="relative rounded-lg overflow-hidden border border-border-light dark:border-border-dark h-72 bg-gray-50 dark:bg-gray-800/50">
+                {iframeStatus === 'loading' && (
+                  <div className="absolute inset-0 flex items-center justify-center gap-2 text-text-muted-light dark:text-text-muted-dark z-10 pointer-events-none">
+                    <Loader2 size={18} className="animate-spin" />
+                    <span className="text-xs">กำลังโหลดแผนที่...</span>
+                  </div>
+                )}
+                <iframe
+                  src={mapUrl!}
+                  className="w-full h-full"
+                  title="ตำแหน่งเช็คอิน"
+                  loading="lazy"
+                  onLoad={handleIframeLoad}
+                  onError={handleIframeError}
+                />
+              </div>
+            )}
+
+            {iframeStatus === 'error' && (
+              <div className="rounded-lg border border-dashed border-border-light dark:border-border-dark p-6 flex flex-col items-center gap-2 text-center bg-gray-50 dark:bg-gray-800/30">
+                <MapPin size={28} className="text-text-muted-light dark:text-text-muted-dark opacity-40" />
+                <p className="text-sm font-medium text-text-light dark:text-text-dark">แผนที่ไม่สามารถโหลดได้</p>
+                <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
+                  ใช้พิกัดด้านล่างหรือเปิดใน Google Maps แทน
+                </p>
+              </div>
+            )}
 
             {/* Coordinate info */}
             <div className="grid grid-cols-2 gap-3">

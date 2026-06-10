@@ -4,10 +4,10 @@ import { useTranslation } from 'react-i18next';
 
 const STATUS_COLOR: Record<string, string> = {
   draft:            'bg-gray-100 text-gray-600 dark:bg-gray-700/50 dark:text-gray-400',
-  submitted:        'bg-accent-orange/10 text-accent-orange',
-  manager_reviewed: 'bg-primary/10 text-primary',
-  completed:        'bg-accent-green/10 text-accent-green',
-  rejected:         'bg-accent-red/10 text-accent-red',
+  submitted:        'bg-accent-orange/10 text-accent-orange dark:bg-accent-orange/20 dark:text-accent-orange',
+  manager_reviewed: 'bg-primary/10 text-primary dark:bg-primary/25 dark:text-primary',
+  completed:        'bg-accent-green/10 text-accent-green dark:bg-accent-green/20 dark:text-accent-green',
+  rejected:         'bg-accent-red/10 text-accent-red dark:bg-accent-red/20 dark:text-accent-red',
 };
 
 const STATUS_ICON: Record<string, React.ReactNode> = {

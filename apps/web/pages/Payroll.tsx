@@ -259,32 +259,45 @@ export const Payroll: React.FC = () => {
                 {/* Row */}
                 <button
                   onClick={() => setExpandedId(expandedId === record.id ? null : record.id)}
-                  className="w-full flex items-center gap-4 p-4 hover:bg-background-light dark:hover:bg-background-dark/50 transition-colors text-left"
+                  className="w-full p-4 hover:bg-background-light dark:hover:bg-background-dark/50 transition-colors text-left"
                 >
-                  <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
-                    <DollarSign size={18} className="text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    {isAdminView && 'employeeName' in record && (
-                      <p className="text-sm font-semibold text-text-light dark:text-text-dark">
-                        {(record as { employeeName: string }).employeeName}
+                  {/* Top row: icon + employee/period + chevron (always visible) */}
+                  <div className="flex items-start gap-3 md:gap-4 md:items-center">
+                    <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+                      <DollarSign size={18} className="text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {isAdminView && 'employeeName' in record && (
+                        <p className="text-sm font-semibold text-text-light dark:text-text-dark truncate">
+                          {(record as { employeeName: string }).employeeName}
+                        </p>
+                      )}
+                      <p className={`text-sm truncate ${isAdminView ? 'text-text-muted-light dark:text-text-muted-dark' : 'font-medium text-text-light dark:text-text-dark'}`}>
+                        {formatDate(record.payPeriodStart)} — {formatDate(record.payPeriodEnd)}
                       </p>
-                    )}
-                    <p className={`text-sm ${isAdminView ? 'text-text-muted-light dark:text-text-muted-dark' : 'font-medium text-text-light dark:text-text-dark'}`}>
-                      {formatDate(record.payPeriodStart)} — {formatDate(record.payPeriodEnd)}
-                    </p>
-                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">
-                      {t('form.baseSalary')}: ฿{formatCurrency(record.baseSalary)}
-                    </p>
+                      <p className="hidden md:block text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">
+                        {t('form.baseSalary')}: ฿{formatCurrency(record.baseSalary)}
+                      </p>
+                    </div>
+                    {/* Desktop: netPay + status on the right */}
+                    <div className="hidden md:block text-right flex-shrink-0">
+                      <p className="text-sm font-bold text-text-light dark:text-text-dark">฿{formatCurrency(record.netPay)}</p>
+                      <div className="flex items-center gap-1 justify-end mt-0.5">
+                        {statusIcon(record.status)}
+                        {statusBadge(record.status, t(`status.${record.status.toLowerCase()}`))}
+                      </div>
+                    </div>
+                    {expandedId === record.id ? <ChevronUp size={16} className="text-text-muted-light flex-shrink-0 mt-0.5 md:mt-0" /> : <ChevronDown size={16} className="text-text-muted-light flex-shrink-0 mt-0.5 md:mt-0" />}
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-bold text-text-light dark:text-text-dark">฿{formatCurrency(record.netPay)}</p>
-                    <div className="flex items-center gap-1 justify-end mt-0.5">
+
+                  {/* Mobile: status + netPay on a second row */}
+                  <div className="flex md:hidden items-center justify-between mt-2 pl-11">
+                    <div className="flex items-center gap-1">
                       {statusIcon(record.status)}
                       {statusBadge(record.status, t(`status.${record.status.toLowerCase()}`))}
                     </div>
+                    <p className="text-base font-bold text-text-light dark:text-text-dark">฿{formatCurrency(record.netPay)}</p>
                   </div>
-                  {expandedId === record.id ? <ChevronUp size={16} className="text-text-muted-light" /> : <ChevronDown size={16} className="text-text-muted-light" />}
                 </button>
 
                 {/* Expanded Detail */}

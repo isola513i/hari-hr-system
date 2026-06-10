@@ -13,22 +13,22 @@ export const StatCard: React.FC<StatCardProps> = React.memo(({ title, value, tre
 
   return (
     <div
-      className={`flex flex-col justify-between rounded-xl p-6 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark shadow-sm transition-transform hover:scale-[1.01]${onClick ? ' cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary' : ''}`}
+      className={`flex flex-col justify-between rounded-xl p-4 md:p-6 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark shadow-sm transition-transform hover:scale-[1.01]${onClick ? ' cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary' : ''}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } } : undefined}
     >
-      <div className="flex items-center gap-3 mb-4">
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
+      <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
+        <div className={`p-2 md:p-3 rounded-lg ${colorClasses[color]}`}>
           {icon}
         </div>
-        <p className="text-text-muted-light dark:text-text-muted-dark font-medium text-sm">{title}</p>
+        <p className="text-text-muted-light dark:text-text-muted-dark font-medium text-xs md:text-sm leading-tight">{title}</p>
       </div>
       <div className="flex items-end justify-between">
-        <p className="text-text-light dark:text-text-dark tracking-tight text-3xl font-bold">{value}</p>
+        <p className="text-text-light dark:text-text-dark tracking-tight text-2xl md:text-3xl font-bold">{value}</p>
         {trend !== undefined && trend !== 0 && (
-          <div className={`flex items-center text-sm font-semibold ${
+          <div className={`flex items-center text-xs md:text-sm font-semibold ${
             (trend > 0) !== invertTrend ? 'text-accent-green' : 'text-accent-red'
           }`}>
             {trend > 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}

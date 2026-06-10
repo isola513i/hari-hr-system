@@ -311,9 +311,9 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Stats Cards Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-border-light dark:border-border-dark">
+            <div key={i} className="bg-card-light dark:bg-card-dark p-4 md:p-6 rounded-xl border border-border-light dark:border-border-dark">
               <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-4"></div>
               <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
             </div>
@@ -321,9 +321,9 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Content Cards Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-border-light dark:border-border-dark">
+            <div key={i} className="bg-card-light dark:bg-card-dark p-4 md:p-6 rounded-xl border border-border-light dark:border-border-dark">
               <div className="h-6 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-4"></div>
               <div className="space-y-3">
                 <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
@@ -365,7 +365,7 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <div onClick={() => navigate('/admin-attendance')} className="cursor-pointer">
           <StatCard
             title={t('dashboard:admin.activeNow')}
@@ -413,7 +413,7 @@ export const AdminDashboard: React.FC = () => {
       />
 
       {/* Main Layout Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
 
         {/* Headcount Chart - Spans 2 columns on desktop, full width on mobile */}
         <div className="md:col-span-2 bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 md:p-6 shadow-sm flex flex-col">
@@ -639,7 +639,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Recent Activity & Notes */}
-        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {/* Recent Activity */}
           <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
             <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
