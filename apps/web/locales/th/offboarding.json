@@ -1,0 +1,59 @@
+{
+  "termination": {
+    "details": "รายละเอียดการยุติการจ้างงาน",
+    "status": "สถานะ",
+    "reason": "เหตุผล",
+    "lastWorkingDay": "วันทำงานสุดท้าย",
+    "terminationDate": "วันที่ยุติการจ้าง",
+    "initiated": "เริ่มดำเนินการ",
+    "notes": "หมายเหตุ"
+  },
+  "checklist": {
+    "title": "เช็คลิสต์การลาออก",
+    "doneCount": "{{completed}}/{{total}} เสร็จแล้ว",
+    "tasksSuffix": "{{completed}}/{{total}} งาน",
+    "noTasks": "ไม่พบงานในกระบวนการลาออก",
+    "allComplete": "งานทั้งหมดเสร็จสิ้น — สถานะพนักงานจะเปลี่ยนเป็น Terminated อัตโนมัติ",
+    "markComplete": "ทำเครื่องหมายว่าเสร็จสิ้น",
+    "completedTitle": "เสร็จสิ้น"
+  },
+  "stages": {
+    "Pre-Exit": "ก่อนวันสุดท้าย",
+    "Last Week": "สัปดาห์สุดท้าย",
+    "Post-Exit": "หลังลาออก"
+  },
+  "exitInterview": {
+    "title": "สัมภาษณ์การลาออก",
+    "reasonForLeaving": "เหตุผลในการลาออก",
+    "selectReason": "เลือกเหตุผล...",
+    "satisfaction": "ความพึงพอใจโดยรวม",
+    "satisfactionHint": "(1 = ไม่พึงพอใจอย่างมาก, 5 = พึงพอใจอย่างมาก)",
+    "wouldRehire": "คุณจะรับพนักงานคนนี้กลับมาทำงานหรือไม่?",
+    "yes": "ใช่",
+    "no": "ไม่",
+    "feedback": "ความคิดเห็นทั่วไป",
+    "feedbackPlaceholder": "สิ่งที่คุณประทับใจที่สุด? สิ่งที่สามารถปรับปรุงได้?",
+    "improvements": "ข้อเสนอแนะเพื่อการปรับปรุง",
+    "improvementsPlaceholder": "อะไรจะทำให้ที่นี่เป็นที่ทำงานที่ดีขึ้น?",
+    "save": "บันทึกสัมภาษณ์การลาออก",
+    "summary": {
+      "satisfactionRating": "คะแนนความพึงพอใจ",
+      "wouldRehireLabel": "รับกลับมาทำงาน",
+      "conducted": "สัมภาษณ์เมื่อ {{date}}"
+    }
+  },
+  "reasons": {
+    "Better Opportunity": "โอกาสที่ดีกว่า",
+    "Career Change": "เปลี่ยนสายงาน",
+    "Compensation": "ค่าตอบแทน",
+    "Manager": "หัวหน้างาน",
+    "Relocation": "ย้ายที่อยู่",
+    "Personal": "เหตุผลส่วนตัว",
+    "Other": "อื่นๆ"
+  },
+  "toast": {
+    "updateTaskFailed": "ไม่สามารถอัปเดตงานได้",
+    "interviewSaved": "บันทึกสัมภาษณ์การลาออกแล้ว",
+    "interviewSaveFailed": "ไม่สามารถบันทึกสัมภาษณ์การลาออกได้"
+  }
+}

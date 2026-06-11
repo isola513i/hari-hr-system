@@ -2,6 +2,7 @@
  * TotpDisableModal — Confirm disable 2FA with current password.
  */
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Lock, ShieldOff, Eye, EyeOff } from 'lucide-react';
 import { useTwoFactor } from '../../hooks/useTwoFactor';
 
@@ -12,6 +13,7 @@ interface TotpDisableModalProps {
 }
 
 export const TotpDisableModal: React.FC<TotpDisableModalProps> = ({ isOpen, onClose, onDisabled }) => {
+  const { t } = useTranslation(['auth', 'common']);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -48,16 +50,16 @@ export const TotpDisableModal: React.FC<TotpDisableModalProps> = ({ isOpen, onCl
             <div className="flex items-center justify-center h-10 w-10 bg-accent-red/10 rounded-xl">
               <ShieldOff size={20} className="text-accent-red" />
             </div>
-            <h2 className="font-semibold text-text-light dark:text-text-dark">Disable Two-Factor Auth</h2>
+            <h2 className="font-semibold text-text-light dark:text-text-dark">{t('auth:totp.disable.title')}</h2>
           </div>
-          <button onClick={onClose} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors">
+          <button onClick={onClose} aria-label={t('auth:totp.disable.closeAriaLabel')} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors">
             <X size={20} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
-            Disabling 2FA will make your account less secure. You'll need to enter your current password to confirm.
+            {t('auth:totp.disable.warning')}
           </p>
 
           {error && (
@@ -68,7 +70,7 @@ export const TotpDisableModal: React.FC<TotpDisableModalProps> = ({ isOpen, onCl
 
           <div>
             <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">
-              Current Password
+              {t('auth:totp.disable.currentPassword')}
             </label>
             <div className="relative group">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark group-focus-within:text-primary transition-colors" size={20} />
@@ -78,10 +80,10 @@ export const TotpDisableModal: React.FC<TotpDisableModalProps> = ({ isOpen, onCl
                 value={password}
                 onChange={(e) => { clearError(); setPassword(e.target.value); }}
                 className="w-full pl-12 pr-12 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-text-light dark:text-text-dark"
-                placeholder="Enter your password"
+                placeholder={t('auth:totp.disable.passwordPlaceholder')}
                 autoComplete="current-password"
               />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors">
+              <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={t('auth:totp.disable.togglePasswordAriaLabel')} className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors">
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
@@ -89,7 +91,7 @@ export const TotpDisableModal: React.FC<TotpDisableModalProps> = ({ isOpen, onCl
 
           <div className="flex gap-3">
             <button type="button" onClick={onClose} className="flex-1 border border-border-light dark:border-border-dark rounded-xl py-3 text-sm text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors">
-              Cancel
+              {t('common:buttons.cancel')}
             </button>
             <button
               type="submit"
@@ -101,7 +103,7 @@ export const TotpDisableModal: React.FC<TotpDisableModalProps> = ({ isOpen, onCl
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-              ) : 'Disable 2FA'}
+              ) : t('auth:totp.disable.confirm')}
             </button>
           </div>
         </form>

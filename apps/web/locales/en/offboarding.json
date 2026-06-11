@@ -1,0 +1,59 @@
+{
+  "termination": {
+    "details": "Termination Details",
+    "status": "Status",
+    "reason": "Reason",
+    "lastWorkingDay": "Last Working Day",
+    "terminationDate": "Termination Date",
+    "initiated": "Initiated",
+    "notes": "Notes"
+  },
+  "checklist": {
+    "title": "Offboarding Checklist",
+    "doneCount": "{{completed}}/{{total}} done",
+    "tasksSuffix": "{{completed}}/{{total}} tasks",
+    "noTasks": "No offboarding tasks found.",
+    "allComplete": "All tasks completed — employee status will be automatically updated to Terminated.",
+    "markComplete": "Mark as complete",
+    "completedTitle": "Completed"
+  },
+  "stages": {
+    "Pre-Exit": "Pre-Exit",
+    "Last Week": "Last Week",
+    "Post-Exit": "Post-Exit"
+  },
+  "exitInterview": {
+    "title": "Exit Interview",
+    "reasonForLeaving": "Reason for Leaving",
+    "selectReason": "Select a reason...",
+    "satisfaction": "Overall Satisfaction",
+    "satisfactionHint": "(1 = Very Dissatisfied, 5 = Very Satisfied)",
+    "wouldRehire": "Would you rehire this employee?",
+    "yes": "Yes",
+    "no": "No",
+    "feedback": "General Feedback",
+    "feedbackPlaceholder": "What did you enjoy most? What could have been better?",
+    "improvements": "Suggested Improvements",
+    "improvementsPlaceholder": "What would make this a better place to work?",
+    "save": "Save Exit Interview",
+    "summary": {
+      "satisfactionRating": "Satisfaction Rating",
+      "wouldRehireLabel": "Would Rehire",
+      "conducted": "Conducted {{date}}"
+    }
+  },
+  "reasons": {
+    "Better Opportunity": "Better Opportunity",
+    "Career Change": "Career Change",
+    "Compensation": "Compensation",
+    "Manager": "Manager",
+    "Relocation": "Relocation",
+    "Personal": "Personal",
+    "Other": "Other"
+  },
+  "toast": {
+    "updateTaskFailed": "Failed to update task",
+    "interviewSaved": "Exit interview saved",
+    "interviewSaveFailed": "Failed to save exit interview"
+  }
+}

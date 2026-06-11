@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     CheckSquare,
     Square,
@@ -58,6 +59,7 @@ interface TaskGroupProps {
 }
 
 const TaskGroup: React.FC<TaskGroupProps> = ({ stage, tasks, onToggle, updatingId }) => {
+    const { t } = useTranslation('offboarding');
     const [collapsed, setCollapsed] = useState(false);
     const completedCount = tasks.filter((t) => t.completed).length;
 
@@ -71,10 +73,10 @@ const TaskGroup: React.FC<TaskGroupProps> = ({ stage, tasks, onToggle, updatingI
                 <div className="flex items-center gap-2">
                     {collapsed ? <ChevronRight size={14} className="text-text-muted-light dark:text-text-muted-dark" /> : <ChevronDown size={14} className="text-text-muted-light dark:text-text-muted-dark" />}
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${stageBadgeClass(stage)}`}>
-                        {stage}
+                        {t(`stages.${stage}`, stage)}
                     </span>
                     <span className="text-xs text-text-muted-light dark:text-text-muted-dark">
-                        {completedCount}/{tasks.length} done
+                        {t('checklist.doneCount', { completed: completedCount, total: tasks.length })}
                     </span>
                 </div>
             </button>
@@ -95,7 +97,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({ stage, tasks, onToggle, updatingI
                                 onClick={() => !task.completed && onToggle(task.id, true)}
                                 disabled={task.completed || updatingId === task.id}
                                 className="mt-0.5 shrink-0 text-text-muted-light dark:text-text-muted-dark hover:text-primary disabled:cursor-default transition-colors"
-                                title={task.completed ? 'Completed' : 'Mark as complete'}
+                                title={task.completed ? t('checklist.completedTitle') : t('checklist.markComplete')}
                             >
                                 {updatingId === task.id ? (
                                     <Loader2 size={18} className="animate-spin text-primary" />
@@ -166,6 +168,7 @@ interface ExitInterviewFormProps {
 }
 
 const ExitInterviewForm: React.FC<ExitInterviewFormProps> = ({ onSave, isSaving }) => {
+    const { t } = useTranslation('offboarding');
     const [reason, setReason] = useState('');
     const [rating, setRating] = useState<number>(0);
     const [wouldRehire, setWouldRehire] = useState<boolean | null>(null);
@@ -188,16 +191,16 @@ const ExitInterviewForm: React.FC<ExitInterviewFormProps> = ({ onSave, isSaving 
             {/* Reason */}
             <div>
                 <label className="block text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-1.5">
-                    Reason for Leaving
+                    {t('exitInterview.reasonForLeaving')}
                 </label>
                 <select
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     className="w-full px-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
-                    <option value="">Select a reason...</option>
+                    <option value="">{t('exitInterview.selectReason')}</option>
                     {EXIT_REASONS.map((r) => (
-                        <option key={r} value={r}>{r}</option>
+                        <option key={r} value={r}>{t(`reasons.${r}`, r)}</option>
                     ))}
                 </select>
             </div>
@@ -205,7 +208,7 @@ const ExitInterviewForm: React.FC<ExitInterviewFormProps> = ({ onSave, isSaving 
             {/* Satisfaction Rating */}
             <div>
                 <label className="block text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-1.5">
-                    Overall Satisfaction (1 = Very Dissatisfied, 5 = Very Satisfied)
+                    {t('exitInterview.satisfaction')} {t('exitInterview.satisfactionHint')}
                 </label>
                 <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((n) => (
@@ -233,7 +236,7 @@ const ExitInterviewForm: React.FC<ExitInterviewFormProps> = ({ onSave, isSaving 
             {/* Would Rehire */}
             <div>
                 <label className="block text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-1.5">
-                    Would you rehire this employee?
+                    {t('exitInterview.wouldRehire')}
                 </label>
                 <div className="flex gap-3">
                     <button
@@ -245,7 +248,7 @@ const ExitInterviewForm: React.FC<ExitInterviewFormProps> = ({ onSave, isSaving 
                                 : 'border-border-light dark:border-border-dark text-text-muted-light dark:text-text-muted-dark hover:border-green-400'
                         }`}
                     >
-                        <ThumbsUp size={14} /> Yes
+                        <ThumbsUp size={14} /> {t('exitInterview.yes')}
                     </button>
                     <button
                         type="button"
@@ -256,7 +259,7 @@ const ExitInterviewForm: React.FC<ExitInterviewFormProps> = ({ onSave, isSaving 
                                 : 'border-border-light dark:border-border-dark text-text-muted-light dark:text-text-muted-dark hover:border-red-400'
                         }`}
                     >
-                        <ThumbsDown size={14} /> No
+                        <ThumbsDown size={14} /> {t('exitInterview.no')}
                     </button>
                 </div>
             </div>
@@ -264,13 +267,13 @@ const ExitInterviewForm: React.FC<ExitInterviewFormProps> = ({ onSave, isSaving 
             {/* Feedback */}
             <div>
                 <label className="block text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-1.5">
-                    General Feedback
+                    {t('exitInterview.feedback')}
                 </label>
                 <textarea
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value)}
                     rows={3}
-                    placeholder="What did you enjoy most? What could have been better?"
+                    placeholder={t('exitInterview.feedbackPlaceholder')}
                     className="w-full px-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                 />
             </div>
@@ -278,13 +281,13 @@ const ExitInterviewForm: React.FC<ExitInterviewFormProps> = ({ onSave, isSaving 
             {/* Improvements */}
             <div>
                 <label className="block text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-1.5">
-                    Suggested Improvements
+                    {t('exitInterview.improvements')}
                 </label>
                 <textarea
                     value={improvements}
                     onChange={(e) => setImprovements(e.target.value)}
                     rows={3}
-                    placeholder="What would make this a better place to work?"
+                    placeholder={t('exitInterview.improvementsPlaceholder')}
                     className="w-full px-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                 />
             </div>
@@ -296,7 +299,7 @@ const ExitInterviewForm: React.FC<ExitInterviewFormProps> = ({ onSave, isSaving 
                     className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 flex items-center gap-2 disabled:opacity-50"
                 >
                     {isSaving ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
-                    Save Exit Interview
+                    {t('exitInterview.save')}
                 </button>
             </div>
         </form>
@@ -307,58 +310,63 @@ const ExitInterviewForm: React.FC<ExitInterviewFormProps> = ({ onSave, isSaving 
 // Exit Interview Summary Card
 // ──────────────────────────────────────────────────────────────────────────────
 
-const ExitInterviewSummary: React.FC<{ interview: ExitInterview }> = ({ interview }) => (
-    <div className="space-y-3 text-sm">
-        {interview.reasonForLeaving && (
-            <div>
-                <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">Reason for Leaving</p>
-                <p className="font-medium text-text-light dark:text-text-dark">{interview.reasonForLeaving}</p>
-            </div>
-        )}
-        {interview.satisfactionRating && (
-            <div>
-                <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">Satisfaction Rating</p>
-                <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                        <Star
-                            key={n}
-                            size={16}
-                            className={n <= interview.satisfactionRating! ? 'text-amber-500' : 'text-gray-300 dark:text-gray-600'}
-                            fill={n <= interview.satisfactionRating! ? 'currentColor' : 'none'}
-                        />
-                    ))}
-                    <span className="text-xs text-text-muted-light dark:text-text-muted-dark ml-1">
-                        {interview.satisfactionRating}/5
-                    </span>
+const ExitInterviewSummary: React.FC<{ interview: ExitInterview }> = ({ interview }) => {
+    const { t } = useTranslation('offboarding');
+    return (
+        <div className="space-y-3 text-sm">
+            {interview.reasonForLeaving && (
+                <div>
+                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">{t('exitInterview.reasonForLeaving')}</p>
+                    <p className="font-medium text-text-light dark:text-text-dark">
+                        {t(`reasons.${interview.reasonForLeaving}`, interview.reasonForLeaving)}
+                    </p>
                 </div>
-            </div>
-        )}
-        {interview.wouldRehire !== null && (
-            <div>
-                <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">Would Rehire</p>
-                <div className={`flex items-center gap-1.5 font-medium ${interview.wouldRehire ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {interview.wouldRehire ? <ThumbsUp size={14} /> : <ThumbsDown size={14} />}
-                    {interview.wouldRehire ? 'Yes' : 'No'}
+            )}
+            {interview.satisfactionRating && (
+                <div>
+                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">{t('exitInterview.summary.satisfactionRating')}</p>
+                    <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                            <Star
+                                key={n}
+                                size={16}
+                                className={n <= interview.satisfactionRating! ? 'text-amber-500' : 'text-gray-300 dark:text-gray-600'}
+                                fill={n <= interview.satisfactionRating! ? 'currentColor' : 'none'}
+                            />
+                        ))}
+                        <span className="text-xs text-text-muted-light dark:text-text-muted-dark ml-1">
+                            {interview.satisfactionRating}/5
+                        </span>
+                    </div>
                 </div>
-            </div>
-        )}
-        {interview.feedback && (
-            <div>
-                <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">General Feedback</p>
-                <p className="text-text-light dark:text-text-dark leading-relaxed">{interview.feedback}</p>
-            </div>
-        )}
-        {interview.improvementsSuggested && (
-            <div>
-                <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">Suggested Improvements</p>
-                <p className="text-text-light dark:text-text-dark leading-relaxed">{interview.improvementsSuggested}</p>
-            </div>
-        )}
-        <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-2">
-            Conducted {formatDate(interview.conductedAt)}
-        </p>
-    </div>
-);
+            )}
+            {interview.wouldRehire !== null && (
+                <div>
+                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">{t('exitInterview.summary.wouldRehireLabel')}</p>
+                    <div className={`flex items-center gap-1.5 font-medium ${interview.wouldRehire ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {interview.wouldRehire ? <ThumbsUp size={14} /> : <ThumbsDown size={14} />}
+                        {interview.wouldRehire ? t('exitInterview.yes') : t('exitInterview.no')}
+                    </div>
+                </div>
+            )}
+            {interview.feedback && (
+                <div>
+                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">{t('exitInterview.feedback')}</p>
+                    <p className="text-text-light dark:text-text-dark leading-relaxed">{interview.feedback}</p>
+                </div>
+            )}
+            {interview.improvementsSuggested && (
+                <div>
+                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">{t('exitInterview.improvements')}</p>
+                    <p className="text-text-light dark:text-text-dark leading-relaxed">{interview.improvementsSuggested}</p>
+                </div>
+            )}
+            <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-2">
+                {t('exitInterview.summary.conducted', { date: formatDate(interview.conductedAt) })}
+            </p>
+        </div>
+    );
+};
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Main OffboardingTab component
@@ -374,6 +382,7 @@ export const OffboardingTab: React.FC<OffboardingTabProps> = ({
     onSaveExitInterview,
     showToast,
 }) => {
+    const { t } = useTranslation('offboarding');
     const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
     const [isSavingInterview, setIsSavingInterview] = useState(false);
 
@@ -382,7 +391,7 @@ export const OffboardingTab: React.FC<OffboardingTabProps> = ({
         try {
             await onUpdateTask(taskId, { completed });
         } catch {
-            showToast('Failed to update task', 'error');
+            showToast(t('toast.updateTaskFailed'), 'error');
         } finally {
             setUpdatingTaskId(null);
         }
@@ -392,9 +401,9 @@ export const OffboardingTab: React.FC<OffboardingTabProps> = ({
         setIsSavingInterview(true);
         try {
             await onSaveExitInterview(payload);
-            showToast('Exit interview saved', 'success');
+            showToast(t('toast.interviewSaved'), 'success');
         } catch {
-            showToast('Failed to save exit interview', 'error');
+            showToast(t('toast.interviewSaveFailed'), 'error');
         } finally {
             setIsSavingInterview(false);
         }
@@ -423,11 +432,11 @@ export const OffboardingTab: React.FC<OffboardingTabProps> = ({
             <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
                 <h2 className="text-base font-bold text-text-light dark:text-text-dark mb-4 flex items-center gap-2">
                     <AlertTriangle size={16} className="text-red-500" />
-                    Termination Details
+                    {t('termination.details')}
                 </h2>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">Status</p>
+                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">{t('termination.status')}</p>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                             employee.status === 'Notice Period'
                                 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
@@ -437,11 +446,11 @@ export const OffboardingTab: React.FC<OffboardingTabProps> = ({
                         </span>
                     </div>
                     <div>
-                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">Reason</p>
+                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">{t('termination.reason')}</p>
                         <p className="font-medium text-text-light dark:text-text-dark">{employee.terminationReason ?? '—'}</p>
                     </div>
                     <div>
-                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">Last Working Day</p>
+                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">{t('termination.lastWorkingDay')}</p>
                         <p className="font-medium text-text-light dark:text-text-dark flex items-center gap-1">
                             <Calendar size={13} />
                             {formatDate(employee.lastWorkingDay)}
@@ -449,7 +458,7 @@ export const OffboardingTab: React.FC<OffboardingTabProps> = ({
                     </div>
                     {employee.terminationDate && (
                         <div>
-                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">Termination Date</p>
+                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">{t('termination.terminationDate')}</p>
                             <p className="font-medium text-text-light dark:text-text-dark flex items-center gap-1">
                                 <Clock size={13} />
                                 {formatDate(employee.terminationDate)}
@@ -458,7 +467,7 @@ export const OffboardingTab: React.FC<OffboardingTabProps> = ({
                     )}
                     {employee.offboardingInitiatedAt && (
                         <div>
-                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">Initiated</p>
+                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">{t('termination.initiated')}</p>
                             <p className="font-medium text-text-light dark:text-text-dark">
                                 {formatDate(employee.offboardingInitiatedAt)}
                             </p>
@@ -466,7 +475,7 @@ export const OffboardingTab: React.FC<OffboardingTabProps> = ({
                     )}
                     {employee.terminationNotes && (
                         <div className="col-span-2">
-                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">Notes</p>
+                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-0.5">{t('termination.notes')}</p>
                             <p className="text-text-light dark:text-text-dark">{employee.terminationNotes}</p>
                         </div>
                     )}
@@ -478,14 +487,14 @@ export const OffboardingTab: React.FC<OffboardingTabProps> = ({
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-base font-bold text-text-light dark:text-text-dark flex items-center gap-2">
                         <CheckSquare size={16} className="text-primary" />
-                        Offboarding Checklist
+                        {t('checklist.title')}
                     </h2>
                     <div className="text-right">
                         <p className="text-2xl font-bold text-text-light dark:text-text-dark">
                             {progress.percentage}<span className="text-sm font-normal text-text-muted-light dark:text-text-muted-dark">%</span>
                         </p>
                         <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
-                            {progress.completed}/{progress.total} tasks
+                            {t('checklist.tasksSuffix', { completed: progress.completed, total: progress.total })}
                         </p>
                     </div>
                 </div>
@@ -505,13 +514,13 @@ export const OffboardingTab: React.FC<OffboardingTabProps> = ({
                 {progress.percentage === 100 && (
                     <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 py-2 mb-4">
                         <CheckCircle2 size={16} />
-                        All tasks completed — employee status will be automatically updated to Terminated.
+                        {t('checklist.allComplete')}
                     </div>
                 )}
 
                 {tasks.length === 0 ? (
                     <p className="text-sm text-text-muted-light dark:text-text-muted-dark text-center py-4">
-                        No offboarding tasks found.
+                        {t('checklist.noTasks')}
                     </p>
                 ) : (
                     STAGES.map((stage) => {
@@ -533,7 +542,7 @@ export const OffboardingTab: React.FC<OffboardingTabProps> = ({
             <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
                 <h2 className="text-base font-bold text-text-light dark:text-text-dark mb-4 flex items-center gap-2">
                     <FileText size={16} className="text-primary" />
-                    Exit Interview
+                    {t('exitInterview.title')}
                 </h2>
 
                 {exitInterview ? (

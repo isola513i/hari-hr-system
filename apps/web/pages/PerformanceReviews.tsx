@@ -155,7 +155,21 @@ export function PerformanceReviews() {
             <Award size={24} className="text-primary" />
           </div>
           <p className="font-medium text-text-primary-light dark:text-text-primary-dark">{t('empty.noReviews')}</p>
-          {role === 'EMPLOYEE' && <p className="text-sm mt-1">{t('empty.startHint')}</p>}
+          {role === 'EMPLOYEE' ? (
+            <>
+              <p className="text-sm mt-1 mb-4 max-w-sm mx-auto">{t('empty.employeeHint')}</p>
+              {!showNewForm && (
+                <button
+                  onClick={() => setShowNewForm(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors"
+                >
+                  <Plus size={16} /> {t('empty.startSelfReview')}
+                </button>
+              )}
+            </>
+          ) : (
+            <p className="text-sm mt-1">{t('empty.adminHint')}</p>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

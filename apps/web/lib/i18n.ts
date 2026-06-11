@@ -14,6 +14,7 @@ import employeesEN from '../locales/en/employees.json';
 import documentsEN from '../locales/en/documents.json';
 import settingsEN from '../locales/en/settings.json';
 import onboardingEN from '../locales/en/onboarding.json';
+import offboardingEN from '../locales/en/offboarding.json';
 import wellbeingEN from '../locales/en/wellbeing.json';
 import complianceEN from '../locales/en/compliance.json';
 import analyticsEN from '../locales/en/analytics.json';
@@ -37,6 +38,7 @@ import employeesTH from '../locales/th/employees.json';
 import documentsTH from '../locales/th/documents.json';
 import settingsTH from '../locales/th/settings.json';
 import onboardingTH from '../locales/th/onboarding.json';
+import offboardingTH from '../locales/th/offboarding.json';
 import wellbeingTH from '../locales/th/wellbeing.json';
 import complianceTH from '../locales/th/compliance.json';
 import analyticsTH from '../locales/th/analytics.json';
@@ -65,6 +67,7 @@ i18n
         documents: documentsEN,
         settings: settingsEN,
         onboarding: onboardingEN,
+        offboarding: offboardingEN,
         wellbeing: wellbeingEN,
         compliance: complianceEN,
         analytics: analyticsEN,
@@ -88,6 +91,7 @@ i18n
         documents: documentsTH,
         settings: settingsTH,
         onboarding: onboardingTH,
+        offboarding: offboardingTH,
         wellbeing: wellbeingTH,
         compliance: complianceTH,
         analytics: analyticsTH,
@@ -111,7 +115,7 @@ i18n
     defaultNS: 'common',
     ns: [
       'common', 'auth', 'dashboard', 'attendance', 'leave',
-      'employees', 'documents', 'settings', 'onboarding',
+      'employees', 'documents', 'settings', 'onboarding', 'offboarding',
       'wellbeing', 'compliance', 'analytics', 'payroll', 'help', 'expenses', 'training',
       'shifts', 'assets', 'performance-reviews', 'audit-logs', 'requests',
     ],

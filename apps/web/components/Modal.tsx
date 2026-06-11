@@ -1,5 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -17,6 +18,7 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   maxWidth = 'md'
 }) => {
+  const { t } = useTranslation('common');
   if (!isOpen) return null;
 
   const widthClass = {
@@ -41,6 +43,7 @@ export const Modal: React.FC<ModalProps> = ({
             </h3>
             <button
               onClick={onClose}
+              aria-label={t('common:buttons.close')}
               className="text-text-muted-light hover:text-text-light dark:hover:text-text-dark transition-colors"
             >
               <X size={20} />

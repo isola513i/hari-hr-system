@@ -135,6 +135,7 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                             </h3>
                             <button
                                 onClick={onCloseEditProfile}
+                                aria-label={t('common:buttons.close')}
                                 className="text-text-muted-light hover:text-text-light"
                             >
                                 <X size={20} />
@@ -435,6 +436,7 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                             </h3>
                             <button
                                 onClick={onCloseAddHistory}
+                                aria-label={t('common:buttons.close')}
                                 className="text-text-muted-light hover:text-text-light"
                             >
                                 <X size={20} />
@@ -534,6 +536,7 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                             </h3>
                             <button
                                 onClick={onCloseReviewModal}
+                                aria-label={t('common:buttons.close')}
                                 className="text-text-muted-light hover:text-text-light"
                             >
                                 <X size={20} />

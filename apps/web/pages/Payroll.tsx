@@ -393,7 +393,7 @@ export const Payroll: React.FC = () => {
           <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-xl w-full max-w-lg mx-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-border-light dark:border-border-dark">
               <h3 className="text-lg font-bold text-text-light dark:text-text-dark">{t('form.createTitle')}</h3>
-              <button onClick={() => setShowCreate(false)} className="p-1 hover:bg-background-light dark:hover:bg-background-dark rounded-lg transition-colors">
+              <button onClick={() => setShowCreate(false)} aria-label={t('common:buttons.close')} className="p-1 hover:bg-background-light dark:hover:bg-background-dark rounded-lg transition-colors">
                 <X size={18} className="text-text-muted-light" />
               </button>
             </div>
@@ -489,7 +489,7 @@ export const Payroll: React.FC = () => {
           <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-border-light dark:border-border-dark">
               <h3 className="text-lg font-bold text-text-light dark:text-text-dark">{t('batch.title')}</h3>
-              <button onClick={closeBatch} className="p-1 hover:bg-background-light dark:hover:bg-background-dark rounded-lg transition-colors">
+              <button onClick={closeBatch} aria-label={t('common:buttons.close')} className="p-1 hover:bg-background-light dark:hover:bg-background-dark rounded-lg transition-colors">
                 <X size={18} className="text-text-muted-light" />
               </button>
             </div>
@@ -556,7 +556,7 @@ export const Payroll: React.FC = () => {
           <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-xl w-full max-w-xl mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-border-light dark:border-border-dark">
               <h3 className="text-lg font-bold text-text-light dark:text-text-dark">{t('settings.title')}</h3>
-              <button onClick={closeSettings} className="p-1 hover:bg-background-light dark:hover:bg-background-dark rounded-lg transition-colors">
+              <button onClick={closeSettings} aria-label={t('common:buttons.close')} className="p-1 hover:bg-background-light dark:hover:bg-background-dark rounded-lg transition-colors">
                 <X size={18} className="text-text-muted-light" />
               </button>
             </div>
@@ -748,7 +748,7 @@ export const Payroll: React.FC = () => {
           <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-xl w-full max-w-lg mx-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-border-light dark:border-border-dark">
               <h3 className="text-lg font-bold text-text-light dark:text-text-dark">{t('form.editTitle')}</h3>
-              <button onClick={() => setEditingRecord(null)} className="p-1 hover:bg-background-light dark:hover:bg-background-dark rounded-lg transition-colors">
+              <button onClick={() => setEditingRecord(null)} aria-label={t('common:buttons.close')} className="p-1 hover:bg-background-light dark:hover:bg-background-dark rounded-lg transition-colors">
                 <X size={18} className="text-text-muted-light" />
               </button>
             </div>

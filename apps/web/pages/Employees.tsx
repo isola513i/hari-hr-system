@@ -325,6 +325,7 @@ export const Employees: React.FC = () => {
                         onClick={(e) => { e.stopPropagation(); navigate(`/employees/${emp.id}`); }}
                         className="p-2 text-text-muted-light dark:text-text-muted-dark hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
                         title={t('employees:list.viewProfile')}
+                        aria-label={t('employees:list.viewProfile')}
                       >
                         <Eye size={18} />
                       </button>
@@ -334,6 +335,7 @@ export const Employees: React.FC = () => {
                             onClick={(e) => { e.stopPropagation(); setActionMenuId(actionMenuId === emp.id ? null : emp.id); }}
                             className="p-2 text-text-muted-light dark:text-text-muted-dark hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
                             title={t('employees:list.moreActions')}
+                            aria-label={t('employees:list.moreActions')}
                           >
                             <MoreHorizontal size={18} />
                           </button>

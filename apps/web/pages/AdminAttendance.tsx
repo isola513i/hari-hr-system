@@ -575,6 +575,7 @@ const AdminAttendance: React.FC = () => {
                       <div className="relative inline-block">
                         <button
                           onClick={() => setActionMenuId(actionMenuId === record.id ? null : record.id)}
+                          aria-label={t('common:buttons.moreActions')}
                           className="p-1.5 text-text-muted-light hover:text-text-light dark:text-text-muted-dark dark:hover:text-text-dark rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                         >
                           <MoreVertical size={16} />

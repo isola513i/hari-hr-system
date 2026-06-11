@@ -53,6 +53,9 @@
   "reviewer": "By {{name}}",
   "empty": {
     "noReviews": "No reviews found",
-    "startHint": "Start by creating a self-review above"
+    "startHint": "Start by creating a self-review above",
+    "employeeHint": "Share what you've been working on and get feedback from your manager.",
+    "startSelfReview": "Start a Self-Review",
+    "adminHint": "No reviews need your attention right now."
   }
 }
