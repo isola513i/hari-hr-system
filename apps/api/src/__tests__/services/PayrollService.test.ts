@@ -9,6 +9,16 @@ jest.mock('../../services/SystemConfigService', () => ({
   },
 }));
 
+// Mock OTRequestService — createPayroll auto-sums approved OT hours when
+// data.overtimeHours is not provided. Default to 0 so existing tests that
+// don't care about OT keep working.
+jest.mock('../../services/OTRequestService', () => ({
+  __esModule: true,
+  default: {
+    getApprovedOTHours: jest.fn().mockResolvedValue(0),
+  },
+}));
+
 const mockedQuery = query as jest.MockedFunction<typeof query>;
 
 describe('PayrollService', () => {
@@ -46,12 +56,29 @@ describe('PayrollService', () => {
   });
 
   /**
-   * Helper: set up mocks for createPayroll flow (non-intern):
-   *   query #1 → duplicate check (empty)
-   *   query #2 → SELECT role, daily_rate FROM employees
-   *   query #3 → INSERT RETURNING *
+   * Helper: set up mocks for createPayroll flow (non-intern).
+   *
+   * NOTE: When data.leaveDeduction is not provided, createPayroll calls
+   * calcLeaveDeduction which fires 2 queries (getWorkingDays + absent count).
+   * We mock both to return zeros so they don't affect SSF/PVF/tax math.
+   *
+   *   query #1 → getWorkingDays              (working_days: 22)
+   *   query #2 → absent-day count            (absent_days: 0 → no deduction)
+   *   query #3 → duplicate check (empty)
+   *   query #4 → SELECT role, daily_rate FROM employees
+   *   query #5 → INSERT RETURNING *
+   *
+   * Existing tests use `mockedQuery.mock.calls[last]` to grab the INSERT,
+   * which keeps them robust against changes in the auto-calc chain.
    */
-  const setupCreateMocks = (baseSalary: number, overtimeHours = 0, bonus = 0, leaveDeduction = 0, deductions = 0, role = 'Developer') => {
+  const setupCreateMocks = (baseSalary: number, overtimeHours = 0, bonus = 0, leaveDeduction = 0, deductions = 0, role = 'Developer', autoCalcLeave = true) => {
+    if (autoCalcLeave) {
+      mockedQuery
+        // calcLeaveDeduction → getWorkingDays
+        .mockResolvedValueOnce({ rows: [{ working_days: 22 }], rowCount: 1 } as never)
+        // calcLeaveDeduction → absent count (0 → no auto deduction)
+        .mockResolvedValueOnce({ rows: [{ absent_days: 0 }], rowCount: 1 } as never);
+    }
     mockedQuery
       // duplicate check
       .mockResolvedValueOnce({ rows: [], rowCount: 0 } as never)
@@ -71,14 +98,26 @@ describe('PayrollService', () => {
   };
 
   /**
-   * Helper: set up mocks for createPayroll flow (intern):
-   *   query #1 → duplicate check (empty)
-   *   query #2 → SELECT role, daily_rate FROM employees
-   *   query #3 → COUNT attendance days
-   *   query #4 → INSERT RETURNING *
+   * Helper: set up mocks for createPayroll flow (intern).
+   *
+   * Interns skip calcLeaveDeduction inside batchCreatePayroll, but
+   * createPayroll still calls it unconditionally before the intern branch,
+   * so we still mock the 2 leave-deduction queries.
+   *
+   *   query #1 → getWorkingDays
+   *   query #2 → absent count (0)
+   *   query #3 → duplicate check
+   *   query #4 → SELECT role, daily_rate
+   *   query #5 → COUNT attendance days (intern-only)
+   *   query #6 → INSERT RETURNING *
    */
-  const setupInternCreateMocks = (dailyRate: number | null, daysWorked: number, role = 'Intern') => {
+  const setupInternCreateMocks = (dailyRate: number | null, daysWorked: number, role = 'Intern', autoCalcLeave = true) => {
     const effectiveSalary = (dailyRate || 350) * daysWorked;
+    if (autoCalcLeave) {
+      mockedQuery
+        .mockResolvedValueOnce({ rows: [{ working_days: 22 }], rowCount: 1 } as never)
+        .mockResolvedValueOnce({ rows: [{ absent_days: 0 }], rowCount: 1 } as never);
+    }
     mockedQuery
       .mockResolvedValueOnce({ rows: [], rowCount: 0 } as never)
       .mockResolvedValueOnce({ rows: [{ role, daily_rate: dailyRate }], rowCount: 1 } as never)
@@ -101,7 +140,8 @@ describe('PayrollService', () => {
       });
 
       // INSERT is the second query call
-      const insertCall = mockedQuery.mock.calls[2];
+      const calls = mockedQuery.mock.calls;
+      const insertCall = calls[calls.length - 1];
       const insertParams = insertCall[1] as any[];
 
       // SSF employee = min(10000, 15000) * 0.05 = 500
@@ -119,7 +159,8 @@ describe('PayrollService', () => {
         baseSalary: 20000,
       });
 
-      const insertCall = mockedQuery.mock.calls[2];
+      const calls = mockedQuery.mock.calls;
+      const insertCall = calls[calls.length - 1];
       const insertParams = insertCall[1] as any[];
 
       // SSF employee = min(20000, 15000) * 0.05 = 750
@@ -139,7 +180,8 @@ describe('PayrollService', () => {
         baseSalary: 30000,
       });
 
-      const insertCall = mockedQuery.mock.calls[2];
+      const calls = mockedQuery.mock.calls;
+      const insertCall = calls[calls.length - 1];
       const insertParams = insertCall[1] as any[];
 
       // PVF employee = 30000 * 0.03 = 900
@@ -160,7 +202,8 @@ describe('PayrollService', () => {
         baseSalary,
       });
 
-      const insertCall = mockedQuery.mock.calls[2];
+      const calls = mockedQuery.mock.calls;
+      const insertCall = calls[calls.length - 1];
       const insertParams = insertCall[1] as any[];
 
       const ssfEmployee = insertParams[10]; // 750 (capped at 15000 * 0.05)
@@ -190,7 +233,8 @@ describe('PayrollService', () => {
       const baseSalary = 30000;
       const leaveDeduction = 500;
       const deductions = 200;
-      setupCreateMocks(baseSalary, 0, 0, leaveDeduction, deductions);
+      // leaveDeduction is passed explicitly, so calcLeaveDeduction is skipped
+      setupCreateMocks(baseSalary, 0, 0, leaveDeduction, deductions, 'Developer', false);
 
       await service.createPayroll({
         employeeId: 'emp-1',
@@ -201,7 +245,8 @@ describe('PayrollService', () => {
         deductions,
       });
 
-      const insertCall = mockedQuery.mock.calls[2];
+      const calls = mockedQuery.mock.calls;
+      const insertCall = calls[calls.length - 1];
       const insertParams = insertCall[1] as any[];
 
       const overtimePay = insertParams[5];
@@ -232,7 +277,8 @@ describe('PayrollService', () => {
         overtimeHours,
       });
 
-      const insertCall = mockedQuery.mock.calls[2];
+      const calls = mockedQuery.mock.calls;
+      const insertCall = calls[calls.length - 1];
       const insertParams = insertCall[1] as any[];
 
       // hourlyRate = 16000/160 = 100
@@ -255,7 +301,8 @@ describe('PayrollService', () => {
       });
 
       // INSERT is query #4 (index 3)
-      const insertParams = mockedQuery.mock.calls[3][1] as any[];
+      const internCalls = mockedQuery.mock.calls;
+      const insertParams = internCalls[internCalls.length - 1][1] as any[];
 
       expect(insertParams[3]).toBe(7000);  // baseSalary = 350 × 20
       expect(insertParams[4]).toBe(0);     // overtimeHours = 0
@@ -276,7 +323,8 @@ describe('PayrollService', () => {
         baseSalary: 0,
       });
 
-      const insertParams = mockedQuery.mock.calls[3][1] as any[];
+      const internCalls = mockedQuery.mock.calls;
+      const insertParams = internCalls[internCalls.length - 1][1] as any[];
 
       expect(insertParams[3]).toBe(11000); // baseSalary = 500 × 22
       expect(insertParams[14]).toBe(11000); // netPay
@@ -293,7 +341,8 @@ describe('PayrollService', () => {
         overtimeHours: 10, // should be ignored
       });
 
-      const insertParams = mockedQuery.mock.calls[3][1] as any[];
+      const internCalls = mockedQuery.mock.calls;
+      const insertParams = internCalls[internCalls.length - 1][1] as any[];
 
       expect(insertParams[4]).toBe(0); // overtimeHours forced to 0
       expect(insertParams[5]).toBe(0); // overtimePay = 0
@@ -309,12 +358,111 @@ describe('PayrollService', () => {
         baseSalary: 0,
       });
 
-      const insertParams = mockedQuery.mock.calls[3][1] as any[];
+      const internCalls = mockedQuery.mock.calls;
+      const insertParams = internCalls[internCalls.length - 1][1] as any[];
 
       expect(insertParams[3]).toBe(5250);  // 350 × 15
       expect(insertParams[9]).toBe(0);     // tax = 0
       expect(insertParams[10]).toBe(0);    // SSF = 0
       expect(insertParams[14]).toBe(5250); // netPay
+    });
+  });
+
+  /**
+   * F2 — Auto-calculated leave deduction from attendance.
+   *
+   * calcLeaveDeduction makes 2 queries via the helper:
+   *   #1 getWorkingDays    → { working_days: N }  (SELECT COUNT FROM generate_series)
+   *   #2 absent-day count  → { absent_days: M }   (SELECT COUNT FROM generate_series)
+   *
+   * The SQL in #1 excludes weekends + holidays (via NOT EXISTS).
+   * The SQL in #2 excludes weekends + holidays + approved-leave days, and
+   * counts both Absent-status records AND no-record weekdays.
+   *
+   * The math we verify here: deduction = round((baseSalary / workingDays) * absentDays, 2).
+   */
+  describe('Leave deduction (auto-calculated from attendance)', () => {
+    const PERIOD_START = '2026-06-01';
+    const PERIOD_END = '2026-06-30';
+
+    const mockLeaveDeductionQueries = (workingDays: number, absentDays: number) => {
+      mockedQuery
+        .mockResolvedValueOnce({ rows: [{ working_days: workingDays }], rowCount: 1 } as never)
+        .mockResolvedValueOnce({ rows: [{ absent_days: absentDays }], rowCount: 1 } as never);
+    };
+
+    it('happy path — 2 absent weekdays in a 22-day period at ฿22,000 salary → ฿2,000', async () => {
+      mockLeaveDeductionQueries(22, 2);
+
+      const result = await service.calcLeaveDeduction('emp-1', PERIOD_START, PERIOD_END, 22000);
+
+      expect(result).toBe(2000); // 22000 / 22 = 1000/day × 2 = 2000
+    });
+
+    it('returns 0 when no absent days (holiday + approved leave already excluded by SQL)', async () => {
+      mockLeaveDeductionQueries(22, 0);
+
+      const result = await service.calcLeaveDeduction('emp-1', PERIOD_START, PERIOD_END, 22000);
+
+      expect(result).toBe(0);
+    });
+
+    it('returns 0 when workingDays is 0 (avoid division by zero)', async () => {
+      mockLeaveDeductionQueries(0, 5);
+
+      const result = await service.calcLeaveDeduction('emp-1', PERIOD_START, PERIOD_END, 22000);
+
+      expect(result).toBe(0);
+    });
+
+    it('rounds to 2 decimal places (₿25,000 / 22 × 3 = ₿3,409.09)', async () => {
+      mockLeaveDeductionQueries(22, 3);
+
+      const result = await service.calcLeaveDeduction('emp-1', PERIOD_START, PERIOD_END, 25000);
+
+      // 25000 / 22 = 1136.3636... × 3 = 3409.0909... → rounded to 3409.09
+      expect(result).toBe(3409.09);
+    });
+
+    it('scales linearly with absent days', async () => {
+      mockLeaveDeductionQueries(20, 5);
+
+      const result = await service.calcLeaveDeduction('emp-2', PERIOD_START, PERIOD_END, 40000);
+
+      // 40000 / 20 = 2000/day × 5 = 10000
+      expect(result).toBe(10000);
+    });
+
+    it('SQL filter correctness — verifies absent-days query excludes weekends, holidays, and approved leave', async () => {
+      mockLeaveDeductionQueries(22, 2);
+
+      await service.calcLeaveDeduction('emp-1', PERIOD_START, PERIOD_END, 22000);
+
+      // Second query is the absent-days one
+      const absentQueryCall = mockedQuery.mock.calls[1];
+      const absentSql = absentQueryCall[0] as string;
+
+      // Weekends excluded
+      expect(absentSql).toMatch(/EXTRACT\(DOW FROM .*?\) NOT IN \(0, 6\)/);
+      // Holidays excluded
+      expect(absentSql).toMatch(/NOT EXISTS\s*\(\s*SELECT 1 FROM holidays/);
+      // Approved leave excluded
+      expect(absentSql).toMatch(/leave_requests[\s\S]*?status = 'Approved'/);
+      // Absent OR no-record both counted
+      expect(absentSql).toMatch(/status = 'Absent'/);
+      // Soft-deleted attendance records ignored
+      expect(absentSql).toMatch(/ar\.deleted_at IS NULL/);
+    });
+
+    it('working-days query also excludes holidays', async () => {
+      mockLeaveDeductionQueries(22, 2);
+
+      await service.calcLeaveDeduction('emp-1', PERIOD_START, PERIOD_END, 22000);
+
+      const workingQuerySql = mockedQuery.mock.calls[0][0] as string;
+
+      expect(workingQuerySql).toMatch(/EXTRACT\(DOW FROM .*?\) NOT IN \(0, 6\)/);
+      expect(workingQuerySql).toMatch(/NOT EXISTS\s*\(\s*SELECT 1 FROM holidays/);
     });
   });
 });

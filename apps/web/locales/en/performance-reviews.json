@@ -38,7 +38,8 @@
     "saveDraft": "Save Draft",
     "saving": "Saving...",
     "cancel": "Cancel",
-    "newSelfReview": "New Self-Review"
+    "newSelfReview": "New Self-Review",
+    "downloadPdf": "Download PDF"
   },
   "form": {
     "rating": "Rating",

@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, ChevronUp, Send, ThumbsUp, CheckCircle, XCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, Send, ThumbsUp, CheckCircle, XCircle, Download } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { PerformanceStatusBadge, StarRating } from './PerformanceStatusBadge';
+import { useToast } from '../contexts/ToastContext';
+import { getAuthToken, BASE_URL } from '../lib/api';
 import type { PerformanceReview } from '../types';
 
 interface PerformanceReviewCardProps {
@@ -22,13 +24,40 @@ export function PerformanceReviewCard({
   onReject,
   onSubmit,
 }: PerformanceReviewCardProps) {
-  const { t } = useTranslation(['performance-reviews']);
+  const { t } = useTranslation(['performance-reviews', 'common']);
+  const { showToast } = useToast();
   const [expanded, setExpanded] = useState(false);
   const [mgrRating, setMgrRating] = useState(review.rating ?? 0);
   const [mgrComment, setMgrComment] = useState('');
   const [hrComment, setHrComment] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [action, setAction] = useState<'manager' | 'hr' | 'reject' | null>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadPdf = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDownloading(true);
+    try {
+      const token = getAuthToken();
+      const res = await fetch(`${BASE_URL}/performance/reviews/${review.id}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `performance-review-${review.reviewPeriod || review.date}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      showToast(t('errors.downloadFailed', 'Failed to download PDF'), 'error');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const canDownloadPdf = review.status !== 'draft';
 
   const canManagerReview = role === 'MANAGER' || role === 'HR_ADMIN';
   const canHrApprove = role === 'HR_ADMIN';
@@ -57,6 +86,18 @@ export function PerformanceReviewCard({
         <div className="flex items-center gap-3 shrink-0">
           {review.rating !== null && <StarRating value={review.rating} readonly />}
           <PerformanceStatusBadge status={review.status} />
+          {canDownloadPdf && (
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={downloading}
+              aria-label={t('actions.downloadPdf', 'Download PDF')}
+              title={t('actions.downloadPdf', 'Download PDF')}
+              className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <Download size={16} />
+            </button>
+          )}
           {expanded
             ? <ChevronUp size={16} className="text-text-muted-light dark:text-text-muted-dark" />
             : <ChevronDown size={16} className="text-text-muted-light dark:text-text-muted-dark" />}

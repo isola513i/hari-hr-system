@@ -117,7 +117,13 @@
     "completedOn": "Completed on",
     "status": "Status",
     "certificate": "Certificate",
-    "score": "Score"
+    "score": "Score",
+    "due": "Due",
+    "downloadCertificate": "Download Certificate",
+    "startTraining": "Start Training",
+    "markComplete": "Mark Complete",
+    "delete": "Delete",
+    "downloadFailed": "Failed to download certificate"
   },
   "performance": {
     "title": "Performance Reviews",

@@ -38,7 +38,8 @@
     "saveDraft": "บันทึกร่าง",
     "saving": "กำลังบันทึก...",
     "cancel": "ยกเลิก",
-    "newSelfReview": "ประเมินตนเองใหม่"
+    "newSelfReview": "ประเมินตนเองใหม่",
+    "downloadPdf": "ดาวน์โหลด PDF"
   },
   "form": {
     "rating": "คะแนน",

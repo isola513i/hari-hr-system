@@ -38,7 +38,7 @@ export const TrainingTab: React.FC<TrainingTabProps> = ({
             a.click();
             URL.revokeObjectURL(url);
         } catch {
-            showToast('Failed to download certificate', 'error');
+            showToast(t('employees:training.downloadFailed'), 'error');
         }
     };
 
@@ -73,11 +73,11 @@ export const TrainingTab: React.FC<TrainingTabProps> = ({
                                     <div className="flex items-center gap-3 text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">
                                         <span className="flex items-center gap-1"><Clock size={12} /> {record.duration}</span>
                                         {record.completionDate && <span>{t('employees:training.completedOn')} {record.completionDate}</span>}
-                                        {record.score != null && <span className="font-semibold text-primary">Score: {record.score}%</span>}
+                                        {record.score != null && <span className="font-semibold text-primary">{t('employees:training.score')}: {record.score}%</span>}
                                         {record.dueDate && (
                                             <span className={`flex items-center gap-1 ${isOverdue(record.dueDate) && record.status !== 'Completed' ? 'text-red-500 font-medium' : ''}`}>
                                                 {isOverdue(record.dueDate) && record.status !== 'Completed' && <AlertCircle size={12} />}
-                                                Due: {new Date(record.dueDate).toLocaleDateString()}
+                                                {t('employees:training.due')}: {new Date(record.dueDate).toLocaleDateString()}
                                             </span>
                                         )}
                                     </div>
@@ -88,7 +88,8 @@ export const TrainingTab: React.FC<TrainingTabProps> = ({
                                     <button
                                         onClick={() => handleDownloadCertificate(record.id, record.title)}
                                         className="p-1.5 text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
-                                        title="Download Certificate"
+                                        title={t('employees:training.downloadCertificate')}
+                                        aria-label={t('employees:training.downloadCertificate')}
                                     >
                                         <Download size={14} />
                                     </button>
@@ -97,7 +98,8 @@ export const TrainingTab: React.FC<TrainingTabProps> = ({
                                     <button
                                         onClick={() => onUpdateStatus(record.id, 'In Progress')}
                                         className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                                        title="Start Training"
+                                        title={t('employees:training.startTraining')}
+                                        aria-label={t('employees:training.startTraining')}
                                     >
                                         <Play size={14} />
                                     </button>
@@ -106,7 +108,8 @@ export const TrainingTab: React.FC<TrainingTabProps> = ({
                                     <button
                                         onClick={() => onUpdateStatus(record.id, 'Completed')}
                                         className="p-1.5 text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
-                                        title="Mark Complete"
+                                        title={t('employees:training.markComplete')}
+                                        aria-label={t('employees:training.markComplete')}
                                     >
                                         <CheckCircle2 size={14} />
                                     </button>
@@ -123,7 +126,8 @@ export const TrainingTab: React.FC<TrainingTabProps> = ({
                                     <button
                                         onClick={() => onDeleteTraining(record.id)}
                                         className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors ml-1"
-                                        title="Delete"
+                                        title={t('employees:training.delete')}
+                                        aria-label={t('employees:training.delete')}
                                     >
                                         <Trash2 size={14} />
                                     </button>

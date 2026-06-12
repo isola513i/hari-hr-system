@@ -117,7 +117,13 @@
     "completedOn": "สำเร็จเมื่อ",
     "status": "สถานะ",
     "certificate": "ใบรับรอง",
-    "score": "คะแนน"
+    "score": "คะแนน",
+    "due": "ครบกำหนด",
+    "downloadCertificate": "ดาวน์โหลดใบรับรอง",
+    "startTraining": "เริ่มอบรม",
+    "markComplete": "ทำเครื่องหมายสำเร็จ",
+    "delete": "ลบ",
+    "downloadFailed": "ไม่สามารถดาวน์โหลดใบรับรองได้"
   },
   "performance": {
     "title": "การประเมินผลงาน",
