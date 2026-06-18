@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MapPin, ExternalLink, Navigation, Loader2 } from 'lucide-react';
 import { Modal } from './Modal';
 import type { AdminAttendanceRecord } from '../types';
@@ -16,6 +17,7 @@ type IframeStatus = 'loading' | 'loaded' | 'error';
 const LOAD_TIMEOUT_MS = 8000;
 
 export const LocationMapModal: React.FC<LocationMapModalProps> = ({ isOpen, onClose, record }) => {
+  const { t } = useTranslation('attendance');
   const [iframeStatus, setIframeStatus] = useState<IframeStatus>('loading');
   const timeoutRef = useRef<number | null>(null);
 
@@ -54,7 +56,7 @@ export const LocationMapModal: React.FC<LocationMapModalProps> = ({ isOpen, onCl
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="ตำแหน่งเช็คอิน" maxWidth="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('locationMap.checkInLocation')} maxWidth="lg">
       <div className="p-4 space-y-4">
         {/* Employee info */}
         <div className="flex items-center gap-3 pb-3 border-b border-border-light dark:border-border-dark">
@@ -68,7 +70,7 @@ export const LocationMapModal: React.FC<LocationMapModalProps> = ({ isOpen, onCl
           <div>
             <p className="font-semibold text-text-light dark:text-text-dark">{record.employeeName}</p>
             <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
-              {record.employeeDepartment} · เช็คอิน {formatTimeTH(record.clockIn)}
+              {record.employeeDepartment} · {t('locationMap.checkInAt', { time: formatTimeTH(record.clockIn) })}
             </p>
           </div>
         </div>
@@ -81,13 +83,13 @@ export const LocationMapModal: React.FC<LocationMapModalProps> = ({ isOpen, onCl
                 {iframeStatus === 'loading' && (
                   <div className="absolute inset-0 flex items-center justify-center gap-2 text-text-muted-light dark:text-text-muted-dark z-10 pointer-events-none">
                     <Loader2 size={18} className="animate-spin" />
-                    <span className="text-xs">กำลังโหลดแผนที่...</span>
+                    <span className="text-xs">{t('locationMap.loadingMap')}</span>
                   </div>
                 )}
                 <iframe
                   src={mapUrl!}
                   className="w-full h-full"
-                  title="ตำแหน่งเช็คอิน"
+                  title={t('locationMap.checkInLocation')}
                   loading="lazy"
                   onLoad={handleIframeLoad}
                   onError={handleIframeError}
@@ -98,9 +100,9 @@ export const LocationMapModal: React.FC<LocationMapModalProps> = ({ isOpen, onCl
             {iframeStatus === 'error' && (
               <div className="rounded-lg border border-dashed border-border-light dark:border-border-dark p-6 flex flex-col items-center gap-2 text-center bg-gray-50 dark:bg-gray-800/30">
                 <MapPin size={28} className="text-text-muted-light dark:text-text-muted-dark opacity-40" />
-                <p className="text-sm font-medium text-text-light dark:text-text-dark">แผนที่ไม่สามารถโหลดได้</p>
+                <p className="text-sm font-medium text-text-light dark:text-text-dark">{t('locationMap.mapLoadFailed')}</p>
                 <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
-                  ใช้พิกัดด้านล่างหรือเปิดใน Google Maps แทน
+                  {t('locationMap.mapLoadFailedDesc')}
                 </p>
               </div>
             )}
@@ -108,7 +110,7 @@ export const LocationMapModal: React.FC<LocationMapModalProps> = ({ isOpen, onCl
             {/* Coordinate info */}
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-1">พิกัด</p>
+                <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-1">{t('locationMap.coordinates')}</p>
                 <p className="text-sm font-mono text-text-light dark:text-text-dark">
                   {lat!.toFixed(6)}, {lng!.toFixed(6)}
                 </p>
@@ -117,10 +119,10 @@ export const LocationMapModal: React.FC<LocationMapModalProps> = ({ isOpen, onCl
                 <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                   <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-1 flex items-center gap-1">
                     <Navigation size={11} />
-                    ความแม่นยำ GPS
+                    {t('locationMap.gpsAccuracy')}
                   </p>
                   <p className="text-sm font-medium text-text-light dark:text-text-dark">
-                    ±{Math.round(accuracy)} เมตร
+                    {t('locationMap.accuracyMeters', { meters: Math.round(accuracy) })}
                   </p>
                 </div>
               )}
@@ -134,14 +136,14 @@ export const LocationMapModal: React.FC<LocationMapModalProps> = ({ isOpen, onCl
               className="flex items-center justify-center gap-2 w-full py-2.5 px-4 text-sm font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-colors"
             >
               <ExternalLink size={14} />
-              เปิดใน Google Maps
+              {t('locationMap.openInGoogleMaps')}
             </a>
           </>
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-text-muted-light dark:text-text-muted-dark">
             <MapPin size={36} className="mb-3 opacity-30" />
-            <p className="text-sm">ไม่มีข้อมูลตำแหน่ง</p>
-            <p className="text-xs mt-1">พนักงานเช็คอินโดยไม่ได้เปิด GPS</p>
+            <p className="text-sm">{t('locationMap.noLocation')}</p>
+            <p className="text-xs mt-1">{t('locationMap.noLocationDesc')}</p>
           </div>
         )}
       </div>

@@ -2,6 +2,10 @@
 
 // Set test environment variables
 process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-minimum-32-chars';
+// 64 hex chars (32 bytes) — required by src/utils/encryption.ts, which fails
+// fast (process.exit) at import time if this is missing or malformed.
+process.env.TOTP_ENCRYPTION_KEY =
+  '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 process.env.NODE_ENV = 'test';
 
 // Mock the database module

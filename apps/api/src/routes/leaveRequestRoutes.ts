@@ -34,6 +34,10 @@ router.put(
     LeaveRequestController.editLeaveRequest.bind(LeaveRequestController)
 );
 
+// PATCH /api/leave-requests/bulk - Bulk approve/reject (HR_ADMIN or MANAGER)
+// MUST be registered before '/:id' so 'bulk' isn't captured as an id param.
+router.patch('/bulk', requireAdminOrManager, apiLimiter, invalidateCache('/api/leave-requests'), LeaveRequestController.bulkUpdateLeaveRequests.bind(LeaveRequestController));
+
 // PATCH /api/leave-requests/:id - Update leave request status (HR_ADMIN only - for approval/rejection)
 router.patch('/:id', requireAdminOrManager, apiLimiter, invalidateCache('/api/leave-requests'), LeaveRequestController.updateLeaveRequest.bind(LeaveRequestController));
 

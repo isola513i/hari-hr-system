@@ -133,5 +133,18 @@
     "desktopStep1": "Click the lock icon in the browser address bar",
     "desktopStep2": "Find \"Location\" and set it to \"Allow\"",
     "desktopStep3": "Refresh the page and try again"
+  },
+  "locationMap": {
+    "checkInLocation": "Check-in Location",
+    "checkInAt": "checked in {{time}}",
+    "loadingMap": "Loading map...",
+    "mapLoadFailed": "Map could not be loaded",
+    "mapLoadFailedDesc": "Use the coordinates below or open in Google Maps instead",
+    "coordinates": "Coordinates",
+    "gpsAccuracy": "GPS Accuracy",
+    "accuracyMeters": "±{{meters}} m",
+    "openInGoogleMaps": "Open in Google Maps",
+    "noLocation": "No location data",
+    "noLocationDesc": "The employee checked in without enabling GPS"
   }
 }
