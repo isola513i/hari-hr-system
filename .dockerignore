@@ -1,0 +1,18 @@
+# Keep build contexts small + avoid leaking local state/secrets into images
+**/node_modules
+**/dist
+**/build
+**/.git
+**/.env
+**/.env.*
+!**/.env.example
+**/coverage
+**/playwright-report
+**/test-results
+**/.vscode
+**/.idea
+**/*.log
+npm-debug.log*
+**/.DS_Store
+**/tmp
+**/uploads

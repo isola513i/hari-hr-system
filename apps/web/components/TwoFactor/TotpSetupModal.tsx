@@ -6,6 +6,7 @@
  * Step 3: Display backup codes (copy / download)
  */
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, ShieldCheck, Copy, Download, Check, KeyRound, ChevronRight } from 'lucide-react';
 import { useTwoFactor } from '../../hooks/useTwoFactor';
 
@@ -19,6 +20,7 @@ interface TotpSetupModalProps {
 type Step = 'qr' | 'verify' | 'backup';
 
 export const TotpSetupModal: React.FC<TotpSetupModalProps> = ({ isOpen, onClose, onEnabled }) => {
+  const { t } = useTranslation(['auth', 'common']);
   const [step, setStep] = useState<Step>('qr');
   const [token, setToken] = useState('');
   const [copied, setCopied] = useState(false);
@@ -65,7 +67,7 @@ export const TotpSetupModal: React.FC<TotpSetupModalProps> = ({ isOpen, onClose,
 
   const handleDownload = () => {
     const blob = new Blob(
-      [`HARI HR - Two-Factor Authentication Backup Codes\n\n${backupCodes.join('\n')}\n\nEach code can only be used once.`],
+      [`${t('auth:totp.setup.backupFileHeader')}\n\n${backupCodes.join('\n')}\n\n${t('auth:totp.setup.backupFileFooter')}`],
       { type: 'text/plain' },
     );
     const url = URL.createObjectURL(blob);
@@ -89,15 +91,15 @@ export const TotpSetupModal: React.FC<TotpSetupModalProps> = ({ isOpen, onClose,
               <ShieldCheck size={20} className="text-primary" />
             </div>
             <div>
-              <h2 className="font-semibold text-text-light dark:text-text-dark">Set Up Two-Factor Auth</h2>
+              <h2 className="font-semibold text-text-light dark:text-text-dark">{t('auth:totp.setup.title')}</h2>
               <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
-                {step === 'qr' && 'Step 1 of 3 — Scan QR code'}
-                {step === 'verify' && 'Step 2 of 3 — Verify code'}
-                {step === 'backup' && 'Step 3 of 3 — Save backup codes'}
+                {step === 'qr' && t('auth:totp.setup.stepQr')}
+                {step === 'verify' && t('auth:totp.setup.stepVerify')}
+                {step === 'backup' && t('auth:totp.setup.stepBackup')}
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors">
+          <button onClick={onClose} aria-label={t('auth:totp.setup.closeAriaLabel')} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -121,7 +123,7 @@ export const TotpSetupModal: React.FC<TotpSetupModalProps> = ({ isOpen, onClose,
           {step === 'qr' && (
             <div className="space-y-4">
               <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
-                Open your authenticator app (Google Authenticator, Authy, etc.) and scan the QR code below.
+                {t('auth:totp.setup.qrInstructions')}
               </p>
 
               {setupLoading ? (
@@ -136,19 +138,20 @@ export const TotpSetupModal: React.FC<TotpSetupModalProps> = ({ isOpen, onClose,
                   <div className="flex justify-center">
                     <img
                       src={setup.qrCodeDataUrl}
-                      alt="2FA QR Code"
+                      alt={t('auth:totp.setup.qrAlt')}
                       className="rounded-xl border-4 border-white shadow-md"
                       style={{ width: 180, height: 180 }}
                     />
                   </div>
                   <div className="bg-background-light dark:bg-background-dark rounded-xl p-3 border border-border-light dark:border-border-dark">
-                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-1">Manual entry key:</p>
+                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-1">{t('auth:totp.setup.manualKeyLabel')}</p>
                     <div className="flex items-center gap-2">
                       <code className="text-sm font-mono text-text-light dark:text-text-dark flex-1 break-all">{setup.manualKey}</code>
                       <button
                         onClick={() => { navigator.clipboard.writeText(setup.manualKey); }}
                         className="text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors flex-shrink-0"
-                        title="Copy key"
+                        title={t('auth:totp.setup.copyKeyAriaLabel')}
+                        aria-label={t('auth:totp.setup.copyKeyAriaLabel')}
                       >
                         <Copy size={16} />
                       </button>
@@ -162,7 +165,7 @@ export const TotpSetupModal: React.FC<TotpSetupModalProps> = ({ isOpen, onClose,
                 disabled={!setup}
                 className="w-full flex items-center justify-center gap-2 bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary-hover transition-colors disabled:opacity-50"
               >
-                I've scanned it <ChevronRight size={18} />
+                {t('auth:totp.setup.scanned')} <ChevronRight size={18} />
               </button>
             </div>
           )}
@@ -171,7 +174,7 @@ export const TotpSetupModal: React.FC<TotpSetupModalProps> = ({ isOpen, onClose,
           {step === 'verify' && (
             <form onSubmit={handleVerify} className="space-y-4">
               <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
-                Enter the 6-digit code shown in your authenticator app to confirm setup.
+                {t('auth:totp.setup.verifyInstructions')}
               </p>
               <div className="relative group">
                 <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark group-focus-within:text-primary transition-colors" size={20} />
@@ -199,11 +202,11 @@ export const TotpSetupModal: React.FC<TotpSetupModalProps> = ({ isOpen, onClose,
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                 ) : (
-                  <>Enable 2FA <ChevronRight size={18} /></>
+                  <>{t('auth:totp.setup.enable')} <ChevronRight size={18} /></>
                 )}
               </button>
               <button type="button" onClick={() => setStep('qr')} className="w-full text-sm text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors">
-                ← Back
+                {t('auth:totp.setup.back')}
               </button>
             </form>
           )}
@@ -212,7 +215,7 @@ export const TotpSetupModal: React.FC<TotpSetupModalProps> = ({ isOpen, onClose,
           {step === 'backup' && (
             <div className="space-y-4">
               <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-sm text-amber-800 dark:text-amber-300">
-                ⚠️ Save these backup codes in a safe place. Each code can only be used once.
+                {t('auth:totp.setup.backupWarning')}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {backupCodes.map((code) => (
@@ -224,15 +227,15 @@ export const TotpSetupModal: React.FC<TotpSetupModalProps> = ({ isOpen, onClose,
               <div className="flex gap-3">
                 <button onClick={handleCopyAll} className="flex-1 flex items-center justify-center gap-2 border border-border-light dark:border-border-dark rounded-xl py-2.5 text-sm text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors">
                   {copied ? <Check size={16} className="text-accent-green" /> : <Copy size={16} />}
-                  {copied ? 'Copied!' : 'Copy all'}
+                  {copied ? t('auth:totp.setup.copied') : t('auth:totp.setup.copyAll')}
                 </button>
                 <button onClick={handleDownload} className="flex-1 flex items-center justify-center gap-2 border border-border-light dark:border-border-dark rounded-xl py-2.5 text-sm text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors">
                   <Download size={16} />
-                  Download
+                  {t('auth:totp.setup.download')}
                 </button>
               </div>
               <button onClick={onClose} className="w-full bg-accent-green text-white py-3 rounded-xl font-semibold hover:bg-accent-green/90 transition-colors flex items-center justify-center gap-2">
-                <Check size={18} /> Done
+                <Check size={18} /> {t('auth:totp.setup.done')}
               </button>
             </div>
           )}

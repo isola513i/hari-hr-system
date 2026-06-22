@@ -20,6 +20,37 @@ export class OrgChartController {
   }
 
   /**
+   * GET /api/org-chart/direct-reports/:managerId
+   * Get a manager's immediate direct reports. HR admins may query any manager;
+   * a manager may only query their own reports.
+   */
+  async getDirectReports(req: Request, res: Response): Promise<void> {
+    try {
+      const { managerId } = req.params;
+      const user = (req as any).user;
+
+      if (!managerId) {
+        res.status(400).json({ error: "Manager ID is required" });
+        return;
+      }
+
+      const isAdmin = user?.role === "HR_ADMIN";
+      const isSelf = user?.employeeId && user.employeeId === managerId;
+      if (!isAdmin && !isSelf) {
+        res.status(403).json({ error: "You can only view your own direct reports" });
+        return;
+      }
+
+      const nodes = await OrgChartService.getDirectReports(managerId);
+      res.setHeader('Cache-Control', 'no-store');
+      res.json(nodes);
+    } catch (error: any) {
+      console.error("Error fetching direct reports:", error);
+      res.status(500).json({ error: "Failed to fetch direct reports" });
+    }
+  }
+
+  /**
    * GET /api/org-chart/subtree/:employeeId
    * Get org chart subtree rooted at specific employee
    */

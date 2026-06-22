@@ -1,0 +1,62 @@
+# HARI HR — local/dev container stack (api + web + postgres).
+# Usage:
+#   docker compose up --build
+#   web  → http://localhost:8080   api → http://localhost:3001
+#
+# Override secrets via a root .env file or the shell environment. The defaults
+# below are for LOCAL DEV ONLY — never ship them to production.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hari}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hari}
+      POSTGRES_DB: ${POSTGRES_DB:-hari_hr}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hari} -d ${POSTGRES_DB:-hari_hr}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgres://${POSTGRES_USER:-hari}:${POSTGRES_PASSWORD:-hari}@db:5432/${POSTGRES_DB:-hari_hr}
+      # Self-hosted Postgres has no SSL — disable it (overrides the prod default).
+      DATABASE_SSL: "false"
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-me-min-32-characters-long}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-change-me-min-32-chars-long}
+      # 64 hex chars (32 bytes) — required by utils/encryption.ts. DEV DEFAULT ONLY.
+      TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3001:3001"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Same-origin: the nginx layer proxies /api → api:3001
+        VITE_API_URL: ${VITE_API_URL:-/api}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+volumes:
+  pgdata:

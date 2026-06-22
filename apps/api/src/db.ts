@@ -3,9 +3,20 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// SSL: explicit DATABASE_SSL wins ('true'/'false'); otherwise default to SSL in
+// production only. Lets a self-hosted/Docker Postgres (no SSL) run in prod mode.
+const sslSetting =
+    process.env.DATABASE_SSL === 'false'
+        ? false
+        : process.env.DATABASE_SSL === 'true'
+            ? { rejectUnauthorized: false }
+            : process.env.NODE_ENV === 'production'
+                ? { rejectUnauthorized: false }
+                : false;
+
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    ssl: sslSetting,
     max: 20,
     connectionTimeoutMillis: 5000,
     idleTimeoutMillis: 30000,
