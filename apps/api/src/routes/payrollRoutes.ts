@@ -37,6 +37,27 @@ router.post('/batch', requireAdminOrFinance, apiLimiter, async (req: Request, re
 
 /**
  * POST /api/payroll
+ * What-if preview: compute payroll amounts without persisting (admin/finance).
+ * NOTE: Must be defined BEFORE /:id routes to avoid route shadowing.
+ */
+router.post('/simulate', requireAdminOrFinance, apiLimiter, async (req: Request, res: Response) => {
+  try {
+    const { employeeId, payPeriodStart, payPeriodEnd } = req.body;
+
+    if (!employeeId || !payPeriodStart || !payPeriodEnd) {
+      return res.status(400).json({ error: 'employeeId, payPeriodStart and payPeriodEnd are required' });
+    }
+
+    const preview = await PayrollService.simulatePayroll(req.body);
+    res.json(preview);
+  } catch (error: unknown) {
+    console.error('Error simulating payroll:', error);
+    res.status(400).json({ error: safeErrorMessage(error, 'Failed to simulate payroll') });
+  }
+});
+
+/**
+ * POST /api/payroll
  * Create a new payroll record (admin only)
  */
 router.post('/', requireAdminOrFinance, apiLimiter, async (req: Request, res: Response) => {

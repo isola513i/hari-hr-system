@@ -39,6 +39,15 @@ export const useSocketQuerySync = () => {
       );
     };
 
+    // Batched update from a bulk approve/reject — apply all rows in one pass.
+    const onLeaveBulkUpdated = (updatedRequests: LeaveRequest[]) => {
+      if (!Array.isArray(updatedRequests) || updatedRequests.length === 0) return;
+      const byId = new Map(updatedRequests.map((r) => [r.id, transformAvatarUrl(r)]));
+      qc.setQueryData<LeaveRequest[]>(queryKeys.leaveRequests.list(), (old) =>
+        old?.map((r) => byId.get(r.id) ?? r),
+      );
+    };
+
     // -- Expense Claim events --
     const onExpenseCreated = () => {
       qc.invalidateQueries({ queryKey: queryKeys.expenseClaims.all });
@@ -90,6 +99,7 @@ export const useSocketQuerySync = () => {
 
     socket.on('leave-request:created', onLeaveCreated);
     socket.on('leave-request:updated', onLeaveUpdated);
+    socket.on('leave-request:bulk-updated', onLeaveBulkUpdated);
     socket.on('leave-request:deleted', onLeaveDeleted);
     socket.on('attendance:updated', onAttendanceUpdated);
     socket.on('notification:new', onNotificationNew);
@@ -107,6 +117,7 @@ export const useSocketQuerySync = () => {
     return () => {
       socket.off('leave-request:created', onLeaveCreated);
       socket.off('leave-request:updated', onLeaveUpdated);
+      socket.off('leave-request:bulk-updated', onLeaveBulkUpdated);
       socket.off('leave-request:deleted', onLeaveDeleted);
       socket.off('attendance:updated', onAttendanceUpdated);
       socket.off('notification:new', onNotificationNew);

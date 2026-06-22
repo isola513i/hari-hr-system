@@ -5,6 +5,7 @@ import SystemConfigService from './SystemConfigService';
 import { PaginationParams, PaginatedResult, createPaginatedResult } from '../utils/pagination';
 import JobHistoryService from './JobHistoryService';
 import { encrypt, decrypt, hashPII } from '../utils/encryption';
+import { toInt } from '../utils/coerce';
 
 /**
  * Silently decrypt a ciphertext produced by encrypt().
@@ -39,6 +40,7 @@ export class EmployeeService {
                         SELECT 1 FROM leave_requests lr
                         WHERE lr.employee_id = e.id
                           AND lr.status = 'Approved'
+                          AND lr.deleted_at IS NULL
                           AND CURRENT_DATE BETWEEN lr.start_date AND lr.end_date
                     ) THEN 'On Leave'
                     ELSE e.status
@@ -74,6 +76,7 @@ export class EmployeeService {
                     SELECT 1 FROM leave_requests lr
                     WHERE lr.employee_id = e.id
                       AND lr.status = 'Approved'
+                      AND lr.deleted_at IS NULL
                       AND CURRENT_DATE BETWEEN lr.start_date AND lr.end_date
                 ) THEN 'On Leave'
                 ELSE e.status
@@ -109,7 +112,7 @@ export class EmployeeService {
             `SELECT COUNT(*) as total FROM employees e ${whereClause}`,
             values
         );
-        const total = parseInt(countResult.rows[0].total, 10);
+        const total = toInt(countResult.rows[0].total);
 
         // Get paginated data
         const dataResult = await query(
@@ -132,6 +135,7 @@ export class EmployeeService {
                         SELECT 1 FROM leave_requests lr
                         WHERE lr.employee_id = e.id
                           AND lr.status = 'Approved'
+                          AND lr.deleted_at IS NULL
                           AND CURRENT_DATE BETWEEN lr.start_date AND lr.end_date
                     ) THEN 'On Leave'
                     ELSE e.status

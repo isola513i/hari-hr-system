@@ -13,6 +13,8 @@ const env = {
   forgotPasswordMax:   parseInt(process.env.RATE_LIMIT_FORGOT_PASSWORD_MAX  || '5'),
   forgotPasswordWindowMs: parseInt(process.env.RATE_LIMIT_FORGOT_PASSWORD_WINDOW_MS || String(15 * 60 * 1000)),
   apiMax:              parseInt(process.env.RATE_LIMIT_API_MAX              || '100'),
+  backupCodeMax:       parseInt(process.env.RATE_LIMIT_BACKUP_CODE_MAX       || '5'),
+  backupCodeWindowMs:  parseInt(process.env.RATE_LIMIT_BACKUP_CODE_WINDOW_MS || String(15 * 60 * 1000)),
 };
 
 export const generalLimiter = rateLimit({
@@ -44,6 +46,17 @@ export const apiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: env.apiMax,
   message: 'Too many API requests, please slow down.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Strict limiter for backup-code regeneration. The endpoint verifies a 6-digit
+// TOTP code, so without a tight cap an authenticated attacker could brute-force
+// it (1M combinations). Failed attempts count; successful ones still consume a slot.
+export const backupCodeLimiter = rateLimit({
+  windowMs: env.backupCodeWindowMs,
+  max: env.backupCodeMax,
+  message: 'Too many backup code regeneration attempts. Please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -176,6 +189,47 @@ export const validateLeaveRequest = [
     .optional()
     .isIn(['morning', 'afternoon'])
     .withMessage('halfDayPeriod must be morning or afternoon'),
+];
+
+// Valid target statuses for leave-request approval/rejection flows
+const LEAVE_STATUS_VALUES = ['Pending', 'Approved', 'Rejected', 'Manager Approved'];
+
+// Single leave-request status update (PATCH /api/leave-requests/:id)
+export const validateLeaveStatusUpdate = [
+  body('status')
+    .trim()
+    .notEmpty()
+    .withMessage('Status is required')
+    .isIn(LEAVE_STATUS_VALUES)
+    .withMessage('Invalid status'),
+  body('rejectionReason')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Rejection reason must not exceed 500 characters')
+    .escape(),
+];
+
+// Bulk leave-request status update (PATCH /api/leave-requests/bulk)
+export const validateLeaveBulkUpdate = [
+  body('ids')
+    .isArray({ min: 1, max: 100 })
+    .withMessage('ids must be a non-empty array of at most 100 items'),
+  body('ids.*')
+    .isUUID()
+    .withMessage('Each id must be a valid UUID'),
+  body('status')
+    .trim()
+    .notEmpty()
+    .withMessage('Status is required')
+    .isIn(LEAVE_STATUS_VALUES)
+    .withMessage('Invalid status'),
+  body('rejectionReason')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Rejection reason must not exceed 500 characters')
+    .escape(),
 ];
 
 // File upload validation

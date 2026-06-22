@@ -3,9 +3,11 @@
     "version": "1.0.0",
     "private": true,
     "workspaces": [
-        "apps/*"
+        "apps/*",
+        "packages/*"
     ],
     "scripts": {
+        "build:shared": "npm run build --workspace=packages/shared-types",
         "dev:web": "npm run dev --workspace=apps/web",
         "build:web": "npm run build --workspace=apps/web",
         "test:e2e": "npm run test:e2e --workspace=apps/web",

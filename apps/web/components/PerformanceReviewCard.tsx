@@ -24,7 +24,7 @@ export function PerformanceReviewCard({
   onReject,
   onSubmit,
 }: PerformanceReviewCardProps) {
-  const { t } = useTranslation(['performance-reviews', 'common']);
+  const { t, i18n } = useTranslation(['performance-reviews', 'common']);
   const { showToast } = useToast();
   const [expanded, setExpanded] = useState(false);
   const [mgrRating, setMgrRating] = useState(review.rating ?? 0);
@@ -65,6 +65,15 @@ export function PerformanceReviewCard({
 
   const employeeName = review.employeeName ?? review.reviewer ?? '';
 
+  // Guard against null/invalid review.date and respect the active UI language.
+  const formatReviewDate = (value?: string | null) => {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    const localeTag = i18n.language?.startsWith('th') ? 'th-TH' : 'en-US';
+    return d.toLocaleDateString(localeTag, { month: 'short', year: 'numeric' });
+  };
+
   return (
     <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden shadow-sm">
       <button
@@ -78,7 +87,7 @@ export function PerformanceReviewCard({
               {employeeName}
             </p>
             <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
-              {review.reviewPeriod ?? new Date(review.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+              {review.reviewPeriod ?? formatReviewDate(review.date)}
               {review.reviewer && ` · ${t('reviewer', { name: review.reviewer })}`}
             </p>
           </div>

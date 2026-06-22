@@ -1,4 +1,5 @@
 import { Request } from 'express';
+import { toInt } from './coerce';
 
 export interface PaginationParams {
   page: number;
@@ -46,14 +47,17 @@ export function createPaginatedResult<T>(
   params: PaginationParams
 ): PaginatedResult<T> {
   const { page, limit } = params;
-  const totalPages = Math.ceil(total / limit);
+  // Guard against NaN/negative totals from raw DB COUNT parsing so pagination
+  // metadata is always coherent.
+  const safeTotal = Math.max(0, toInt(total, 0));
+  const totalPages = limit > 0 ? Math.ceil(safeTotal / limit) : 0;
 
   return {
     data,
     pagination: {
       page,
       limit,
-      total,
+      total: safeTotal,
       totalPages,
       hasNext: page < totalPages,
       hasPrev: page > 1,

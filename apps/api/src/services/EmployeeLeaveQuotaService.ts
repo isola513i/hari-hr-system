@@ -1,6 +1,7 @@
 import { query } from '../db';
 import { EffectiveLeaveQuota, UpsertLeaveQuotaDTO } from '../models/EmployeeLeaveQuota';
 import SystemConfigService from './SystemConfigService';
+import { toInt } from '../utils/coerce';
 
 export class EmployeeLeaveQuotaService {
     /**
@@ -17,7 +18,7 @@ export class EmployeeLeaveQuotaService {
 
         const overrideMap = new Map<string, number>();
         for (const row of overridesResult.rows) {
-            overrideMap.set(row.leave_type, parseInt(row.total, 10));
+            overrideMap.set(row.leave_type, toInt(row.total));
         }
 
         return globalQuotas.map(({ type, total: defaultTotal }) => {

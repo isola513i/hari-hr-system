@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import LeaveRequestService, { LeaveRequestService as LeaveRequestServiceClass } from '../services/LeaveRequestService';
-import { emitLeaveRequestCreated, emitLeaveRequestUpdated, emitLeaveRequestDeleted } from '../socket';
+import { emitLeaveRequestCreated, emitLeaveRequestUpdated, emitLeaveRequestDeleted, emitLeaveRequestsBulkUpdated } from '../socket';
 import { getPaginationParams, getSortParams } from '../utils/pagination';
 import type { LeaveRequest, UpdateLeaveRequestDTO } from '../models/LeaveRequest';
 import { storageService } from '../services/StorageService';
@@ -160,6 +160,7 @@ export class LeaveRequestController {
         status: string,
         rejectionReason: string | undefined,
         user: any,
+        sideEffects?: { updated: LeaveRequest[]; managerApprovedCount: number },
     ): Promise<LeaveRequest> {
         if (!status || !['Pending', 'Approved', 'Rejected', 'Manager Approved'].includes(status)) {
             const err: any = new Error('Invalid status');
@@ -210,18 +211,26 @@ export class LeaveRequestController {
             managerApprovedAt,
         });
 
-        // If manager just set 'Manager Approved', notify HR for final approval
-        if (effectiveStatus === 'Manager Approved') {
-            const empName = leaveRequest.employeeName || 'An employee';
-            NotificationService.notifyAdmins({
-                title: 'Leave Request Ready for Final Approval',
-                message: `Manager approved ${empName}'s ${leaveRequest.type} leave request — needs HR final approval.`,
-                type: 'info',
-                link: '/leave-requests',
-            }).catch(() => {});
+        if (sideEffects) {
+            // Bulk path: defer side-effects so the caller can batch one socket
+            // broadcast + one summary notification instead of N of each.
+            sideEffects.updated.push(leaveRequest);
+            if (effectiveStatus === 'Manager Approved') {
+                sideEffects.managerApprovedCount += 1;
+            }
+        } else {
+            // Single path: emit + notify immediately.
+            if (effectiveStatus === 'Manager Approved') {
+                const empName = leaveRequest.employeeName || 'An employee';
+                NotificationService.notifyAdmins({
+                    title: 'Leave Request Ready for Final Approval',
+                    message: `Manager approved ${empName}'s ${leaveRequest.type} leave request — needs HR final approval.`,
+                    type: 'info',
+                    link: '/leave-requests',
+                }).catch(() => {});
+            }
+            emitLeaveRequestUpdated(leaveRequest);
         }
-
-        emitLeaveRequestUpdated(leaveRequest);
         return leaveRequest;
     }
 
@@ -258,10 +267,12 @@ export class LeaveRequestController {
                 return;
             }
 
+            const sideEffects = { updated: [] as LeaveRequest[], managerApprovedCount: 0 };
+
             const results = await Promise.all(
                 ids.map(async (id: string) => {
                     try {
-                        const leaveRequest = await this.applyStatusUpdate(id, status, rejectionReason, user);
+                        const leaveRequest = await this.applyStatusUpdate(id, status, rejectionReason, user, sideEffects);
                         return { id, success: true, status: leaveRequest.status };
                     } catch (error: any) {
                         return { id, success: false, error: error.message || 'Failed to update' };
@@ -269,11 +280,27 @@ export class LeaveRequestController {
                 })
             );
 
+            // Flush batched side-effects: one socket broadcast + one summary
+            // notification instead of one per processed request.
+            emitLeaveRequestsBulkUpdated(sideEffects.updated);
+            if (sideEffects.managerApprovedCount > 0) {
+                NotificationService.notifyAdmins({
+                    title: 'Leave Requests Ready for Final Approval',
+                    message: `A manager approved ${sideEffects.managerApprovedCount} leave request(s) — needs HR final approval.`,
+                    type: 'info',
+                    link: '/leave-requests',
+                }).catch(() => {});
+            }
+
             const succeeded = results.filter((r) => r.success).length;
-            res.json({
+            const failed = ids.length - succeeded;
+            // 200 when every item succeeded, 207 Multi-Status for partial success,
+            // 422 when none succeeded (the whole bulk action effectively failed).
+            const httpStatus = succeeded === 0 ? 422 : failed > 0 ? 207 : 200;
+            res.status(httpStatus).json({
                 total: ids.length,
                 succeeded,
-                failed: ids.length - succeeded,
+                failed,
                 results,
             });
         } catch (error: any) {

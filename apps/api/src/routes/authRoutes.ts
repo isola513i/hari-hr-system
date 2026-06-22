@@ -3,6 +3,7 @@ import AuthController from "../controllers/AuthController";
 import {
   authLimiter,
   forgotPasswordLimiter,
+  backupCodeLimiter,
   validateLogin,
   validateForgotPassword,
   validateResetPassword,
@@ -114,6 +115,7 @@ router.get(
 router.post(
   "/2fa/backup-codes",
   authenticateToken,
+  backupCodeLimiter,
   AuthController.regenerateBackupCodes.bind(AuthController),
 );
 

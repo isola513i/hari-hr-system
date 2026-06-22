@@ -465,4 +465,48 @@ describe('PayrollService', () => {
       expect(workingQuerySql).toMatch(/NOT EXISTS\s*\(\s*SELECT 1 FROM holidays/);
     });
   });
+
+  describe('simulatePayroll', () => {
+    it('computes a preview without persisting (no INSERT) and applies deductions', async () => {
+      // Only DB call: the employee role/daily_rate lookup (OT + leave provided).
+      mockedQuery.mockResolvedValueOnce({
+        rows: [{ role: 'Software Engineer', daily_rate: null }],
+        rowCount: 1,
+      } as never);
+
+      const result = await service.simulatePayroll({
+        employeeId: 'emp-1',
+        payPeriodStart: '2026-03-01',
+        payPeriodEnd: '2026-03-31',
+        baseSalary: 50000,
+        bonus: 0,
+        deductions: 0,
+        overtimeHours: 0,
+        leaveDeduction: 0,
+      });
+
+      expect(result.simulated).toBe(true);
+      expect(result.isIntern).toBe(false);
+      expect(result.baseSalary).toBe(50000);
+      expect(result.grossPay).toBe(50000);
+      // Tax + SSF + PVF deducted, so net is strictly below gross.
+      expect(result.netPay).toBeLessThan(result.grossPay);
+      expect(result.taxAmount).toBeGreaterThan(0);
+      expect(result.ssfEmployee).toBeGreaterThan(0);
+      // No INSERT — the single query is the employee lookup only.
+      expect(mockedQuery).toHaveBeenCalledTimes(1);
+      expect(mockedQuery.mock.calls.every(([sql]) => !/INSERT INTO/i.test(sql as string))).toBe(true);
+    });
+
+    it('rejects an invalid pay-period range', async () => {
+      await expect(
+        service.simulatePayroll({
+          employeeId: 'emp-1',
+          payPeriodStart: '2026-03-31',
+          payPeriodEnd: '2026-03-01',
+          baseSalary: 50000,
+        }),
+      ).rejects.toThrow('Pay period end date must be after start date');
+    });
+  });
 });

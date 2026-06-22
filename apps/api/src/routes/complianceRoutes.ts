@@ -112,7 +112,7 @@ router.get('/checks', async (_req: Request, res: Response) => {
       // 4. Attendance Tracking (active in last 7 days)
       (async () => {
         const r = await query(
-          "SELECT COUNT(DISTINCT employee_id) AS cnt FROM attendance_records WHERE date >= CURRENT_DATE - INTERVAL '7 days' AND clock_in IS NOT NULL"
+          "SELECT COUNT(DISTINCT employee_id) AS cnt FROM attendance_records WHERE date >= CURRENT_DATE - INTERVAL '7 days' AND clock_in IS NOT NULL AND deleted_at IS NULL"
         );
         const count = parseInt(r.rows[0].cnt, 10);
         const pct = Math.round((count / totalActive) * 100);
@@ -337,7 +337,7 @@ router.post('/reports/generate', async (req: Request, res: Response) => {
             ELSE 0 END
         ), 0)
         FROM leave_requests lr
-        WHERE lr.employee_id = e.id AND lr.status = 'Approved'
+        WHERE lr.employee_id = e.id AND lr.status = 'Approved' AND lr.deleted_at IS NULL
         ${dateFilter ? `AND lr.start_date >= $${dateParamIndex}` : ''}
       ) AS leave_days_used`);
       headers.push('Leave Days Used');
@@ -346,7 +346,7 @@ router.post('/reports/generate', async (req: Request, res: Response) => {
       selectCols.push(`(
         SELECT COUNT(*)
         FROM attendance_records ar
-        WHERE ar.employee_id = e.id AND ar.clock_in IS NOT NULL
+        WHERE ar.employee_id = e.id AND ar.clock_in IS NOT NULL AND ar.deleted_at IS NULL
         ${dateFilter ? `AND ar.date >= $${dateParamIndex}` : ''}
       ) AS attendance_days`);
       headers.push('Attendance Days');
@@ -355,7 +355,7 @@ router.post('/reports/generate', async (req: Request, res: Response) => {
       selectCols.push(`(
         SELECT COUNT(*)
         FROM attendance_records ar
-        WHERE ar.employee_id = e.id AND ar.status = 'Late'
+        WHERE ar.employee_id = e.id AND ar.status = 'Late' AND ar.deleted_at IS NULL
         ${dateFilter ? `AND ar.date >= $${dateParamIndex}` : ''}
       ) AS late_days`);
       headers.push('Late Days');
@@ -364,7 +364,7 @@ router.post('/reports/generate', async (req: Request, res: Response) => {
       selectCols.push(`(
         SELECT COALESCE(SUM(ar.total_hours), 0)
         FROM attendance_records ar
-        WHERE ar.employee_id = e.id AND ar.total_hours IS NOT NULL
+        WHERE ar.employee_id = e.id AND ar.total_hours IS NOT NULL AND ar.deleted_at IS NULL
         ${dateFilter ? `AND ar.date >= $${dateParamIndex}` : ''}
       ) AS total_hours`);
       headers.push('Total Hours');
@@ -420,7 +420,7 @@ router.get('/export', async (_req: Request, res: Response) => {
       { label: 'Emergency Contacts', query: "SELECT COUNT(*) AS cnt FROM employees WHERE status = 'Active' AND emergency_contact IS NOT NULL AND emergency_contact != ''" },
       { label: 'Onboarding Completed', query: "SELECT COUNT(*) AS cnt FROM employees WHERE status = 'Active' AND onboarding_status = 'Completed'" },
       { label: 'Performance Reviews (1yr)', query: "SELECT COUNT(DISTINCT employee_id) AS cnt FROM performance_reviews WHERE date >= CURRENT_DATE - INTERVAL '1 year'" },
-      { label: 'Attendance Active (7d)', query: "SELECT COUNT(DISTINCT employee_id) AS cnt FROM attendance_records WHERE date >= CURRENT_DATE - INTERVAL '7 days' AND clock_in IS NOT NULL" },
+      { label: 'Attendance Active (7d)', query: "SELECT COUNT(DISTINCT employee_id) AS cnt FROM attendance_records WHERE date >= CURRENT_DATE - INTERVAL '7 days' AND clock_in IS NOT NULL AND deleted_at IS NULL" },
       { label: 'Documents on File', query: "SELECT COUNT(DISTINCT employee_id) AS cnt FROM documents WHERE deleted_at IS NULL AND employee_id IN (SELECT id FROM employees WHERE status = 'Active')" },
       { label: 'Leave Policies Configured', query: "SELECT COALESCE(jsonb_array_length(value::jsonb), 0) AS cnt FROM system_configs WHERE key = 'quotas'" },
     ];
