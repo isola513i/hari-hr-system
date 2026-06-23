@@ -6,10 +6,8 @@ import NotificationService from './NotificationService';
 import HolidayService from './HolidayService';
 import { withTransaction } from '../utils/transaction';
 import { PaginationParams, PaginatedResult, createPaginatedResult, buildPaginationClause, buildSortClause } from '../utils/pagination';
-
-// Leave type constants — avoid hardcoded strings throughout the service
-const LEAVE_TYPE_SICK = 'Sick Leave';
-const LEAVE_TYPE_MATERNITY = 'Maternity Leave';
+// Leave type constants — single source of truth shared with the request validator
+import { LEAVE_TYPE_SICK, LEAVE_TYPE_MATERNITY } from '../constants/leaveTypes';
 
 /** Convert a pg DATE value to a plain YYYY-MM-DD string to avoid timezone shifts */
 function toDateString(val: unknown): string {

@@ -173,6 +173,16 @@ describe('EmployeeService', () => {
   });
 
   describe('updateEmployee', () => {
+    // updateEmployee's termination path runs inside a transaction (pool.connect →
+    // client.query), not the plain `query`. Reset both mocks per-test so an
+    // unconsumed *Once value from one test can't leak into the next
+    // (jest.clearAllMocks clears call history but NOT the mockResolvedValueOnce queue).
+    beforeEach(() => {
+      mockedQuery.mockReset();
+      mockClientQuery.mockReset();
+      mockClientRelease.mockReset();
+    });
+
     it('should update employee successfully', async () => {
       const updatedEmployee = { ...mockEmployee, name: 'Updated Name' };
 
@@ -242,11 +252,16 @@ describe('EmployeeService', () => {
     it('should reassign subordinates when terminating an active employee', async () => {
       const terminatedEmployee = { ...mockEmployee, status: 'Terminated' };
 
-      mockedQuery
-        .mockResolvedValueOnce({ rows: [mockEmployee], rowCount: 1 } as never) // getEmployeeById (status=Active)
-        .mockResolvedValueOnce({ rows: [{ manager_id: 'mgr-parent' }], rowCount: 1 } as never) // SELECT manager_id for reassign
-        .mockResolvedValueOnce({ rows: [], rowCount: 2 } as never) // UPDATE subordinates
-        .mockResolvedValueOnce({ rows: [terminatedEmployee], rowCount: 1 } as never); // UPDATE employee status
+      // getEmployeeById runs on the plain pool query...
+      mockedQuery.mockResolvedValueOnce({ rows: [mockEmployee], rowCount: 1 } as never);
+      // ...the rest of the termination runs on the transaction client, in order:
+      // BEGIN, SELECT manager_id, UPDATE subordinates, UPDATE employee, COMMIT.
+      mockClientQuery
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rows: [{ manager_id: 'mgr-parent' }], rowCount: 1 }) // SELECT manager_id
+        .mockResolvedValueOnce({ rows: [], rowCount: 2 }) // UPDATE subordinates
+        .mockResolvedValueOnce({ rows: [terminatedEmployee], rowCount: 1 }) // UPDATE employee status
+        .mockResolvedValueOnce({}); // COMMIT
 
       const result = await employeeService.updateEmployee({
         id: 'emp-123',
@@ -254,12 +269,12 @@ describe('EmployeeService', () => {
       });
 
       expect(result.status).toBe('Terminated');
-      // Should have reassigned subordinates
-      expect(mockedQuery).toHaveBeenCalledWith(
+      // Subordinate reassignment happens on the transaction client
+      expect(mockClientQuery).toHaveBeenCalledWith(
         'SELECT manager_id FROM employees WHERE id = $1',
         ['emp-123'],
       );
-      expect(mockedQuery).toHaveBeenCalledWith(
+      expect(mockClientQuery).toHaveBeenCalledWith(
         'UPDATE employees SET manager_id = $1 WHERE manager_id = $2',
         ['mgr-parent', 'emp-123'],
       );

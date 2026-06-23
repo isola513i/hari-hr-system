@@ -145,78 +145,140 @@ export class LeaveRequestController {
         }
     }
 
+    /**
+     * Apply a status change to a single leave request, enforcing the same rules
+     * for both the single-update and bulk-update endpoints: valid target status,
+     * not-already-final guard, manager-scope check (managers may only act on
+     * their direct reports, and their "Approved" becomes "Manager Approved"),
+     * the persisted update, the HR notification, and the socket emit.
+     *
+     * Throws an Error with a numeric `statusCode` so callers can map failures to
+     * the right HTTP status (single endpoint) or per-item result (bulk endpoint).
+     */
+    private async applyStatusUpdate(
+        id: string,
+        status: string,
+        rejectionReason: string | undefined,
+        user: any,
+    ): Promise<LeaveRequest> {
+        if (!status || !['Pending', 'Approved', 'Rejected', 'Manager Approved'].includes(status)) {
+            const err: any = new Error('Invalid status');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        const approverEmployeeId = user?.employeeId;
+        let effectiveStatus = status;
+        let managerApprovedBy: string | undefined;
+        let managerApprovedAt: Date | undefined;
+
+        const leaveReq = await LeaveRequestService.getLeaveRequestById(id);
+        if (!leaveReq) {
+            const err: any = new Error('Leave request not found');
+            err.statusCode = 404;
+            throw err;
+        }
+
+        if (['Approved', 'Rejected'].includes(leaveReq.status)) {
+            const err: any = new Error(`Cannot update a leave request that is already ${leaveReq.status.toLowerCase()}`);
+            err.statusCode = 400;
+            throw err;
+        }
+
+        if (user?.role === 'MANAGER' && user.employeeId) {
+            const empResult = await query(
+                'SELECT manager_id FROM employees WHERE id = $1',
+                [leaveReq.employeeId]
+            );
+            if (empResult.rows[0]?.manager_id !== user.employeeId) {
+                const err: any = new Error('You can only approve leave requests from your direct reports');
+                err.statusCode = 403;
+                throw err;
+            }
+            if (status === 'Approved') {
+                effectiveStatus = 'Manager Approved';
+                managerApprovedBy = user.employeeId;
+                managerApprovedAt = new Date();
+            }
+        }
+
+        const leaveRequest = await LeaveRequestService.updateLeaveRequestStatus(id, {
+            status: effectiveStatus as UpdateLeaveRequestDTO['status'],
+            rejectionReason: effectiveStatus === 'Rejected' ? rejectionReason : undefined,
+            approverEmployeeId,
+            managerApprovedBy,
+            managerApprovedAt,
+        });
+
+        // If manager just set 'Manager Approved', notify HR for final approval
+        if (effectiveStatus === 'Manager Approved') {
+            const empName = leaveRequest.employeeName || 'An employee';
+            NotificationService.notifyAdmins({
+                title: 'Leave Request Ready for Final Approval',
+                message: `Manager approved ${empName}'s ${leaveRequest.type} leave request — needs HR final approval.`,
+                type: 'info',
+                link: '/leave-requests',
+            }).catch(() => {});
+        }
+
+        emitLeaveRequestUpdated(leaveRequest);
+        return leaveRequest;
+    }
+
     async updateLeaveRequest(req: Request, res: Response): Promise<void> {
         try {
             const { id } = req.params;
             const { status, rejectionReason } = req.body;
-            const user = (req as any).user;
-
-            if (!status || !['Pending', 'Approved', 'Rejected', 'Manager Approved'].includes(status)) {
-                res.status(400).json({ error: 'Invalid status' });
-                return;
-            }
-
-            const approverEmployeeId = user?.employeeId;
-            let effectiveStatus = status;
-            let managerApprovedBy: string | undefined;
-            let managerApprovedAt: Date | undefined;
-
-            const leaveReq = await LeaveRequestService.getLeaveRequestById(id);
-            if (!leaveReq) {
-                res.status(404).json({ error: 'Leave request not found' });
-                return;
-            }
-
-            if (['Approved', 'Rejected'].includes(leaveReq.status)) {
-                res.status(400).json({ error: `Cannot update a leave request that is already ${leaveReq.status.toLowerCase()}` });
-                return;
-            }
-
-            if (user?.role === 'MANAGER' && user.employeeId) {
-                const empResult = await query(
-                    'SELECT manager_id FROM employees WHERE id = $1',
-                    [leaveReq.employeeId]
-                );
-                if (empResult.rows[0]?.manager_id !== user.employeeId) {
-                    res.status(403).json({ error: 'You can only approve leave requests from your direct reports' });
-                    return;
-                }
-                if (status === 'Approved') {
-                    effectiveStatus = 'Manager Approved';
-                    managerApprovedBy = user.employeeId;
-                    managerApprovedAt = new Date();
-                }
-            }
-
-            const leaveRequest = await LeaveRequestService.updateLeaveRequestStatus(id, {
-                status: effectiveStatus as UpdateLeaveRequestDTO['status'],
-                rejectionReason: effectiveStatus === 'Rejected' ? rejectionReason : undefined,
-                approverEmployeeId,
-                managerApprovedBy,
-                managerApprovedAt,
-            });
-
-            // If manager just set 'Manager Approved', notify HR for final approval
-            if (effectiveStatus === 'Manager Approved') {
-                const empName = leaveRequest.employeeName || 'An employee';
-                NotificationService.notifyAdmins({
-                    title: 'Leave Request Ready for Final Approval',
-                    message: `Manager approved ${empName}'s ${leaveRequest.type} leave request — needs HR final approval.`,
-                    type: 'info',
-                    link: '/leave-requests',
-                }).catch(() => {});
-            }
-
-            emitLeaveRequestUpdated(leaveRequest);
-
+            const leaveRequest = await this.applyStatusUpdate(id, status, rejectionReason, (req as any).user);
             res.json(leaveRequest);
         } catch (error: any) {
             console.error('Update leave request error:', error);
-            if (error.message === 'Leave request not found') {
-                res.status(404).json({ error: error.message });
-            } else {
-                res.status(400).json({ error: error.message || 'Failed to update leave request' });
+            const statusCode = error.statusCode || (error.message === 'Leave request not found' ? 404 : 400);
+            res.status(statusCode).json({ error: error.message || 'Failed to update leave request' });
+        }
+    }
+
+    /**
+     * Bulk approve/reject leave requests in one call.
+     * Body: { ids: string[]; status: string; rejectionReason?: string }
+     * Each id is processed independently — one failure never aborts the rest;
+     * the response reports a per-item success/error breakdown.
+     */
+    async bulkUpdateLeaveRequests(req: Request, res: Response): Promise<void> {
+        try {
+            const { ids, status, rejectionReason } = req.body;
+            const user = (req as any).user;
+
+            if (!Array.isArray(ids) || ids.length === 0) {
+                res.status(400).json({ error: 'ids must be a non-empty array' });
+                return;
             }
+            if (ids.length > 100) {
+                res.status(400).json({ error: 'Cannot process more than 100 requests at once' });
+                return;
+            }
+
+            const results = await Promise.all(
+                ids.map(async (id: string) => {
+                    try {
+                        const leaveRequest = await this.applyStatusUpdate(id, status, rejectionReason, user);
+                        return { id, success: true, status: leaveRequest.status };
+                    } catch (error: any) {
+                        return { id, success: false, error: error.message || 'Failed to update' };
+                    }
+                })
+            );
+
+            const succeeded = results.filter((r) => r.success).length;
+            res.json({
+                total: ids.length,
+                succeeded,
+                failed: ids.length - succeeded,
+                results,
+            });
+        } catch (error: any) {
+            console.error('Bulk update leave requests error:', error);
+            res.status(500).json({ error: error.message || 'Failed to bulk update leave requests' });
         }
     }
 

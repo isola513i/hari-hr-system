@@ -91,20 +91,23 @@ describe('ExpenseClaimService', () => {
   });
 
   describe('cancelExpenseClaim', () => {
-    it('should DELETE when claim is Pending', async () => {
+    it('should soft-delete (mark Cancelled) when claim is Pending', async () => {
       const row = makeClaimRow({ status: 'Pending' });
 
       mockedQuery
         // SELECT existing
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 } as never)
-        // DELETE
+        // soft-delete UPDATE
         .mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
 
       const result = await service.cancelExpenseClaim('claim-1', 'emp-1');
 
-      // Verify DELETE was called
-      const deleteCall = mockedQuery.mock.calls[1];
-      expect(deleteCall[0]).toContain('DELETE FROM expense_claims');
+      // Pending claims are soft-deleted (financial records are never hard-deleted):
+      // the row is marked deleted_at + status='Cancelled' instead of DELETEd.
+      const cancelCall = mockedQuery.mock.calls[1];
+      expect(cancelCall[0]).toContain('UPDATE expense_claims');
+      expect(cancelCall[0]).toContain('deleted_at = NOW()');
+      expect(cancelCall[0]).toContain("status = 'Cancelled'");
       expect(result).not.toBeNull();
       expect(result!.status).toBe('Cancelled');
     });

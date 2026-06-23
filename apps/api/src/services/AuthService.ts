@@ -13,6 +13,7 @@ import {
   User,
   LoginCredentials,
   AuthResponse,
+  LoginResult,
   ChangePasswordRequest,
   RegisterRequest,
 } from "../models/User";
@@ -34,9 +35,15 @@ if (process.env.JWT_SECRET.length < 32) {
 }
 const JWT_SECRET: string = process.env.JWT_SECRET;
 
-// Password complexity requirements
+// Password complexity requirements.
+// Lookaheads require at least one lowercase, uppercase, digit, and special char
+// from the recognised set; the trailing `.+$` makes the pattern span the WHOLE
+// string. The previous pattern ended in an unquantified, unanchored character
+// class, so it only checked the FIRST character — letting it both accept
+// passwords that should fail and reject valid ones starting with an unlisted
+// character. Minimum length is enforced separately by PASSWORD_MIN_LENGTH.
 const PASSWORD_MIN_LENGTH = 8;
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).+$/;
 
 /**
  * Validates password complexity
@@ -80,7 +87,7 @@ export class AuthService {
     return { accessToken, refreshToken: rawRefreshToken };
   }
 
-  async login(credentials: LoginCredentials, rememberMe?: boolean): Promise<AuthResponse> {
+  async login(credentials: LoginCredentials, rememberMe?: boolean): Promise<LoginResult> {
     const { email, password } = credentials;
 
     // 1. Find User in users table
@@ -104,14 +111,18 @@ export class AuthService {
     //    Return a short-lived "pending" JWT so the frontend can submit the
     //    TOTP code via POST /auth/2fa/verify to complete authentication.
     if (user.totp_enabled) {
+      // The pending token deliberately carries ONLY userId + totp_pending — no
+      // role/email — so authenticateToken's claim validation rejects it on any
+      // protected route even if its explicit totp_pending guard were removed.
       const pendingToken = jwt.sign(
         { userId: user.id, totp_pending: true },
         JWT_SECRET,
         { expiresIn: "5m" },
       );
-      // Cast: the route handler returns this as a plain object; the
-      // frontend detects `totp_required` and never accesses `token` fields.
-      return { totp_required: true, pending_token: pendingToken } as unknown as AuthResponse;
+      // Returned as a distinct TotpPendingResponse (not cast to AuthResponse):
+      // the frontend detects `totp_required` and completes 2FA before any real
+      // token is issued.
+      return { totp_required: true, pending_token: pendingToken };
     }
 
     // 4. Get Employee Info (for frontend convenience)

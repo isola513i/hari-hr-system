@@ -133,5 +133,18 @@
     "desktopStep1": "คลิกไอคอนล็อคในแถบที่อยู่เบราว์เซอร์",
     "desktopStep2": "ค้นหา \"Location\" และตั้งค่าเป็น \"Allow\"",
     "desktopStep3": "รีเฟรชหน้าและลองอีกครั้ง"
+  },
+  "locationMap": {
+    "checkInLocation": "ตำแหน่งเช็คอิน",
+    "checkInAt": "เช็คอิน {{time}}",
+    "loadingMap": "กำลังโหลดแผนที่...",
+    "mapLoadFailed": "แผนที่ไม่สามารถโหลดได้",
+    "mapLoadFailedDesc": "ใช้พิกัดด้านล่างหรือเปิดใน Google Maps แทน",
+    "coordinates": "พิกัด",
+    "gpsAccuracy": "ความแม่นยำ GPS",
+    "accuracyMeters": "±{{meters}} เมตร",
+    "openInGoogleMaps": "เปิดใน Google Maps",
+    "noLocation": "ไม่มีข้อมูลตำแหน่ง",
+    "noLocationDesc": "พนักงานเช็คอินโดยไม่ได้เปิด GPS"
   }
 }

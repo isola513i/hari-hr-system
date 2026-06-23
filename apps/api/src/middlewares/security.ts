@@ -2,6 +2,7 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { body, validationResult } from 'express-validator';
 import { Request, Response, NextFunction } from 'express';
+import { LEAVE_TYPES } from '../constants/leaveTypes';
 
 // Rate limit values — override per environment via .env
 // Defaults are production-safe; raise in .env for local dev if needed.
@@ -133,7 +134,7 @@ export const validateLeaveRequest = [
     .trim()
     .notEmpty()
     .withMessage('Leave type is required')
-    .isIn(['Vacation', 'Sick Leave', 'Personal Day', 'Maternity Leave', 'Compensatory Leave', 'Military Leave', 'Leave Without Pay'])
+    .isIn([...LEAVE_TYPES])
     .withMessage('Invalid leave type')
     .escape(),
   body('startDate')
