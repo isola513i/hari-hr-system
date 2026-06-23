@@ -13,6 +13,12 @@ router.get(
   OrgChartController.getOrgChart.bind(OrgChartController)
 );
 
+// GET /api/org-chart/direct-reports/:managerId - Get a manager's immediate direct reports
+router.get(
+  "/direct-reports/:managerId",
+  OrgChartController.getDirectReports.bind(OrgChartController)
+);
+
 // GET /api/org-chart/subtree/:employeeId - Get subtree rooted at specific employee
 router.get(
   "/subtree/:employeeId",

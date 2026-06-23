@@ -33,6 +33,8 @@ const auditableActions = [
     'PUT /api/leave-requests',
     'PATCH /api/leave-requests',
     'DELETE /api/leave-requests',
+    'POST /api/attendance-regularization',
+    'PUT /api/attendance-regularization',
     'POST /api/system/seed',
 ];
 

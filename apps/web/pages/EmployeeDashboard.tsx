@@ -26,6 +26,7 @@ import {
   Timer,
   CheckCircle2,
   XCircle,
+  ClipboardClock,
 } from 'lucide-react';
 import { LeaveGanttCalendar } from '../components/LeaveGanttCalendar';
 import { Avatar } from '../components/Avatar';
@@ -55,6 +56,7 @@ import {
 } from '../hooks/queries';
 import { WFHRequestModal } from '../components/WFHRequestModal';
 import { OTRequestModal } from '../components/OTRequestModal';
+import { AttendanceRegularizationModal } from '../components/AttendanceRegularizationModal';
 import { LocationPermissionModal } from '../components/LocationPermissionModal';
 import { queryKeys } from '../lib/queryKeys';
 import { translateLeaveType } from '../lib/leaveTypeConfig';
@@ -141,6 +143,7 @@ export const EmployeeDashboard: React.FC = () => {
   const [locationModal, setLocationModal] = useState<{ show: boolean; mode: 'request' | 'denied' }>({ show: false, mode: 'request' });
   const [showWFHModal, setShowWFHModal] = useState(false);
   const [showOTModal, setShowOTModal] = useState(false);
+  const [showRegModal, setShowRegModal] = useState(false);
 
   // ----- COMPUTED MY TEAM -----
   const myTeam = useMemo<Employee[]>(() => {
@@ -352,6 +355,13 @@ export const EmployeeDashboard: React.FC = () => {
         />
       )}
 
+      {showRegModal && (
+        <AttendanceRegularizationModal
+          onClose={() => setShowRegModal(false)}
+          onSuccess={(msg) => { showToast(msg, 'success'); setShowRegModal(false); }}
+        />
+      )}
+
       {locationModal.show && (
         <LocationPermissionModal
           mode={locationModal.mode}
@@ -410,6 +420,14 @@ export const EmployeeDashboard: React.FC = () => {
 
           {/* Check In/Out + WFH request buttons */}
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowRegModal(true)}
+              title={t('dashboard:employee.requestCorrection')}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-muted-light dark:text-text-muted-dark border border-border-light dark:border-border-dark rounded-lg hover:border-teal-400 hover:text-teal-600 dark:hover:text-teal-400 transition-all"
+            >
+              <ClipboardClock size={15} />
+              <span className="hidden sm:inline">{t('dashboard:employee.requestCorrection')}</span>
+            </button>
             {!attendanceStatus?.clockIn && (
               <button
                 onClick={() => setShowWFHModal(true)}

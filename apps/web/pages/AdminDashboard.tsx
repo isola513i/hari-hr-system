@@ -127,6 +127,11 @@ export const AdminDashboard: React.FC = () => {
       return headcountStats;
     }
 
+    // Return empty so the empty-state UI shows rather than a chart of all-zeros
+    if (allEmployees.length === 0) {
+      return [];
+    }
+
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();

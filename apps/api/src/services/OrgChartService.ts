@@ -65,6 +65,42 @@ export class OrgChartService {
   }
 
   /**
+   * Get a manager's direct reports (one level down only). Used by the manager
+   * dashboard and performance-review flows, which need just the immediate team
+   * rather than the full recursive subtree.
+   */
+  async getDirectReports(managerId: string): Promise<OrgChartNode[]> {
+    const result = await query(
+      `SELECT
+        e.id,
+        e.manager_id AS "parentId",
+        e.name,
+        e.role,
+        e.email,
+        e.avatar,
+        e.department,
+        e.status,
+        (SELECT COUNT(*) FROM employees dr WHERE dr.manager_id = e.id AND dr.status != 'Terminated')::int AS "directReportCount"
+      FROM employees e
+      WHERE e.manager_id = $1 AND e.status != 'Terminated'
+      ORDER BY e.name`,
+      [managerId]
+    );
+
+    return result.rows.map(row => ({
+      id: row.id,
+      parentId: row.parentId || null,
+      name: row.name,
+      role: row.role,
+      email: row.email,
+      avatar: resolveAvatar(row.avatar, row.name),
+      department: row.department || '',
+      status: row.status || 'Active',
+      directReportCount: row.directReportCount || 0,
+    }));
+  }
+
+  /**
    * Get org chart subtree rooted at a specific employee
    * Uses recursive CTE for efficient traversal
    */

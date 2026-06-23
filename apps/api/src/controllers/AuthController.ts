@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import AuthService from "../services/AuthService";
+import AuditLogService from "../services/AuditLogService";
 
 export class AuthController {
   async login(req: Request, res: Response): Promise<void> {
@@ -249,6 +250,7 @@ export class AuthController {
   async adminResetTotp(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.body;
+      const actor = (req as any).user;
 
       if (!userId) {
         res.status(400).json({ error: "userId is required" });
@@ -256,6 +258,22 @@ export class AuthController {
       }
 
       await AuthService.adminDisableTotp(userId);
+
+      // Audit trail: an admin disabling another user's 2FA is a sensitive,
+      // security-relevant action and must be attributable to the actor.
+      AuditLogService.create({
+        userId: actor?.userId ?? null,
+        userEmail: actor?.email ?? null,
+        action: "TOTP_ADMIN_RESET",
+        resource: `user:${userId}`,
+        method: req.method,
+        path: req.path,
+        ip: req.ip ?? "",
+        userAgent: req.headers["user-agent"] ?? "",
+        success: true,
+        details: { targetUserId: userId },
+      });
+
       res.json({ message: "Two-factor authentication has been reset for the user" });
     } catch (error: any) {
       console.error("TOTP admin reset error:", error);

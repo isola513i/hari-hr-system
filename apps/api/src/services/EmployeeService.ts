@@ -163,9 +163,12 @@ export class EmployeeService {
             throw new Error('Email already exists');
         }
 
+        // Normalize national ID before hashing/encrypting so "1234" and " 1234 " are treated identically
+        const normalizedNationalId = nationalId ? nationalId.trim() : undefined;
+
         // Duplicate National ID check via blind index (before writing any data)
-        if (nationalId) {
-            const hashVal = hashPII(nationalId);
+        if (normalizedNationalId) {
+            const hashVal = hashPII(normalizedNationalId);
             const dup = await query(
                 'SELECT id FROM employees WHERE national_id_hash = $1',
                 [hashVal]
@@ -191,10 +194,10 @@ export class EmployeeService {
         const nextNum = codeResult.rows[0].next_num;
         const employeeCode = `EMP-${String(nextNum).padStart(4, '0')}`;
 
-        // Prepare encrypted PII values
-        const encryptedNationalId     = nationalId        ? encrypt(nationalId)        : null;
-        const nationalIdHash          = nationalId        ? hashPII(nationalId)         : null;
-        const encryptedBankAccount    = bankAccountNumber ? encrypt(bankAccountNumber)  : null;
+        // Prepare encrypted PII values (use normalized nationalId for consistent dedup)
+        const encryptedNationalId     = normalizedNationalId ? encrypt(normalizedNationalId) : null;
+        const nationalIdHash          = normalizedNationalId ? hashPII(normalizedNationalId) : null;
+        const encryptedBankAccount    = bankAccountNumber    ? encrypt(bankAccountNumber)    : null;
 
         // Insert employee (includes PII columns — NULL when not provided)
         const result = await query(
@@ -317,9 +320,10 @@ export class EmployeeService {
 
         // PII fields — encrypt ciphertext + update blind index
         if (data.nationalId !== undefined) {
-            if (data.nationalId) {
+            const normalizedNationalId = data.nationalId ? data.nationalId.trim() : '';
+            if (normalizedNationalId) {
                 // Duplicate check: exclude the employee being updated (self-update is allowed)
-                const hashVal = hashPII(data.nationalId);
+                const hashVal = hashPII(normalizedNationalId);
                 const dup = await query(
                     'SELECT id FROM employees WHERE national_id_hash = $1 AND id != $2',
                     [hashVal, id]
@@ -328,7 +332,7 @@ export class EmployeeService {
                     throw new Error('An employee with this National ID already exists');
                 }
                 updates.push(`national_id = $${paramIndex++}`);
-                values.push(encrypt(data.nationalId));
+                values.push(encrypt(normalizedNationalId));
                 updates.push(`national_id_hash = $${paramIndex++}`);
                 values.push(hashVal);
             } else {

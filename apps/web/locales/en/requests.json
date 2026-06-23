@@ -7,7 +7,8 @@
     "leave": "Leave",
     "wfh": "WFH",
     "ot": "Overtime",
-    "expense": "Expenses"
+    "expense": "Expenses",
+    "attendanceReg": "Corrections"
   },
   "exportCsv": "Export CSV",
   "searchPlaceholder": "Search employee...",
@@ -130,5 +131,63 @@
     "thisMonth": "This month",
     "statusHeader": "Status",
     "actionsHeader": "Actions"
+  },
+  "attendanceReg": {
+    "title": "Attendance Corrections",
+    "subtitle": "Review employee requests to correct missed or wrong clock-ins",
+    "statusOptions": {
+      "pending": "Pending (Manager)",
+      "manager_approved": "Pending HR",
+      "all": "All Requests",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "stats": {
+      "pendingRequests": "Pending Requests",
+      "pendingRate": "{{rate}}% of all requests",
+      "approvedThisMonth": "Approved This Month",
+      "rejectedThisMonth": "Rejected This Month",
+      "thisMonth": "This month"
+    },
+    "table": {
+      "employee": "Employee",
+      "date": "Date",
+      "requestedTimes": "Requested Times",
+      "reason": "Reason",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "mobile": {
+      "date": "Date:",
+      "times": "Times:",
+      "reason": "Reason:"
+    },
+    "status": {
+      "pending": "Pending",
+      "manager_approved": "Pending HR",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "actions": {
+      "forwardToHR": "Forward to HR",
+      "reject": "Reject"
+    },
+    "empty": "No correction requests found",
+    "rejectDialog": {
+      "title": "Reject Correction Request",
+      "subtitle": "Provide an optional reason for rejection:",
+      "placeholder": "Reason (optional)...",
+      "cancel": "Cancel",
+      "reject": "Reject",
+      "rejecting": "Rejecting..."
+    },
+    "toast": {
+      "approved": "Correction approved and applied",
+      "approveFailed": "Failed to approve correction",
+      "rejected": "Correction rejected",
+      "rejectFailed": "Failed to reject correction",
+      "forwardedToHR": "Forwarded to HR for final approval",
+      "forwardFailed": "Failed to forward to HR"
+    }
   }
 }

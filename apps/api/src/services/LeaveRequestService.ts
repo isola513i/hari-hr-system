@@ -415,8 +415,49 @@ export class LeaveRequestService {
         });
     }
 
+    /**
+     * Allowed status transitions for the approval workflow. Cancellation has its
+     * own dedicated flow (cancelLeaveRequest / handleCancelDecision) and is not
+     * reachable through updateLeaveRequestStatus.
+     */
+    private static readonly STATUS_TRANSITIONS: Record<string, string[]> = {
+        'Pending': ['Manager Approved', 'Approved', 'Rejected'],
+        'Manager Approved': ['Approved', 'Rejected'],
+        'Approved': [],
+        'Rejected': [],
+        'Cancelled': [],
+        'Cancel Requested': [],
+    };
+
+    /**
+     * Enforce the approval state machine. Re-applying the same status is a no-op
+     * and allowed; any other unlisted transition (e.g. Approved → Pending,
+     * Rejected → Approved) is rejected with HTTP 400.
+     */
+    private validateStatusTransition(from: string, to: string): void {
+        if (from === to) return;
+        const allowed = LeaveRequestService.STATUS_TRANSITIONS[from] ?? [];
+        if (!allowed.includes(to)) {
+            const err: any = new Error(`Invalid status transition: ${from} → ${to}`);
+            err.statusCode = 400;
+            throw err;
+        }
+    }
+
     async updateLeaveRequestStatus(id: string, updateData: UpdateLeaveRequestDTO): Promise<LeaveRequest> {
         const { status, rejectionReason, approverEmployeeId, managerApprovedBy, managerApprovedAt } = updateData;
+
+        // Validate the transition against the current persisted status before any write.
+        const currentResult = await query(
+            'SELECT status FROM leave_requests WHERE id = $1 AND deleted_at IS NULL',
+            [id]
+        );
+        if (currentResult.rows.length === 0) {
+            const err: any = new Error('Leave request not found');
+            err.statusCode = 404;
+            throw err;
+        }
+        this.validateStatusTransition(currentResult.rows[0].status, status);
 
         // Snapshot before status change
         await this.snapshotToHistory(id, 'status_change', approverEmployeeId || 'system');

@@ -757,6 +757,7 @@ export const Settings: React.FC = () => {
               isOpen={showBackupCodesModal}
               onClose={() => setShowBackupCodesModal(false)}
               backupCodesRemaining={totpStatus.backupCodesRemaining}
+              isLoading={totpStatusLoading}
             />
           )}
 

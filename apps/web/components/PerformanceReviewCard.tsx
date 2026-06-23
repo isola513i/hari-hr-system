@@ -88,7 +88,7 @@ export function PerformanceReviewCard({
             </p>
             <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
               {review.reviewPeriod ?? formatReviewDate(review.date)}
-              {review.reviewer && ` · ${t('reviewer', { name: review.reviewer })}`}
+              {review.reviewer && ` · ${t('performance-reviews:reviewer', { name: review.reviewer })}`}
             </p>
           </div>
         </div>
