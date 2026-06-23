@@ -10,9 +10,10 @@ interface BackupCodesModalProps {
   isOpen: boolean;
   onClose: () => void;
   backupCodesRemaining: number;
+  isLoading?: boolean;
 }
 
-export const BackupCodesModal: React.FC<BackupCodesModalProps> = ({ isOpen, onClose, backupCodesRemaining }) => {
+export const BackupCodesModal: React.FC<BackupCodesModalProps> = ({ isOpen, onClose, backupCodesRemaining, isLoading = false }) => {
   const [token, setToken] = useState('');
   const [copied, setCopied] = useState(false);
   const [showCodes, setShowCodes] = useState(false);
@@ -81,9 +82,13 @@ export const BackupCodesModal: React.FC<BackupCodesModalProps> = ({ isOpen, onCl
           {/* Status */}
           <div className="bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl p-4 flex items-center justify-between">
             <span className="text-sm text-text-muted-light dark:text-text-muted-dark">Remaining codes</span>
-            <span className={`text-2xl font-bold ${backupCodesRemaining <= 2 ? 'text-accent-red' : 'text-text-light dark:text-text-dark'}`}>
-              {backupCodesRemaining}
-            </span>
+            {isLoading ? (
+              <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            ) : (
+              <span className={`text-2xl font-bold ${backupCodesRemaining <= 2 ? 'text-accent-red' : 'text-text-light dark:text-text-dark'}`}>
+                {backupCodesRemaining}
+              </span>
+            )}
           </div>
 
           {backupCodesRemaining <= 2 && (

@@ -93,6 +93,12 @@
     "wfh": "WFH",
     "remote": "Remote"
   },
+  "breakTime": {
+    "breakCompliant": "Break {{minutes}} min (meets legal requirement ≥60 min)",
+    "breakShort": "Break {{minutes}} min ⚠️ (law requires ≥60 min for shifts ≥5 h)",
+    "breakMissing": "No break data (law requires ≥60 min break for shifts ≥5 h)",
+    "breakOnly": "Break {{minutes}} min"
+  },
   "analytics": {
     "title": "Attendance Rate",
     "subtitle": "Last 7 days · weekday avg excludes weekends",
