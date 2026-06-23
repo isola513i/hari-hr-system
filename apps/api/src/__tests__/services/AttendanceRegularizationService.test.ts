@@ -19,6 +19,13 @@ jest.mock('../../services/AttendanceService', () => ({
   },
 }));
 
+// Run the transaction callback inline against the mocked `query` so the existing
+// query mocks drive the approve() flow without a real pool connection.
+jest.mock('../../utils/transaction', () => ({
+  withTransaction: (cb: (q: typeof import('../../db').query) => unknown) =>
+    cb(require('../../db').query),
+}));
+
 const mockedQuery = query as jest.MockedFunction<typeof query>;
 const mockedUpsert = AttendanceService.adminUpsertAttendance as jest.Mock;
 const mockedNotifyAdmins = NotificationService.notifyAdmins as jest.Mock;
@@ -149,7 +156,8 @@ describe('AttendanceRegularizationService', () => {
           clockOut: REG_ROW.requested_clock_out,
           // modified_by is a FK to users(id) → must be the reviewer's USER id, not employee id
           modifiedBy: 'hr-user-1',
-        })
+        }),
+        expect.anything(), // the transaction-bound query executor
       );
     });
 
@@ -158,6 +166,15 @@ describe('AttendanceRegularizationService', () => {
 
       await expect(AttendanceRegularizationService.approve('missing', 'hr-emp-1', 'hr-user-1')).rejects.toBeInstanceOf(BusinessError);
       expect(mockedUpsert).not.toHaveBeenCalled();
+    });
+
+    it('propagates a failure from the attendance write (transaction rolls back)', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ ...REG_ROW, status: 'approved' }], rowCount: 1 } as never); // UPDATE
+      mockedUpsert.mockRejectedValueOnce(new Error('FK violation'));
+
+      // approve() runs inside withTransaction, so the rejected attendance write
+      // bubbles out and the status flip is rolled back rather than committed.
+      await expect(AttendanceRegularizationService.approve('reg-1', 'hr-emp-1', 'hr-user-1')).rejects.toThrow('FK violation');
     });
   });
 

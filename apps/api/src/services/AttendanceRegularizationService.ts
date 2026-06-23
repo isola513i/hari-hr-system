@@ -1,5 +1,6 @@
 import { query } from '../db';
 import { BusinessError } from '../utils/errorResponse';
+import { withTransaction } from '../utils/transaction';
 import NotificationService from './NotificationService';
 import AttendanceService from './AttendanceService';
 
@@ -205,28 +206,37 @@ export class AttendanceRegularizationService {
    * @param reviewerUserId the reviewer's USER id — passed to attendance.modified_by (FK → users)
    */
   async approve(requestId: string, reviewerId: string, reviewerUserId: string, notes?: string): Promise<RegularizationRequest> {
-    const result = await query(
-      `UPDATE attendance_regularization_requests
-       SET status = 'approved', reviewed_by = $1, reviewed_at = CURRENT_TIMESTAMP,
-           notes = COALESCE($2, notes), updated_at = CURRENT_TIMESTAMP
-       WHERE id = $3
-       RETURNING *`,
-      [reviewerId, notes ?? null, requestId]
-    );
-    if (result.rows.length === 0) throw new BusinessError('Regularization request not found');
-    const reg = this.mapRow(result.rows[0]);
+    // Atomic: the status flip and the attendance write commit (or roll back) together,
+    // so an approved request can never be left without its correction applied.
+    const reg = await withTransaction(async (txQuery) => {
+      const result = await txQuery(
+        `UPDATE attendance_regularization_requests
+         SET status = 'approved', reviewed_by = $1, reviewed_at = CURRENT_TIMESTAMP,
+             notes = COALESCE($2, notes), updated_at = CURRENT_TIMESTAMP
+         WHERE id = $3
+         RETURNING *`,
+        [reviewerId, notes ?? null, requestId]
+      );
+      if (result.rows.length === 0) throw new BusinessError('Regularization request not found');
+      const r = this.mapRow(result.rows[0]);
 
-    // Apply the correction to the attendance record.
-    // modified_by is a FK to users(id), so we pass the reviewer's USER id (not employee id).
-    await AttendanceService.adminUpsertAttendance({
-      employeeId: reg.employeeId,
-      date: reg.date,
-      clockIn: reg.requestedClockIn ?? undefined,
-      clockOut: reg.requestedClockOut ?? undefined,
-      notes: `Regularization #${reg.id}`,
-      modifiedBy: reviewerUserId,
+      // Apply the correction to the attendance record on the SAME transaction.
+      // modified_by is a FK to users(id), so we pass the reviewer's USER id (not employee id).
+      await AttendanceService.adminUpsertAttendance(
+        {
+          employeeId: r.employeeId,
+          date: r.date,
+          clockIn: r.requestedClockIn ?? undefined,
+          clockOut: r.requestedClockOut ?? undefined,
+          notes: `Regularization #${r.id}`,
+          modifiedBy: reviewerUserId,
+        },
+        txQuery
+      );
+      return r;
     });
 
+    // Notify only after the transaction has committed.
     this.notifyEmployee(reg.employeeId, reg.date, 'approved');
     return reg;
   }

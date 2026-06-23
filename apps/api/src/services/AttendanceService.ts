@@ -1,7 +1,11 @@
+import type { QueryResult } from 'pg';
 import { query } from '../db';
 import { BusinessError } from '../utils/errorResponse';
 import { isWithinGeofence, haversineDistance } from '../utils/geoUtils';
 import WFHRequestService from './WFHRequestService';
+
+/** A query executor — the global pool `query`, or a transaction-bound client query. */
+export type QueryExecutor = (text: string, params?: any[]) => Promise<QueryResult>;
 
 // ---------------------------------------------------------------------------
 // Work Schedule Config (cached)
@@ -622,9 +626,12 @@ export class AttendanceService {
 
   /**
    * Upsert an attendance record (admin manual entry)
-   * Bypasses late-threshold and double-clock-in checks
+   * Bypasses late-threshold and double-clock-in checks.
+   *
+   * @param exec optional query executor; pass a transaction-bound query to make
+   *             the upsert part of a larger atomic operation (defaults to the pool).
    */
-  async adminUpsertAttendance(data: AdminUpsertData): Promise<AttendanceRecord> {
+  async adminUpsertAttendance(data: AdminUpsertData, exec: QueryExecutor = query): Promise<AttendanceRecord> {
     const { employeeId, date, clockIn, clockOut, status, notes, modifiedBy } = data;
 
     // Auto-compute totalHours, overtime, early departure when both clock times provided
@@ -643,7 +650,7 @@ export class AttendanceService {
       }
     }
 
-    const result = await query(
+    const result = await exec(
       `INSERT INTO attendance_records (employee_id, date, clock_in, clock_out, total_hours, status, notes, modified_by, overtime_hours, early_departure)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        ON CONFLICT (employee_id, date)
