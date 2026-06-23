@@ -138,7 +138,7 @@ describe('AttendanceRegularizationService', () => {
         .mockResolvedValueOnce({ rows: [{ ...REG_ROW, status: 'approved', reviewed_by: 'hr-1' }], rowCount: 1 } as never) // UPDATE
         .mockResolvedValueOnce({ rows: [{ user_id: 'emp-user-1' }], rowCount: 1 } as never); // notifyEmployee lookup
 
-      const result = await AttendanceRegularizationService.approve('reg-1', 'hr-1');
+      const result = await AttendanceRegularizationService.approve('reg-1', 'hr-emp-1', 'hr-user-1');
 
       expect(result.status).toBe('approved');
       expect(mockedUpsert).toHaveBeenCalledWith(
@@ -147,7 +147,8 @@ describe('AttendanceRegularizationService', () => {
           date: '2026-06-20',
           clockIn: REG_ROW.requested_clock_in,
           clockOut: REG_ROW.requested_clock_out,
-          modifiedBy: 'hr-1',
+          // modified_by is a FK to users(id) → must be the reviewer's USER id, not employee id
+          modifiedBy: 'hr-user-1',
         })
       );
     });
@@ -155,7 +156,7 @@ describe('AttendanceRegularizationService', () => {
     it('throws when the request does not exist', async () => {
       mockedQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
 
-      await expect(AttendanceRegularizationService.approve('missing', 'hr-1')).rejects.toBeInstanceOf(BusinessError);
+      await expect(AttendanceRegularizationService.approve('missing', 'hr-emp-1', 'hr-user-1')).rejects.toBeInstanceOf(BusinessError);
       expect(mockedUpsert).not.toHaveBeenCalled();
     });
   });

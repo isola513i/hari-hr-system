@@ -200,8 +200,11 @@ export class AttendanceRegularizationService {
   /**
    * HR admin gives final approval. Applies the requested times to attendance_records
    * via the existing adminUpsertAttendance flow.
+   *
+   * @param reviewerId     the reviewer's EMPLOYEE id — stored in reviewed_by (FK → employees)
+   * @param reviewerUserId the reviewer's USER id — passed to attendance.modified_by (FK → users)
    */
-  async approve(requestId: string, reviewerId: string, notes?: string): Promise<RegularizationRequest> {
+  async approve(requestId: string, reviewerId: string, reviewerUserId: string, notes?: string): Promise<RegularizationRequest> {
     const result = await query(
       `UPDATE attendance_regularization_requests
        SET status = 'approved', reviewed_by = $1, reviewed_at = CURRENT_TIMESTAMP,
@@ -213,14 +216,15 @@ export class AttendanceRegularizationService {
     if (result.rows.length === 0) throw new BusinessError('Regularization request not found');
     const reg = this.mapRow(result.rows[0]);
 
-    // Apply the correction to the attendance record
+    // Apply the correction to the attendance record.
+    // modified_by is a FK to users(id), so we pass the reviewer's USER id (not employee id).
     await AttendanceService.adminUpsertAttendance({
       employeeId: reg.employeeId,
       date: reg.date,
       clockIn: reg.requestedClockIn ?? undefined,
       clockOut: reg.requestedClockOut ?? undefined,
       notes: `Regularization #${reg.id}`,
-      modifiedBy: reviewerId,
+      modifiedBy: reviewerUserId,
     });
 
     this.notifyEmployee(reg.employeeId, reg.date, 'approved');

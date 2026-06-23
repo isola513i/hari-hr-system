@@ -76,10 +76,11 @@ class AttendanceRegularizationController {
   async approve(req: Request, res: Response): Promise<void> {
     try {
       const reviewerId = (req as any).user?.employeeId;
-      if (!reviewerId) { res.status(403).json({ error: 'Employee profile required' }); return; }
+      const reviewerUserId = (req as any).user?.userId;
+      if (!reviewerId || !reviewerUserId) { res.status(403).json({ error: 'Employee profile required' }); return; }
 
       const { notes } = req.body;
-      const request = await AttendanceRegularizationService.approve(req.params.id, reviewerId, notes);
+      const request = await AttendanceRegularizationService.approve(req.params.id, reviewerId, reviewerUserId, notes);
       res.json(request);
     } catch (err: any) {
       console.error('Error approving regularization request:', err);
