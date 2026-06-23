@@ -7,7 +7,8 @@
     "leave": "ลาหยุด",
     "wfh": "WFH",
     "ot": "ล่วงเวลา",
-    "expense": "ค่าใช้จ่าย"
+    "expense": "ค่าใช้จ่าย",
+    "attendanceReg": "แก้เวลา"
   },
   "exportCsv": "ส่งออก CSV",
   "searchPlaceholder": "ค้นหาพนักงาน...",
@@ -130,5 +131,63 @@
     "thisMonth": "เดือนนี้",
     "statusHeader": "สถานะ",
     "actionsHeader": "การดำเนินการ"
+  },
+  "attendanceReg": {
+    "title": "คำขอแก้ไขเวลาทำงาน",
+    "subtitle": "ตรวจสอบคำขอของพนักงานเพื่อแก้ไขการลงเวลาที่ผิดพลาดหรือตกหล่น",
+    "statusOptions": {
+      "pending": "รอผู้จัดการ",
+      "manager_approved": "รอ HR",
+      "all": "ทั้งหมด",
+      "approved": "อนุมัติแล้ว",
+      "rejected": "ปฏิเสธแล้ว"
+    },
+    "stats": {
+      "pendingRequests": "คำขอที่รอดำเนินการ",
+      "pendingRate": "{{rate}}% ของทั้งหมด",
+      "approvedThisMonth": "อนุมัติเดือนนี้",
+      "rejectedThisMonth": "ปฏิเสธเดือนนี้",
+      "thisMonth": "เดือนนี้"
+    },
+    "table": {
+      "employee": "พนักงาน",
+      "date": "วันที่",
+      "requestedTimes": "เวลาที่ขอแก้",
+      "reason": "เหตุผล",
+      "status": "สถานะ",
+      "actions": "การดำเนินการ"
+    },
+    "mobile": {
+      "date": "วันที่:",
+      "times": "เวลา:",
+      "reason": "เหตุผล:"
+    },
+    "status": {
+      "pending": "รอดำเนินการ",
+      "manager_approved": "รอ HR",
+      "approved": "อนุมัติแล้ว",
+      "rejected": "ปฏิเสธแล้ว"
+    },
+    "actions": {
+      "forwardToHR": "ส่งต่อ HR",
+      "reject": "ปฏิเสธ"
+    },
+    "empty": "ไม่พบคำขอแก้ไขเวลา",
+    "rejectDialog": {
+      "title": "ปฏิเสธคำขอแก้ไขเวลา",
+      "subtitle": "ระบุเหตุผลในการปฏิเสธ (ไม่บังคับ):",
+      "placeholder": "เหตุผล (ไม่บังคับ)...",
+      "cancel": "ยกเลิก",
+      "reject": "ปฏิเสธ",
+      "rejecting": "กำลังปฏิเสธ..."
+    },
+    "toast": {
+      "approved": "อนุมัติและปรับปรุงเวลาแล้ว",
+      "approveFailed": "อนุมัติไม่สำเร็จ",
+      "rejected": "ปฏิเสธคำขอแล้ว",
+      "rejectFailed": "ปฏิเสธไม่สำเร็จ",
+      "forwardedToHR": "ส่งต่อให้ HR อนุมัติขั้นสุดท้ายแล้ว",
+      "forwardFailed": "ส่งต่อ HR ไม่สำเร็จ"
+    }
   }
 }

@@ -463,6 +463,28 @@ CREATE INDEX idx_wfh_requests_employee ON wfh_requests(employee_id);
 CREATE INDEX idx_wfh_requests_date ON wfh_requests(date);
 CREATE INDEX idx_wfh_requests_status ON wfh_requests(status);
 
+-- 18a-1. Attendance Regularization Requests (employee self-service corrections, two-tier approval)
+CREATE TABLE attendance_regularization_requests (
+    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    employee_id         UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    date                DATE NOT NULL,
+    requested_clock_in  TIMESTAMP WITH TIME ZONE,
+    requested_clock_out TIMESTAMP WITH TIME ZONE,
+    reason              TEXT NOT NULL,
+    status              VARCHAR(20) DEFAULT 'pending',
+    manager_reviewed_by UUID REFERENCES employees(id),
+    manager_reviewed_at TIMESTAMP WITH TIME ZONE,
+    reviewed_by         UUID REFERENCES employees(id),
+    reviewed_at         TIMESTAMP WITH TIME ZONE,
+    notes               TEXT,
+    created_at          TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_reg_request UNIQUE (employee_id, date)
+);
+CREATE INDEX idx_attendance_reg_employee ON attendance_regularization_requests(employee_id);
+CREATE INDEX idx_attendance_reg_date ON attendance_regularization_requests(date);
+CREATE INDEX idx_attendance_reg_status ON attendance_regularization_requests(status);
+
 -- 18a-2. Shifts and Shift Assignments
 CREATE TABLE IF NOT EXISTS shifts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

@@ -12,6 +12,7 @@ export * from './survey';
 export * from './compliance';
 export * from './wfh';
 export * from './ot';
+export * from './attendanceRegularization';
 export * from './training';
 export * from './assets';
 export * from './shifts';

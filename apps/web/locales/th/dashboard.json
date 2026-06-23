@@ -80,6 +80,7 @@
     "locationError": "ไม่สามารถระบุตำแหน่งได้ กรุณาลองใหม่อีกครั้ง",
     "myOTRequests": "คำขอ OT ของฉัน",
     "requestOT": "ขอ OT",
+    "requestCorrection": "แก้เวลา",
     "noOTRequests": "ยังไม่มีคำขอทำงานล่วงเวลา",
     "submitFirstOT": "ส่งคำขอ OT แรกของคุณ",
     "otStatus": {

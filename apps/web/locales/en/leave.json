@@ -265,6 +265,22 @@
     "errorEndTime": "End time must be after start time",
     "errorMaxHours": "Planned OT hours cannot exceed 12 hours"
   },
+  "regModal": {
+    "title": "Request Attendance Correction",
+    "subtitle": "Propose corrected clock-in/out times for a past date. Your manager and HR will review.",
+    "date": "Date",
+    "clockIn": "Corrected Clock-in",
+    "clockOut": "Corrected Clock-out",
+    "reason": "Reason",
+    "reasonPlaceholder": "Explain what went wrong (e.g. forgot to clock out)...",
+    "cancel": "Cancel",
+    "submit": "Submit Request",
+    "submitting": "Submitting...",
+    "success": "Correction request submitted",
+    "failedSubmit": "Failed to submit correction request",
+    "errorNoReason": "Please provide a reason for the correction",
+    "errorNoTime": "Provide at least a corrected clock-in or clock-out time"
+  },
   "wfhModal": {
     "title": "Work From Home Request",
     "newRequest": "New Request",

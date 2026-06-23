@@ -1,15 +1,16 @@
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams, Navigate } from 'react-router-dom';
-import { Inbox, Home, Timer, Calendar, DollarSign } from 'lucide-react';
+import { Inbox, Home, Timer, Calendar, DollarSign, ClipboardClock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useAdminWFHRequests, useLeaveRequests, useExpenseClaims, useOTStats } from '../hooks/queries';
+import { useAdminWFHRequests, useLeaveRequests, useExpenseClaims, useOTStats, useAllRegularizationRequests, type RegularizationRequest } from '../hooks/queries';
 import { WFHRequestsTab } from '../components/requests/WFHRequestsTab';
 import { OTRequestsTab } from '../components/requests/OTRequestsTab';
 import { LeaveRequestsTab } from '../components/requests/LeaveRequestsTab';
 import { ExpenseRequestsTab } from '../components/requests/ExpenseRequestsTab';
+import { AttendanceRegularizationTab } from '../components/requests/AttendanceRegularizationTab';
 
-type TabKey = 'leave' | 'wfh' | 'ot' | 'expense';
+type TabKey = 'leave' | 'wfh' | 'ot' | 'expense' | 'attendance_reg';
 
 export const Requests: React.FC = () => {
   const { t } = useTranslation(['requests']);
@@ -31,6 +32,7 @@ export const Requests: React.FC = () => {
   const { data: wfhRequests = [] } = useAdminWFHRequests(isAdminView && (isHrAdmin || isManager) ? {} : false);
   const { data: expenseClaims = [] } = useExpenseClaims();
   const { data: otStatsData } = useOTStats();
+  const { data: regRequests = [] } = useAllRegularizationRequests(isAdminView && (isHrAdmin || isManager) ? {} : false);
 
   const pendingLeaves = leaveRequests.filter(
     (r) => r.status === 'Pending' || r.status === 'Cancel Requested'
@@ -42,12 +44,16 @@ export const Requests: React.FC = () => {
   const pendingExpenses = Array.isArray(expenseClaims)
     ? expenseClaims.filter((c) => c.status === 'Pending').length
     : 0;
+  const pendingReg = (regRequests as RegularizationRequest[]).filter(
+    (r) => r.status === 'pending' || r.status === 'manager_approved'
+  ).length;
 
   const badgeCounts: Record<TabKey, number> = {
     leave: pendingLeaves,
     wfh: pendingWFH,
     ot: pendingOT,
     expense: pendingExpenses,
+    attendance_reg: pendingReg,
   };
 
   if (!isAdminView || (!isHrAdmin && !isManager)) {
@@ -61,6 +67,7 @@ export const Requests: React.FC = () => {
     { key: 'wfh',     label: t('tabs.wfh'),     icon: <Home size={15} /> },
     { key: 'ot',      label: t('tabs.ot'),      icon: <Timer size={15} /> },
     { key: 'expense', label: t('tabs.expense'), icon: <DollarSign size={15} /> },
+    { key: 'attendance_reg', label: t('tabs.attendanceReg'), icon: <ClipboardClock size={15} /> },
   ];
 
   return (
@@ -112,6 +119,7 @@ export const Requests: React.FC = () => {
       {tab === 'wfh'     && <WFHRequestsTab />}
       {tab === 'ot'      && <OTRequestsTab />}
       {tab === 'expense' && <ExpenseRequestsTab />}
+      {tab === 'attendance_reg' && <AttendanceRegularizationTab />}
     </div>
   );
 };

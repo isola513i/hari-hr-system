@@ -80,6 +80,7 @@
     "locationError": "Could not get your location. Please try again.",
     "myOTRequests": "My OT Requests",
     "requestOT": "Request OT",
+    "requestCorrection": "Fix Time",
     "noOTRequests": "No OT requests yet",
     "submitFirstOT": "Submit your first OT request",
     "otStatus": {
