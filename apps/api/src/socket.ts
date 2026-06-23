@@ -190,6 +190,14 @@ export const emitLeaveRequestDeleted = (id: string) => {
   }
 };
 
+// Single broadcast for a batch of updated leave requests (bulk approve/reject),
+// so a 50-item bulk action emits once instead of 50 separate events.
+export const emitLeaveRequestsBulkUpdated = (leaveRequests: any[]) => {
+  if (io && leaveRequests.length > 0) {
+    io.emit('leave-request:bulk-updated', leaveRequests);
+  }
+};
+
 // Event emitters for notifications
 export const emitNotificationCreated = (notification: any) => {
   if (io) {

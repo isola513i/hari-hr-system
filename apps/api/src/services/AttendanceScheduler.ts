@@ -24,7 +24,8 @@ async function autoCheckout(): Promise<void> {
     // Find ALL open records up to today (catches missed days too)
     const openRecords = await query(
       `SELECT id, date, clock_in, break_duration, notes FROM attendance_records
-       WHERE date <= $1 AND clock_in IS NOT NULL AND clock_out IS NULL`,
+       WHERE date <= $1 AND clock_in IS NOT NULL AND clock_out IS NULL
+         AND deleted_at IS NULL`,
       [today]
     );
 
@@ -109,12 +110,15 @@ async function autoMarkAbsent(): Promise<void> {
        FROM employees e
        WHERE e.status = 'Active'
          AND NOT EXISTS (
+           -- Intentionally counts soft-deleted rows too: they still occupy the
+           -- UNIQUE (employee_id, date) slot, so inserting would violate it.
            SELECT 1 FROM attendance_records ar
            WHERE ar.employee_id = e.id AND ar.date = $1
          )
          AND NOT EXISTS (
            SELECT 1 FROM leave_requests lr
            WHERE lr.employee_id = e.id AND lr.status = 'Approved'
+             AND lr.deleted_at IS NULL
              AND $1::date BETWEEN lr.start_date AND lr.end_date
          )`,
       [prevDate]

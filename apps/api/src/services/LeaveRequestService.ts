@@ -8,6 +8,7 @@ import { withTransaction } from '../utils/transaction';
 import { PaginationParams, PaginatedResult, createPaginatedResult, buildPaginationClause, buildSortClause } from '../utils/pagination';
 // Leave type constants — single source of truth shared with the request validator
 import { LEAVE_TYPE_SICK, LEAVE_TYPE_MATERNITY } from '../constants/leaveTypes';
+import { toInt } from '../utils/coerce';
 
 /** Convert a pg DATE value to a plain YYYY-MM-DD string to avoid timezone shifts */
 function toDateString(val: unknown): string {
@@ -114,7 +115,7 @@ export class LeaveRequestService {
              ${whereClause}`,
             params
         );
-        const total = parseInt(countResult.rows[0].total);
+        const total = toInt(countResult.rows[0].total);
 
         const sortClause = buildSortClause(sortField, sortOrder, fieldMapping);
         const paginationClause = buildPaginationClause(paginationParams);

@@ -23,7 +23,7 @@ export const StatCard: React.FC<StatCardProps> = React.memo(({ title, value, tre
         <div className={`p-2 md:p-3 rounded-lg ${colorClasses[color]}`}>
           {icon}
         </div>
-        <p className="text-text-muted-light dark:text-text-muted-dark font-medium text-xs md:text-sm leading-tight">{title}</p>
+        <p className="text-text-muted-light dark:text-text-muted-dark font-medium text-xs md:text-sm leading-tight truncate min-w-0" title={typeof title === 'string' ? title : undefined}>{title}</p>
       </div>
       <div className="flex items-end justify-between">
         <p className="text-text-light dark:text-text-dark tracking-tight text-2xl md:text-3xl font-bold">{value}</p>

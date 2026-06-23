@@ -247,13 +247,13 @@ router.get('/:id/report', async (req: Request, res: Response) => {
     const [leaveResult, attResult, perfResult, trainResult, companyName] = await Promise.all([
       query(
         `SELECT leave_type, status, COUNT(*) AS cnt
-         FROM leave_requests WHERE employee_id = $1
+         FROM leave_requests WHERE employee_id = $1 AND deleted_at IS NULL
          GROUP BY leave_type, status`,
         [req.params.id]
       ),
       query(
         `SELECT status, COUNT(*) AS cnt FROM attendance_records
-         WHERE employee_id = $1 AND date >= CURRENT_DATE - INTERVAL '90 days'
+         WHERE employee_id = $1 AND date >= CURRENT_DATE - INTERVAL '90 days' AND deleted_at IS NULL
          GROUP BY status`,
         [req.params.id]
       ),
@@ -262,7 +262,7 @@ router.get('/:id/report', async (req: Request, res: Response) => {
         [req.params.id]
       ),
       query(
-        `SELECT title, status, TO_CHAR(completion_date, 'YYYY-MM-DD') AS completion_date, score FROM employee_training WHERE employee_id = $1 ORDER BY assigned_at DESC`,
+        `SELECT title, status, TO_CHAR(completion_date, 'YYYY-MM-DD') AS completion_date, score FROM employee_training WHERE employee_id = $1 AND deleted_at IS NULL ORDER BY assigned_at DESC`,
         [req.params.id]
       ),
       SystemConfigService.getConfigValue('system', 'app_name', 'HARI HR System'),

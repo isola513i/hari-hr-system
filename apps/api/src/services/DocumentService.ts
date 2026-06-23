@@ -2,6 +2,7 @@ import { query } from '../db';
 import { Document, CreateDocumentDTO } from '../models/Document';
 import { PaginationParams, PaginatedResult, createPaginatedResult, buildPaginationClause, buildSortClause } from '../utils/pagination';
 import { storageService } from './StorageService';
+import { toInt } from '../utils/coerce';
 
 export class DocumentService {
     // Get active documents only (not deleted)
@@ -59,7 +60,7 @@ export class DocumentService {
             `SELECT COUNT(*) as total FROM documents ${whereClause}`,
             params
         );
-        const total = parseInt(countResult.rows[0].total);
+        const total = toInt(countResult.rows[0].total);
 
         // Get paginated data
         const sortClause = buildSortClause(sortField, sortOrder, fieldMapping);

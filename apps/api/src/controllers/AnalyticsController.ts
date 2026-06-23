@@ -137,7 +137,8 @@ class AnalyticsController {
         COUNT(*) FILTER (WHERE status = 'Late') AS late,
         COUNT(*) FILTER (WHERE status = 'Absent') AS absent
       FROM attendance_records
-      WHERE EXTRACT(YEAR FROM date) = $1
+      WHERE deleted_at IS NULL
+        AND EXTRACT(YEAR FROM date) = $1
         AND EXTRACT(DOW FROM date) BETWEEN 1 AND 5
         ${isCurrentYear ? "AND date >= CURRENT_DATE - INTERVAL '21 days'" : ''}
       GROUP BY date
@@ -167,6 +168,7 @@ class AnalyticsController {
         ), 0) AS days
       FROM leave_requests
       WHERE status = 'Approved'
+        AND deleted_at IS NULL
         AND EXTRACT(YEAR FROM start_date) = $1
       GROUP BY leave_type
       ORDER BY days DESC

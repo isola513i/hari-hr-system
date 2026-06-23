@@ -254,7 +254,8 @@ export class PayrollService {
        FROM attendance_records
        WHERE employee_id = $1
          AND date >= $2 AND date <= $3
-         AND clock_in IS NOT NULL`,
+         AND clock_in IS NOT NULL
+         AND deleted_at IS NULL`,
       [employeeId, payPeriodStart, payPeriodEnd]
     );
     return result.rows[0]?.days_worked ?? 0;
@@ -307,6 +308,7 @@ export class PayrollService {
          AND NOT EXISTS (
            SELECT 1 FROM leave_requests lr
            WHERE lr.employee_id = $1 AND lr.status = 'Approved'
+             AND lr.deleted_at IS NULL
              AND d.day::date BETWEEN lr.start_date AND lr.end_date
          )
          AND (
@@ -399,6 +401,107 @@ export class PayrollService {
     );
 
     return this.mapRowToPayroll(result.rows[0]);
+  }
+
+  /**
+   * What-if payroll preview. Computes the same amounts as createPayroll
+   * (tax, SSF, PVF, OT, leave deduction, intern handling) using live config
+   * and attendance/OT data, but persists NOTHING and skips the
+   * duplicate-period guard — so HR can test salary/bonus/OT scenarios freely.
+   */
+  async simulatePayroll(data: CreatePayrollData): Promise<{
+    employeeId: string;
+    payPeriodStart: string;
+    payPeriodEnd: string;
+    isIntern: boolean;
+    baseSalary: number;
+    overtimeHours: number;
+    overtimePay: number;
+    bonus: number;
+    leaveDeduction: number;
+    deductions: number;
+    grossPay: number;
+    taxAmount: number;
+    ssfEmployee: number;
+    ssfEmployer: number;
+    pvfEmployee: number;
+    pvfEmployer: number;
+    netPay: number;
+    simulated: true;
+  }> {
+    const {
+      employeeId,
+      payPeriodStart,
+      payPeriodEnd,
+      baseSalary,
+      bonus = 0,
+      deductions = 0,
+    } = data;
+
+    // Validate date range
+    if (payPeriodEnd <= payPeriodStart) {
+      throw new BusinessError('Pay period end date must be after start date');
+    }
+
+    // Auto-sum approved OT hours from OT requests when not explicitly provided
+    const overtimeHours = data.overtimeHours != null
+      ? data.overtimeHours
+      : await OTRequestService.getApprovedOTHours(employeeId, payPeriodStart, payPeriodEnd);
+
+    // Auto-calculate leave deduction from attendance when not explicitly provided
+    const leaveDeduction = data.leaveDeduction != null
+      ? data.leaveDeduction
+      : await this.calcLeaveDeduction(employeeId, payPeriodStart, payPeriodEnd, baseSalary);
+
+    // Check if employee is an intern
+    const empResult = await query('SELECT role, daily_rate FROM employees WHERE id = $1', [employeeId]);
+    if (empResult.rows.length === 0) {
+      throw new BusinessError('Employee not found');
+    }
+    const isIntern = empResult.rows[0].role?.toLowerCase().includes('intern') ?? false;
+
+    // For interns: compute baseSalary from daily_rate × attendance days, no OT
+    let effectiveBaseSalary = baseSalary;
+    let effectiveOvertimeHours = overtimeHours;
+    if (isIntern) {
+      const dailyRate = await this.getInternDailyRate(empResult.rows[0].daily_rate ? parseFloat(empResult.rows[0].daily_rate) : null);
+      const daysWorked = await this.getInternDaysWorked(employeeId, payPeriodStart, payPeriodEnd);
+      effectiveBaseSalary = Math.round(dailyRate * daysWorked * 100) / 100;
+      effectiveOvertimeHours = 0;
+    }
+
+    // Validate baseSalary (skip for interns — they can have 0 if no attendance)
+    if (!isIntern && (!baseSalary || baseSalary <= 0)) {
+      throw new BusinessError('Base salary must be greater than 0');
+    }
+
+    const config = await this.getPayrollConfig();
+    const { overtimePay, monthlyTax, netPay, ssfEmployee, ssfEmployer, pvfEmployee, pvfEmployer } = isIntern
+      ? this.calculateInternPayroll(effectiveBaseSalary, effectiveOvertimeHours, bonus, leaveDeduction, deductions, config)
+      : this.calculatePayrollAmounts(effectiveBaseSalary, effectiveOvertimeHours, bonus, leaveDeduction, deductions, config);
+
+    const grossPay = Math.round((effectiveBaseSalary + overtimePay + bonus) * 100) / 100;
+
+    return {
+      employeeId,
+      payPeriodStart,
+      payPeriodEnd,
+      isIntern,
+      baseSalary: effectiveBaseSalary,
+      overtimeHours: effectiveOvertimeHours,
+      overtimePay,
+      bonus,
+      leaveDeduction,
+      deductions,
+      grossPay,
+      taxAmount: monthlyTax,
+      ssfEmployee,
+      ssfEmployer,
+      pvfEmployee,
+      pvfEmployer,
+      netPay,
+      simulated: true,
+    };
   }
 
   /**

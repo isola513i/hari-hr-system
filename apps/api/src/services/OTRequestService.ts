@@ -263,6 +263,7 @@ class OTRequestService {
        WHERE ot.id = $1
          AND ar.employee_id = $2
          AND ar.date = $3::date
+         AND ar.deleted_at IS NULL
          AND ar.overtime_hours IS NOT NULL
          AND ar.overtime_hours > 0`,
       [id, employeeId, date]
@@ -279,6 +280,7 @@ class OTRequestService {
         AND ot.date = ar.date
         AND ot.status = 'approved'
         AND ot.actual_hours IS NULL
+        AND ar.deleted_at IS NULL
         AND ar.overtime_hours IS NOT NULL
         AND ar.overtime_hours > 0
         AND ot.date < CURRENT_DATE

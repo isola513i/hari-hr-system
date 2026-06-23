@@ -90,6 +90,7 @@ export class DashboardService {
        FROM leave_requests
        WHERE employee_id = $1
        AND status = 'Approved'
+       AND deleted_at IS NULL
        AND leave_type IN (${placeholders})
        AND EXTRACT(YEAR FROM start_date) = EXTRACT(YEAR FROM CURRENT_DATE)
        GROUP BY leave_type`,

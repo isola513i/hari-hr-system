@@ -55,6 +55,7 @@ router.get('/team', cacheMiddleware(30000), async (req, res) => {
        JOIN employees e ON lr.employee_id = e.id
        WHERE lr.start_date <= $1 AND lr.end_date >= $2
          AND lr.status NOT IN ('Rejected', 'Cancelled')
+         AND lr.deleted_at IS NULL
          ${deptFilter} ${roleFilter}
        ORDER BY lr.start_date`,
       [endDate, startDate]

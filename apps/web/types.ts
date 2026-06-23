@@ -1,9 +1,10 @@
 import React from 'react';
 
-export type UserRole = 'HR_ADMIN' | 'EMPLOYEE' | 'MANAGER' | 'FINANCE';
-
-// Availability Status Types
-export type AvailabilityStatus = 'online' | 'busy' | 'away' | 'offline';
+// Shared domain types now live in @hari/shared-types (single source of truth
+// across the API and web app). Imported + re-exported here so existing
+// `import { UserRole } from '../types'` call sites keep working unchanged.
+import type { UserRole, AvailabilityStatus } from '@hari/shared-types';
+export type { UserRole, AvailabilityStatus };
 
 export interface UserStatusInfo {
   employeeId: string;
