@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Clock, CheckCircle2, XCircle, Search, Download } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, Search, Download, FileText } from 'lucide-react';
 import {
   useLeaveRequests,
   useUpdateLeaveStatus,
@@ -20,6 +20,7 @@ import { FilterToolbar } from '../components/FilterToolbar';
 import type { LeaveRequest } from '../types';
 import { DEPARTMENTS } from '../types';
 import { buildLeaveColorMap, buildLeaveFilterOptions, translateLeaveType } from '../lib/leaveTypeConfig';
+import { getAuthToken, BASE_URL } from '../lib/api';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -290,6 +291,32 @@ export const AdminLeaveRequests: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  // PDF Export — streamed from the API with the active status/type filters applied
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const exportPDF = async () => {
+    setIsExportingPdf(true);
+    try {
+      const params = new URLSearchParams();
+      if (statusFilter !== 'All') params.set('status', statusFilter);
+      if (typeFilter !== 'All') params.set('type', typeFilter);
+      const res = await fetch(`${BASE_URL}/leave-requests/export/pdf?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${getAuthToken()}` },
+      });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `leave-requests-${new Date().toISOString().split('T')[0]}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      showToast(t('leave:admin.exportPdfFailed'), 'error');
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
   const deptKeyMap: Record<string, string> = {
     'Human Resources': 'common:departments.humanResources',
     'Engineering': 'common:departments.engineering',
@@ -350,6 +377,15 @@ export const AdminLeaveRequests: React.FC = () => {
           >
             <Download size={16} />
             {t('leave:admin.exportCSV')}
+          </button>
+          <button
+            onClick={exportPDF}
+            disabled={isExportingPdf}
+            className="flex items-center gap-2 px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-text-light dark:text-text-dark transition-colors disabled:opacity-60"
+            title={t('leave:admin.exportPDF')}
+          >
+            <FileText size={16} />
+            {t('leave:admin.exportPDF')}
           </button>
         </div>
       </div>

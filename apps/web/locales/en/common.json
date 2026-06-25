@@ -208,7 +208,11 @@
     "results": "items",
     "previous": "Previous",
     "next": "Next",
-    "page": "Page"
+    "page": "Page",
+    "singlePage": "Showing all {{count}} items"
+  },
+  "modal": {
+    "backdropDismiss": "Press Escape or click outside to close"
   },
   "errors": {
     "somethingWentWrong": "Oops! Something went wrong",

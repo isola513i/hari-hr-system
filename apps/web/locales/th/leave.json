@@ -86,6 +86,8 @@
     "cancelFailed": "ไม่สามารถดำเนินการยกเลิกได้",
     "searchEmployee": "ค้นหาพนักงาน...",
     "exportCSV": "ส่งออก CSV",
+    "exportPDF": "ส่งออก PDF",
+    "exportPdfFailed": "ส่งออก PDF ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
     "selectAll": "เลือกทั้งหมด",
     "selected": "เลือก {{count}} รายการ",
     "bulkApprove": "อนุมัติ",

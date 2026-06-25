@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken, requireAdmin, requireOwnerOrAdmin } from '../middlewares/auth';
 import AttendanceService from '../services/AttendanceService';
-import { apiLimiter } from '../middlewares/security';
+import { apiLimiter, validateClockIn, validateRequest } from '../middlewares/security';
 import { emitAttendanceUpdated } from '../socket';
 import { safeErrorMessage } from '../utils/errorResponse';
 
@@ -11,10 +11,28 @@ const router = Router();
 router.use(authenticateToken);
 
 /**
- * POST /api/attendance/clock-in
- * Clock in for the current user
+ * @swagger
+ * /api/attendance/clock-in:
+ *   post:
+ *     summary: Clock in for the current user
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               notes: { type: string, maxLength: 500 }
+ *               latitude: { type: number, format: float }
+ *               longitude: { type: number, format: float }
+ *               accuracy: { type: number, format: float, description: GPS accuracy in metres }
+ *     responses:
+ *       201: { description: Clock-in recorded }
+ *       400: { description: Validation error or outside geofence }
  */
-router.post('/clock-in', apiLimiter, async (req: Request, res: Response) => {
+router.post('/clock-in', apiLimiter, validateClockIn, validateRequest, async (req: Request, res: Response) => {
   try {
     const employeeId = req.user?.employeeId;
     if (!employeeId) {
@@ -46,10 +64,25 @@ router.post('/clock-in', apiLimiter, async (req: Request, res: Response) => {
 });
 
 /**
- * POST /api/attendance/clock-out
- * Clock out for the current user
+ * @swagger
+ * /api/attendance/clock-out:
+ *   post:
+ *     summary: Clock out for the current user
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               notes: { type: string, maxLength: 500 }
+ *     responses:
+ *       200: { description: Clock-out recorded }
+ *       400: { description: Not clocked in or validation error }
  */
-router.post('/clock-out', apiLimiter, async (req: Request, res: Response) => {
+router.post('/clock-out', apiLimiter, validateClockIn, validateRequest, async (req: Request, res: Response) => {
   try {
     const employeeId = req.user?.employeeId;
     if (!employeeId) {

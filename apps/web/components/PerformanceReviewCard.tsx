@@ -74,11 +74,27 @@ export function PerformanceReviewCard({
     return d.toLocaleDateString(localeTag, { month: 'short', year: 'numeric' });
   };
 
+  // True when the currently-open review form has unsaved input.
+  const isActionDirty = () => {
+    if (action === 'manager') return mgrComment.trim() !== '' || mgrRating !== (review.rating ?? 0);
+    if (action === 'hr') return hrComment.trim() !== '';
+    if (action === 'reject') return rejectReason.trim() !== '';
+    return false;
+  };
+
+  // Cancel an open form, confirming first if it would discard typed feedback.
+  const cancelAction = () => {
+    if (isActionDirty() && !window.confirm(t('form.discardConfirm', 'Discard unsaved changes?'))) return;
+    setAction(null);
+  };
+
   return (
     <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden shadow-sm">
       <button
         className="w-full flex items-center justify-between px-5 py-4 hover:bg-background-light dark:hover:bg-background-dark/40 transition-colors text-left"
         onClick={() => setExpanded((e) => !e)}
+        aria-expanded={expanded}
+        aria-controls={`review-panel-${review.id}`}
       >
         <div className="flex items-center gap-3 min-w-0">
           <Avatar name={employeeName} size="md" />
@@ -114,7 +130,7 @@ export function PerformanceReviewCard({
       </button>
 
       {expanded && (
-        <div className="px-5 pb-5 border-t border-border-light dark:border-border-dark space-y-4 pt-4">
+        <div id={`review-panel-${review.id}`} className="px-5 pb-5 border-t border-border-light dark:border-border-dark space-y-4 pt-4">
           {review.selfReview && (
             <div>
               <p className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide mb-1.5">
@@ -208,7 +224,7 @@ export function PerformanceReviewCard({
                       {t('actions.submitReview')}
                     </button>
                     <button
-                      onClick={() => setAction(null)}
+                      onClick={cancelAction}
                       className="px-4 py-2 rounded-lg text-sm font-medium text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors"
                     >
                       {t('actions.cancel')}
@@ -237,7 +253,7 @@ export function PerformanceReviewCard({
                   {t('actions.sendBack')}
                 </button>
                 <button
-                  onClick={() => setAction(null)}
+                  onClick={cancelAction}
                   className="px-4 py-2 rounded-lg text-sm font-medium text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors"
                 >
                   {t('actions.cancel')}
@@ -281,7 +297,7 @@ export function PerformanceReviewCard({
                       {t('actions.finalize')}
                     </button>
                     <button
-                      onClick={() => setAction(null)}
+                      onClick={cancelAction}
                       className="px-4 py-2 rounded-lg text-sm font-medium text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors"
                     >
                       {t('actions.cancel')}

@@ -6,7 +6,7 @@ import { generatePayslipPdf } from '../services/PayslipPdfService';
 import SystemConfigService from '../services/SystemConfigService';
 import EmailService from '../services/EmailService';
 import { query } from '../db';
-import { apiLimiter } from '../middlewares/security';
+import { apiLimiter, validatePayrollCreate, validatePayrollBatch, validateRequest } from '../middlewares/security';
 import { safeErrorMessage } from '../utils/errorResponse';
 
 const router = Router();
@@ -19,7 +19,7 @@ router.use(authenticateToken);
  * Batch create payroll records for all active employees (admin only)
  * NOTE: Must be defined BEFORE / to avoid route shadowing
  */
-router.post('/batch', requireAdminOrFinance, apiLimiter, async (req: Request, res: Response) => {
+router.post('/batch', requireAdminOrFinance, apiLimiter, validatePayrollBatch, validateRequest, async (req: Request, res: Response) => {
   try {
     const { payPeriodStart, payPeriodEnd } = req.body;
 
@@ -40,7 +40,7 @@ router.post('/batch', requireAdminOrFinance, apiLimiter, async (req: Request, re
  * What-if preview: compute payroll amounts without persisting (admin/finance).
  * NOTE: Must be defined BEFORE /:id routes to avoid route shadowing.
  */
-router.post('/simulate', requireAdminOrFinance, apiLimiter, async (req: Request, res: Response) => {
+router.post('/simulate', requireAdminOrFinance, apiLimiter, validatePayrollCreate, validateRequest, async (req: Request, res: Response) => {
   try {
     const { employeeId, payPeriodStart, payPeriodEnd } = req.body;
 
@@ -57,10 +57,34 @@ router.post('/simulate', requireAdminOrFinance, apiLimiter, async (req: Request,
 });
 
 /**
- * POST /api/payroll
- * Create a new payroll record (admin only)
+ * @swagger
+ * /api/payroll:
+ *   post:
+ *     summary: Create a payroll record (HR_ADMIN or Finance)
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [employeeId, payPeriodStart, payPeriodEnd]
+ *             properties:
+ *               employeeId: { type: string, format: uuid }
+ *               payPeriodStart: { type: string, format: date }
+ *               payPeriodEnd: { type: string, format: date }
+ *               baseSalary: { type: number, minimum: 0 }
+ *               overtimeHours: { type: number, minimum: 0 }
+ *               bonus: { type: number, minimum: 0 }
+ *               leaveDeduction: { type: number, minimum: 0 }
+ *               deductions: { type: number, minimum: 0 }
+ *     responses:
+ *       201: { description: Payroll record created }
+ *       400: { description: Validation error }
  */
-router.post('/', requireAdminOrFinance, apiLimiter, async (req: Request, res: Response) => {
+router.post('/', requireAdminOrFinance, apiLimiter, validatePayrollCreate, validateRequest, async (req: Request, res: Response) => {
   try {
     const payroll = await PayrollService.createPayroll(req.body);
     res.status(201).json(payroll);

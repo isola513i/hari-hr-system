@@ -41,7 +41,20 @@ export const Pagination: React.FC<PaginationProps> = ({
     return pages;
   };
 
-  if (totalPages <= 1) return null;
+  if (totalPages <= 1) {
+    // Single page (or empty): don't render pager controls, but when we know the
+    // item count, show a quiet "all on one page" hint instead of silent null.
+    if (totalItems && itemsPerPage) {
+      return (
+        <div className={`flex items-center justify-start ${className}`}>
+          <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
+            {t('pagination.singlePage', { defaultValue: 'Showing all {{count}} items', count: totalItems })}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  }
 
   return (
     <div className={`flex items-center justify-between ${className}`}>

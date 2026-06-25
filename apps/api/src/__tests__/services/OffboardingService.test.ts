@@ -364,4 +364,113 @@ describe('OffboardingService', () => {
       expect(sql).toMatch(/ON CONFLICT \(employee_id\) DO UPDATE/);
     });
   });
+
+  // ── createTask ──────────────────────────────────────────────────────────
+  describe('createTask', () => {
+    const newTaskRow = {
+      id: 'task-9',
+      employee_id: 'emp-1',
+      title: 'Revoke building access',
+      description: 'Disable keycard',
+      stage: 'Last Week',
+      assignee: 'IT',
+      due_date: '2026-07-30',
+      priority: 'High',
+      completed: false,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    it('inserts a task and maps the row back', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [newTaskRow], rowCount: 1 } as never);
+
+      const result = await service.createTask({
+        employeeId: 'emp-1',
+        title: 'Revoke building access',
+        description: 'Disable keycard',
+        stage: 'Last Week',
+        assignee: 'IT',
+        dueDate: '2026-07-30',
+        priority: 'High',
+      });
+
+      expect(result.id).toBe('task-9');
+      expect(result.title).toBe('Revoke building access');
+      const sql = mockedQuery.mock.calls[0][0] as string;
+      expect(sql).toMatch(/INSERT INTO offboarding_tasks/);
+      // priority passed through
+      expect((mockedQuery.mock.calls[0][1] as unknown[])[6]).toBe('High');
+    });
+
+    it("defaults priority to 'Medium' and nullable fields to null", async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ ...newTaskRow, priority: 'Medium', description: null, due_date: null }], rowCount: 1 } as never);
+
+      await service.createTask({
+        employeeId: 'emp-1',
+        title: 'Exit survey',
+        stage: 'Pre-Exit',
+        assignee: 'HR',
+      });
+
+      const params = mockedQuery.mock.calls[0][1] as unknown[];
+      expect(params[2]).toBeNull(); // description
+      expect(params[5]).toBeNull(); // dueDate
+      expect(params[6]).toBe('Medium'); // priority default
+    });
+  });
+
+  // ── deleteTask ──────────────────────────────────────────────────────────
+  describe('deleteTask', () => {
+    it('returns true when a row was deleted', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'task-1' }], rowCount: 1 } as never);
+
+      const ok = await service.deleteTask('task-1');
+
+      expect(ok).toBe(true);
+      expect(mockedQuery.mock.calls[0][0]).toMatch(/DELETE FROM offboarding_tasks/);
+    });
+
+    it('returns false when nothing matched', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
+
+      const ok = await service.deleteTask('missing');
+
+      expect(ok).toBe(false);
+    });
+  });
+
+  // ── getExitInterview ────────────────────────────────────────────────────
+  describe('getExitInterview', () => {
+    it('returns the mapped interview when present', async () => {
+      mockedQuery.mockResolvedValueOnce({
+        rows: [{
+          id: 'int-1',
+          employee_id: 'emp-1',
+          reason_for_leaving: 'Relocation',
+          satisfaction_rating: 5,
+          would_rehire: true,
+          feedback: 'Loved it',
+          improvements_suggested: null,
+          conducted_by: 'user-1',
+          conducted_at: new Date(),
+          created_at: new Date(),
+          updated_at: new Date(),
+        }],
+        rowCount: 1,
+      } as never);
+
+      const result = await service.getExitInterview('emp-1');
+
+      expect(result).not.toBeNull();
+      expect(result?.reasonForLeaving).toBe('Relocation');
+    });
+
+    it('returns null when no interview exists', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
+
+      const result = await service.getExitInterview('emp-1');
+
+      expect(result).toBeNull();
+    });
+  });
 });

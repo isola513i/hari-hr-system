@@ -86,6 +86,8 @@
     "cancelFailed": "Failed to process cancellation",
     "searchEmployee": "Search employee...",
     "exportCSV": "Export CSV",
+    "exportPDF": "Export PDF",
+    "exportPdfFailed": "Failed to export PDF. Please try again.",
     "selectAll": "Select All",
     "selected": "{{count}} selected",
     "bulkApprove": "Approve",

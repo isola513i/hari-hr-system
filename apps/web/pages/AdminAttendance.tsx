@@ -352,7 +352,7 @@ const AdminAttendance: React.FC = () => {
 
       {/* Snapshot Cards — click to filter */}
       {snapshot && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
           <SnapshotCard
             icon={<Users size={20} />}
             label={t('attendance:admin.totalEmployees')}

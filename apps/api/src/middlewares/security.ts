@@ -232,6 +232,58 @@ export const validateLeaveBulkUpdate = [
     .escape(),
 ];
 
+// Attendance clock-in validation (GPS coords + accuracy are optional but, when
+// present, must be sane). Notes are length-bounded and escaped.
+export const validateClockIn = [
+  body('notes').optional({ nullable: true }).trim().isLength({ max: 500 }).withMessage('Notes must not exceed 500 characters').escape(),
+  body('latitude').optional({ nullable: true }).isFloat({ min: -90, max: 90 }).withMessage('Invalid latitude'),
+  body('longitude').optional({ nullable: true }).isFloat({ min: -180, max: 180 }).withMessage('Invalid longitude'),
+  body('accuracy').optional({ nullable: true }).isFloat({ min: 0 }).withMessage('Invalid GPS accuracy'),
+];
+
+// Payroll create — amounts must be non-negative; base salary required & > 0
+// for non-interns is additionally enforced server-side in PayrollService.
+export const validatePayrollCreate = [
+  body('employeeId').notEmpty().withMessage('Employee is required').isUUID().withMessage('Invalid employee ID'),
+  body('payPeriodStart').notEmpty().withMessage('Pay period start is required').isISO8601().withMessage('Invalid start date'),
+  body('payPeriodEnd').notEmpty().withMessage('Pay period end is required').isISO8601().withMessage('Invalid end date')
+    .custom((end, { req }) => {
+      if (new Date(end) <= new Date(req.body.payPeriodStart)) throw new Error('Pay period end must be after start');
+      return true;
+    }),
+  body('baseSalary').optional({ nullable: true }).isFloat({ min: 0 }).withMessage('Base salary cannot be negative'),
+  body('overtimeHours').optional({ nullable: true }).isFloat({ min: 0 }).withMessage('Overtime hours cannot be negative'),
+  body('bonus').optional({ nullable: true }).isFloat({ min: 0 }).withMessage('Bonus cannot be negative'),
+  body('leaveDeduction').optional({ nullable: true }).isFloat({ min: 0 }).withMessage('Leave deduction cannot be negative'),
+  body('deductions').optional({ nullable: true }).isFloat({ min: 0 }).withMessage('Deductions cannot be negative'),
+];
+
+// Payroll batch create — just the pay period window.
+export const validatePayrollBatch = [
+  body('payPeriodStart').notEmpty().withMessage('Pay period start is required').isISO8601().withMessage('Invalid start date'),
+  body('payPeriodEnd').notEmpty().withMessage('Pay period end is required').isISO8601().withMessage('Invalid end date')
+    .custom((end, { req }) => {
+      if (new Date(end) <= new Date(req.body.payPeriodStart)) throw new Error('Pay period end must be after start');
+      return true;
+    }),
+];
+
+// Compliance item create/update.
+export const validateComplianceCreate = [
+  body('title').trim().notEmpty().withMessage('Title is required').isLength({ max: 200 }).withMessage('Title too long').escape(),
+  body('description').optional({ nullable: true }).trim().isLength({ max: 2000 }).escape(),
+  body('priority').optional({ nullable: true }).isIn(['Low', 'Medium', 'High', 'Critical']).withMessage('Invalid priority'),
+  body('riskLevel').optional({ nullable: true }).isIn(['Low', 'Medium', 'High']).withMessage('Invalid risk level'),
+  body('assignedTo').optional({ nullable: true }).isUUID().withMessage('Invalid assignee ID'),
+  body('dueDate').optional({ nullable: true }).isISO8601().withMessage('Invalid due date'),
+];
+
+export const validateComplianceStatusUpdate = [
+  body('status').trim().notEmpty().withMessage('Status is required')
+    .isIn(['Draft', 'Active', 'In Progress', 'Completed', 'Overdue']).withMessage('Invalid status'),
+  body('reason').optional({ nullable: true }).trim().isLength({ max: 500 }).escape(),
+];
+
 // File upload validation
 export const validateFileUpload = (req: Request, res: Response, next: NextFunction) => {
   if (!req.file) {
