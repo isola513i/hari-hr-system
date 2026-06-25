@@ -159,7 +159,8 @@ export class WFHRequestService {
 
   async getMyRequests(employeeId: string): Promise<WFHRequest[]> {
     const result = await query(
-      `SELECT * FROM wfh_requests WHERE employee_id = $1 ORDER BY date DESC`,
+      `SELECT id, employee_id, date, reason, status, reviewed_by, reviewed_at, manager_reviewed_by, manager_reviewed_at, created_at
+       FROM wfh_requests WHERE employee_id = $1 ORDER BY date DESC`,
       [employeeId]
     );
 

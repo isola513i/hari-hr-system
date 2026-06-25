@@ -13,6 +13,27 @@ import { authenticateToken, requireRole } from "../middlewares/auth";
 
 const router = Router();
 
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Authenticate and receive a JWT (or a TOTP challenge)
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password]
+ *             properties:
+ *               email: { type: string, format: email }
+ *               password: { type: string, format: password }
+ *     responses:
+ *       200: { description: Login success (token) or TOTP required }
+ *       401: { description: Invalid credentials }
+ *       429: { description: Too many attempts }
+ */
 // POST /api/auth/login - User login
 router.post(
   "/login",

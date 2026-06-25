@@ -1,7 +1,7 @@
 import type { QueryResult } from 'pg';
 import { query } from '../db';
 import { BusinessError } from '../utils/errorResponse';
-import { isWithinGeofence, haversineDistance } from '../utils/geoUtils';
+import { isWithinGeofence, isWithinGeofenceWithAccuracy, effectiveRadiusWithAccuracy, haversineDistance } from '../utils/geoUtils';
 import WFHRequestService from './WFHRequestService';
 
 /** A query executor — the global pool `query`, or a transaction-bound client query. */
@@ -203,7 +203,7 @@ export class AttendanceService {
         const hasGps = latitude != null && longitude != null;
         const isOfficeIp = clientIp != null && gpsConfig.officeIps.length > 0 && gpsConfig.officeIps.includes(clientIp);
         if (hasGps && gpsConfig.officeLat != null && gpsConfig.officeLng != null) {
-          checkInType = isWithinGeofence(latitude!, longitude!, gpsConfig.officeLat, gpsConfig.officeLng, gpsConfig.geofenceRadius) || isOfficeIp
+          checkInType = isWithinGeofenceWithAccuracy(latitude!, longitude!, gpsConfig.officeLat, gpsConfig.officeLng, gpsConfig.geofenceRadius, accuracy) || isOfficeIp
             ? 'office'
             : 'remote';
         } else if (isOfficeIp) {
@@ -231,13 +231,14 @@ export class AttendanceService {
             if (gpsConfig.officeLat == null || gpsConfig.officeLng == null) {
               throw new BusinessError('Office location is not configured. Please contact HR admin');
             }
-            if (!isWithinGeofence(latitude!, longitude!, gpsConfig.officeLat, gpsConfig.officeLng, gpsConfig.geofenceRadius)) {
+            if (!isWithinGeofenceWithAccuracy(latitude!, longitude!, gpsConfig.officeLat, gpsConfig.officeLng, gpsConfig.geofenceRadius, accuracy)) {
               if (isOfficeIp) {
                 // On office network but GPS is inaccurate — trust the network
                 checkInType = 'office';
               } else {
                 const dist = Math.round(haversineDistance(latitude!, longitude!, gpsConfig.officeLat, gpsConfig.officeLng));
-                throw new BusinessError(`You are ${dist}m from the office (allowed: ${gpsConfig.geofenceRadius}m). Please check in from the office or submit a WFH request`);
+                const allowed = Math.round(effectiveRadiusWithAccuracy(gpsConfig.geofenceRadius, accuracy));
+                throw new BusinessError(`You are ${dist}m from the office (allowed: ${allowed}m). Please check in from the office or submit a WFH request`);
               }
             } else {
               checkInType = 'office';

@@ -34,11 +34,18 @@ export const Modal: React.FC<ModalProps> = ({
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
+      role="presentation"
+      aria-label={t('common:modal.backdropDismiss', { defaultValue: 'Press Escape or click outside to close' })}
     >
-      <div className={`bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-full ${widthClass} overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]`}>
+      <div
+        className={`bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-full ${widthClass} overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? 'modal-title' : undefined}
+      >
         {title && (
           <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50 shrink-0">
-            <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
+            <h3 id="modal-title" className="font-bold text-lg text-text-light dark:text-text-dark">
               {title}
             </h3>
             <button

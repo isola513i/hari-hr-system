@@ -116,7 +116,9 @@ export class AttendanceRegularizationService {
     }
 
     const result = await query(
-      `SELECT * FROM attendance_regularization_requests
+      `SELECT id, employee_id, date, requested_clock_in, requested_clock_out, reason, status,
+              manager_reviewed_by, manager_reviewed_at, reviewed_by, reviewed_at, notes, created_at
+       FROM attendance_regularization_requests
        WHERE ${conditions.join(' AND ')}
        ORDER BY date DESC, created_at DESC`,
       params

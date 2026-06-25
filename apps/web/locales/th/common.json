@@ -208,7 +208,11 @@
     "results": "รายการ",
     "previous": "ก่อนหน้า",
     "next": "ถัดไป",
-    "page": "หน้า"
+    "page": "หน้า",
+    "singlePage": "แสดงทั้งหมด {{count}} รายการ"
+  },
+  "modal": {
+    "backdropDismiss": "กด Escape หรือคลิกด้านนอกเพื่อปิด"
   },
   "errors": {
     "somethingWentWrong": "เกิดข้อผิดพลาด",

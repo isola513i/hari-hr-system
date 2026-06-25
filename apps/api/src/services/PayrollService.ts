@@ -188,6 +188,14 @@ export class PayrollService {
     deductions: number,
     config: PayrollConfig
   ) {
+    // Guard against negative inputs that would silently corrupt pay (e.g. a
+    // negative bonus inflating net pay, or negative hours reducing gross).
+    if (baseSalary < 0) throw new BusinessError('Base salary cannot be negative');
+    if (overtimeHours < 0) throw new BusinessError('Overtime hours cannot be negative');
+    if (bonus < 0) throw new BusinessError('Bonus cannot be negative');
+    if (leaveDeduction < 0) throw new BusinessError('Leave deduction cannot be negative');
+    if (deductions < 0) throw new BusinessError('Deductions cannot be negative');
+
     const hourlyRate = baseSalary / config.standardHoursPerMonth;
     const overtimePay = Math.round(overtimeHours * hourlyRate * config.otMultiplier * 100) / 100;
     const grossPay = baseSalary + overtimePay + bonus;
@@ -222,6 +230,11 @@ export class PayrollService {
     deductions: number,
     _config: PayrollConfig
   ) {
+    if (baseSalary < 0) throw new BusinessError('Base salary cannot be negative');
+    if (bonus < 0) throw new BusinessError('Bonus cannot be negative');
+    if (leaveDeduction < 0) throw new BusinessError('Leave deduction cannot be negative');
+    if (deductions < 0) throw new BusinessError('Deductions cannot be negative');
+
     const overtimePay = 0;
     const grossPay = baseSalary + bonus;
     const netPay = Math.round((grossPay - leaveDeduction - deductions) * 100) / 100;

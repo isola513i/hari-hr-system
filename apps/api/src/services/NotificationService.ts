@@ -55,7 +55,8 @@ export class NotificationService {
     limit: number = 20
   ): Promise<NotificationResponse[]> {
     const result = await query(
-      `SELECT * FROM notifications
+      `SELECT id, user_id, title, message, type, read, link, created_at
+       FROM notifications
        WHERE user_id = $1
        ORDER BY created_at DESC
        LIMIT $2`,

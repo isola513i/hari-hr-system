@@ -66,6 +66,7 @@ export const Payroll: React.FC = () => {
     updatePayrollSettings,
     createForm,
     setCreateForm,
+    createErrors,
     showBatch,
     setShowBatch,
     batchForm,
@@ -96,6 +97,12 @@ export const Payroll: React.FC = () => {
     isLoading,
     employeeSummary,
   } = usePayrollPage();
+
+  // Border/ring classes for a create-form input given its validation state.
+  const fieldBorder = (field: string) =>
+    createErrors[field]
+      ? 'border-red-500 focus:ring-red-500'
+      : 'border-border-light dark:border-border-dark focus:ring-primary';
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -440,29 +447,34 @@ export const Payroll: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('form.baseSalary')}</label>
                   <input type="number" value={createForm.baseSalary} onChange={(e) => setCreateForm((f) => ({ ...f, baseSalary: e.target.value }))}
-                    className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary" placeholder="0.00" />
+                    className={`w-full px-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 ${fieldBorder('baseSalary')}`} placeholder="0.00" />
+                  {createErrors.baseSalary && <p className="mt-1 text-xs text-red-500">{createErrors.baseSalary}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('form.overtimeHours')}</label>
                   <input type="number" value={createForm.overtimeHours} onChange={(e) => setCreateForm((f) => ({ ...f, overtimeHours: e.target.value }))}
-                    className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary" placeholder="0" />
+                    className={`w-full px-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 ${fieldBorder('overtimeHours')}`} placeholder="0" />
+                  {createErrors.overtimeHours && <p className="mt-1 text-xs text-red-500">{createErrors.overtimeHours}</p>}
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('form.bonus')}</label>
                 <input type="number" value={createForm.bonus} onChange={(e) => setCreateForm((f) => ({ ...f, bonus: e.target.value }))}
-                  className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary" placeholder="0.00" />
+                  className={`w-full px-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 ${fieldBorder('bonus')}`} placeholder="0.00" />
+                {createErrors.bonus && <p className="mt-1 text-xs text-red-500">{createErrors.bonus}</p>}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('form.leaveDeduction')}</label>
                   <input type="number" value={createForm.leaveDeduction} onChange={(e) => setCreateForm((f) => ({ ...f, leaveDeduction: e.target.value }))}
-                    className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary" placeholder="0.00" />
+                    className={`w-full px-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 ${fieldBorder('leaveDeduction')}`} placeholder="0.00" />
+                  {createErrors.leaveDeduction && <p className="mt-1 text-xs text-red-500">{createErrors.leaveDeduction}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('form.otherDeductions')}</label>
                   <input type="number" value={createForm.deductions} onChange={(e) => setCreateForm((f) => ({ ...f, deductions: e.target.value }))}
-                    className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary" placeholder="0.00" />
+                    className={`w-full px-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 ${fieldBorder('deductions')}`} placeholder="0.00" />
+                  {createErrors.deductions && <p className="mt-1 text-xs text-red-500">{createErrors.deductions}</p>}
                 </div>
               </div>
             </div>

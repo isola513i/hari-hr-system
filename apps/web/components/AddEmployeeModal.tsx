@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal } from './Modal';
 import { DatePicker } from './DatePicker';
 import { Dropdown } from './Dropdown';
+import { SearchableSelect } from './SearchableSelect';
 import { DEPARTMENTS, JOB_TITLES } from '../types';
 
 /**
@@ -193,11 +194,12 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
             <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
               {t('employees:addModal.role')}
             </label>
-            <Dropdown
+            <SearchableSelect
               value={newEmployee.role}
               onChange={(val) => updateField('role', val)}
+              onSearch={() => { /* static list — client-side filtering handles it */ }}
               placeholder={t('common:placeholders.selectRole')}
-              options={JOB_TITLES.map((t) => ({ value: t, label: t }))}
+              options={JOB_TITLES.map((title) => ({ value: title, label: title }))}
             />
             {validationErrors.role && (
               <p className="mt-1 text-xs text-red-500">{validationErrors.role}</p>

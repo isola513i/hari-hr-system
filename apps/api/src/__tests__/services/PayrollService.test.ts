@@ -509,4 +509,27 @@ describe('PayrollService', () => {
       ).rejects.toThrow('Pay period end date must be after start date');
     });
   });
+
+  describe('negative-value guards', () => {
+    // calculatePayrollAmounts/calculateInternPayroll are private; call directly
+    // to assert the guards in isolation (the guards run before any config use,
+    // so a stub config is fine).
+    const stubConfig = {} as never;
+
+    it('rejects negative inputs in calculatePayrollAmounts', () => {
+      const calc = (service as any).calculatePayrollAmounts.bind(service);
+      expect(() => calc(-1, 0, 0, 0, 0, stubConfig)).toThrow(/Base salary cannot be negative/);
+      expect(() => calc(10000, -1, 0, 0, 0, stubConfig)).toThrow(/Overtime hours cannot be negative/);
+      expect(() => calc(10000, 0, -1, 0, 0, stubConfig)).toThrow(/Bonus cannot be negative/);
+      expect(() => calc(10000, 0, 0, -1, 0, stubConfig)).toThrow(/Leave deduction cannot be negative/);
+      expect(() => calc(10000, 0, 0, 0, -1, stubConfig)).toThrow(/Deductions cannot be negative/);
+    });
+
+    it('rejects negative inputs in calculateInternPayroll', () => {
+      const calc = (service as any).calculateInternPayroll.bind(service);
+      expect(() => calc(-1, 0, 0, 0, 0, stubConfig)).toThrow(/Base salary cannot be negative/);
+      expect(() => calc(5000, 0, -1, 0, 0, stubConfig)).toThrow(/Bonus cannot be negative/);
+      expect(() => calc(5000, 0, 0, -1, 0, stubConfig)).toThrow(/Leave deduction cannot be negative/);
+    });
+  });
 });

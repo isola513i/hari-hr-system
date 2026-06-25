@@ -53,6 +53,27 @@ export function usePayrollPage() {
     leaveDeduction: '0',
     deductions: '0',
   });
+  // Field-level validation errors for the create form (i18n keys resolved in the page).
+  const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
+
+  // Validate the create form, returning a map of field → i18n error key.
+  const validateCreateForm = (): Record<string, string> => {
+    const e: Record<string, string> = {};
+    if (!createForm.employeeId) e.employeeId = t('errors.fieldRequired');
+    if (!createForm.payPeriodStart) e.payPeriodStart = t('errors.fieldRequired');
+    if (!createForm.payPeriodEnd) e.payPeriodEnd = t('errors.fieldRequired');
+
+    const base = parseFloat(createForm.baseSalary);
+    if (!createForm.baseSalary) e.baseSalary = t('errors.fieldRequired');
+    else if (Number.isNaN(base) || base <= 0) e.baseSalary = t('errors.mustBePositive');
+
+    const nonNeg: Array<keyof typeof createForm> = ['overtimeHours', 'bonus', 'leaveDeduction', 'deductions'];
+    for (const k of nonNeg) {
+      const v = parseFloat(createForm[k]);
+      if (createForm[k] !== '' && (Number.isNaN(v) || v < 0)) e[k] = t('errors.mustBeNonNegative');
+    }
+    return e;
+  };
 
   // Batch payroll modal
   const [showBatch, setShowBatch] = useState(false);
@@ -74,10 +95,13 @@ export function usePayrollPage() {
   };
 
   const handleCreate = async () => {
-    if (!createForm.employeeId || !createForm.payPeriodStart || !createForm.payPeriodEnd || !createForm.baseSalary) {
+    const errs = validateCreateForm();
+    if (Object.keys(errs).length > 0) {
+      setCreateErrors(errs);
       showToast(t('errors.requiredField'), 'warning');
       return;
     }
+    setCreateErrors({});
     try {
       await createPayroll.mutateAsync({
         employeeId: createForm.employeeId,
@@ -91,6 +115,7 @@ export function usePayrollPage() {
       });
       showToast(t('success.created'), 'success');
       setShowCreate(false);
+      setCreateErrors({});
       setCreateForm({ employeeId: '', payPeriodStart: '', payPeriodEnd: '', baseSalary: '', overtimeHours: '0', bonus: '0', leaveDeduction: '0', deductions: '0' });
     } catch {
       showToast(t('errors.createFailed'), 'error');
@@ -270,6 +295,7 @@ export function usePayrollPage() {
     updatePayrollSettings,
     createForm,
     setCreateForm,
+    createErrors,
     showBatch,
     setShowBatch,
     batchForm,

@@ -12,6 +12,11 @@ export default {
     darkMode: 'class',
     theme: {
         extend: {
+            screens: {
+                // Extra-small phones (≥480px): lets cramped stat grids go 2-up
+                // instead of overflowing at 3-up. Additive to Tailwind defaults.
+                'xs': '480px',
+            },
             colors: {
                 "primary": "#3498db",
                 "primary-dark": "#2c3e50",

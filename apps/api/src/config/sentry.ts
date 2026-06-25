@@ -12,6 +12,52 @@ import type { Express } from 'express';
  * MUST be called at the very top of index.ts, before importing any
  * instrumented modules.
  */
+/**
+ * Field names whose values must never reach Sentry. Covers auth secrets plus
+ * HR/PII fields specific to this app (national ID, bank, DOB, emergency contact).
+ * Matching is case-insensitive and substring-based so variants like
+ * `bank_account_number` / `bankAccountNumber` are all caught.
+ */
+const SENSITIVE_FIELD_PATTERNS = [
+  'password',
+  'token',
+  'secret',
+  'apikey',
+  'authorization',
+  'nationalid',
+  'national_id',
+  'ssn',
+  'socialsecurity',
+  'bankaccount',
+  'accountnumber',
+  'bankcode',
+  'routingnumber',
+  'dateofbirth',
+  'dob',
+  'emergencycontact',
+  'totp',
+  'backupcode',
+];
+
+const isSensitiveKey = (key: string): boolean => {
+  const k = key.toLowerCase().replace(/[_-]/g, '');
+  return SENSITIVE_FIELD_PATTERNS.some((p) => k.includes(p.replace(/[_-]/g, '')));
+};
+
+/**
+ * Recursively redact sensitive values in an arbitrary structure (objects and
+ * arrays), returning a safe copy. Non-object input is returned unchanged.
+ */
+const scrubSensitive = (input: unknown, depth = 0): unknown => {
+  if (depth > 6 || input == null || typeof input !== 'object') return input;
+  if (Array.isArray(input)) return input.map((v) => scrubSensitive(v, depth + 1));
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+    out[key] = isSensitiveKey(key) ? '[REDACTED]' : scrubSensitive(value, depth + 1);
+  }
+  return out;
+};
+
 export const initSentry = (): void => {
   const dsn = process.env.SENTRY_DSN;
   const env = process.env.NODE_ENV ?? 'development';
@@ -36,12 +82,10 @@ export const initSentry = (): void => {
           delete event.request.headers['authorization'];
           delete event.request.headers['cookie'];
         }
-        const data = event.request.data as Record<string, unknown> | undefined;
-        if (data && typeof data === 'object') {
-          for (const k of ['password', 'currentPassword', 'newPassword', 'token', 'refreshToken', 'secret']) {
-            if (k in data) data[k] = '[REDACTED]';
-          }
-        }
+        event.request.data = scrubSensitive(event.request.data);
+      }
+      if (event.extra) {
+        event.extra = scrubSensitive(event.extra) as Record<string, unknown>;
       }
       return event;
     },
