@@ -202,7 +202,7 @@ export class PerformanceService {
   }
 
   async submitSelfReview(id: string, callerUserId: string, audit?: AuditContext): Promise<PerformanceReview> {
-    const existing = await query('SELECT * FROM performance_reviews WHERE id = $1', [id]);
+    const existing = await query('SELECT id, employee_id, reviewer_user_id, status FROM performance_reviews WHERE id = $1', [id]);
     if (!existing.rows[0]) throw new BusinessError('Review not found');
     const row = existing.rows[0];
     if (row.status !== 'draft') throw new BusinessError('Only draft reviews can be submitted');
@@ -264,7 +264,7 @@ export class PerformanceService {
   }): Promise<PerformanceReview> {
     const { id, rating, managerComment, managerUserId, managerEmployeeId, audit } = data;
 
-    const existing = await query('SELECT * FROM performance_reviews WHERE id = $1', [id]);
+    const existing = await query('SELECT id, employee_id, reviewer_user_id, status FROM performance_reviews WHERE id = $1', [id]);
     if (!existing.rows[0]) throw new BusinessError('Review not found');
     const row = existing.rows[0];
 
@@ -329,7 +329,7 @@ export class PerformanceService {
   }): Promise<PerformanceReview> {
     const { id, hrComment, hrUserId, audit } = data;
 
-    const existing = await query('SELECT * FROM performance_reviews WHERE id = $1', [id]);
+    const existing = await query('SELECT id, employee_id, reviewer_user_id, status FROM performance_reviews WHERE id = $1', [id]);
     if (!existing.rows[0]) throw new BusinessError('Review not found');
 
     const result = await query(

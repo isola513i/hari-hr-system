@@ -3,13 +3,13 @@ import { Holiday, CreateHolidayDTO, UpdateHolidayDTO } from '../models/Holiday';
 
 export class HolidayService {
     async getAllHolidays(): Promise<Holiday[]> {
-        const result = await query('SELECT * FROM holidays ORDER BY date ASC');
+        const result = await query('SELECT id, date, end_date, name, is_recurring, created_at, updated_at FROM holidays ORDER BY date ASC');
         return result.rows.map(this.mapRowToHoliday);
     }
 
     async getHolidaysByRange(startDate: string, endDate: string): Promise<Holiday[]> {
         const result = await query(
-            `SELECT * FROM holidays
+            `SELECT id, date, end_date, name, is_recurring, created_at, updated_at FROM holidays
              WHERE (is_recurring = FALSE AND date >= $1::date AND COALESCE(end_date, date) <= $2::date)
                 OR (is_recurring = TRUE AND (
                     TO_CHAR(date, 'MM-DD') >= TO_CHAR($1::date, 'MM-DD')
@@ -68,7 +68,7 @@ export class HolidayService {
     }
 
     async getHolidayById(id: string): Promise<Holiday | null> {
-        const result = await query('SELECT * FROM holidays WHERE id = $1', [id]);
+        const result = await query('SELECT id, date, end_date, name, is_recurring, created_at, updated_at FROM holidays WHERE id = $1', [id]);
         if (result.rows.length === 0) return null;
         return this.mapRowToHoliday(result.rows[0]);
     }

@@ -331,7 +331,7 @@ export class OffboardingService {
 
     async getExitInterview(employeeId: string): Promise<ExitInterviewResponse | null> {
         const result = await query(
-            `SELECT * FROM exit_interviews WHERE employee_id = $1`,
+            `SELECT id, employee_id, reason_for_leaving, satisfaction_rating, would_rehire, feedback, improvements_suggested, conducted_by, conducted_at, created_at, updated_at FROM exit_interviews WHERE employee_id = $1`,
             [employeeId],
         );
         if (result.rows.length === 0) return null;
@@ -344,7 +344,7 @@ export class OffboardingService {
 
     private async _getTasksByEmployee(employeeId: string): Promise<OffboardingTaskResponse[]> {
         const result = await query(
-            `SELECT * FROM offboarding_tasks WHERE employee_id = $1 ORDER BY due_date ASC NULLS LAST`,
+            `SELECT id, employee_id, title, description, stage, assignee, due_date, completed, priority, created_at, updated_at FROM offboarding_tasks WHERE employee_id = $1 ORDER BY due_date ASC NULLS LAST`,
             [employeeId],
         );
         return result.rows.map((r) => mapTaskRow(r as OffboardingTaskRow));

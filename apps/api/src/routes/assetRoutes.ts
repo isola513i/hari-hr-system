@@ -31,6 +31,29 @@ function mapRow(row: any) {
   };
 }
 
+/**
+ * @swagger
+ * /api/assets:
+ *   get:
+ *     summary: List all assets (admin/manager) or own assigned assets (employee)
+ *     tags: [Assets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema: { type: string, enum: [Available, Assigned, Retired] }
+ *         description: Filter by asset status (admin/manager only)
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *         description: Search by asset name or serial number (admin/manager only)
+ *     responses:
+ *       200:
+ *         description: List of assets
+ *       401: { description: Unauthorized }
+ *       500: { description: Internal server error }
+ */
 // GET /api/assets — list all (admin) or own assets (employee)
 router.get('/', async (req: Request, res: Response) => {
   try {
@@ -59,6 +82,26 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/assets/{id}:
+ *   get:
+ *     summary: Get a single asset by ID
+ *     tags: [Assets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Asset record
+ *       401: { description: Unauthorized }
+ *       404: { description: Asset not found }
+ *       500: { description: Internal server error }
+ */
 // GET /api/assets/:id
 router.get('/:id', async (req: Request, res: Response) => {
   try {
@@ -70,6 +113,37 @@ router.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/assets:
+ *   post:
+ *     summary: Create a new asset (admin/manager only)
+ *     tags: [Assets]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, assetType]
+ *             properties:
+ *               name: { type: string }
+ *               assetType: { type: string, example: Laptop }
+ *               serialNumber: { type: string }
+ *               status: { type: string, enum: [Available, Assigned, Retired], default: Available }
+ *               purchaseDate: { type: string, format: date }
+ *               purchasePrice: { type: number }
+ *               notes: { type: string }
+ *     responses:
+ *       201:
+ *         description: Asset created successfully
+ *       400: { description: Validation error — name and assetType are required }
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden — admin/manager only }
+ *       500: { description: Internal server error }
+ */
 // POST /api/assets — create (admin only)
 router.post('/', requireAdmin, apiLimiter, async (req: Request, res: Response) => {
   try {
@@ -88,6 +162,42 @@ router.post('/', requireAdmin, apiLimiter, async (req: Request, res: Response) =
   }
 });
 
+/**
+ * @swagger
+ * /api/assets/{id}:
+ *   patch:
+ *     summary: Update an asset's details (admin/manager only)
+ *     tags: [Assets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string }
+ *               assetType: { type: string }
+ *               serialNumber: { type: string }
+ *               status: { type: string, enum: [Available, Assigned, Retired] }
+ *               purchaseDate: { type: string, format: date }
+ *               purchasePrice: { type: number }
+ *               notes: { type: string }
+ *     responses:
+ *       200:
+ *         description: Asset updated successfully
+ *       400: { description: No fields to update }
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden — admin/manager only }
+ *       404: { description: Asset not found }
+ *       500: { description: Internal server error }
+ */
 // PATCH /api/assets/:id — update (admin only)
 router.patch('/:id', requireAdmin, apiLimiter, async (req: Request, res: Response) => {
   try {
@@ -117,6 +227,37 @@ router.patch('/:id', requireAdmin, apiLimiter, async (req: Request, res: Respons
   }
 });
 
+/**
+ * @swagger
+ * /api/assets/{id}/assign:
+ *   post:
+ *     summary: Assign an asset to an employee (admin/manager only)
+ *     tags: [Assets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [employeeId]
+ *             properties:
+ *               employeeId: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Asset assigned successfully
+ *       400: { description: Validation error or asset is retired }
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden — admin/manager only }
+ *       404: { description: Asset not found }
+ *       500: { description: Internal server error }
+ */
 // POST /api/assets/:id/assign — assign to employee (admin only)
 router.post('/:id/assign', requireAdmin, apiLimiter, async (req: Request, res: Response) => {
   try {
@@ -138,6 +279,27 @@ router.post('/:id/assign', requireAdmin, apiLimiter, async (req: Request, res: R
   }
 });
 
+/**
+ * @swagger
+ * /api/assets/{id}/unassign:
+ *   post:
+ *     summary: Unassign an asset from its current employee (admin/manager only)
+ *     tags: [Assets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Asset unassigned and set to Available
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden — admin/manager only }
+ *       404: { description: Asset not found }
+ *       500: { description: Internal server error }
+ */
 // POST /api/assets/:id/unassign — unassign from employee (admin only)
 router.post('/:id/unassign', requireAdmin, apiLimiter, async (req: Request, res: Response) => {
   try {
@@ -153,6 +315,27 @@ router.post('/:id/unassign', requireAdmin, apiLimiter, async (req: Request, res:
   }
 });
 
+/**
+ * @swagger
+ * /api/assets/{id}:
+ *   delete:
+ *     summary: Delete an asset (admin/manager only)
+ *     tags: [Assets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Asset deleted successfully
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden — admin/manager only }
+ *       404: { description: Asset not found }
+ *       500: { description: Internal server error }
+ */
 // DELETE /api/assets/:id (admin only)
 router.delete('/:id', requireAdmin, apiLimiter, async (req: Request, res: Response) => {
   try {

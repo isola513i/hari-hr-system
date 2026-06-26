@@ -12,6 +12,56 @@ router.use(authenticateToken);
  * Returns combined leave + WFH + OT + holidays for a given month.
  * HR_ADMIN/MANAGER see all; EMPLOYEE sees only their own.
  */
+/**
+ * @swagger
+ * /api/calendar/team:
+ *   get:
+ *     summary: Get team calendar events for a given month
+ *     tags: [Calendar]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: month
+ *         schema: { type: string, example: '2025-01' }
+ *         description: Target month in YYYY-MM format (defaults to current month)
+ *       - in: query
+ *         name: department
+ *         schema: { type: string }
+ *         description: Filter events by department name
+ *     responses:
+ *       200:
+ *         description: Combined leave, WFH, OT and holiday events for the month
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 month:
+ *                   type: string
+ *                   example: '2025-01'
+ *                 events:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string }
+ *                       event_type: { type: string, enum: [leave, wfh, ot, holiday] }
+ *                       employee_id: { type: string }
+ *                       employee_name: { type: string }
+ *                       avatar: { type: string }
+ *                       department: { type: string }
+ *                       start_date: { type: string, format: date }
+ *                       end_date: { type: string, format: date }
+ *                       sub_type: { type: string }
+ *                       status: { type: string }
+ *                       reason: { type: string }
+ *                 departments:
+ *                   type: array
+ *                   items: { type: string }
+ *       401: { description: Unauthorized }
+ *       500: { description: Failed to fetch calendar data }
+ */
 router.get('/team', cacheMiddleware(30000), async (req, res) => {
   try {
     const user = (req as any).user;

@@ -23,7 +23,7 @@ export class NotesService {
    */
   async getByUserId(userId: string): Promise<NoteResponse[]> {
     const result = await query(
-      `SELECT * FROM personal_notes
+      `SELECT id, content, color, pinned, created_at, updated_at FROM personal_notes
        WHERE user_id = $1
        ORDER BY pinned DESC, updated_at DESC`,
       [userId]
@@ -36,7 +36,7 @@ export class NotesService {
    */
   async getById(noteId: string, userId: string): Promise<NoteResponse | null> {
     const result = await query(
-      `SELECT * FROM personal_notes
+      `SELECT id, content, color, pinned, created_at, updated_at FROM personal_notes
        WHERE id = $1 AND user_id = $2`,
       [noteId, userId]
     );

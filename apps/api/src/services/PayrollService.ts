@@ -580,7 +580,7 @@ export class PayrollService {
    */
   async getPayrollByEmployee(employeeId: string, limit: number = 12): Promise<PayrollRecord[]> {
     const result = await query(
-      `SELECT * FROM payroll_records
+      `SELECT id, employee_id, pay_period_start, pay_period_end, base_salary, overtime_hours, overtime_pay, bonus, leave_deduction, deductions, tax_amount, ssf_employee, ssf_employer, pvf_employee, pvf_employer, net_pay, status, payment_date, payment_method, notes, created_at FROM payroll_records
        WHERE employee_id = $1
        ORDER BY pay_period_start DESC
        LIMIT $2`,
@@ -614,7 +614,7 @@ export class PayrollService {
    * Get payroll by ID
    */
   async getPayrollById(id: string): Promise<PayrollRecord | null> {
-    const result = await query('SELECT * FROM payroll_records WHERE id = $1', [id]);
+    const result = await query('SELECT id, employee_id, pay_period_start, pay_period_end, base_salary, overtime_hours, overtime_pay, bonus, leave_deduction, deductions, tax_amount, ssf_employee, ssf_employer, pvf_employee, pvf_employer, net_pay, status, payment_date, payment_method, notes, created_at FROM payroll_records WHERE id = $1', [id]);
 
     if (result.rows.length === 0) {
       return null;
@@ -854,7 +854,7 @@ export class PayrollService {
    */
   async getSalaryHistory(employeeId: string): Promise<SalaryHistory[]> {
     const result = await query(
-      'SELECT * FROM salary_history WHERE employee_id = $1 ORDER BY effective_date DESC',
+      'SELECT id, employee_id, effective_date, base_salary, previous_salary, change_reason, approved_by, created_at FROM salary_history WHERE employee_id = $1 ORDER BY effective_date DESC',
       [employeeId]
     );
 

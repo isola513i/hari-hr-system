@@ -102,8 +102,19 @@ router.post('/clock-out', apiLimiter, validateClockIn, validateRequest, async (r
 });
 
 /**
- * GET /api/attendance/today
- * Get today's attendance status for current user
+ * @swagger
+ * /api/attendance/today:
+ *   get:
+ *     summary: Get today's attendance status for the current user
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Today's attendance record or a not-clocked-in status
+ *       400: { description: Employee ID not found }
+ *       401: { description: Unauthorized }
+ *       500: { description: Internal server error }
  */
 router.get('/today', async (req: Request, res: Response) => {
   try {
@@ -121,8 +132,28 @@ router.get('/today', async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/attendance/my-history
- * Get attendance history for current user
+ * @swagger
+ * /api/attendance/my-history:
+ *   get:
+ *     summary: Get attendance history for the current user
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema: { type: string, format: date }
+ *         description: Filter from this date (YYYY-MM-DD)
+ *       - in: query
+ *         name: endDate
+ *         schema: { type: string, format: date }
+ *         description: Filter up to this date (YYYY-MM-DD)
+ *     responses:
+ *       200:
+ *         description: List of attendance records for the current user
+ *       400: { description: Employee ID not found }
+ *       401: { description: Unauthorized }
+ *       500: { description: Internal server error }
  */
 router.get('/my-history', async (req: Request, res: Response) => {
   try {
@@ -146,8 +177,33 @@ router.get('/my-history', async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/attendance/employee/:employeeId
- * Get attendance for a specific employee (admin or self)
+ * @swagger
+ * /api/attendance/employee/{employeeId}:
+ *   get:
+ *     summary: Get attendance records for a specific employee (owner or admin)
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: employeeId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: ID of the employee
+ *       - in: query
+ *         name: startDate
+ *         schema: { type: string, format: date }
+ *         description: Filter from this date (YYYY-MM-DD)
+ *       - in: query
+ *         name: endDate
+ *         schema: { type: string, format: date }
+ *         description: Filter up to this date (YYYY-MM-DD)
+ *     responses:
+ *       200:
+ *         description: List of attendance records for the employee
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden }
+ *       500: { description: Internal server error }
  */
 router.get(
   '/employee/:employeeId',
@@ -172,8 +228,36 @@ router.get(
 );
 
 /**
- * GET /api/attendance/summary/:employeeId
- * Get attendance summary for an employee
+ * @swagger
+ * /api/attendance/summary/{employeeId}:
+ *   get:
+ *     summary: Get attendance summary for an employee over a date range (owner or admin)
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: employeeId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: ID of the employee
+ *       - in: query
+ *         name: startDate
+ *         required: true
+ *         schema: { type: string, format: date }
+ *         description: Start of the summary period (YYYY-MM-DD)
+ *       - in: query
+ *         name: endDate
+ *         required: true
+ *         schema: { type: string, format: date }
+ *         description: End of the summary period (YYYY-MM-DD)
+ *     responses:
+ *       200:
+ *         description: Attendance summary statistics for the employee
+ *       400: { description: startDate and endDate are required }
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden }
+ *       500: { description: Internal server error }
  */
 router.get(
   '/summary/:employeeId',

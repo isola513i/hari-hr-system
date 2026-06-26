@@ -6,7 +6,7 @@ export class SystemConfigService {
      * Get all system configurations
      */
     async getAllConfigs(): Promise<SystemConfig[]> {
-        const result = await query('SELECT * FROM system_configs ORDER BY category, key');
+        const result = await query('SELECT id, category, key, value, data_type, description, created_at, updated_at FROM system_configs ORDER BY category, key');
         return result.rows.map(this.mapRowToConfig);
     }
 
@@ -15,7 +15,7 @@ export class SystemConfigService {
      */
     async getConfig(category: string, key: string): Promise<SystemConfig | null> {
         const result = await query(
-            'SELECT * FROM system_configs WHERE category = $1 AND key = $2',
+            'SELECT id, category, key, value, data_type, description, created_at, updated_at FROM system_configs WHERE category = $1 AND key = $2',
             [category, key]
         );
         if (result.rows.length === 0) {
@@ -29,7 +29,7 @@ export class SystemConfigService {
      */
     async getConfigsByCategory(category: string): Promise<SystemConfig[]> {
         const result = await query(
-            'SELECT * FROM system_configs WHERE category = $1 ORDER BY key',
+            'SELECT id, category, key, value, data_type, description, created_at, updated_at FROM system_configs WHERE category = $1 ORDER BY key',
             [category]
         );
         return result.rows.map(this.mapRowToConfig);

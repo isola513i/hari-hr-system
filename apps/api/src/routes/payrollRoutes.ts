@@ -15,9 +15,29 @@ const router = Router();
 router.use(authenticateToken);
 
 /**
- * POST /api/payroll/batch
- * Batch create payroll records for all active employees (admin only)
- * NOTE: Must be defined BEFORE / to avoid route shadowing
+ * @swagger
+ * /api/payroll/batch:
+ *   post:
+ *     summary: Batch create payroll records for all active employees
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [payPeriodStart, payPeriodEnd]
+ *             properties:
+ *               payPeriodStart: { type: string, format: date }
+ *               payPeriodEnd: { type: string, format: date }
+ *     responses:
+ *       201:
+ *         description: Payroll batch created successfully
+ *       400: { description: Validation error }
+ *       401: { description: Unauthorized }
+ *       403: { description: Access denied }
  */
 router.post('/batch', requireAdminOrFinance, apiLimiter, validatePayrollBatch, validateRequest, async (req: Request, res: Response) => {
   try {
@@ -36,9 +56,30 @@ router.post('/batch', requireAdminOrFinance, apiLimiter, validatePayrollBatch, v
 });
 
 /**
- * POST /api/payroll
- * What-if preview: compute payroll amounts without persisting (admin/finance).
- * NOTE: Must be defined BEFORE /:id routes to avoid route shadowing.
+ * @swagger
+ * /api/payroll/simulate:
+ *   post:
+ *     summary: Simulate payroll computation without persisting
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [employeeId, payPeriodStart, payPeriodEnd]
+ *             properties:
+ *               employeeId: { type: string, format: uuid }
+ *               payPeriodStart: { type: string, format: date }
+ *               payPeriodEnd: { type: string, format: date }
+ *     responses:
+ *       200:
+ *         description: Payroll simulation result
+ *       400: { description: Validation error }
+ *       401: { description: Unauthorized }
+ *       403: { description: Access denied }
  */
 router.post('/simulate', requireAdminOrFinance, apiLimiter, validatePayrollCreate, validateRequest, async (req: Request, res: Response) => {
   try {
@@ -95,8 +136,23 @@ router.post('/', requireAdminOrFinance, apiLimiter, validatePayrollCreate, valid
 });
 
 /**
- * GET /api/payroll/my-payslips
- * Get payroll history for current user
+ * @swagger
+ * /api/payroll/my-payslips:
+ *   get:
+ *     summary: Get payroll history for the current authenticated employee
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 12 }
+ *         description: Maximum number of records to return
+ *     responses:
+ *       200:
+ *         description: List of payslip records
+ *       400: { description: Employee ID not found }
+ *       401: { description: Unauthorized }
  */
 router.get('/my-payslips', async (req: Request, res: Response) => {
   try {
@@ -116,8 +172,27 @@ router.get('/my-payslips', async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/payroll/employee/:employeeId
- * Get payroll for a specific employee (admin or self)
+ * @swagger
+ * /api/payroll/employee/{employeeId}:
+ *   get:
+ *     summary: Get payroll history for a specific employee
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: employeeId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 12 }
+ *         description: Maximum number of records to return
+ *     responses:
+ *       200:
+ *         description: List of payroll records for the employee
+ *       401: { description: Unauthorized }
+ *       403: { description: Access denied }
  */
 router.get(
   '/employee/:employeeId',
@@ -137,8 +212,31 @@ router.get(
 );
 
 /**
- * GET /api/payroll/export
- * Export payroll records as CSV (admin or finance only)
+ * @swagger
+ * /api/payroll/export:
+ *   get:
+ *     summary: Export payroll records as CSV
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema: { type: string, format: date }
+ *         description: Filter by pay period start date
+ *       - in: query
+ *         name: endDate
+ *         schema: { type: string, format: date }
+ *         description: Filter by pay period end date
+ *     responses:
+ *       200:
+ *         description: CSV file download
+ *         content:
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *       401: { description: Unauthorized }
+ *       403: { description: Access denied }
  */
 router.get('/export', requireAdminOrFinance, async (req: Request, res: Response) => {
   try {
@@ -207,7 +305,7 @@ router.get('/export', requireAdminOrFinance, async (req: Request, res: Response)
     ].join('\n');
 
     // Add BOM for Excel UTF-8 compatibility
-    const bom = '\uFEFF';
+    const bom = '﻿';
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="payroll-export-${new Date().toISOString().split('T')[0]}.csv"`);
@@ -219,9 +317,23 @@ router.get('/export', requireAdminOrFinance, async (req: Request, res: Response)
 });
 
 /**
- * GET /api/payroll/all
- * Get all payroll records (admin only)
- * NOTE: Must be defined BEFORE /:id to avoid route shadowing
+ * @swagger
+ * /api/payroll/all:
+ *   get:
+ *     summary: Get all payroll records (admin or finance only)
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 50 }
+ *         description: Maximum number of records to return
+ *     responses:
+ *       200:
+ *         description: List of all payroll records
+ *       401: { description: Unauthorized }
+ *       403: { description: Access denied }
  */
 router.get('/all', requireAdminOrFinance, async (req: Request, res: Response) => {
   try {
@@ -235,9 +347,30 @@ router.get('/all', requireAdminOrFinance, async (req: Request, res: Response) =>
 });
 
 /**
- * GET /api/payroll/reports/summary
- * Get payroll summary for a period (admin only)
- * NOTE: Must be defined BEFORE /:id to avoid route shadowing
+ * @swagger
+ * /api/payroll/reports/summary:
+ *   get:
+ *     summary: Get payroll summary report for a date range
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         required: true
+ *         schema: { type: string, format: date }
+ *         description: Report period start date
+ *       - in: query
+ *         name: endDate
+ *         required: true
+ *         schema: { type: string, format: date }
+ *         description: Report period end date
+ *     responses:
+ *       200:
+ *         description: Payroll summary data
+ *       400: { description: Missing required query parameters }
+ *       401: { description: Unauthorized }
+ *       403: { description: Access denied }
  */
 router.get('/reports/summary', requireAdminOrFinance, async (req: Request, res: Response) => {
   try {
@@ -260,9 +393,34 @@ router.get('/reports/summary', requireAdminOrFinance, async (req: Request, res: 
 });
 
 /**
- * POST /api/payroll/salary/:employeeId
- * Update employee salary (admin only)
- * NOTE: Must be defined BEFORE /:id to avoid route shadowing
+ * @swagger
+ * /api/payroll/salary/{employeeId}:
+ *   post:
+ *     summary: Update employee salary and record salary history
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: employeeId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [newSalary, changeReason]
+ *             properties:
+ *               newSalary: { type: number, minimum: 0 }
+ *               changeReason: { type: string }
+ *     responses:
+ *       201:
+ *         description: Salary updated and history record created
+ *       400: { description: Validation error }
+ *       401: { description: Unauthorized }
+ *       403: { description: Access denied }
  */
 router.post('/salary/:employeeId', requireAdmin, apiLimiter, async (req: Request, res: Response) => {
   try {
@@ -288,9 +446,23 @@ router.post('/salary/:employeeId', requireAdmin, apiLimiter, async (req: Request
 });
 
 /**
- * GET /api/payroll/salary/:employeeId/history
- * Get salary history for an employee (admin or self)
- * NOTE: Must be defined BEFORE /:id to avoid route shadowing
+ * @swagger
+ * /api/payroll/salary/{employeeId}/history:
+ *   get:
+ *     summary: Get salary change history for an employee
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: employeeId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: List of salary history records
+ *       401: { description: Unauthorized }
+ *       403: { description: Access denied }
  */
 router.get(
   '/salary/:employeeId/history',
@@ -308,9 +480,29 @@ router.get(
 );
 
 /**
- * GET /api/payroll/:id/payslip
- * Download payslip as PDF
- * NOTE: Must be defined BEFORE /:id to avoid route shadowing
+ * @swagger
+ * /api/payroll/{id}/payslip:
+ *   get:
+ *     summary: Download payslip as PDF for a payroll record
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: PDF file download
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401: { description: Unauthorized }
+ *       403: { description: Access denied }
+ *       404: { description: Payroll record not found }
  */
 router.get('/:id/payslip', async (req: Request, res: Response) => {
   try {
@@ -353,8 +545,25 @@ router.get('/:id/payslip', async (req: Request, res: Response) => {
 });
 
 /**
- * POST /api/payroll/:id/email-payslip
- * Generate payslip PDF and email it to the employee (admin/finance or record owner)
+ * @swagger
+ * /api/payroll/{id}/email-payslip:
+ *   post:
+ *     summary: Generate and email payslip PDF to the employee
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Payslip emailed successfully
+ *       400: { description: Employee email not found }
+ *       401: { description: Unauthorized }
+ *       403: { description: Access denied }
+ *       404: { description: Payroll record not found }
  */
 router.post('/:id/email-payslip', apiLimiter, async (req: Request, res: Response) => {
   try {
@@ -408,8 +617,36 @@ router.post('/:id/email-payslip', apiLimiter, async (req: Request, res: Response
 });
 
 /**
- * PUT /api/payroll/:id
- * Update an existing payroll record (admin only, only Pending records)
+ * @swagger
+ * /api/payroll/{id}:
+ *   put:
+ *     summary: Update an existing payroll record (Pending status only)
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               baseSalary: { type: number, minimum: 0 }
+ *               overtimeHours: { type: number, minimum: 0 }
+ *               bonus: { type: number, minimum: 0 }
+ *               leaveDeduction: { type: number, minimum: 0 }
+ *               deductions: { type: number, minimum: 0 }
+ *     responses:
+ *       200:
+ *         description: Payroll record updated
+ *       400: { description: Validation error }
+ *       401: { description: Unauthorized }
+ *       403: { description: Access denied }
  */
 router.put('/:id', requireAdminOrFinance, apiLimiter, async (req: Request, res: Response) => {
   try {
@@ -422,9 +659,24 @@ router.put('/:id', requireAdminOrFinance, apiLimiter, async (req: Request, res: 
 });
 
 /**
- * GET /api/payroll/:id
- * Get a specific payroll record
- * NOTE: Must be defined AFTER all literal path routes to avoid shadowing
+ * @swagger
+ * /api/payroll/{id}:
+ *   get:
+ *     summary: Get a specific payroll record by ID
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Payroll record details
+ *       401: { description: Unauthorized }
+ *       403: { description: Access denied }
+ *       404: { description: Payroll record not found }
  */
 router.get('/:id', async (req: Request, res: Response) => {
   try {
@@ -451,8 +703,36 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 /**
- * PATCH /api/payroll/:id/status
- * Update payroll status (admin only)
+ * @swagger
+ * /api/payroll/{id}/status:
+ *   patch:
+ *     summary: Update payroll status
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [status]
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [Pending, Processed, Paid, Cancelled]
+ *               paymentMethod: { type: string }
+ *     responses:
+ *       200:
+ *         description: Payroll status updated
+ *       400: { description: Invalid status }
+ *       401: { description: Unauthorized }
+ *       403: { description: Access denied }
  */
 router.patch('/:id/status', requireAdminOrFinance, apiLimiter, async (req: Request, res: Response) => {
   try {

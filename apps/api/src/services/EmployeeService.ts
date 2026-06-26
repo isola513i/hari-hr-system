@@ -501,7 +501,7 @@ export class EmployeeService {
      */
     async getDirectReports(employeeId: string): Promise<Employee[]> {
         const result = await query(
-            `SELECT * FROM employees WHERE manager_id = $1 ORDER BY name ASC`,
+            `SELECT id, name, email, role, department, join_date, created_at, birth_date, salary, avatar, status, bio, phone, phone_number, employee_code, address, location, slack, emergency_contact, manager_id, skills, onboarding_status, onboarding_percentage, banner_color, work_type, national_id, bank_account_number, termination_date, last_working_day, termination_reason, termination_notes, terminated_by, offboarding_initiated_at FROM employees WHERE manager_id = $1 ORDER BY name ASC`,
             [employeeId]
         );
         return result.rows.map(this.mapRowToEmployee);

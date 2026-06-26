@@ -65,7 +65,7 @@ export class ExpenseClaimService {
     async editExpenseClaim(id: string, employeeId: string, updates: Partial<CreateExpenseClaimDTO>): Promise<ExpenseClaim | null> {
         // Verify ownership and pending status (exclude soft-deleted)
         const existing = await query(
-            'SELECT * FROM expense_claims WHERE id = $1 AND deleted_at IS NULL',
+            'SELECT id, employee_id, title, category, amount, currency, expense_date, description, receipt_path, status, rejection_reason, approver_id, manager_reviewed_by, manager_reviewed_at, created_at, updated_at FROM expense_claims WHERE id = $1 AND deleted_at IS NULL',
             [id]
         );
 
@@ -127,7 +127,7 @@ export class ExpenseClaimService {
 
     async cancelExpenseClaim(id: string, employeeId: string): Promise<ExpenseClaim | null> {
         const existing = await query(
-            'SELECT * FROM expense_claims WHERE id = $1 AND deleted_at IS NULL',
+            'SELECT id, employee_id, title, category, amount, currency, expense_date, description, receipt_path, status, rejection_reason, approver_id, manager_reviewed_by, manager_reviewed_at, created_at, updated_at FROM expense_claims WHERE id = $1 AND deleted_at IS NULL',
             [id]
         );
 
@@ -165,7 +165,7 @@ export class ExpenseClaimService {
 
     async managerApprove(id: string, managerEmployeeId: string): Promise<ExpenseClaim> {
         const existing = await query(
-            'SELECT * FROM expense_claims WHERE id = $1 AND deleted_at IS NULL',
+            'SELECT id, employee_id, title, category, amount, currency, expense_date, description, receipt_path, status, rejection_reason, approver_id, manager_reviewed_by, manager_reviewed_at, created_at, updated_at FROM expense_claims WHERE id = $1 AND deleted_at IS NULL',
             [id]
         );
         if (existing.rows.length === 0) throw new BusinessError('Expense claim not found');

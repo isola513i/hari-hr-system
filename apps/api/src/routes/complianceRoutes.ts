@@ -13,24 +13,281 @@ router.use(authenticateToken, requireAdmin);
 // ---------------------------------------------------------------------------
 // Compliance Items CRUD (must be before /checks etc to avoid /:id conflict)
 // ---------------------------------------------------------------------------
+
+/**
+ * @swagger
+ * /api/compliance/items:
+ *   get:
+ *     summary: List all compliance items
+ *     tags: [Compliance]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of compliance items
+ *       401: { description: Unauthorized }
+ */
 router.get('/items', ComplianceController.getItems.bind(ComplianceController));
+
+/**
+ * @swagger
+ * /api/compliance/items/{id}:
+ *   get:
+ *     summary: Get a single compliance item by ID
+ *     tags: [Compliance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Compliance item ID
+ *     responses:
+ *       200:
+ *         description: Compliance item detail
+ *       401: { description: Unauthorized }
+ *       404: { description: Not found }
+ */
 router.get('/items/:id', ComplianceController.getItemById.bind(ComplianceController));
+
+/**
+ * @swagger
+ * /api/compliance/items:
+ *   post:
+ *     summary: Create a new compliance item
+ *     tags: [Compliance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [title, category, dueDate]
+ *             properties:
+ *               title: { type: string }
+ *               category: { type: string }
+ *               dueDate: { type: string, format: date }
+ *               description: { type: string }
+ *               assignedTo: { type: string, format: uuid }
+ *     responses:
+ *       201:
+ *         description: Compliance item created
+ *       400: { description: Validation error }
+ *       401: { description: Unauthorized }
+ */
 router.post('/items', apiLimiter, validateComplianceCreate, validateRequest, ComplianceController.createItem.bind(ComplianceController));
+
+/**
+ * @swagger
+ * /api/compliance/items/{id}:
+ *   put:
+ *     summary: Update a compliance item
+ *     tags: [Compliance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Compliance item ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title: { type: string }
+ *               category: { type: string }
+ *               dueDate: { type: string, format: date }
+ *               description: { type: string }
+ *               assignedTo: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Compliance item updated
+ *       401: { description: Unauthorized }
+ *       404: { description: Not found }
+ */
 router.put('/items/:id', apiLimiter, ComplianceController.updateItem.bind(ComplianceController));
+
+/**
+ * @swagger
+ * /api/compliance/items/{id}:
+ *   delete:
+ *     summary: Delete a compliance item
+ *     tags: [Compliance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Compliance item ID
+ *     responses:
+ *       200:
+ *         description: Compliance item deleted
+ *       401: { description: Unauthorized }
+ *       404: { description: Not found }
+ */
 router.delete('/items/:id', apiLimiter, ComplianceController.deleteItem.bind(ComplianceController));
 
 // Status management
+
+/**
+ * @swagger
+ * /api/compliance/items/{id}/status:
+ *   patch:
+ *     summary: Update the status of a compliance item
+ *     tags: [Compliance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Compliance item ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [status]
+ *             properties:
+ *               status: { type: string, enum: [Pending, In Progress, Complete, Overdue] }
+ *               note: { type: string }
+ *     responses:
+ *       200:
+ *         description: Status updated
+ *       400: { description: Validation error }
+ *       401: { description: Unauthorized }
+ *       404: { description: Not found }
+ */
 router.patch('/items/:id/status', apiLimiter, validateComplianceStatusUpdate, validateRequest, ComplianceController.updateStatus.bind(ComplianceController));
 
 // Evidence/Attachments
+
+/**
+ * @swagger
+ * /api/compliance/items/{id}/evidence:
+ *   post:
+ *     summary: Upload an evidence file for a compliance item
+ *     tags: [Compliance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Compliance item ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [file]
+ *             properties:
+ *               file: { type: string, format: binary }
+ *     responses:
+ *       201:
+ *         description: Evidence uploaded
+ *       400: { description: No file provided }
+ *       401: { description: Unauthorized }
+ *       404: { description: Not found }
+ */
 router.post('/items/:id/evidence', apiLimiter, receiptUpload.single('file'), ComplianceController.addEvidence.bind(ComplianceController));
+
+/**
+ * @swagger
+ * /api/compliance/items/{id}/evidence:
+ *   get:
+ *     summary: List evidence attachments for a compliance item
+ *     tags: [Compliance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Compliance item ID
+ *     responses:
+ *       200:
+ *         description: Array of evidence records
+ *       401: { description: Unauthorized }
+ *       404: { description: Not found }
+ */
 router.get('/items/:id/evidence', ComplianceController.getEvidence.bind(ComplianceController));
+
+/**
+ * @swagger
+ * /api/compliance/evidence/{evidenceId}:
+ *   delete:
+ *     summary: Delete an evidence attachment
+ *     tags: [Compliance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: evidenceId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Evidence attachment ID
+ *     responses:
+ *       200:
+ *         description: Evidence deleted
+ *       401: { description: Unauthorized }
+ *       404: { description: Not found }
+ */
 router.delete('/evidence/:evidenceId', apiLimiter, ComplianceController.deleteEvidence.bind(ComplianceController));
 
 // Status history
+
+/**
+ * @swagger
+ * /api/compliance/items/{id}/history:
+ *   get:
+ *     summary: Get status change history for a compliance item
+ *     tags: [Compliance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Compliance item ID
+ *     responses:
+ *       200:
+ *         description: Array of status history entries
+ *       401: { description: Unauthorized }
+ *       404: { description: Not found }
+ */
 router.get('/items/:id/history', ComplianceController.getStatusHistory.bind(ComplianceController));
 
 // Overdue check
+
+/**
+ * @swagger
+ * /api/compliance/check-overdue:
+ *   post:
+ *     summary: Trigger overdue status check for all compliance items
+ *     tags: [Compliance]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Overdue check completed and items updated
+ *       401: { description: Unauthorized }
+ */
 router.post('/check-overdue', apiLimiter, ComplianceController.checkOverdue.bind(ComplianceController));
 
 // ---------------------------------------------------------------------------
@@ -53,6 +310,20 @@ function csvRow(values: unknown[]): string {
 // GET /api/compliance/checks
 // Compute compliance checks from real system data
 // ---------------------------------------------------------------------------
+
+/**
+ * @swagger
+ * /api/compliance/checks:
+ *   get:
+ *     summary: Compute live compliance checks from system data
+ *     tags: [Compliance]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of compliance check results with status and percentage
+ *       401: { description: Unauthorized }
+ */
 router.get('/checks', async (_req: Request, res: Response) => {
   try {
     const totalResult = await query(
@@ -174,6 +445,48 @@ router.get('/checks', async (_req: Request, res: Response) => {
 // GET /api/compliance/audit-logs/export
 // CSV export of audit logs with same filters as list endpoint
 // ---------------------------------------------------------------------------
+
+/**
+ * @swagger
+ * /api/compliance/audit-logs/export:
+ *   get:
+ *     summary: Export audit logs as a CSV file
+ *     tags: [Compliance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: resource
+ *         schema: { type: string }
+ *         description: Filter by resource type
+ *       - in: query
+ *         name: action
+ *         schema: { type: string }
+ *         description: Filter by action name
+ *       - in: query
+ *         name: userEmail
+ *         schema: { type: string }
+ *         description: Filter by user email
+ *       - in: query
+ *         name: startDate
+ *         schema: { type: string, format: date }
+ *         description: Filter logs on or after this date
+ *       - in: query
+ *         name: endDate
+ *         schema: { type: string, format: date }
+ *         description: Filter logs on or before this date
+ *       - in: query
+ *         name: success
+ *         schema: { type: boolean }
+ *         description: Filter by success flag
+ *     responses:
+ *       200:
+ *         description: CSV file download (up to 10 000 rows)
+ *         content:
+ *           text/csv:
+ *             schema: { type: string }
+ *       401: { description: Unauthorized }
+ */
 router.get('/audit-logs/export', async (req: Request, res: Response) => {
   try {
     const resource = req.query.resource as string | undefined;
@@ -224,6 +537,63 @@ router.get('/audit-logs/export', async (req: Request, res: Response) => {
 // GET /api/compliance/audit-logs
 // Paginated audit logs from persistent table
 // ---------------------------------------------------------------------------
+
+/**
+ * @swagger
+ * /api/compliance/audit-logs:
+ *   get:
+ *     summary: List paginated audit logs
+ *     tags: [Compliance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 15 }
+ *         description: Records per page
+ *       - in: query
+ *         name: resource
+ *         schema: { type: string }
+ *         description: Filter by resource type
+ *       - in: query
+ *         name: action
+ *         schema: { type: string }
+ *         description: Filter by action name
+ *       - in: query
+ *         name: userEmail
+ *         schema: { type: string }
+ *         description: Filter by user email
+ *       - in: query
+ *         name: startDate
+ *         schema: { type: string, format: date }
+ *         description: Filter logs on or after this date
+ *       - in: query
+ *         name: endDate
+ *         schema: { type: string, format: date }
+ *         description: Filter logs on or before this date
+ *       - in: query
+ *         name: success
+ *         schema: { type: boolean }
+ *         description: Filter by success flag
+ *     responses:
+ *       200:
+ *         description: Paginated audit log list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data: { type: array, items: { type: object } }
+ *                 total: { type: integer }
+ *                 page: { type: integer }
+ *                 limit: { type: integer }
+ *                 totalPages: { type: integer }
+ *       401: { description: Unauthorized }
+ */
 router.get('/audit-logs', async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string, 10) || 1;
@@ -266,6 +636,41 @@ router.get('/audit-logs', async (req: Request, res: Response) => {
 // POST /api/compliance/reports/generate
 // Generate CSV report from selected data points
 // ---------------------------------------------------------------------------
+
+/**
+ * @swagger
+ * /api/compliance/reports/generate:
+ *   post:
+ *     summary: Generate a compliance CSV report from selected data points
+ *     tags: [Compliance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [dataPoints]
+ *             properties:
+ *               dataPoints:
+ *                 type: array
+ *                 items: { type: string }
+ *                 description: "Data columns to include (e.g. department, salary, leaveBalance, attendanceDays, lateDays, totalHours, performanceRating, startDate)"
+ *               dateRange:
+ *                 type: string
+ *                 enum: [last30, last90, thisYear]
+ *                 default: last90
+ *                 description: Date range for time-based metrics
+ *     responses:
+ *       200:
+ *         description: CSV file download
+ *         content:
+ *           text/csv:
+ *             schema: { type: string }
+ *       400: { description: At least one data point required }
+ *       401: { description: Unauthorized }
+ */
 router.post('/reports/generate', async (req: Request, res: Response) => {
   try {
     const { dataPoints = [], dateRange = 'last90' } = req.body as {
@@ -410,6 +815,23 @@ router.post('/reports/generate', async (req: Request, res: Response) => {
 // GET /api/compliance/export
 // Export compliance summary as CSV
 // ---------------------------------------------------------------------------
+
+/**
+ * @swagger
+ * /api/compliance/export:
+ *   get:
+ *     summary: Export full compliance summary (checks + recent audit logs) as CSV
+ *     tags: [Compliance]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: CSV file download with compliance check results and last 50 audit log entries
+ *         content:
+ *           text/csv:
+ *             schema: { type: string }
+ *       401: { description: Unauthorized }
+ */
 router.get('/export', async (_req: Request, res: Response) => {
   try {
     // Fetch compliance checks

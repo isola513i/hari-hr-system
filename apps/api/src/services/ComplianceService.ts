@@ -270,7 +270,7 @@ class ComplianceService {
 
   async getEvidence(itemId: string): Promise<ComplianceEvidence[]> {
     const result = await query(
-      'SELECT * FROM compliance_evidence WHERE compliance_item_id = $1 ORDER BY created_at DESC',
+      'SELECT id, compliance_item_id, file_path, file_name, file_size, uploaded_by, created_at FROM compliance_evidence WHERE compliance_item_id = $1 ORDER BY created_at DESC',
       [itemId]
     );
     return result.rows.map(this.mapRowToEvidence);

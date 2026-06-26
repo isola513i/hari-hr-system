@@ -60,7 +60,7 @@ describe('TrainingService', () => {
       await TrainingService.getAllModules(true);
 
       const sql = mockedQuery.mock.calls[0][0] as string;
-      expect(sql).not.toContain('is_active');
+      expect(sql).not.toContain('is_active = TRUE');
     });
   });
 

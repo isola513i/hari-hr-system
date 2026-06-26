@@ -10,8 +10,28 @@ const router = Router();
 router.use(authenticateToken);
 
 /**
- * POST /api/wfh-requests
- * Employee submits a WFH request
+ * @swagger
+ * /api/wfh-requests:
+ *   post:
+ *     summary: Submit a WFH request
+ *     tags: [WFH Requests]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [date]
+ *             properties:
+ *               date: { type: string, format: date, description: "WFH date (YYYY-MM-DD)" }
+ *               reason: { type: string, description: "Optional reason for WFH" }
+ *     responses:
+ *       201:
+ *         description: WFH request created successfully
+ *       400: { description: Validation error or missing date }
+ *       401: { description: Unauthorized }
  */
 router.post('/', apiLimiter, async (req: Request, res: Response) => {
   try {
@@ -29,8 +49,19 @@ router.post('/', apiLimiter, async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/wfh-requests/my
- * Employee views their own WFH requests
+ * @swagger
+ * /api/wfh-requests/my:
+ *   get:
+ *     summary: Get my WFH requests
+ *     tags: [WFH Requests]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of the authenticated employee's WFH requests
+ *       400: { description: Employee ID not found }
+ *       401: { description: Unauthorized }
+ *       500: { description: Internal server error }
  */
 router.get('/my', async (req: Request, res: Response) => {
   try {
@@ -45,8 +76,28 @@ router.get('/my', async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/wfh-requests/admin
- * Admin/Manager views WFH requests (manager sees only their direct reports)
+ * @swagger
+ * /api/wfh-requests/admin:
+ *   get:
+ *     summary: List all WFH requests (admin/manager view)
+ *     tags: [WFH Requests]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema: { type: string, enum: [pending, manager_approved, approved, rejected] }
+ *         description: Filter by request status
+ *       - in: query
+ *         name: date
+ *         schema: { type: string, format: date }
+ *         description: Filter by WFH date (YYYY-MM-DD)
+ *     responses:
+ *       200:
+ *         description: List of WFH requests (managers see only their direct reports)
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden — admin or manager role required }
+ *       500: { description: Internal server error }
  */
 router.get('/admin', requireAdminOrManager, async (req: Request, res: Response) => {
   try {
@@ -67,8 +118,26 @@ router.get('/admin', requireAdminOrManager, async (req: Request, res: Response) 
 });
 
 /**
- * PUT /api/wfh-requests/:id/manager-approve
- * Manager gives first-tier approval for a WFH request (direct reports only)
+ * @swagger
+ * /api/wfh-requests/{id}/manager-approve:
+ *   put:
+ *     summary: Manager first-tier approval of a WFH request
+ *     tags: [WFH Requests]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: WFH request ID
+ *     responses:
+ *       200:
+ *         description: WFH request approved by manager
+ *       400: { description: Validation error }
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden — manager role required or not a direct report }
+ *       404: { description: WFH request not found }
  */
 router.put('/:id/manager-approve', requireRole('MANAGER'), async (req: Request, res: Response) => {
   try {
@@ -85,8 +154,26 @@ router.put('/:id/manager-approve', requireRole('MANAGER'), async (req: Request, 
 });
 
 /**
- * PUT /api/wfh-requests/:id/approve
- * HR Admin gives final approval for a WFH request
+ * @swagger
+ * /api/wfh-requests/{id}/approve:
+ *   put:
+ *     summary: HR Admin final approval of a WFH request
+ *     tags: [WFH Requests]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: WFH request ID
+ *     responses:
+ *       200:
+ *         description: WFH request fully approved
+ *       400: { description: Validation error }
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden — admin role required }
+ *       404: { description: WFH request not found }
  */
 router.put('/:id/approve', requireAdmin, async (req: Request, res: Response) => {
   try {
@@ -101,8 +188,26 @@ router.put('/:id/approve', requireAdmin, async (req: Request, res: Response) => 
 });
 
 /**
- * PUT /api/wfh-requests/:id/reject
- * Admin or Manager rejects a WFH request
+ * @swagger
+ * /api/wfh-requests/{id}/reject:
+ *   put:
+ *     summary: Reject a WFH request (admin or manager)
+ *     tags: [WFH Requests]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: WFH request ID
+ *     responses:
+ *       200:
+ *         description: WFH request rejected
+ *       400: { description: Validation error or request already approved }
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden — admin/manager role required or not a direct report }
+ *       404: { description: WFH request not found }
  */
 router.put('/:id/reject', requireAdminOrManager, async (req: Request, res: Response) => {
   try {

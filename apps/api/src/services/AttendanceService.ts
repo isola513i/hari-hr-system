@@ -181,7 +181,7 @@ export class AttendanceService {
 
     // Check if already clocked in today (exclude soft-deleted records)
     const existing = await query(
-      'SELECT * FROM attendance_records WHERE employee_id = $1 AND date = $2 AND deleted_at IS NULL',
+      'SELECT id, employee_id, date, clock_in, clock_out, break_duration, total_hours, status, notes, modified_by, created_at, auto_checkout, early_departure, overtime_hours, clock_in_lat, clock_in_lng, clock_in_accuracy, check_in_type FROM attendance_records WHERE employee_id = $1 AND date = $2 AND deleted_at IS NULL',
       [employeeId, today]
     );
 
@@ -293,7 +293,7 @@ export class AttendanceService {
 
     // Find today's attendance record (exclude soft-deleted)
     const existing = await query(
-      'SELECT * FROM attendance_records WHERE employee_id = $1 AND date = $2 AND deleted_at IS NULL',
+      'SELECT id, employee_id, date, clock_in, clock_out, break_duration, total_hours, status, notes, modified_by, created_at, auto_checkout, early_departure, overtime_hours, clock_in_lat, clock_in_lng, clock_in_accuracy, check_in_type FROM attendance_records WHERE employee_id = $1 AND date = $2 AND deleted_at IS NULL',
       [employeeId, today]
     );
 
@@ -338,7 +338,7 @@ export class AttendanceService {
     startDate?: string,
     endDate?: string
   ): Promise<AttendanceRecord[]> {
-    let queryText = `SELECT * FROM attendance_records
+    let queryText = `SELECT id, employee_id, date, clock_in, clock_out, break_duration, total_hours, status, notes, modified_by, created_at, auto_checkout, early_departure, overtime_hours, clock_in_lat, clock_in_lng, clock_in_accuracy, check_in_type FROM attendance_records
       WHERE employee_id = $1
         AND deleted_at IS NULL
         AND NOT (
@@ -375,7 +375,7 @@ export class AttendanceService {
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
 
     const result = await query(
-      'SELECT * FROM attendance_records WHERE employee_id = $1 AND date = $2 AND deleted_at IS NULL',
+      'SELECT id, employee_id, date, clock_in, clock_out, break_duration, total_hours, status, notes, modified_by, created_at, auto_checkout, early_departure, overtime_hours, clock_in_lat, clock_in_lng, clock_in_accuracy, check_in_type FROM attendance_records WHERE employee_id = $1 AND date = $2 AND deleted_at IS NULL',
       [employeeId, today]
     );
 
