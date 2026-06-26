@@ -274,7 +274,7 @@ export class LeaveRequestService {
         return withTransaction(async (txQuery) => {
             // Fetch existing request
             const existing = await txQuery(
-                'SELECT * FROM leave_requests WHERE id = $1',
+                'SELECT id, employee_id, status, start_date, medical_certificate_path FROM leave_requests WHERE id = $1',
                 [id]
             );
 
@@ -590,7 +590,7 @@ export class LeaveRequestService {
 
     async handleCancelDecision(id: string, decision: 'approve_cancel' | 'reject_cancel', approverEmployeeId: string): Promise<{ action: string; leaveRequest?: LeaveRequest }> {
         const existing = await query(
-            'SELECT * FROM leave_requests WHERE id = $1 AND deleted_at IS NULL',
+            'SELECT id, employee_id, status, leave_type FROM leave_requests WHERE id = $1 AND deleted_at IS NULL',
             [id]
         );
 

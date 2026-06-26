@@ -5,7 +5,7 @@ class EventsController {
   // GET /api/events
   async getAllEvents(req: Request, res: Response): Promise<void> {
     try {
-      const result = await query("SELECT * FROM events");
+      const result = await query("SELECT id, title, date_str, type, avatar, color FROM events");
       const events = result.rows.map((row) => ({
         id: row.id,
         title: row.title,
@@ -24,7 +24,7 @@ class EventsController {
   // GET /api/events/upcoming
   async getUpcomingEvents(req: Request, res: Response): Promise<void> {
     try {
-      const result = await query("SELECT * FROM upcoming_events ORDER BY date ASC");
+      const result = await query("SELECT id, title, date, type, avatar, color FROM upcoming_events ORDER BY date ASC");
       const events = result.rows.map((row) => ({
         id: row.id,
         title: row.title,

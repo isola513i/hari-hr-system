@@ -39,7 +39,7 @@ function mapShift(row: Record<string, unknown>): ShiftTemplate {
 class ShiftService {
   async listShifts(): Promise<ShiftTemplate[]> {
     const result = await query(
-      `SELECT * FROM shifts WHERE is_active = true ORDER BY start_time`
+      `SELECT id, name, start_time, end_time, color, is_active, created_at FROM shifts WHERE is_active = true ORDER BY start_time`
     );
     return result.rows.map(mapShift);
   }

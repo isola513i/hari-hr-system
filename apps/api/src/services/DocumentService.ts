@@ -8,7 +8,7 @@ export class DocumentService {
     // Get active documents only (not deleted)
     async getAllDocuments(): Promise<Document[]> {
         const result = await query(
-            "SELECT * FROM documents WHERE status = 'Active' OR status IS NULL ORDER BY uploaded_at DESC"
+            "SELECT id, name, type, size, category, owner_name, employee_id, last_accessed, uploaded_at, file_path, status, deleted_at FROM documents WHERE status = 'Active' OR status IS NULL ORDER BY uploaded_at DESC"
         );
         return result.rows.map(this.mapRowToDocument);
     }
@@ -67,7 +67,7 @@ export class DocumentService {
         const paginationClause = buildPaginationClause(paginationParams);
 
         const result = await query(
-            `SELECT * FROM documents ${whereClause} ${sortClause} ${paginationClause}`,
+            `SELECT id, name, type, size, category, owner_name, employee_id, last_accessed, uploaded_at, file_path, status, deleted_at FROM documents ${whereClause} ${sortClause} ${paginationClause}`,
             params
         );
 
@@ -79,13 +79,13 @@ export class DocumentService {
     // Get deleted documents (Trash)
     async getDeletedDocuments(): Promise<Document[]> {
         const result = await query(
-            "SELECT * FROM documents WHERE status = 'Deleted' ORDER BY deleted_at DESC"
+            "SELECT id, name, type, size, category, owner_name, employee_id, last_accessed, uploaded_at, file_path, status, deleted_at FROM documents WHERE status = 'Deleted' ORDER BY deleted_at DESC"
         );
         return result.rows.map(this.mapRowToDocument);
     }
 
     async getDocumentById(id: string): Promise<Document | null> {
-        const result = await query('SELECT * FROM documents WHERE id = $1', [id]);
+        const result = await query('SELECT id, name, type, size, category, owner_name, employee_id, last_accessed, uploaded_at, file_path, status, deleted_at FROM documents WHERE id = $1', [id]);
         if (result.rows.length === 0) {
             return null;
         }

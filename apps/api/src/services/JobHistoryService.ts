@@ -18,14 +18,14 @@ export interface JobHistory {
 class JobHistoryService {
   async getByEmployeeId(employeeId: string): Promise<JobHistory[]> {
     const result = await query(
-      'SELECT * FROM job_history WHERE employee_id = $1 ORDER BY start_date DESC',
+      'SELECT id, employee_id, role, department, start_date, end_date, description, created_at, updated_at, created_by FROM job_history WHERE employee_id = $1 ORDER BY start_date DESC',
       [employeeId]
     );
     return result.rows.map(this.mapRow);
   }
 
   async getById(id: string): Promise<JobHistory | null> {
-    const result = await query('SELECT * FROM job_history WHERE id = $1', [id]);
+    const result = await query('SELECT id, employee_id, role, department, start_date, end_date, description, created_at, updated_at, created_by FROM job_history WHERE id = $1', [id]);
     if (result.rows.length === 0) return null;
     return this.mapRow(result.rows[0]);
   }

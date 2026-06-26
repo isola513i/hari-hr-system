@@ -91,7 +91,7 @@ export class AuthService {
     const { email, password } = credentials;
 
     // 1. Find User in users table
-    const userResult = await query("SELECT * FROM users WHERE email = $1", [
+    const userResult = await query("SELECT id, email, password_hash, role, email_notifications, totp_enabled, totp_secret FROM users WHERE email = $1", [
       email,
     ]);
 
@@ -179,7 +179,7 @@ export class AuthService {
     }
 
     // Get current user from users table
-    const result = await query("SELECT * FROM users WHERE id = $1", [userId]);
+    const result = await query("SELECT id, email, password_hash, role, email_notifications, totp_enabled, totp_secret FROM users WHERE id = $1", [userId]);
 
     if (result.rows.length === 0) {
       throw new Error("User not found");
@@ -255,7 +255,7 @@ export class AuthService {
 
     // 5. Check if employee exists, if not create one
     let employeeResult = await query(
-      "SELECT * FROM employees WHERE email = $1",
+      "SELECT id, name, email FROM employees WHERE email = $1",
       [email]
     );
 
@@ -680,7 +680,7 @@ export class AuthService {
       throw new Error("Invalid pending token.");
     }
 
-    const userResult = await query("SELECT * FROM users WHERE id = $1", [decoded.userId]);
+    const userResult = await query("SELECT id, email, password_hash, role, email_notifications, totp_enabled, totp_secret FROM users WHERE id = $1", [decoded.userId]);
     if (userResult.rows.length === 0) {
       throw new Error("User not found");
     }

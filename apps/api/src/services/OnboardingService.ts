@@ -220,7 +220,7 @@ export class OnboardingService {
   // Get tasks for a specific employee
   async getTasksByEmployeeId(employeeId: string): Promise<OnboardingTaskResponse[]> {
     const result = await query(
-      `SELECT * FROM tasks WHERE employee_id = $1 ORDER BY due_date ASC`,
+      `SELECT id, title, description, stage, assignee, due_date, completed, priority, link, employee_id FROM tasks WHERE employee_id = $1 ORDER BY due_date ASC`,
       [employeeId]
     );
     return result.rows.map(mapTaskRow);
@@ -229,7 +229,7 @@ export class OnboardingService {
   // Get all tasks (admin view)
   async getAllTasks(): Promise<OnboardingTaskResponse[]> {
     const result = await query(
-      `SELECT * FROM tasks ORDER BY due_date ASC`
+      `SELECT id, title, description, stage, assignee, due_date, completed, priority, link, employee_id FROM tasks ORDER BY due_date ASC`
     );
     return result.rows.map(mapTaskRow);
   }
@@ -365,7 +365,7 @@ export class OnboardingService {
     if (existing.rows[0].task_count > 0 || existing.rows[0].doc_count > 0) {
       // Already seeded — return existing tasks
       const existingTasks = await query(
-        `SELECT * FROM tasks WHERE employee_id = $1 ORDER BY due_date ASC`,
+        `SELECT id, title, description, stage, assignee, due_date, completed, priority, link, employee_id FROM tasks WHERE employee_id = $1 ORDER BY due_date ASC`,
         [employeeId]
       );
       return existingTasks.rows.map(mapTaskRow);
@@ -471,7 +471,7 @@ export class OnboardingService {
 
   // Get all contacts
   async getAllContacts(): Promise<KeyContactResponse[]> {
-    const result = await query(`SELECT * FROM contacts ORDER BY name ASC`);
+    const result = await query(`SELECT id, name, role, relation, email, avatar FROM contacts ORDER BY name ASC`);
     return result.rows.map(mapContactRow);
   }
 
@@ -518,7 +518,7 @@ export class OnboardingService {
 
   async getDocumentsByEmployeeId(employeeId: string): Promise<OnboardingDocumentResponse[]> {
     const result = await query(
-      `SELECT * FROM onboarding_documents WHERE employee_id = $1 ORDER BY created_at ASC`,
+      `SELECT id, employee_id, name, description, status, file_path, file_type, file_size, uploaded_at, reviewed_by, reviewed_at, review_note, created_at FROM onboarding_documents WHERE employee_id = $1 ORDER BY created_at ASC`,
       [employeeId]
     );
     return result.rows.map(mapDocumentRow);
@@ -526,7 +526,7 @@ export class OnboardingService {
 
   async getAllDocuments(): Promise<OnboardingDocumentResponse[]> {
     const result = await query(
-      `SELECT * FROM onboarding_documents ORDER BY created_at ASC`
+      `SELECT id, employee_id, name, description, status, file_path, file_type, file_size, uploaded_at, reviewed_by, reviewed_at, review_note, created_at FROM onboarding_documents ORDER BY created_at ASC`
     );
     return result.rows.map(mapDocumentRow);
   }

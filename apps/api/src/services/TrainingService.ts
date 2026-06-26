@@ -48,14 +48,14 @@ class TrainingService {
 
   async getAllModules(includeInactive = false): Promise<TrainingModule[]> {
     const sql = includeInactive
-      ? 'SELECT * FROM training_modules ORDER BY created_at DESC'
-      : 'SELECT * FROM training_modules WHERE is_active = TRUE ORDER BY created_at DESC';
+      ? 'SELECT id, title, description, duration, type, status, thumbnail, progress, created_by, is_active, created_at, updated_at FROM training_modules ORDER BY created_at DESC'
+      : 'SELECT id, title, description, duration, type, status, thumbnail, progress, created_by, is_active, created_at, updated_at FROM training_modules WHERE is_active = TRUE ORDER BY created_at DESC';
     const result = await query(sql);
     return result.rows.map(this.mapRowToModule);
   }
 
   async getModuleById(id: string): Promise<TrainingModule | null> {
-    const result = await query('SELECT * FROM training_modules WHERE id = $1', [id]);
+    const result = await query('SELECT id, title, description, duration, type, status, thumbnail, progress, created_by, is_active, created_at, updated_at FROM training_modules WHERE id = $1', [id]);
     if (result.rows.length === 0) return null;
     return this.mapRowToModule(result.rows[0]);
   }

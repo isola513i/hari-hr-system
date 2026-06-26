@@ -106,7 +106,7 @@ export class AuditLogService {
 
     // Get paginated results
     const result = await query(
-      `SELECT * FROM audit_logs_persistent ${whereClause}
+      `SELECT id, user_id, user_email, action, resource, method, path, ip, user_agent, status_code, duration, success, details, created_at FROM audit_logs_persistent ${whereClause}
        ORDER BY created_at DESC
        LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
       [...params, limit, offset]
