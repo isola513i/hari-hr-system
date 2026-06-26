@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import EmployeeService from '../services/EmployeeService';
 import { getPaginationParams, getSortParams } from '../utils/pagination';
 import AuditLogService from '../services/AuditLogService';
+import logger from '../utils/logger';
 
 export class EmployeeController {
     /**
@@ -42,7 +43,7 @@ export class EmployeeController {
                 res.json(employees);
             }
         } catch (error: unknown) {
-            console.error('Get employees error:', error);
+            logger.error(error, 'Get employees error:');
             res.status(500).json({ error: 'Failed to fetch employees' });
         }
     }
@@ -59,7 +60,7 @@ export class EmployeeController {
 
             res.json(employee);
         } catch (error: any) {
-            console.error('Get employee error:', error);
+            logger.error(error, 'Get employee error:');
             res.status(500).json({ error: 'Failed to fetch employee' });
         }
     }
@@ -77,7 +78,7 @@ export class EmployeeController {
             const employee = await EmployeeService.createEmployee(employeeData);
             res.status(201).json(employee);
         } catch (error: any) {
-            console.error('Create employee error:', error);
+            logger.error(error, 'Create employee error:');
             res.status(400).json({ error: error.message || 'Failed to create employee' });
         }
     }
@@ -133,12 +134,12 @@ export class EmployeeController {
                             ...(req.body.bankAccountNumber !== undefined ? ['bank_account_number']  : []),
                         ],
                     },
-                }).catch((err) => console.error('PII audit log failed:', err));
+                }).catch((err) => logger.error(err, 'PII audit log failed:'));
             }
 
             res.json(employee);
         } catch (error: any) {
-            console.error('Update employee error:', error);
+            logger.error(error, 'Update employee error:');
             if (error.message === 'Employee not found') {
                 res.status(404).json({ error: error.message });
             } else {
@@ -153,7 +154,7 @@ export class EmployeeController {
             await EmployeeService.deleteEmployee(id);
             res.json({ message: 'Employee terminated successfully' });
         } catch (error: any) {
-            console.error('Delete employee error:', error);
+            logger.error(error, 'Delete employee error:');
             if (error.message === 'Employee not found') {
                 res.status(404).json({ error: error.message });
             } else if (error.message === 'Employee is already terminated') {
@@ -176,7 +177,7 @@ export class EmployeeController {
 
             res.json(manager);
         } catch (error: any) {
-            console.error('Get manager error:', error);
+            logger.error(error, 'Get manager error:');
             res.status(500).json({ error: 'Failed to fetch manager' });
         }
     }
@@ -187,7 +188,7 @@ export class EmployeeController {
             const directReports = await EmployeeService.getDirectReports(id);
             res.json(directReports);
         } catch (error: any) {
-            console.error('Get direct reports error:', error);
+            logger.error(error, 'Get direct reports error:');
             res.status(500).json({ error: 'Failed to fetch direct reports' });
         }
     }

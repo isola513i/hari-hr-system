@@ -68,13 +68,33 @@ jobs:
     name: Web E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # Non-blocking for now: the existing specs (leave-request, onboarding-org,
-    # rbac) drive the full app and need a running API + seeded DB + auth, which
-    # this job does not yet stand up (it only starts the Vite dev server). The
-    # job still runs and uploads the Playwright report for visibility. Flip this
-    # to a hard gate once the backend (Postgres service + API + seed) is wired
-    # into CI — tracked as a follow-up task.
+    # Non-blocking: specs require authenticated sessions and seeded HR data.
+    # The backend is now wired (Postgres + API + schema init) so infrastructure
+    # is in place; flip continue-on-error to false once the Playwright specs
+    # are updated to use CI-friendly auth flows.
     continue-on-error: true
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: hari_ci
+          POSTGRES_PASSWORD: hari_ci_pass
+          POSTGRES_DB: hari_ci
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    env:
+      DATABASE_URL: postgresql://hari_ci:hari_ci_pass@localhost:5432/hari_ci
+      JWT_SECRET: ci-test-secret-key-that-is-at-least-32-chars-long
+      NODE_ENV: test
+      PORT: 3001
+      ALLOWED_ORIGINS: http://localhost:5173
 
     steps:
       - uses: actions/checkout@v4
@@ -88,6 +108,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Initialise database schema
+        run: cd apps/api && npx ts-node src/scripts/init-db.ts
+
+      - name: Seed demo data
+        run: cd apps/api && npx ts-node src/scripts/seed-demo.ts
+        continue-on-error: true
+
+      - name: Start API server
+        run: cd apps/api && npx ts-node src/index.ts &
+
+      - name: Wait for API to be ready
+        run: npx wait-on tcp:localhost:3001 --timeout 30000
+
       - name: Install Playwright browsers
         run: cd apps/web && npx playwright install --with-deps chromium
 
@@ -95,7 +128,7 @@ jobs:
         run: cd apps/web && npx playwright test
         env:
           CI: true
-          VITE_API_URL: /api
+          VITE_API_URL: http://localhost:3001/api
 
       - name: Upload Playwright report
         if: always()

@@ -17,6 +17,7 @@ export const StatCard: React.FC<StatCardProps> = React.memo(({ title, value, tre
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
+      aria-label={onClick && typeof title === 'string' ? title : undefined}
       onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } } : undefined}
     >
       <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">

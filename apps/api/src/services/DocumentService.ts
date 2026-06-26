@@ -3,6 +3,7 @@ import { Document, CreateDocumentDTO } from '../models/Document';
 import { PaginationParams, PaginatedResult, createPaginatedResult, buildPaginationClause, buildSortClause } from '../utils/pagination';
 import { storageService } from './StorageService';
 import { toInt } from '../utils/coerce';
+import logger from '../utils/logger';
 
 export class DocumentService {
     // Get active documents only (not deleted)
@@ -146,7 +147,7 @@ export class DocumentService {
             try {
                 await storageService.delete(document.filePath);
             } catch (err) {
-                console.warn('Failed to delete file from storage:', err);
+                logger.warn(err, 'Failed to delete file from storage:');
             }
         }
 

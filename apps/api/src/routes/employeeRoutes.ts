@@ -5,6 +5,7 @@ import { apiLimiter, validateEmployeeCreation, validateRequest } from '../middle
 import { authenticateToken, requireAdmin } from '../middlewares/auth';
 import { cacheMiddleware, invalidateCache } from '../middlewares/cache';
 import { avatarUpload, csvUpload, generateStorageKey, getFileBuffer } from '../middlewares/upload';
+import { resizeAvatar } from '../middlewares/imageResize';
 import { storageService } from '../services/StorageService';
 import { getStatusMap } from '../socket';
 import pool, { query } from '../db';
@@ -41,7 +42,7 @@ router.use(authenticateToken);
  *       401: { description: Unauthorized }
  */
 // POST /api/employees/upload-avatar - Upload avatar image
-router.post('/upload-avatar', apiLimiter, avatarUpload.single('avatar'), async (req, res) => {
+router.post('/upload-avatar', apiLimiter, avatarUpload.single('avatar'), resizeAvatar, async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
@@ -666,24 +667,24 @@ router.get('/:id/report', async (req: Request, res: Response) => {
     ]);
 
     const leaveSummary = {
-      totalApproved: leaveResult.rows.filter((r: any) => r.status === 'Approved').reduce((s: number, r: any) => s + parseInt(r.cnt), 0),
-      totalPending: leaveResult.rows.filter((r: any) => r.status === 'Pending').reduce((s: number, r: any) => s + parseInt(r.cnt), 0),
+      totalApproved: leaveResult.rows.filter((r: any) => r.status === 'Approved').reduce((s: number, r: any) => s + parseInt(r.cnt, 10), 0),
+      totalPending: leaveResult.rows.filter((r: any) => r.status === 'Pending').reduce((s: number, r: any) => s + parseInt(r.cnt, 10), 0),
       byType: Object.values(
         leaveResult.rows.filter((r: any) => r.status === 'Approved').reduce((acc: any, r: any) => {
           acc[r.leave_type] = acc[r.leave_type] || { type: r.leave_type, count: 0 };
-          acc[r.leave_type].count += parseInt(r.cnt);
+          acc[r.leave_type].count += parseInt(r.cnt, 10);
           return acc;
         }, {} as Record<string, any>)
       ) as Array<{ type: string; count: number }>,
     };
 
     const attMap: Record<string, number> = {};
-    attResult.rows.forEach((r: any) => { attMap[r.status] = parseInt(r.cnt); });
+    attResult.rows.forEach((r: any) => { attMap[r.status] = parseInt(r.cnt, 10); });
     const attendanceSummary = {
       present: (attMap['Present'] || 0) + (attMap['Late'] || 0),
       absent: attMap['Absent'] || 0,
       late: attMap['Late'] || 0,
-      total: attResult.rows.reduce((s: number, r: any) => s + parseInt(r.cnt), 0),
+      total: attResult.rows.reduce((s: number, r: any) => s + parseInt(r.cnt, 10), 0),
     };
 
     res.setHeader('Content-Type', 'application/pdf');

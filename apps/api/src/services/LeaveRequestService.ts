@@ -5,10 +5,12 @@ import EmployeeLeaveQuotaService from './EmployeeLeaveQuotaService';
 import NotificationService from './NotificationService';
 import HolidayService from './HolidayService';
 import { withTransaction } from '../utils/transaction';
+import { getOrSet, invalidatePattern } from '../utils/cache';
 import { PaginationParams, PaginatedResult, createPaginatedResult, buildPaginationClause, buildSortClause } from '../utils/pagination';
 // Leave type constants — single source of truth shared with the request validator
 import { LEAVE_TYPE_SICK, LEAVE_TYPE_MATERNITY } from '../constants/leaveTypes';
 import { toInt } from '../utils/coerce';
+import logger from '../utils/logger';
 
 /** Convert a pg DATE value to a plain YYYY-MM-DD string to avoid timezone shifts */
 function toDateString(val: unknown): string {
@@ -236,7 +238,7 @@ export class LeaveRequestService {
                 link: '/leave-requests',
             });
         } catch (notifError) {
-            console.error('Failed to notify admins about leave request:', notifError);
+            logger.error(notifError, 'Failed to notify admins about leave request:');
         }
 
         // Notify direct manager if employee has one
@@ -258,7 +260,7 @@ export class LeaveRequestService {
                 });
             }
         } catch (notifError) {
-            console.error('Failed to notify manager about leave request:', notifError);
+            logger.error(notifError, 'Failed to notify manager about leave request:');
         }
 
         return {
@@ -408,7 +410,7 @@ export class LeaveRequestService {
                     link: '/leave-requests',
                 });
             } catch (notifError) {
-                console.error('Failed to notify admins about leave edit:', notifError);
+                logger.error(notifError, 'Failed to notify admins about leave edit:');
             }
 
             return leaveRequest;
@@ -479,6 +481,10 @@ export class LeaveRequestService {
 
         const leaveRequest = this.mapRowToLeaveRequest(result.rows[0]);
 
+        if (status === 'Approved') {
+            invalidatePattern(`leave_balances:${leaveRequest.employeeId}`);
+        }
+
         // Notify employee on final status change only (not Manager Approved — HR still needs to act)
         if (status === 'Approved' || status === 'Rejected') {
             try {
@@ -500,7 +506,7 @@ export class LeaveRequestService {
                     });
                 }
             } catch (notifError) {
-                console.error('Failed to send leave status notification:', notifError);
+                logger.error(notifError, 'Failed to send leave status notification:');
             }
         }
 
@@ -576,7 +582,7 @@ export class LeaveRequestService {
                     link: '/leave-requests',
                 });
             } catch (notifError) {
-                console.error('Failed to notify admins about cancel request:', notifError);
+                logger.error(notifError, 'Failed to notify admins about cancel request:');
             }
 
             return { action: 'cancel_requested', leaveRequest: leaveRequest || undefined };
@@ -616,6 +622,7 @@ export class LeaveRequestService {
                 'UPDATE leave_requests SET deleted_at = NOW() WHERE id = $1',
                 [id]
             );
+            invalidatePattern(`leave_balances:${row.employee_id}`);
 
             // Notify employee
             try {
@@ -633,7 +640,7 @@ export class LeaveRequestService {
                     });
                 }
             } catch (notifError) {
-                console.error('Failed to notify employee about cancel approval:', notifError);
+                logger.error(notifError, 'Failed to notify employee about cancel approval:');
             }
 
             return { action: 'deleted' };
@@ -663,7 +670,7 @@ export class LeaveRequestService {
                 });
             }
         } catch (notifError) {
-            console.error('Failed to notify employee about cancel rejection:', notifError);
+            logger.error(notifError, 'Failed to notify employee about cancel rejection:');
         }
 
         return { action: 'reverted', leaveRequest: leaveRequest || undefined };
@@ -715,29 +722,35 @@ export class LeaveRequestService {
     }
 
     async getLeaveBalances(employeeId: string): Promise<any[]> {
-        const result = await query(
-            `SELECT leave_type,
-                    SUM(COALESCE(business_days, (end_date::date - start_date::date) + 1)) as used_days
-             FROM leave_requests
-             WHERE employee_id = $1 AND status = 'Approved' AND deleted_at IS NULL
-             GROUP BY leave_type`,
-            [employeeId]
+        return getOrSet(
+            `leave_balances:${employeeId}`,
+            async () => {
+                const result = await query(
+                    `SELECT leave_type,
+                            SUM(COALESCE(business_days, (end_date::date - start_date::date) + 1)) as used_days
+                     FROM leave_requests
+                     WHERE employee_id = $1 AND status = 'Approved' AND deleted_at IS NULL
+                     GROUP BY leave_type`,
+                    [employeeId]
+                );
+
+                const usedDays = result.rows.reduce((acc: any, row: any) => {
+                    acc[row.leave_type] = parseFloat(row.used_days);
+                    return acc;
+                }, {});
+
+                const effectiveQuotas = await EmployeeLeaveQuotaService.getEffectiveQuotas(employeeId);
+
+                return effectiveQuotas.map(({ type, total, isOverride }) => ({
+                    type,
+                    total,
+                    used: usedDays[type] || 0,
+                    remaining: total === -1 ? -1 : Math.max(0, total - (usedDays[type] || 0)),
+                    isOverride,
+                }));
+            },
+            1800  // 30-minute TTL
         );
-
-        const usedDays = result.rows.reduce((acc: any, row: any) => {
-            acc[row.leave_type] = parseFloat(row.used_days);
-            return acc;
-        }, {});
-
-        const effectiveQuotas = await EmployeeLeaveQuotaService.getEffectiveQuotas(employeeId);
-
-        return effectiveQuotas.map(({ type, total, isOverride }) => ({
-            type,
-            total,
-            used: usedDays[type] || 0,
-            remaining: total === -1 ? -1 : Math.max(0, total - (usedDays[type] || 0)),
-            isOverride,
-        }));
     }
 
     private async snapshotToHistory(leaveRequestId: string, changeType: string, changedBy: string): Promise<void> {
@@ -754,7 +767,7 @@ export class LeaveRequestService {
                 [leaveRequestId, changeType, changedBy]
             );
         } catch (err) {
-            console.error('Failed to snapshot leave request history:', err);
+            logger.error(err, 'Failed to snapshot leave request history:');
         }
     }
 

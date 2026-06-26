@@ -8,6 +8,7 @@ import {
     DeleteObjectCommand,
     ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
+import logger from '../utils/logger';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -185,10 +186,10 @@ class LocalStorageBackend implements StorageBackend {
 // ---------------------------------------------------------------------------
 function createStorageBackend(): StorageBackend {
     if (process.env.R2_ACCOUNT_ID) {
-        console.log('[Storage] Using Cloudflare R2 backend');
+        logger.info('[Storage] Using Cloudflare R2 backend');
         return new R2StorageBackend();
     }
-    console.log('[Storage] Using local disk backend');
+    logger.info('[Storage] Using local disk backend');
     return new LocalStorageBackend();
 }
 

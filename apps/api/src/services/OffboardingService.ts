@@ -1,4 +1,5 @@
 import { query } from '../db';
+import logger from '../utils/logger';
 import {
     OffboardingTaskRow,
     ExitInterviewRow,
@@ -446,7 +447,7 @@ export class OffboardingService {
             message: `All offboarding tasks completed. ${emp.name} is now terminated. Subordinates have been reassigned.`,
             type: 'info',
             link: `/employees/${employeeId}?tab=offboarding`,
-        }).catch((err) => console.error('Offboarding finalization notify failed:', err));
+        }).catch((err) => logger.error(err, 'Offboarding finalization notify failed:'));
     }
 
     /**
@@ -510,7 +511,7 @@ export class OffboardingService {
                     message: `You have ${count} offboarding task${count !== 1 ? 's' : ''} for ${employee.name}'s departure.`,
                     type: hasHighPriority ? 'warning' : 'info',
                     link: `/employees/${employeeId}?tab=offboarding`,
-                }).catch((err) => console.error('Offboarding notification failed:', err));
+                }).catch((err) => logger.error(err, 'Offboarding notification failed:'));
             }
         }
     }

@@ -2,6 +2,7 @@ import pool, { query } from '../db';
 import SystemConfigService from './SystemConfigService';
 import OTRequestService from './OTRequestService';
 import { BusinessError } from '../utils/errorResponse';
+import logger from '../utils/logger';
 
 export interface PayrollRecord {
   id: string;
@@ -129,7 +130,7 @@ export class PayrollService {
         expenseDeductionRate: typeof expenseDeductionRate === 'number' ? expenseDeductionRate : DEFAULT_EXPENSE_DEDUCTION_RATE,
       };
     } catch (error) {
-      console.error('Failed to load payroll config, using defaults:', error);
+      logger.error(error, 'Failed to load payroll config, using defaults:');
       return {
         standardHoursPerMonth: DEFAULT_STANDARD_HOURS,
         taxBrackets: DEFAULT_TAX_BRACKETS,

@@ -20,17 +20,18 @@ import {
 import NotificationService from "./NotificationService";
 import EmailService from "./EmailService";
 import { encrypt, decrypt } from "../utils/encryption";
+import logger from '../utils/logger';
 
 // ── TOTP Configuration ────────────────────────────────────────────────────────
 // Clock-drift tolerance (±1 step = ±30 s) is passed directly to verifySync().
 
 // Security: Fail fast if JWT_SECRET is not set or too weak
 if (!process.env.JWT_SECRET) {
-  console.error("FATAL: JWT_SECRET environment variable is not set");
+  logger.error("FATAL: JWT_SECRET environment variable is not set");
   process.exit(1);
 }
 if (process.env.JWT_SECRET.length < 32) {
-  console.error("FATAL: JWT_SECRET must be at least 32 characters long");
+  logger.error("FATAL: JWT_SECRET must be at least 32 characters long");
   process.exit(1);
 }
 const JWT_SECRET: string = process.env.JWT_SECRET;
@@ -313,7 +314,7 @@ export class AuthService {
       });
     } catch (notifError) {
       // Don't fail registration if notification fails
-      console.error("Failed to create notifications:", notifError);
+      logger.error(notifError, "Failed to create notifications:");
     }
 
     // 10. Generate token pair and return
@@ -387,7 +388,7 @@ export class AuthService {
     try {
       await EmailService.sendPasswordResetEmail(email, token, name || undefined, lang);
     } catch (err) {
-      console.error("Failed to send password reset email:", err);
+      logger.error(err, "Failed to send password reset email:");
     }
   }
 
@@ -449,7 +450,7 @@ export class AuthService {
 
     // Send confirmation email (non-blocking)
     EmailService.sendPasswordResetConfirmation(row.email, row.name || undefined, lang).catch(
-      (err) => console.error("Failed to send reset confirmation email:", err),
+      (err) => logger.error(err, "Failed to send reset confirmation email:"),
     );
   }
 

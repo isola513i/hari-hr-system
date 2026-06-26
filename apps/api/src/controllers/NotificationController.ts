@@ -13,7 +13,7 @@ export class NotificationController {
         return;
       }
 
-      const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+      const limit = Math.min(parseInt(req.query.limit as string, 10) || 20, 100);
       const notifications = await NotificationService.getByUserId(userId, limit);
 
       res.json(notifications);

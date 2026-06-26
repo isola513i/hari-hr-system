@@ -7,14 +7,14 @@ import { LEAVE_TYPES } from '../constants/leaveTypes';
 // Rate limit values — override per environment via .env
 // Defaults are production-safe; raise in .env for local dev if needed.
 const env = {
-  generalMax:          parseInt(process.env.RATE_LIMIT_GENERAL_MAX          || '500'),
-  authMax:             parseInt(process.env.RATE_LIMIT_AUTH_MAX             || '30'),
-  authWindowMs:        parseInt(process.env.RATE_LIMIT_AUTH_WINDOW_MS       || String(5 * 60 * 1000)),
-  forgotPasswordMax:   parseInt(process.env.RATE_LIMIT_FORGOT_PASSWORD_MAX  || '5'),
-  forgotPasswordWindowMs: parseInt(process.env.RATE_LIMIT_FORGOT_PASSWORD_WINDOW_MS || String(15 * 60 * 1000)),
-  apiMax:              parseInt(process.env.RATE_LIMIT_API_MAX              || '100'),
-  backupCodeMax:       parseInt(process.env.RATE_LIMIT_BACKUP_CODE_MAX       || '5'),
-  backupCodeWindowMs:  parseInt(process.env.RATE_LIMIT_BACKUP_CODE_WINDOW_MS || String(15 * 60 * 1000)),
+  generalMax:          parseInt(process.env.RATE_LIMIT_GENERAL_MAX          || '500', 10),
+  authMax:             parseInt(process.env.RATE_LIMIT_AUTH_MAX             || '30', 10),
+  authWindowMs:        parseInt(process.env.RATE_LIMIT_AUTH_WINDOW_MS       || String(5 * 60 * 1000), 10),
+  forgotPasswordMax:   parseInt(process.env.RATE_LIMIT_FORGOT_PASSWORD_MAX  || '5', 10),
+  forgotPasswordWindowMs: parseInt(process.env.RATE_LIMIT_FORGOT_PASSWORD_WINDOW_MS || String(15 * 60 * 1000), 10),
+  apiMax:              parseInt(process.env.RATE_LIMIT_API_MAX              || '100', 10),
+  backupCodeMax:       parseInt(process.env.RATE_LIMIT_BACKUP_CODE_MAX       || '5', 10),
+  backupCodeWindowMs:  parseInt(process.env.RATE_LIMIT_BACKUP_CODE_WINDOW_MS || String(15 * 60 * 1000), 10),
 };
 
 export const generalLimiter = rateLimit({

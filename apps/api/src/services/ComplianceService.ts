@@ -1,6 +1,7 @@
 import { query } from '../db';
 import { BusinessError } from '../utils/errorResponse';
 import NotificationService from './NotificationService';
+import logger from '../utils/logger';
 
 export interface ComplianceItem {
   id: string;
@@ -225,7 +226,7 @@ class ComplianceService {
           message: `"${existing.title}" status changed from ${existing.status} to ${newStatus}.${reason ? ` Reason: ${reason}` : ''}`,
           type: newStatus === 'Completed' ? 'success' : newStatus === 'Overdue' ? 'warning' : 'info',
           link: '/compliance',
-        }).catch((err) => console.error('Failed to notify about compliance status change:', err));
+        }).catch((err) => logger.error(err, 'Failed to notify about compliance status change:'));
       }
     }
 
