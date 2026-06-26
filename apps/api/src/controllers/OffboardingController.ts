@@ -12,7 +12,8 @@ export class OffboardingController {
     async initiateOffboarding(req: Request, res: Response): Promise<void> {
         try {
             const { id } = req.params;
-            const user = req.user!;
+            if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
+            const user = req.user;
 
             const { employee, tasks } = await OffboardingService.initiateOffboarding(
                 id,
@@ -94,7 +95,8 @@ export class OffboardingController {
     async updateTask(req: Request, res: Response): Promise<void> {
         try {
             const { taskId } = req.params;
-            const user = req.user!;
+            if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
+            const user = req.user;
 
             const task = await OffboardingService.updateTask(taskId, req.body, {
                 userId: user.userId,
@@ -162,7 +164,8 @@ export class OffboardingController {
     async saveExitInterview(req: Request, res: Response): Promise<void> {
         try {
             const { id } = req.params;
-            const user = req.user!;
+            if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
+            const user = req.user;
 
             const interview = await OffboardingService.saveExitInterview(
                 id,

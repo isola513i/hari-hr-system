@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 import { query } from '../db';
 import { ExpenseClaim, CreateExpenseClaimDTO, UpdateExpenseClaimStatusDTO } from '../models/ExpenseClaim';
 import { BusinessError } from '../utils/errorResponse';
@@ -196,7 +197,7 @@ export class ExpenseClaimService {
             message: `Manager approved ${empName}'s expense claim "${claim.title}" (฿${claim.amount}). Needs final approval.`,
             type: 'info',
             link: '/expenses',
-        }).catch(() => {});
+        }).catch((err) => logger.warn(err, 'Background task failed'));
 
         return this.getExpenseClaimById(result.rows[0].id) as Promise<ExpenseClaim>;
     }

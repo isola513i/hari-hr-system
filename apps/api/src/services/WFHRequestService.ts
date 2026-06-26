@@ -55,7 +55,7 @@ export class WFHRequestService {
         message: `${employeeName} has submitted a WFH request for ${formattedDate}.`,
         type: 'info',
         link: '/admin-attendance',
-      }).catch(() => {});
+      }).catch((err) => logger.warn(err, 'Background task failed'));
 
       if (empRow.rows[0]?.manager_user_id) {
         await NotificationService.create({
@@ -107,7 +107,7 @@ export class WFHRequestService {
       message: `Manager approved ${empName}'s WFH request for ${formattedDate}.`,
       type: 'info',
       link: '/admin-attendance',
-    }).catch(() => {});
+    }).catch((err) => logger.warn(err, 'Background task failed'));
 
     return wfh;
   }

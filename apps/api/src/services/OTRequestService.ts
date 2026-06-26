@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 import { query } from '../db';
 import NotificationService from './NotificationService';
 
@@ -98,7 +99,7 @@ class OTRequestService {
       message: `${empName} has requested ${data.plannedHours}h OT on ${data.date}`,
       type: 'info',
       link: '/admin/attendance',
-    }).catch(() => {});
+    }).catch((err) => logger.warn(err, 'Background task failed'));
 
     return mapRow(ot);
   }
@@ -169,7 +170,7 @@ class OTRequestService {
     });
 
     // Sync actual_hours from attendance if date has passed
-    await this.syncActualHoursForRequest(ot.id, ot.employee_id, ot.date).catch(() => {});
+    await this.syncActualHoursForRequest(ot.id, ot.employee_id, ot.date).catch((err) => logger.warn(err, 'Background task failed'));
 
     return mapRow(ot);
   }
@@ -301,7 +302,7 @@ class OTRequestService {
         message: data.message,
         type: data.type as any,
         link: data.link,
-      }).catch(() => {});
+      }).catch((err) => logger.warn(err, 'Background task failed'));
     }
   }
 }

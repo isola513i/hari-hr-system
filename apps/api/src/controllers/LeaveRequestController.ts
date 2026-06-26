@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 import { Request, Response } from 'express';
 import LeaveRequestService, { LeaveRequestService as LeaveRequestServiceClass } from '../services/LeaveRequestService';
 import { emitLeaveRequestCreated, emitLeaveRequestUpdated, emitLeaveRequestDeleted, emitLeaveRequestsBulkUpdated } from '../socket';
@@ -227,7 +228,7 @@ export class LeaveRequestController {
                     message: `Manager approved ${empName}'s ${leaveRequest.type} leave request — needs HR final approval.`,
                     type: 'info',
                     link: '/leave-requests',
-                }).catch(() => {});
+                }).catch((err) => logger.warn(err, 'Background task failed'));
             }
             emitLeaveRequestUpdated(leaveRequest);
         }
@@ -289,7 +290,7 @@ export class LeaveRequestController {
                     message: `A manager approved ${sideEffects.managerApprovedCount} leave request(s) — needs HR final approval.`,
                     type: 'info',
                     link: '/leave-requests',
-                }).catch(() => {});
+                }).catch((err) => logger.warn(err, 'Background task failed'));
             }
 
             const succeeded = results.filter((r) => r.success).length;

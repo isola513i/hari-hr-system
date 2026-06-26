@@ -155,7 +155,7 @@ export class PerformanceService {
         message: `${reviewer} has submitted a performance review for you${rating ? ` (${rating}/5)` : ''}.`,
         type: 'info',
         link: '/performance-reviews',
-      }).catch(() => {});
+      }).catch((err) => logger.warn(err, 'Background task failed'));
     }
 
     return this.mapRow(row);
@@ -248,7 +248,7 @@ export class PerformanceService {
           message: `${empCheck.rows[0].name} has submitted their self-review and needs your evaluation.`,
           type: 'info',
           link: '/performance-reviews',
-        }).catch(() => {});
+        }).catch((err) => logger.warn(err, 'Background task failed'));
       }
     }
 
@@ -317,7 +317,7 @@ export class PerformanceService {
       message: `Manager has reviewed ${empCheck.rows[0]?.name}'s performance (${rating}/5). Ready for HR finalization.`,
       type: 'info',
       link: '/performance-reviews',
-    }).catch(() => {});
+    }).catch((err) => logger.warn(err, 'Background task failed'));
 
     return this.mapRow(result.rows[0]);
   }
@@ -368,7 +368,7 @@ export class PerformanceService {
         message: 'Your performance review has been finalized by HR. You can view the results now.',
         type: 'success',
         link: '/performance-reviews',
-      }).catch(() => {});
+      }).catch((err) => logger.warn(err, 'Background task failed'));
     }
 
     return this.mapRow(result.rows[0]);
@@ -423,7 +423,7 @@ export class PerformanceService {
         message: 'Your performance review has been sent back for revision.',
         type: 'warning',
         link: '/performance-reviews',
-      }).catch(() => {});
+      }).catch((err) => logger.warn(err, 'Background task failed'));
     }
 
     return this.mapRow(result.rows[0]);

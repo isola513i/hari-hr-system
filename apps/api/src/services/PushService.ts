@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 import webpush, { PushSubscription } from 'web-push';
 import { query } from '../db';
 
@@ -70,7 +71,7 @@ class PushService {
           await query(
             `DELETE FROM push_subscriptions WHERE endpoint = $1`,
             [row.endpoint]
-          ).catch(() => {});
+          ).catch((err) => logger.warn(err, 'Background task failed'));
         } else {
           console.error('PushService: send error', err.message);
         }

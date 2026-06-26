@@ -273,6 +273,7 @@ router.post('/:id/assign', requireAdmin, apiLimiter, async (req: Request, res: R
       [employeeId, req.params.id]
     );
     const row = await query(`${ASSET_SELECT} WHERE a.id = $1`, [req.params.id]);
+    if (!row.rows.length) return res.status(404).json({ error: 'Asset not found' });
     res.json(mapRow(row.rows[0]));
   } catch (err) {
     res.status(500).json({ error: 'Failed to assign asset' });

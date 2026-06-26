@@ -88,7 +88,7 @@ export class AttendanceRegularizationService {
         message: `${employeeName} requested an attendance correction for ${formatDate(date)}.`,
         type: 'info',
         link: '/requests?tab=attendance_reg',
-      }).catch(() => {});
+      }).catch((err) => logger.warn(err, 'Background task failed'));
 
       if (empRow.rows[0]?.manager_user_id) {
         await NotificationService.create({
@@ -196,7 +196,7 @@ export class AttendanceRegularizationService {
       message: `Manager approved ${empName}'s attendance correction for ${formatDate(reqRow.date)}.`,
       type: 'info',
       link: '/requests?tab=attendance_reg',
-    }).catch(() => {});
+    }).catch((err) => logger.warn(err, 'Background task failed'));
 
     return reg;
   }

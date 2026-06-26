@@ -200,7 +200,8 @@ export class AuthController {
   /** GET /auth/2fa/setup — generate QR code + secret (not yet persisted) */
   async setupTotp(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!.userId;
+      if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
+      const userId = req.user.userId;
       const result = await AuthService.setupTotp(userId);
       res.json(result);
     } catch (error: any) {
@@ -212,7 +213,8 @@ export class AuthController {
   /** POST /auth/2fa/enable — verify first code + persist secret + return backup codes */
   async enableTotp(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!.userId;
+      if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
+      const userId = req.user.userId;
       const { secret, token } = req.body;
 
       if (!secret || !token) {
@@ -231,7 +233,8 @@ export class AuthController {
   /** POST /auth/2fa/disable — self-service disable (requires password) */
   async disableTotp(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!.userId;
+      if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
+      const userId = req.user.userId;
       const { password } = req.body;
 
       if (!password) {
@@ -303,7 +306,8 @@ export class AuthController {
   /** GET /auth/2fa/status — get 2FA status + backup code count */
   async getTotpStatus(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!.userId;
+      if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
+      const userId = req.user.userId;
       const status = await AuthService.getTotpStatus(userId);
       res.json(status);
     } catch (error: any) {
@@ -315,7 +319,8 @@ export class AuthController {
   /** POST /auth/2fa/backup-codes — regenerate backup codes (requires active TOTP code) */
   async regenerateBackupCodes(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!.userId;
+      if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
+      const userId = req.user.userId;
       const { token } = req.body;
 
       if (!token) {
