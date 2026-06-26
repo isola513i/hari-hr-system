@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import PerformanceService from '../services/PerformanceService';
 import type { AuditContext } from '../services/PerformanceService';
 import { safeErrorMessage } from '../utils/errorResponse';
+import logger from '../utils/logger';
 
 function buildAudit(req: Request): AuditContext {
   const user = req.user!;
@@ -29,7 +30,7 @@ class PerformanceController {
       });
       res.json(reviews);
     } catch (err) {
-      console.error('Error fetching performance reviews:', err);
+      logger.error(err, 'Error fetching performance reviews:');
       res.status(500).json({ error: 'Failed to fetch performance reviews' });
     }
   }
@@ -50,7 +51,7 @@ class PerformanceController {
       }, buildAudit(req));
       res.status(201).json(review);
     } catch (err: any) {
-      console.error('Error creating performance review:', err);
+      logger.error(err, 'Error creating performance review:');
       const status = err.name === 'BusinessError' ? 400 : 500;
       res.status(status).json({ error: safeErrorMessage(err, 'Failed to create performance review') });
     }
@@ -76,7 +77,7 @@ class PerformanceController {
       });
       res.status(201).json(review);
     } catch (err: any) {
-      console.error('Error creating self-review:', err);
+      logger.error(err, 'Error creating self-review:');
       const status = err.name === 'BusinessError' ? 400 : 500;
       res.status(status).json({ error: safeErrorMessage(err, 'Failed to create self-review') });
     }
@@ -89,7 +90,7 @@ class PerformanceController {
       const review = await PerformanceService.submitSelfReview(id, user.userId, buildAudit(req));
       res.json(review);
     } catch (err: any) {
-      console.error('Error submitting self-review:', err);
+      logger.error(err, 'Error submitting self-review:');
       const status = err.name === 'BusinessError' ? 400 : 500;
       res.status(status).json({ error: safeErrorMessage(err, 'Failed to submit self-review') });
     }
@@ -118,7 +119,7 @@ class PerformanceController {
       });
       res.json(review);
     } catch (err: any) {
-      console.error('Error submitting manager review:', err);
+      logger.error(err, 'Error submitting manager review:');
       const status = err.name === 'BusinessError' ? 400 : 500;
       res.status(status).json({ error: safeErrorMessage(err, 'Failed to submit manager review') });
     }
@@ -134,7 +135,7 @@ class PerformanceController {
       });
       res.json(review);
     } catch (err: any) {
-      console.error('Error finalizing review:', err);
+      logger.error(err, 'Error finalizing review:');
       const status = err.name === 'BusinessError' ? 400 : 500;
       res.status(status).json({ error: safeErrorMessage(err, 'Failed to finalize review') });
     }
@@ -150,7 +151,7 @@ class PerformanceController {
       });
       res.json(review);
     } catch (err: any) {
-      console.error('Error rejecting review:', err);
+      logger.error(err, 'Error rejecting review:');
       const status = err.name === 'BusinessError' ? 400 : 500;
       res.status(status).json({ error: safeErrorMessage(err, 'Failed to reject review') });
     }
@@ -164,7 +165,7 @@ class PerformanceController {
       const review = await PerformanceService.update(id, { rating, notes, reviewer, date }, user.userId, user.role, buildAudit(req));
       res.json(review);
     } catch (err: any) {
-      console.error('Error updating performance review:', err);
+      logger.error(err, 'Error updating performance review:');
       const status = err.name === 'BusinessError' ? 400 : 500;
       res.status(status).json({ error: safeErrorMessage(err, 'Failed to update review') });
     }
@@ -177,7 +178,7 @@ class PerformanceController {
       await PerformanceService.delete(id, user.userId, user.role, buildAudit(req));
       res.json({ message: 'Review deleted successfully' });
     } catch (err: any) {
-      console.error('Error deleting performance review:', err);
+      logger.error(err, 'Error deleting performance review:');
       const status = err.name === 'BusinessError' ? 400 : 500;
       res.status(status).json({ error: safeErrorMessage(err, 'Failed to delete review') });
     }

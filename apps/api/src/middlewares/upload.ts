@@ -71,9 +71,11 @@ const medicalFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilt
 // ---------------------------------------------------------------------------
 // Multer instances
 // ---------------------------------------------------------------------------
+// Always use memoryStorage for avatars so resizeAvatar middleware can access
+// req.file.buffer regardless of storage backend (R2 or local disk).
 export const avatarUpload = multer({
-    storage: useR2 ? multer.memoryStorage() : buildDiskStorage('avatars'),
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB pre-compression
     fileFilter: imageFilter,
 });
 

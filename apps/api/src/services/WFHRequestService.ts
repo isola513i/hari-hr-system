@@ -1,6 +1,7 @@
 import { query } from '../db';
 import { BusinessError } from '../utils/errorResponse';
 import NotificationService from './NotificationService';
+import logger from '../utils/logger';
 
 export interface WFHRequest {
   id: string;
@@ -66,7 +67,7 @@ export class WFHRequestService {
         });
       }
     } catch (err) {
-      console.error('Failed to notify about WFH request:', err);
+      logger.error(err, 'Failed to notify about WFH request:');
     }
 
     return this.mapRow(result.rows[0]);
@@ -154,7 +155,7 @@ export class WFHRequestService {
           link: '/check-in',
         });
       })
-      .catch((err) => console.error('Failed to notify employee about WFH status:', err));
+      .catch((err) => logger.error(err, 'Failed to notify employee about WFH status:'));
   }
 
   async getMyRequests(employeeId: string): Promise<WFHRequest[]> {

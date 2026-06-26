@@ -1,5 +1,6 @@
 import { query } from '../db';
 import { SystemConfig, CreateSystemConfigDTO, UpdateSystemConfigDTO, LeaveQuota } from '../models/SystemConfig';
+import logger from '../utils/logger';
 
 export class SystemConfigService {
     /**
@@ -138,7 +139,7 @@ export class SystemConfigService {
                 try {
                     return JSON.parse(config.value);
                 } catch (e) {
-                    console.error('Failed to parse JSON config:', config.key, e);
+                    logger.error({ key: config.key, err: e }, 'Failed to parse JSON config');
                     return null;
                 }
             case 'string':

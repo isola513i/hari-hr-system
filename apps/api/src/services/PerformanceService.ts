@@ -2,6 +2,7 @@ import { query } from '../db';
 import { BusinessError } from '../utils/errorResponse';
 import NotificationService from './NotificationService';
 import AuditLogService from './AuditLogService';
+import logger from '../utils/logger';
 
 export interface AuditContext {
   userId: string;
@@ -143,7 +144,7 @@ export class PerformanceService {
         userAgent: audit.userAgent,
         success:   true,
         details:   { employeeId, rating: rating ?? null, reviewPeriod: reviewPeriod ?? null },
-      }).catch((err) => console.error('Performance review created audit log failed:', err));
+      }).catch((err) => logger.error(err, 'Performance review created audit log failed:'));
     }
 
     // Notify employee
@@ -195,7 +196,7 @@ export class PerformanceService {
         userAgent: audit.userAgent,
         success:   true,
         details:   { employeeId, reviewPeriod: reviewPeriod ?? null },
-      }).catch((err) => console.error('Self-review created audit log failed:', err));
+      }).catch((err) => logger.error(err, 'Self-review created audit log failed:'));
     }
 
     return this.mapRow(result.rows[0]);
@@ -234,7 +235,7 @@ export class PerformanceService {
         userAgent: audit.userAgent,
         success:   true,
         details:   { reviewId: id, employeeId: existing.rows[0].employee_id },
-      }).catch((err) => console.error('Self-review submitted audit log failed:', err));
+      }).catch((err) => logger.error(err, 'Self-review submitted audit log failed:'));
     }
 
     // Notify manager
@@ -307,7 +308,7 @@ export class PerformanceService {
         userAgent: audit.userAgent,
         success:   true,
         details:   { reviewId: id, employeeId: row.employee_id, rating, previousStatus: row.status },
-      }).catch((err) => console.error('Manager review audit log failed:', err));
+      }).catch((err) => logger.error(err, 'Manager review audit log failed:'));
     }
 
     // Notify HR admins
@@ -355,7 +356,7 @@ export class PerformanceService {
         userAgent: audit.userAgent,
         success:   true,
         details:   { reviewId: id, employeeId: existing.rows[0].employee_id, rating: result.rows[0].rating },
-      }).catch((err) => console.error('HR approve audit log failed:', err));
+      }).catch((err) => logger.error(err, 'HR approve audit log failed:'));
     }
 
     // Notify employee
@@ -410,7 +411,7 @@ export class PerformanceService {
         userAgent: audit.userAgent,
         success:   true,
         details:   { reviewId: id, employeeId: result.rows[0].employee_id, reason: reason ?? null, byRole: role },
-      }).catch((err) => console.error('Review rejected audit log failed:', err));
+      }).catch((err) => logger.error(err, 'Review rejected audit log failed:'));
     }
 
     // Notify employee
@@ -464,7 +465,7 @@ export class PerformanceService {
         userAgent: audit.userAgent,
         success:   true,
         details:   { reviewId: id, changedFields: Object.keys(data).filter((k) => data[k as keyof typeof data] !== undefined) },
-      }).catch((err) => console.error('Review updated audit log failed:', err));
+      }).catch((err) => logger.error(err, 'Review updated audit log failed:'));
     }
 
     return this.mapRow(result.rows[0]);
@@ -492,7 +493,7 @@ export class PerformanceService {
         userAgent: audit.userAgent,
         success:   true,
         details:   { reviewId: id, employeeId: result.rows[0].employee_id },
-      }).catch((err) => console.error('Review deleted audit log failed:', err));
+      }).catch((err) => logger.error(err, 'Review deleted audit log failed:'));
     }
   }
 

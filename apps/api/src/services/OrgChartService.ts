@@ -1,4 +1,5 @@
 import { query } from '../db';
+import { getOrSet } from '../utils/cache';
 
 const BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001';
 
@@ -26,7 +27,8 @@ export class OrgChartService {
    * Optionally filter by department
    */
   async getOrgChart(department?: string): Promise<OrgChartNode[]> {
-    let queryText = `
+    return getOrSet('org_chart', async () => {
+      let queryText = `
       SELECT
         e.id,
         e.manager_id AS "parentId",
@@ -40,28 +42,29 @@ export class OrgChartService {
       FROM employees e
       WHERE e.status != 'Terminated'
     `;
-    const params: string[] = [];
+      const params: string[] = [];
 
-    if (department) {
-      params.push(department);
-      queryText += ` AND e.department = $1`;
-    }
+      if (department) {
+        params.push(department);
+        queryText += ` AND e.department = $1`;
+      }
 
-    queryText += ` ORDER BY e.name`;
+      queryText += ` ORDER BY e.name`;
 
-    const result = await query(queryText, params);
+      const result = await query(queryText, params);
 
-    return result.rows.map(row => ({
-      id: row.id,
-      parentId: row.parentId || null,
-      name: row.name,
-      role: row.role,
-      email: row.email,
-      avatar: resolveAvatar(row.avatar, row.name),
-      department: row.department || '',
-      status: row.status || 'Active',
-      directReportCount: row.directReportCount || 0,
-    }));
+      return result.rows.map(row => ({
+        id: row.id,
+        parentId: row.parentId || null,
+        name: row.name,
+        role: row.role,
+        email: row.email,
+        avatar: resolveAvatar(row.avatar, row.name),
+        department: row.department || '',
+        status: row.status || 'Active',
+        directReportCount: row.directReportCount || 0,
+      }));
+    }, 7200);
   }
 
   /**
@@ -70,8 +73,9 @@ export class OrgChartService {
    * rather than the full recursive subtree.
    */
   async getDirectReports(managerId: string): Promise<OrgChartNode[]> {
-    const result = await query(
-      `SELECT
+    return getOrSet(`direct_reports:${managerId}`, async () => {
+      const result = await query(
+        `SELECT
         e.id,
         e.manager_id AS "parentId",
         e.name,
@@ -84,20 +88,21 @@ export class OrgChartService {
       FROM employees e
       WHERE e.manager_id = $1 AND e.status != 'Terminated'
       ORDER BY e.name`,
-      [managerId]
-    );
+        [managerId]
+      );
 
-    return result.rows.map(row => ({
-      id: row.id,
-      parentId: row.parentId || null,
-      name: row.name,
-      role: row.role,
-      email: row.email,
-      avatar: resolveAvatar(row.avatar, row.name),
-      department: row.department || '',
-      status: row.status || 'Active',
-      directReportCount: row.directReportCount || 0,
-    }));
+      return result.rows.map(row => ({
+        id: row.id,
+        parentId: row.parentId || null,
+        name: row.name,
+        role: row.role,
+        email: row.email,
+        avatar: resolveAvatar(row.avatar, row.name),
+        department: row.department || '',
+        status: row.status || 'Active',
+        directReportCount: row.directReportCount || 0,
+      }));
+    }, 3600);
   }
 
   /**

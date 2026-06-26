@@ -14,6 +14,7 @@ import fs from "fs";
 import path from "path";
 import swaggerUi from "swagger-ui-express";
 import { generalLimiter, helmetConfig, apiLimiter } from "./middlewares/security";
+import { validateOrigin } from "./middlewares/csrf";
 import { auditLogMiddleware } from "./middlewares/auditLog";
 import { authenticateToken, requireAdmin } from "./middlewares/auth";
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler";
@@ -55,6 +56,7 @@ import { employeeOffboardingRouter, offboardingTaskRouter } from "./routes/offbo
 import { runMigration } from "./scripts/init-db";
 import { initAttendanceScheduler } from "./services/AttendanceScheduler";
 import { initMilestoneScheduler } from "./services/MilestoneScheduler";
+import logger from "./utils/logger";
 
 // dotenv.config() is called above (before Sentry init).
 
@@ -102,7 +104,7 @@ const corsOptions = {
     if (isNgrok || allowedOrigins.some(allowed => origin.startsWith(allowed.replace(/\/$/, '')))) {
       callback(null, true);
     } else {
-      console.warn(`CORS blocked origin: ${origin}`);
+      logger.warn(`CORS blocked origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -117,6 +119,10 @@ app.use(generalLimiter);
 // Body parser
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// Security: defence-in-depth Origin validation (JWT Bearer is inherently CSRF-safe;
+// this check blocks cross-origin state-changing requests as an extra layer).
+app.use(validateOrigin);
 
 // Audit logging middleware
 app.use(auditLogMiddleware);
@@ -155,7 +161,7 @@ app.get("/api/health", async (_req, res) => {
     await query("SELECT 1");
     res.json({ status: "ok", db: "ok", timestamp: new Date().toISOString() });
   } catch (err) {
-    console.error("[Health] DB check failed:", err);
+    logger.error(err, "[Health] DB check failed:");
     res.status(503).json({ status: "error", db: "down", timestamp: new Date().toISOString() });
   }
 });
@@ -276,7 +282,7 @@ app.post(
       });
     } catch (err) {
       const error = err as { code?: string; message?: string };
-      console.error("Setup error:", error);
+      logger.error(error, "Setup error:");
       // If tables don't exist, try running migration anyway
       if (error.code === '42P01') { // Table doesn't exist error
         try {
@@ -286,7 +292,7 @@ app.post(
             hint: "You can now login with admin@company.com / Admin123!@#"
           });
         } catch (migrationErr) {
-          console.error("Migration error:", migrationErr);
+          logger.error(migrationErr, "Migration error:");
           res.status(500).json({ error: "Failed to setup database" });
         }
       } else {
@@ -307,7 +313,7 @@ app.post(
       await runMigration();
       res.json({ message: "Database seeded successfully" });
     } catch (err) {
-      console.error("Seeding error:", err);
+      logger.error(err, "Seeding error:");
       res.status(500).json({ error: "Failed to seed database" });
     }
   }
@@ -731,19 +737,19 @@ const runLightMigrations = async () => {
   try {
     await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_notifications BOOLEAN DEFAULT TRUE`);
   } catch (err) {
-    console.error("Migration: failed to add email_notifications column:", err);
+    logger.error(err, "Migration: failed to add email_notifications column:");
   }
 
   try {
     await query(`ALTER TABLE performance_reviews ADD COLUMN IF NOT EXISTS reviewer_user_id UUID REFERENCES users(id)`);
   } catch (err) {
-    console.error("Migration: failed to add reviewer_user_id to performance_reviews:", err);
+    logger.error(err, "Migration: failed to add reviewer_user_id to performance_reviews:");
   }
 
   try {
     await query(`ALTER TABLE employees ADD COLUMN IF NOT EXISTS banner_color VARCHAR(50)`);
   } catch (err) {
-    console.error("Migration: failed to add banner_color to employees:", err);
+    logger.error(err, "Migration: failed to add banner_color to employees:");
   }
 
   // Holidays table + business_days column on leave_requests
@@ -751,7 +757,7 @@ const runLightMigrations = async () => {
     const { migrateHolidays } = await import("./scripts/migrate-holidays");
     await migrateHolidays();
   } catch (err) {
-    console.error("Migration: holidays migration failed:", err);
+    logger.error(err, "Migration: holidays migration failed:");
   }
 
   // Half-day leave support
@@ -759,7 +765,7 @@ const runLightMigrations = async () => {
     const { migrateHalfDayLeave } = await import("./scripts/migrate-half-day-leave");
     await migrateHalfDayLeave();
   } catch (err) {
-    console.error("Migration: half-day leave migration failed:", err);
+    logger.error(err, "Migration: half-day leave migration failed:");
   }
 
   // Expense claims table (was only in standalone migration script, not in init-db)
@@ -785,7 +791,7 @@ const runLightMigrations = async () => {
     await query(`CREATE INDEX IF NOT EXISTS idx_expense_claims_employee_id ON expense_claims(employee_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_expense_claims_status ON expense_claims(status)`);
   } catch (err) {
-    console.error("Migration: expense_claims table creation failed:", err);
+    logger.error(err, "Migration: expense_claims table creation failed:");
   }
 
   // Shifts and shift assignments tables
@@ -817,7 +823,7 @@ const runLightMigrations = async () => {
     await query(`CREATE INDEX IF NOT EXISTS idx_shift_assignments_date ON shift_assignments(date)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_shift_assignments_shift ON shift_assignments(shift_id)`);
   } catch (err) {
-    console.error("Migration: shifts tables creation failed:", err);
+    logger.error(err, "Migration: shifts tables creation failed:");
   }
 };
 
@@ -838,8 +844,8 @@ initializeSocket(httpServer);
 if (process.env.VERCEL !== '1') {
   runLightMigrations().then(() => {
     httpServer.listen(port, () => {
-      console.log(`Server running at http://localhost:${port}`);
-      console.log(`Socket.io enabled for real-time updates`);
+      logger.info(`Server running at http://localhost:${port}`);
+      logger.info(`Socket.io enabled for real-time updates`);
       initAttendanceScheduler();
       initMilestoneScheduler();
     });

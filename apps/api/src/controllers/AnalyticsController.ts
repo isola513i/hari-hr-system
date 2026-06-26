@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { query } from '../db';
 import { getAuditLogs } from '../middlewares/auditLog';
+import logger from '../utils/logger';
 
 class AnalyticsController {
   /**
@@ -10,7 +11,7 @@ class AnalyticsController {
   async getDashboard(req: Request, res: Response): Promise<void> {
     try {
       const currentYear = new Date().getFullYear();
-      const yearParam = parseInt(req.query.year as string);
+      const yearParam = parseInt(req.query.year as string, 10);
       const year = Number.isFinite(yearParam) && yearParam >= 2000 && yearParam <= currentYear
         ? yearParam
         : currentYear;
@@ -40,7 +41,7 @@ class AnalyticsController {
         turnover,
       });
     } catch (err) {
-      console.error('Error fetching analytics dashboard:', err);
+      logger.error(err, 'Error fetching analytics dashboard:');
       res.status(500).json({ error: 'Failed to fetch analytics data' });
     }
   }
@@ -54,7 +55,7 @@ class AnalyticsController {
       const data = await this.fetchHeadcountGrowth(new Date().getFullYear());
       res.json(data);
     } catch (err) {
-      console.error('Error fetching headcount stats:', err);
+      logger.error(err, 'Error fetching headcount stats:');
       res.status(500).json({ error: 'Failed to get headcount stats' });
     }
   }
@@ -78,7 +79,7 @@ class AnalyticsController {
       }));
       res.json(logs);
     } catch (err) {
-      console.error('Error fetching audit logs:', err);
+      logger.error(err, 'Error fetching audit logs:');
       res.status(500).json({ error: 'Failed to fetch audit logs' });
     }
   }

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import DashboardService from "../services/DashboardService";
+import logger from '../utils/logger';
 
 export class DashboardController {
   /**
@@ -17,7 +18,7 @@ export class DashboardController {
       const stats = await DashboardService.getEmployeeStats(employeeId);
       res.json(stats);
     } catch (error: any) {
-      console.error("Error fetching employee stats:", error);
+      logger.error(error, "Error fetching employee stats:");
       res.status(500).json({ error: "Failed to fetch employee stats" });
     }
   }
@@ -34,11 +35,11 @@ export class DashboardController {
         return;
       }
 
-      const limit = parseInt(req.query.limit as string) || 5;
+      const limit = parseInt(req.query.limit as string, 10) || 5;
       const team = await DashboardService.getMyTeam(employeeId, limit);
       res.json(team);
     } catch (error: any) {
-      console.error("Error fetching team:", error);
+      logger.error(error, "Error fetching team:");
       res.status(500).json({ error: "Failed to fetch team" });
     }
   }
@@ -58,7 +59,7 @@ export class DashboardController {
       const directReports = await DashboardService.getDirectReports(employeeId);
       res.json(directReports);
     } catch (error: any) {
-      console.error("Error fetching direct reports:", error);
+      logger.error(error, "Error fetching direct reports:");
       res.status(500).json({ error: "Failed to fetch direct reports" });
     }
   }
@@ -77,7 +78,7 @@ export class DashboardController {
       const hierarchy = await DashboardService.getMyTeamHierarchy(employeeId);
       res.json(hierarchy);
     } catch (error: any) {
-      console.error("Error fetching team hierarchy:", error);
+      logger.error(error, "Error fetching team hierarchy:");
       res.status(500).json({ error: "Failed to fetch team hierarchy" });
     }
   }
@@ -92,7 +93,7 @@ export class DashboardController {
       const stats = await DashboardService.getAdminStats();
       res.json(stats);
     } catch (error: any) {
-      console.error("Error fetching admin stats:", error);
+      logger.error(error, "Error fetching admin stats:");
       res.status(500).json({ error: "Failed to fetch admin stats" });
     }
   }

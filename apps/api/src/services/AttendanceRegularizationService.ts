@@ -3,6 +3,7 @@ import { BusinessError } from '../utils/errorResponse';
 import { withTransaction } from '../utils/transaction';
 import NotificationService from './NotificationService';
 import AttendanceService from './AttendanceService';
+import logger from '../utils/logger';
 
 export interface RegularizationRequest {
   id: string;
@@ -99,7 +100,7 @@ export class AttendanceRegularizationService {
         });
       }
     } catch (err) {
-      console.error('Failed to notify about attendance regularization request:', err);
+      logger.error(err, 'Failed to notify about attendance regularization request:');
     }
 
     return this.mapRow(result.rows[0]);
@@ -281,7 +282,7 @@ export class AttendanceRegularizationService {
           link: '/attendance',
         });
       })
-      .catch((err) => console.error('Failed to notify employee about regularization status:', err));
+      .catch((err) => logger.error(err, 'Failed to notify employee about regularization status:'));
   }
 
   private mapRow(row: Record<string, unknown>): RegularizationRequest {

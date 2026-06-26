@@ -10,6 +10,7 @@ import {
   OnboardingDocumentResponse,
 } from "../models/Onboarding";
 import NotificationService from "./NotificationService";
+import logger from '../utils/logger';
 
 // ==========================================
 // Row → Response Mappers
@@ -561,7 +562,7 @@ export class OnboardingService {
         [doc.name, fileType, fileSize, doc.employee_id, filePath]
       );
     } catch (err) {
-      console.error('Failed to sync onboarding document to documents table:', err);
+      logger.error(err, 'Failed to sync onboarding document to documents table:');
     }
 
     return mapDocumentRow(doc);
@@ -595,7 +596,7 @@ export class OnboardingService {
         message: `Your onboarding document "${doc.name}" has been ${status.toLowerCase()}.${note ? ` Note: ${note}` : ''}`,
         type: status === 'Approved' ? 'success' : 'warning',
         link: '/onboarding',
-      }).catch((err) => console.error('Failed to notify employee about document review:', err));
+      }).catch((err) => logger.error(err, 'Failed to notify employee about document review:'));
     }
 
     return mapDocumentRow(doc);

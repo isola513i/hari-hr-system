@@ -4,6 +4,7 @@ import { VALID_STAGES, VALID_PRIORITIES, VALID_DOC_STATUSES } from "../models/On
 import path from "path";
 import { storageService } from "../services/StorageService";
 import { generateStorageKey, getFileBuffer } from "../middlewares/upload";
+import logger from '../utils/logger';
 
 export class OnboardingController {
   // GET /api/onboarding/tasks?employeeId=xxx
@@ -39,7 +40,7 @@ export class OnboardingController {
         res.json(tasks);
       }
     } catch (error) {
-      console.error("Error fetching onboarding tasks:", error);
+      logger.error(error, "Error fetching onboarding tasks:");
       res.status(500).json({ error: "Failed to fetch tasks" });
     }
   }
@@ -80,7 +81,7 @@ export class OnboardingController {
 
       res.status(201).json(task);
     } catch (error) {
-      console.error("Error creating onboarding task:", error);
+      logger.error(error, "Error creating onboarding task:");
       res.status(500).json({ error: "Failed to create task" });
     }
   }
@@ -110,7 +111,7 @@ export class OnboardingController {
 
       res.json(task);
     } catch (error) {
-      console.error("Error updating onboarding task:", error);
+      logger.error(error, "Error updating onboarding task:");
       res.status(500).json({ error: "Failed to update task" });
     }
   }
@@ -128,7 +129,7 @@ export class OnboardingController {
 
       res.json({ message: "Task deleted successfully" });
     } catch (error) {
-      console.error("Error deleting onboarding task:", error);
+      logger.error(error, "Error deleting onboarding task:");
       res.status(500).json({ error: "Failed to delete task" });
     }
   }
@@ -152,7 +153,7 @@ export class OnboardingController {
         res.status(404).json({ error: "Employee not found" });
         return;
       }
-      console.error("Error seeding onboarding tasks:", error);
+      logger.error(error, "Error seeding onboarding tasks:");
       res.status(500).json({ error: "Failed to seed tasks" });
     }
   }
@@ -163,7 +164,7 @@ export class OnboardingController {
       const contacts = await OnboardingService.getAllContacts();
       res.json(contacts);
     } catch (error) {
-      console.error("Error fetching contacts:", error);
+      logger.error(error, "Error fetching contacts:");
       res.status(500).json({ error: "Failed to fetch contacts" });
     }
   }
@@ -179,7 +180,7 @@ export class OnboardingController {
       const contact = await OnboardingService.createContact({ name, role, relation: relation || '', email });
       res.status(201).json(contact);
     } catch (error) {
-      console.error("Error creating contact:", error);
+      logger.error(error, "Error creating contact:");
       res.status(500).json({ error: "Failed to create contact" });
     }
   }
@@ -192,7 +193,7 @@ export class OnboardingController {
       if (!contact) { res.status(404).json({ error: "Contact not found" }); return; }
       res.json(contact);
     } catch (error) {
-      console.error("Error updating contact:", error);
+      logger.error(error, "Error updating contact:");
       res.status(500).json({ error: "Failed to update contact" });
     }
   }
@@ -204,7 +205,7 @@ export class OnboardingController {
       if (!deleted) { res.status(404).json({ error: "Contact not found" }); return; }
       res.json({ message: "Contact deleted" });
     } catch (error) {
-      console.error("Error deleting contact:", error);
+      logger.error(error, "Error deleting contact:");
       res.status(500).json({ error: "Failed to delete contact" });
     }
   }
@@ -237,7 +238,7 @@ export class OnboardingController {
         res.json(docs);
       }
     } catch (error) {
-      console.error("Error fetching onboarding documents:", error);
+      logger.error(error, "Error fetching onboarding documents:");
       res.status(500).json({ error: "Failed to fetch documents" });
     }
   }
@@ -268,7 +269,7 @@ export class OnboardingController {
 
       res.json(doc);
     } catch (error) {
-      console.error("Error uploading onboarding document:", error);
+      logger.error(error, "Error uploading onboarding document:");
       res.status(500).json({ error: "Failed to upload document" });
     }
   }
@@ -293,7 +294,7 @@ export class OnboardingController {
 
       res.json(doc);
     } catch (error) {
-      console.error("Error reviewing onboarding document:", error);
+      logger.error(error, "Error reviewing onboarding document:");
       res.status(500).json({ error: "Failed to review document" });
     }
   }
@@ -328,7 +329,7 @@ export class OnboardingController {
 
       body.pipe(res);
     } catch (error) {
-      console.error("Error downloading onboarding document:", error);
+      logger.error(error, "Error downloading onboarding document:");
       res.status(500).json({ error: "Failed to download document" });
     }
   }

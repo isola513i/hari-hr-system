@@ -6,6 +6,7 @@ import { PaginationParams, PaginatedResult, createPaginatedResult } from '../uti
 import JobHistoryService from './JobHistoryService';
 import { encrypt, decrypt, hashPII } from '../utils/encryption';
 import { toInt } from '../utils/coerce';
+import logger from '../utils/logger';
 
 /**
  * Silently decrypt a ciphertext produced by encrypt().
@@ -17,7 +18,7 @@ function safeTryDecrypt(value: string | null | undefined): string | null {
     try {
         return decrypt(value);
     } catch {
-        console.error('PII decrypt failed — returning null for field');
+        logger.error('PII decrypt failed — returning null for field');
         return null;
     }
 }
@@ -397,7 +398,7 @@ export class EmployeeService {
                     updated.department || existing.department || '',
                 );
             } catch (err) {
-                console.error('Failed to auto-create job history:', err);
+                logger.error(err, 'Failed to auto-create job history:');
                 // Non-blocking: employee update still succeeds
             }
         }

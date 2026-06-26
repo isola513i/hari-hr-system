@@ -7,6 +7,7 @@ import {
 import { emitNotificationCreated, emitNotificationRefresh } from "../socket";
 import EmailService from "./EmailService";
 import PushService from "./PushService";
+import logger from '../utils/logger';
 
 // Helper function to format relative time
 function formatRelativeTime(date: Date): string {
@@ -93,7 +94,7 @@ export class NotificationService {
       icon: '/icon-192.png',
       badge: '/icon-192.png',
       url: data.link || '/',
-    }).catch((err) => console.error('PushService: failed to send push', err));
+    }).catch((err) => logger.error(err, 'PushService: failed to send push'));
 
     // Send email notification if user has email notifications enabled
     query(
@@ -103,9 +104,9 @@ export class NotificationService {
       const user = userResult.rows[0];
       if (user?.email_notifications) {
         EmailService.sendNotificationEmail(user.email, data.title, data.message, data.link, lang)
-          .catch((err) => console.error("EmailService: Failed to send notification email:", err));
+          .catch((err) => logger.error(err, "EmailService: Failed to send notification email:"));
       }
-    }).catch((err) => console.error("NotificationService: Failed to check email preferences:", err));
+    }).catch((err) => logger.error(err, "NotificationService: Failed to check email preferences:"));
 
     return notification;
   }
@@ -155,7 +156,7 @@ export class NotificationService {
     for (const admin of admins.rows) {
       if (admin.email_notifications) {
         EmailService.sendNotificationEmail(admin.email, data.title, data.message, data.link, lang)
-          .catch((err) => console.error("EmailService: Failed to send admin notification email:", err));
+          .catch((err) => logger.error(err, "EmailService: Failed to send admin notification email:"));
       }
     }
   }
@@ -175,7 +176,7 @@ export class NotificationService {
     for (const user of users.rows) {
       if (user.email_notifications) {
         EmailService.sendNotificationEmail(user.email, data.title, data.message, data.link, lang)
-          .catch((err) => console.error("EmailService: Failed to send notification email:", err));
+          .catch((err) => logger.error(err, "EmailService: Failed to send notification email:"));
       }
     }
   }

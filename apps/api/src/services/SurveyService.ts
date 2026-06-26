@@ -1,4 +1,5 @@
 import pool, { query } from "../db";
+import { getOrSet } from "../utils/cache";
 import type {
   CreateSurveyRequest,
   SubmitSurveyRequest,
@@ -236,75 +237,77 @@ export class SurveyService {
   }
 
   async getSentimentOverview(): Promise<SentimentOverview> {
-    // Category breakdown: average rating per category across ALL surveys
-    const catResult = await query(
-      `SELECT
-         sq.category,
-         ROUND(AVG(sr.rating) * 20)::int AS score,
-         COUNT(sr.id)::int AS response_count
-       FROM survey_responses sr
-       JOIN survey_questions sq ON sq.id = sr.question_id
-       GROUP BY sq.category
-       ORDER BY sq.category`
-    );
+    return getOrSet('sentiment_overview', async () => {
+      // Category breakdown: average rating per category across ALL surveys
+      const catResult = await query(
+        `SELECT
+           sq.category,
+           ROUND(AVG(sr.rating) * 20)::int AS score,
+           COUNT(sr.id)::int AS response_count
+         FROM survey_responses sr
+         JOIN survey_questions sq ON sq.id = sr.question_id
+         GROUP BY sq.category
+         ORDER BY sq.category`
+      );
 
-    // Total unique respondents (across all surveys)
-    const respondentsResult = await query(
-      `SELECT COUNT(DISTINCT employee_id)::int AS total FROM survey_completions`
-    );
+      // Total unique respondents (across all surveys)
+      const respondentsResult = await query(
+        `SELECT COUNT(DISTINCT employee_id)::int AS total FROM survey_completions`
+      );
 
-    // Total active employees
-    const employeesResult = await query(
-      `SELECT COUNT(*)::int AS total FROM employees WHERE status = 'Active'`
-    );
+      // Total active employees
+      const employeesResult = await query(
+        `SELECT COUNT(*)::int AS total FROM employees WHERE status = 'Active'`
+      );
 
-    const totalResponses = respondentsResult.rows[0]?.total ?? 0;
-    const totalEmployees = employeesResult.rows[0]?.total ?? 0;
+      const totalResponses = respondentsResult.rows[0]?.total ?? 0;
+      const totalEmployees = employeesResult.rows[0]?.total ?? 0;
 
-    const categoryBreakdown = catResult.rows.map((r: any) => ({
-      category: r.category,
-      score: r.score,
-      responseCount: r.response_count,
-    }));
+      const categoryBreakdown = catResult.rows.map((r: any) => ({
+        category: r.category,
+        score: r.score,
+        responseCount: r.response_count,
+      }));
 
-    const overallScore =
-      categoryBreakdown.length > 0
-        ? Math.round(
-            categoryBreakdown.reduce((sum: number, c: any) => sum + c.score, 0) /
-              categoryBreakdown.length
-          )
-        : 0;
+      const overallScore =
+        categoryBreakdown.length > 0
+          ? Math.round(
+              categoryBreakdown.reduce((sum: number, c: any) => sum + c.score, 0) /
+                categoryBreakdown.length
+            )
+          : 0;
 
-    const responseRate =
-      totalEmployees > 0 ? Math.round((totalResponses / totalEmployees) * 100) : 0;
+      const responseRate =
+        totalEmployees > 0 ? Math.round((totalResponses / totalEmployees) * 100) : 0;
 
-    // Sentiment distribution: positive (4-5), neutral (3), negative (1-2)
-    const distResult = await query(
-      `SELECT
-         COUNT(*) FILTER (WHERE sr.rating >= 4)::int AS positive,
-         COUNT(*) FILTER (WHERE sr.rating = 3)::int  AS neutral,
-         COUNT(*) FILTER (WHERE sr.rating <= 2)::int  AS negative,
-         COUNT(*)::int AS total
-       FROM survey_responses sr`
-    );
-    const dist = distResult.rows[0];
-    const distTotal = dist?.total ?? 0;
-    const distribution = distTotal > 0
-      ? {
-          positive: Math.round((dist.positive / distTotal) * 100),
-          neutral:  Math.round((dist.neutral / distTotal) * 100),
-          negative: Math.round((dist.negative / distTotal) * 100),
-        }
-      : { positive: 0, neutral: 0, negative: 0 };
+      // Sentiment distribution: positive (4-5), neutral (3), negative (1-2)
+      const distResult = await query(
+        `SELECT
+           COUNT(*) FILTER (WHERE sr.rating >= 4)::int AS positive,
+           COUNT(*) FILTER (WHERE sr.rating = 3)::int  AS neutral,
+           COUNT(*) FILTER (WHERE sr.rating <= 2)::int  AS negative,
+           COUNT(*)::int AS total
+         FROM survey_responses sr`
+      );
+      const dist = distResult.rows[0];
+      const distTotal = dist?.total ?? 0;
+      const distribution = distTotal > 0
+        ? {
+            positive: Math.round((dist.positive / distTotal) * 100),
+            neutral:  Math.round((dist.neutral / distTotal) * 100),
+            negative: Math.round((dist.negative / distTotal) * 100),
+          }
+        : { positive: 0, neutral: 0, negative: 0 };
 
-    return {
-      overallScore,
-      responseRate,
-      totalResponses,
-      totalEmployees,
-      categoryBreakdown,
-      distribution,
-    };
+      return {
+        overallScore,
+        responseRate,
+        totalResponses,
+        totalEmployees,
+        categoryBreakdown,
+        distribution,
+      };
+    }, 14400); // 4-hour TTL
   }
 }
 

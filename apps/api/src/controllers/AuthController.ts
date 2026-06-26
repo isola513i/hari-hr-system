@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import AuthService from "../services/AuthService";
 import AuditLogService from "../services/AuditLogService";
+import logger from '../utils/logger';
 
 export class AuthController {
   async login(req: Request, res: Response): Promise<void> {
@@ -15,7 +16,7 @@ export class AuthController {
       const authResponse = await AuthService.login({ email, password }, rememberMe);
       res.json(authResponse);
     } catch (error: any) {
-      console.error("Login error:", error);
+      logger.error(error, "Login error:");
       res.status(401).json({ error: error.message || "Login failed" });
     }
   }
@@ -50,7 +51,7 @@ export class AuthController {
       });
       res.json({ message: "Password changed successfully" });
     } catch (error: any) {
-      console.error("Change password error:", error);
+      logger.error(error, "Change password error:");
       res
         .status(400)
         .json({ error: error.message || "Failed to change password" });
@@ -69,7 +70,7 @@ export class AuthController {
       const authResponse = await AuthService.register({ email, password, confirmPassword });
       res.status(201).json(authResponse);
     } catch (error: any) {
-      console.error("Registration error:", error);
+      logger.error(error, "Registration error:");
       res.status(400).json({ error: error.message || "Registration failed" });
     }
   }
@@ -90,7 +91,7 @@ export class AuthController {
       res.json({ message: genericMessage });
     } catch (error: any) {
       // Always return same generic message to prevent user enumeration
-      console.error("Forgot password error:", error);
+      logger.error(error, "Forgot password error:");
       res.json({ message: genericMessage });
     }
   }
@@ -115,7 +116,7 @@ export class AuthController {
       await AuthService.resetPassword(token, newPassword, lang);
       res.json({ message: "Password has been reset successfully." });
     } catch (error: any) {
-      console.error("Reset password error:", error);
+      logger.error(error, "Reset password error:");
       res
         .status(400)
         .json({ error: error.message || "Failed to reset password" });
@@ -134,7 +135,7 @@ export class AuthController {
       const authResponse = await AuthService.refreshAccessToken(refreshToken);
       res.json(authResponse);
     } catch (error: any) {
-      console.error("Token refresh error:", error);
+      logger.error(error, "Token refresh error:");
       res.status(401).json({ error: error.message || "Token refresh failed" });
     }
   }
@@ -150,7 +151,7 @@ export class AuthController {
       res.json({ message: "Logged out successfully" });
     } catch (error: any) {
       // Always return success for logout (best-effort)
-      console.error("Logout error:", error);
+      logger.error(error, "Logout error:");
       res.json({ message: "Logged out successfully" });
     }
   }
@@ -167,7 +168,7 @@ export class AuthController {
       const result = await AuthService.checkEmailEligibility(email);
       res.json(result);
     } catch (error: any) {
-      console.error("Check email error:", error);
+      logger.error(error, "Check email error:");
       res.status(500).json({ error: error.message || "Failed to check email" });
     }
   }
@@ -187,7 +188,7 @@ export class AuthController {
       await AuthService.updateNotificationPreferences(userId, emailNotifications);
       res.json({ message: "Notification preferences updated" });
     } catch (error: any) {
-      console.error("Update notification preferences error:", error);
+      logger.error(error, "Update notification preferences error:");
       res.status(500).json({ error: error.message || "Failed to update preferences" });
     }
   }
@@ -203,7 +204,7 @@ export class AuthController {
       const result = await AuthService.setupTotp(userId);
       res.json(result);
     } catch (error: any) {
-      console.error("TOTP setup error:", error);
+      logger.error(error, "TOTP setup error:");
       res.status(500).json({ error: error.message || "Failed to setup 2FA" });
     }
   }
@@ -222,7 +223,7 @@ export class AuthController {
       const backupCodes = await AuthService.enableTotp(userId, secret, token);
       res.json({ message: "Two-factor authentication enabled", backupCodes });
     } catch (error: any) {
-      console.error("TOTP enable error:", error);
+      logger.error(error, "TOTP enable error:");
       res.status(400).json({ error: error.message || "Failed to enable 2FA" });
     }
   }
@@ -241,7 +242,7 @@ export class AuthController {
       await AuthService.disableTotp(userId, password);
       res.json({ message: "Two-factor authentication disabled" });
     } catch (error: any) {
-      console.error("TOTP disable error:", error);
+      logger.error(error, "TOTP disable error:");
       res.status(400).json({ error: error.message || "Failed to disable 2FA" });
     }
   }
@@ -276,7 +277,7 @@ export class AuthController {
 
       res.json({ message: "Two-factor authentication has been reset for the user" });
     } catch (error: any) {
-      console.error("TOTP admin reset error:", error);
+      logger.error(error, "TOTP admin reset error:");
       res.status(400).json({ error: error.message || "Failed to reset 2FA" });
     }
   }
@@ -294,7 +295,7 @@ export class AuthController {
       const authResponse = await AuthService.verifyTotpLogin(pending_token, code, rememberMe);
       res.json(authResponse);
     } catch (error: any) {
-      console.error("TOTP verify login error:", error);
+      logger.error(error, "TOTP verify login error:");
       res.status(401).json({ error: error.message || "Verification failed" });
     }
   }
@@ -306,7 +307,7 @@ export class AuthController {
       const status = await AuthService.getTotpStatus(userId);
       res.json(status);
     } catch (error: any) {
-      console.error("TOTP status error:", error);
+      logger.error(error, "TOTP status error:");
       res.status(500).json({ error: error.message || "Failed to get 2FA status" });
     }
   }
@@ -325,7 +326,7 @@ export class AuthController {
       const backupCodes = await AuthService.regenerateBackupCodes(userId, token);
       res.json({ message: "Backup codes regenerated", backupCodes });
     } catch (error: any) {
-      console.error("TOTP backup codes error:", error);
+      logger.error(error, "TOTP backup codes error:");
       res.status(400).json({ error: error.message || "Failed to regenerate backup codes" });
     }
   }
