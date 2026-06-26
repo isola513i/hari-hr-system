@@ -15,6 +15,20 @@ const router = Router();
 // All routes require authentication
 router.use(authenticateToken);
 
+/**
+ * @swagger
+ * /api/expense-claims:
+ *   get:
+ *     summary: List all expense claims
+ *     tags: [Expense Claims]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of all expense claims
+ *       401: { description: Unauthorized }
+ *       500: { description: Internal server error }
+ */
 // GET /api/expense-claims - Get all expense claims (cached)
 router.get('/', cacheMiddleware(), async (_req, res) => {
     try {
@@ -26,6 +40,26 @@ router.get('/', cacheMiddleware(), async (_req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/expense-claims/summary/{employeeId}:
+ *   get:
+ *     summary: Get expense claim summary for an employee
+ *     tags: [Expense Claims]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: employeeId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: The employee's UUID
+ *     responses:
+ *       200:
+ *         description: Expense summary totals and counts for the employee
+ *       401: { description: Unauthorized }
+ *       500: { description: Internal server error }
+ */
 // GET /api/expense-claims/summary/:employeeId - Employee summary (cached 60s)
 router.get('/summary/:employeeId', cacheMiddleware(60000), async (req, res) => {
     try {
@@ -38,6 +72,21 @@ router.get('/summary/:employeeId', cacheMiddleware(60000), async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/expense-claims/manager-queue:
+ *   get:
+ *     summary: Get pending expense claims for manager's direct reports
+ *     tags: [Expense Claims]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of pending claims awaiting manager review
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden — Manager or HR_ADMIN role required }
+ *       500: { description: Internal server error }
+ */
 // GET /api/expense-claims/manager-queue - Manager sees direct reports' pending claims
 router.get('/manager-queue', requireRole('MANAGER', 'HR_ADMIN'), async (req, res) => {
     try {
@@ -50,6 +99,21 @@ router.get('/manager-queue', requireRole('MANAGER', 'HR_ADMIN'), async (req, res
     }
 });
 
+/**
+ * @swagger
+ * /api/expense-claims/admin/summary:
+ *   get:
+ *     summary: Get organisation-wide expense claim summary (Admin/Finance only)
+ *     tags: [Expense Claims]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Aggregated totals and status breakdown across all employees
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden — Admin or Finance role required }
+ *       500: { description: Internal server error }
+ */
 // GET /api/expense-claims/admin/summary - Admin/Finance summary (cached 60s)
 router.get('/admin/summary', requireAdminOrFinance, cacheMiddleware(60000), async (_req, res) => {
     try {
@@ -61,6 +125,35 @@ router.get('/admin/summary', requireAdminOrFinance, cacheMiddleware(60000), asyn
     }
 });
 
+/**
+ * @swagger
+ * /api/expense-claims:
+ *   post:
+ *     summary: Submit a new expense claim with optional receipt upload
+ *     tags: [Expense Claims]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [employeeId, title, category, amount, expenseDate]
+ *             properties:
+ *               employeeId: { type: string, format: uuid }
+ *               title: { type: string, description: Short title for the claim }
+ *               category: { type: string, description: Expense category (e.g. Travel, Meals, Equipment) }
+ *               amount: { type: number, description: Claim amount in THB }
+ *               expenseDate: { type: string, format: date, description: Date the expense was incurred }
+ *               description: { type: string, description: Optional additional details }
+ *               receipt: { type: string, format: binary, description: Optional receipt file }
+ *     responses:
+ *       201:
+ *         description: Expense claim created successfully
+ *       401: { description: Unauthorized }
+ *       500: { description: Internal server error }
+ */
 // POST /api/expense-claims - Create expense claim with optional receipt upload
 router.post('/', apiLimiter, receiptUpload.single('receipt'), invalidateCache('/api/expense-claims'), async (req, res) => {
     try {
@@ -103,6 +196,39 @@ router.post('/', apiLimiter, receiptUpload.single('receipt'), invalidateCache('/
     }
 });
 
+/**
+ * @swagger
+ * /api/expense-claims/{id}:
+ *   put:
+ *     summary: Edit an existing expense claim (owner only, while still pending)
+ *     tags: [Expense Claims]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title: { type: string }
+ *               category: { type: string }
+ *               amount: { type: number }
+ *               expenseDate: { type: string, format: date }
+ *               description: { type: string }
+ *               receipt: { type: string, format: binary, description: Replacement receipt file }
+ *     responses:
+ *       200:
+ *         description: Expense claim updated successfully
+ *       400: { description: Validation error or claim not editable }
+ *       401: { description: Unauthorized }
+ *       404: { description: Expense claim not found }
+ */
 // PUT /api/expense-claims/:id - Edit expense claim with optional receipt upload
 router.put('/:id', apiLimiter, receiptUpload.single('receipt'), invalidateCache('/api/expense-claims'), async (req, res) => {
     try {
@@ -145,6 +271,38 @@ router.put('/:id', apiLimiter, receiptUpload.single('receipt'), invalidateCache(
     }
 });
 
+/**
+ * @swagger
+ * /api/expense-claims/{id}:
+ *   patch:
+ *     summary: Update expense claim status (Admin/Finance only)
+ *     tags: [Expense Claims]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [status]
+ *             properties:
+ *               status: { type: string, enum: [Approved, Rejected, Paid], description: New status to apply }
+ *               rejectionReason: { type: string, description: Required when status is Rejected }
+ *               approverEmployeeId: { type: string, format: uuid, description: Employee ID of the approver }
+ *     responses:
+ *       200:
+ *         description: Status updated and employee notified
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden — Admin or Finance role required }
+ *       404: { description: Expense claim not found }
+ *       500: { description: Internal server error }
+ */
 // PATCH /api/expense-claims/:id - Update status (requireAdmin or Finance)
 router.patch('/:id', requireAdminOrFinance, apiLimiter, invalidateCache('/api/expense-claims'), async (req, res) => {
     try {
@@ -184,6 +342,27 @@ router.patch('/:id', requireAdminOrFinance, apiLimiter, invalidateCache('/api/ex
     }
 });
 
+/**
+ * @swagger
+ * /api/expense-claims/{id}/manager-approve:
+ *   patch:
+ *     summary: Manager first-tier approval of an expense claim
+ *     tags: [Expense Claims]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Claim advanced to manager-approved state
+ *       400: { description: Claim not in an approvable state }
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden — Manager or HR_ADMIN role required }
+ *       404: { description: Expense claim not found }
+ */
 // PATCH /api/expense-claims/:id/manager-approve - Manager first-tier approval
 router.patch('/:id/manager-approve', requireRole('MANAGER', 'HR_ADMIN'), apiLimiter, invalidateCache('/api/expense-claims'), async (req, res) => {
     try {
@@ -201,6 +380,26 @@ router.patch('/:id/manager-approve', requireRole('MANAGER', 'HR_ADMIN'), apiLimi
     }
 });
 
+/**
+ * @swagger
+ * /api/expense-claims/{id}/cancel:
+ *   post:
+ *     summary: Cancel own expense claim
+ *     tags: [Expense Claims]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Expense claim cancelled successfully
+ *       400: { description: Claim cannot be cancelled in its current state }
+ *       401: { description: Unauthorized }
+ *       404: { description: Expense claim not found }
+ */
 // POST /api/expense-claims/:id/cancel - Cancel own expense claim
 router.post('/:id/cancel', apiLimiter, invalidateCache('/api/expense-claims'), async (req, res) => {
     try {
@@ -228,6 +427,26 @@ router.post('/:id/cancel', apiLimiter, invalidateCache('/api/expense-claims'), a
     }
 });
 
+/**
+ * @swagger
+ * /api/expense-claims/{id}:
+ *   delete:
+ *     summary: Delete an expense claim (Admin/Finance only)
+ *     tags: [Expense Claims]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Expense claim deleted successfully
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden — Admin or Finance role required }
+ *       500: { description: Internal server error }
+ */
 // DELETE /api/expense-claims/:id - Delete (requireAdmin or Finance)
 router.delete('/:id', requireAdminOrFinance, apiLimiter, invalidateCache('/api/expense-claims'), async (req, res) => {
     try {
@@ -242,6 +461,32 @@ router.delete('/:id', requireAdminOrFinance, apiLimiter, invalidateCache('/api/e
     }
 });
 
+/**
+ * @swagger
+ * /api/expense-claims/{id}/receipt:
+ *   get:
+ *     summary: Download or stream the receipt file for an expense claim
+ *     tags: [Expense Claims]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Receipt file streamed inline (PDF, image, etc.)
+ *         content:
+ *           application/octet-stream:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden — only the owner, HR_ADMIN, or Finance may download }
+ *       404: { description: Expense claim not found or no receipt attached }
+ *       500: { description: Failed to download receipt }
+ */
 // GET /api/expense-claims/:id/receipt - Download receipt
 router.get('/:id/receipt', async (req, res) => {
     try {

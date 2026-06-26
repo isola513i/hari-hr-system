@@ -17,6 +17,29 @@ const router = Router();
 // All routes require authentication
 router.use(authenticateToken);
 
+/**
+ * @swagger
+ * /api/employees/upload-avatar:
+ *   post:
+ *     summary: Upload employee avatar image
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [avatar]
+ *             properties:
+ *               avatar: { type: string, format: binary }
+ *     responses:
+ *       200:
+ *         description: Avatar uploaded successfully, returns avatarUrl
+ *       400: { description: No file uploaded }
+ *       401: { description: Unauthorized }
+ */
 // POST /api/employees/upload-avatar - Upload avatar image
 router.post('/upload-avatar', apiLimiter, avatarUpload.single('avatar'), async (req, res) => {
     try {
@@ -41,6 +64,19 @@ router.post('/upload-avatar', apiLimiter, avatarUpload.single('avatar'), async (
     }
 });
 
+/**
+ * @swagger
+ * /api/employees/statuses:
+ *   get:
+ *     summary: Get all employee availability statuses
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Map of employee IDs to their current availability status
+ *       401: { description: Unauthorized }
+ */
 // GET /api/employees/statuses - Get all availability statuses (for initial load)
 router.get('/statuses', (_req, res) => {
     const statusMap = getStatusMap();
@@ -49,6 +85,35 @@ router.get('/statuses', (_req, res) => {
     res.json(statuses);
 });
 
+/**
+ * @swagger
+ * /api/employees/{id}/availability-status:
+ *   patch:
+ *     summary: Update employee availability status (REST fallback)
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [status]
+ *             properties:
+ *               status: { type: string, enum: [online, busy, away, offline] }
+ *               statusMessage: { type: string, maxLength: 100 }
+ *     responses:
+ *       200:
+ *         description: Availability status updated
+ *       400: { description: Invalid status value }
+ *       401: { description: Unauthorized }
+ */
 // PATCH /api/employees/:id/availability-status - Update availability status (REST fallback)
 router.patch('/:id/availability-status', apiLimiter, async (req, res) => {
     try {
@@ -73,6 +138,31 @@ router.patch('/:id/availability-status', apiLimiter, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/employees/import-csv:
+ *   post:
+ *     summary: Bulk import employees from CSV file (HR_ADMIN only)
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [file]
+ *             properties:
+ *               file: { type: string, format: binary, description: "CSV file with columns: name,email,role,department,joinDate,salary (max 1000 rows)" }
+ *     responses:
+ *       200:
+ *         description: Import complete — returns created count
+ *       400: { description: Missing file, empty CSV, missing columns, or row validation errors }
+ *       401: { description: Unauthorized }
+ *       403: { description: HR_ADMIN role required }
+ *       409: { description: Duplicate email detected — no records imported }
+ */
 // POST /api/employees/import-csv - Bulk import employees from CSV (HR_ADMIN only)
 router.post('/import-csv', requireAdmin, apiLimiter, csvUpload.single('file'), invalidateCache('/api/employees'), async (req, res) => {
     try {
@@ -175,6 +265,22 @@ router.post('/import-csv', requireAdmin, apiLimiter, csvUpload.single('file'), i
     }
 });
 
+/**
+ * @swagger
+ * /api/employees/csv-template:
+ *   get:
+ *     summary: Download CSV import template
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: CSV file with header row and one example row
+ *         content:
+ *           text/csv:
+ *             schema: { type: string }
+ *       401: { description: Unauthorized }
+ */
 // GET /api/employees/csv-template - Download CSV template
 router.get('/csv-template', authenticateToken, (_req, res) => {
     const template = 'name,email,role,department,joinDate,salary\nJohn Doe,john@example.com,Software Engineer,Engineering,2024-01-15,50000\n';
@@ -183,27 +289,219 @@ router.get('/csv-template', authenticateToken, (_req, res) => {
     res.send(template);
 });
 
+/**
+ * @swagger
+ * /api/employees:
+ *   get:
+ *     summary: List all employees
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of employees
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Employee'
+ *       401: { description: Unauthorized }
+ */
 // GET /api/employees - Get all employees (any authenticated user) - cached for 30s
 router.get('/', cacheMiddleware(), EmployeeController.getAllEmployees.bind(EmployeeController));
 
+/**
+ * @swagger
+ * /api/employees/{id}/leave-quotas:
+ *   get:
+ *     summary: Get effective leave quotas for an employee
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Effective leave quotas (policy defaults merged with any employee overrides)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/LeaveBalance'
+ *       401: { description: Unauthorized }
+ *       404: { description: Employee not found }
+ */
 // GET /api/employees/:id/leave-quotas - Get effective leave quotas for employee
 router.get('/:id/leave-quotas', EmployeeLeaveQuotaController.getEffectiveQuotas.bind(EmployeeLeaveQuotaController));
 
+/**
+ * @swagger
+ * /api/employees/{id}/leave-quotas:
+ *   put:
+ *     summary: Upsert employee leave quota overrides (HR_ADMIN only)
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: Map of leave type to quota override value
+ *     responses:
+ *       200:
+ *         description: Leave quota overrides saved
+ *       401: { description: Unauthorized }
+ *       403: { description: HR_ADMIN role required }
+ *       404: { description: Employee not found }
+ */
 // PUT /api/employees/:id/leave-quotas - Upsert leave quota overrides (Admin only)
 router.put('/:id/leave-quotas', requireAdmin, apiLimiter, EmployeeLeaveQuotaController.upsertOverrides.bind(EmployeeLeaveQuotaController));
 
+/**
+ * @swagger
+ * /api/employees/{id}/leave-quotas/{type}:
+ *   delete:
+ *     summary: Delete a single employee leave quota override (HR_ADMIN only)
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *       - in: path
+ *         name: type
+ *         required: true
+ *         schema: { type: string }
+ *         description: Leave type identifier (e.g. annual, sick)
+ *     responses:
+ *       200:
+ *         description: Leave quota override deleted
+ *       401: { description: Unauthorized }
+ *       403: { description: HR_ADMIN role required }
+ *       404: { description: Override not found }
+ */
 // DELETE /api/employees/:id/leave-quotas/:type - Delete a single leave quota override (Admin only)
 router.delete('/:id/leave-quotas/:type', requireAdmin, apiLimiter, EmployeeLeaveQuotaController.deleteOverride.bind(EmployeeLeaveQuotaController));
 
+/**
+ * @swagger
+ * /api/employees/{id}/manager:
+ *   get:
+ *     summary: Get the manager of an employee
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Manager employee record
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Employee'
+ *       401: { description: Unauthorized }
+ *       404: { description: Employee not found }
+ */
 // GET /api/employees/:id/manager - Get employee's manager (any authenticated user) - cached for 30s
 router.get('/:id/manager', cacheMiddleware(), EmployeeController.getEmployeeManager.bind(EmployeeController));
 
+/**
+ * @swagger
+ * /api/employees/{id}/direct-reports:
+ *   get:
+ *     summary: Get direct reports of an employee
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Array of employees who report directly to this employee
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Employee'
+ *       401: { description: Unauthorized }
+ *       404: { description: Employee not found }
+ */
 // GET /api/employees/:id/direct-reports - Get employee's direct reports (any authenticated user) - cached for 30s
 router.get('/:id/direct-reports', cacheMiddleware(), EmployeeController.getEmployeeDirectReports.bind(EmployeeController));
 
+/**
+ * @swagger
+ * /api/employees/{id}:
+ *   get:
+ *     summary: Get employee by ID
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Employee record
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Employee'
+ *       401: { description: Unauthorized }
+ *       404: { description: Employee not found }
+ */
 // GET /api/employees/:id - Get employee by ID (any authenticated user) - cached for 30s
 router.get('/:id', cacheMiddleware(), EmployeeController.getEmployeeById.bind(EmployeeController));
 
+/**
+ * @swagger
+ * /api/employees:
+ *   post:
+ *     summary: Create a new employee (HR_ADMIN only)
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateEmployee'
+ *     responses:
+ *       201:
+ *         description: Employee created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Employee'
+ *       400: { description: Validation error }
+ *       401: { description: Unauthorized }
+ *       403: { description: HR_ADMIN role required }
+ */
 // POST /api/employees - Create new employee (HR_ADMIN only)
 router.post(
     '/',
@@ -215,18 +513,117 @@ router.post(
     EmployeeController.createEmployee.bind(EmployeeController)
 );
 
+/**
+ * @swagger
+ * /api/employees/{id}:
+ *   patch:
+ *     summary: Partially update an employee (own profile or any employee for HR_ADMIN)
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Employee'
+ *     responses:
+ *       200:
+ *         description: Employee updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Employee'
+ *       401: { description: Unauthorized }
+ *       403: { description: Access denied }
+ *       404: { description: Employee not found }
+ */
 // PATCH /api/employees/:id - Update own profile (any authenticated user) or any employee (HR_ADMIN)
 router.patch('/:id', apiLimiter, invalidateCache('/api/employees'), EmployeeController.updateEmployee.bind(EmployeeController));
 
+/**
+ * @swagger
+ * /api/employees/{id}:
+ *   put:
+ *     summary: Replace an employee record (HR_ADMIN only)
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Employee'
+ *     responses:
+ *       200:
+ *         description: Employee updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Employee'
+ *       401: { description: Unauthorized }
+ *       403: { description: HR_ADMIN role required }
+ *       404: { description: Employee not found }
+ */
 // PUT /api/employees/:id - Update employee (HR_ADMIN only)
 router.put('/:id', requireAdmin, apiLimiter, invalidateCache('/api/employees'), EmployeeController.updateEmployee.bind(EmployeeController));
 
+/**
+ * @swagger
+ * /api/employees/{id}:
+ *   delete:
+ *     summary: Delete an employee (HR_ADMIN only)
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Employee deleted
+ *       401: { description: Unauthorized }
+ *       403: { description: HR_ADMIN role required }
+ *       404: { description: Employee not found }
+ */
 // DELETE /api/employees/:id - Delete employee (HR_ADMIN only)
 router.delete('/:id', requireAdmin, apiLimiter, invalidateCache('/api/employees'), EmployeeController.deleteEmployee.bind(EmployeeController));
 
 /**
- * GET /api/employees/:id/report
- * Download comprehensive employee report as PDF (admin or self)
+ * @swagger
+ * /api/employees/{id}/report:
+ *   get:
+ *     summary: Download comprehensive employee report as PDF (admin, manager, or self)
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: PDF report file
+ *         content:
+ *           application/pdf:
+ *             schema: { type: string, format: binary }
+ *       401: { description: Unauthorized }
+ *       403: { description: Access denied }
+ *       404: { description: Employee not found }
  */
 router.get('/:id/report', async (req: Request, res: Response) => {
   try {

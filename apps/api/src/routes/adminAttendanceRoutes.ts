@@ -9,8 +9,18 @@ const router = Router();
 router.use(authenticateToken, requireAdmin);
 
 /**
- * GET /api/admin/attendance/snapshot
- * Get today's attendance snapshot (present/late/absent/remote/halfDay/total)
+ * @swagger
+ * /api/admin/attendance/snapshot:
+ *   get:
+ *     summary: Get today's attendance snapshot
+ *     tags: [Admin Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Snapshot counts (present, late, absent, remote, halfDay, total)
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden }
  */
 router.get('/snapshot', async (_req: Request, res: Response) => {
   try {
@@ -23,10 +33,30 @@ router.get('/snapshot', async (_req: Request, res: Response) => {
 });
 
 /**
- * GET /api/admin/attendance/calendar
- * Get compact attendance data for a date range (used by dashboard calendar).
- * Returns array of { employeeId, date } for records with clock_in.
- * Query params: startDate (required), endDate (required)
+ * @swagger
+ * /api/admin/attendance/calendar:
+ *   get:
+ *     summary: Get compact attendance data for a date range
+ *     tags: [Admin Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         required: true
+ *         schema: { type: string, format: date }
+ *         description: Start of the date range (YYYY-MM-DD)
+ *       - in: query
+ *         name: endDate
+ *         required: true
+ *         schema: { type: string, format: date }
+ *         description: End of the date range (YYYY-MM-DD)
+ *     responses:
+ *       200:
+ *         description: Array of { employeeId, date } for records with clock_in
+ *       400: { description: startDate and endDate are required }
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden }
  */
 router.get('/calendar', async (req: Request, res: Response) => {
   try {
@@ -46,9 +76,51 @@ router.get('/calendar', async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/admin/attendance/records
- * Get paginated attendance records with filters
- * Query params: search, department, status, startDate, endDate, page, limit
+ * @swagger
+ * /api/admin/attendance/records:
+ *   get:
+ *     summary: List paginated attendance records with filters
+ *     tags: [Admin Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *         description: Search by employee name or ID
+ *       - in: query
+ *         name: department
+ *         schema: { type: string }
+ *         description: Filter by department
+ *       - in: query
+ *         name: status
+ *         schema: { type: string }
+ *         description: Filter by attendance status
+ *       - in: query
+ *         name: startDate
+ *         schema: { type: string, format: date }
+ *         description: Filter from this date (YYYY-MM-DD)
+ *       - in: query
+ *         name: endDate
+ *         schema: { type: string, format: date }
+ *         description: Filter up to this date (YYYY-MM-DD)
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer }
+ *         description: Page number (1-based)
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer }
+ *         description: Records per page
+ *     responses:
+ *       200:
+ *         description: Paginated attendance records
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PaginatedResponse'
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden }
  */
 router.get('/records', async (req: Request, res: Response) => {
   try {
@@ -72,9 +144,33 @@ router.get('/records', async (req: Request, res: Response) => {
 });
 
 /**
- * PUT /api/admin/attendance/records
- * Upsert (create or update) an attendance record
- * Body: { employeeId, date, clockIn?, clockOut?, status?, notes? }
+ * @swagger
+ * /api/admin/attendance/records:
+ *   put:
+ *     summary: Upsert an attendance record (create or update)
+ *     tags: [Admin Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [employeeId, date]
+ *             properties:
+ *               employeeId: { type: string, format: uuid }
+ *               date: { type: string, format: date }
+ *               clockIn: { type: string, format: date-time }
+ *               clockOut: { type: string, format: date-time }
+ *               status: { type: string }
+ *               notes: { type: string }
+ *     responses:
+ *       200:
+ *         description: Upserted attendance record
+ *       400: { description: Validation error }
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden }
  */
 router.put('/records', async (req: Request, res: Response) => {
   try {
@@ -102,8 +198,26 @@ router.put('/records', async (req: Request, res: Response) => {
 });
 
 /**
- * DELETE /api/admin/attendance/records/:id
- * Delete an attendance record
+ * @swagger
+ * /api/admin/attendance/records/{id}:
+ *   delete:
+ *     summary: Delete an attendance record
+ *     tags: [Admin Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Attendance record ID
+ *     responses:
+ *       200:
+ *         description: Attendance record deleted
+ *       400: { description: Validation error }
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden }
+ *       404: { description: Not found }
  */
 router.delete('/records/:id', async (req: Request, res: Response) => {
   try {
@@ -116,8 +230,23 @@ router.delete('/records/:id', async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/admin/attendance/analytics
- * Get attendance trend and late arrivals analytics
+ * @swagger
+ * /api/admin/attendance/analytics:
+ *   get:
+ *     summary: Get attendance trend and late arrivals analytics
+ *     tags: [Admin Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: days
+ *         schema: { type: integer, minimum: 7, maximum: 90, default: 14 }
+ *         description: Number of days to include in the trend (clamped to 7–90)
+ *     responses:
+ *       200:
+ *         description: Attendance trend and late arrivals data
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden }
  */
 router.get('/analytics', async (req: Request, res: Response) => {
   try {
