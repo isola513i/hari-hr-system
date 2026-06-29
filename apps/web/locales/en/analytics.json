@@ -35,5 +35,30 @@
     "subtitle": "Hires vs departures (last 6 months)",
     "hires": "Hires",
     "departures": "Departures"
+  },
+  "predictive": {
+    "sectionTitle": "Predictive Insights",
+    "badge": "Forecast",
+    "headcount": {
+      "title": "Headcount Projection",
+      "subtitle": "12-month trend with 3-month forecast"
+    },
+    "leave": {
+      "title": "Leave Demand Forecast",
+      "subtitle": "Expected leave-days in coming months"
+    },
+    "attrition": {
+      "title": "Attrition Risk by Department",
+      "subtitle": "Turnover over the last 6 months",
+      "department": "Department",
+      "active": "Active",
+      "departures": "Left",
+      "rate": "Turnover",
+      "risk": "Risk",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "empty": "No department data"
+    }
   }
 }

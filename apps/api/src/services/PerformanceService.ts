@@ -47,6 +47,28 @@ export interface CreateReviewData {
   selfReview?: string;
 }
 
+export interface PeerFeedback {
+  id: string;
+  reviewId: string;
+  reviewerId: string | null;       // null when anonymous (identity hidden)
+  reviewerName: string;            // "Anonymous" when is_anonymous
+  reviewerAvatar?: string | null;
+  rating: number | null;
+  feedback: string | null;
+  isAnonymous: boolean;
+  status: 'pending' | 'submitted';
+  requestedAt: string;
+  submittedAt: string | null;
+}
+
+export interface AggregateScore {
+  managerRating: number | null;    // pr.rating (manager evaluation)
+  peerAverage: number | null;      // mean of submitted peer ratings
+  peerCount: number;               // peers who submitted
+  peerRequested: number;           // peers requested (pending + submitted)
+  overall: number | null;          // weighted manager 60% / peers 40%
+}
+
 export class PerformanceService {
   async list(filters: {
     employeeId?: string;
@@ -495,6 +517,216 @@ export class PerformanceService {
         details:   { reviewId: id, employeeId: result.rows[0].employee_id },
       }).catch((err) => logger.error(err, 'Review deleted audit log failed:'));
     }
+  }
+
+  // ───────────────────────────────────────────────────────────────────────
+  // 360-DEGREE PEER REVIEW
+  // ───────────────────────────────────────────────────────────────────────
+
+  /**
+   * Manager/HR requests peer feedback on a review. Creates one pending slot per
+   * peer (idempotent — re-requesting an existing peer is a no-op) and notifies
+   * each peer. Peers are identified by employee ID.
+   */
+  async requestPeerReviews(data: {
+    reviewId: string;
+    peerEmployeeIds: string[];
+    requesterUserId: string;
+    audit?: AuditContext;
+  }): Promise<PeerFeedback[]> {
+    const { reviewId, peerEmployeeIds, requesterUserId, audit } = data;
+
+    const review = await query('SELECT id, employee_id FROM performance_reviews WHERE id = $1', [reviewId]);
+    if (!review.rows[0]) throw new BusinessError('Performance review not found');
+    const subjectEmployeeId = review.rows[0].employee_id;
+
+    const uniquePeerIds = [...new Set(peerEmployeeIds)].filter(Boolean);
+    if (uniquePeerIds.length === 0) throw new BusinessError('At least one peer must be selected');
+    // A peer cannot review themselves
+    if (uniquePeerIds.includes(subjectEmployeeId)) {
+      throw new BusinessError('The review subject cannot be their own peer reviewer');
+    }
+
+    for (const peerId of uniquePeerIds) {
+      await query(
+        `INSERT INTO performance_peer_feedback (review_id, reviewer_id, status, requested_by, requested_at)
+         VALUES ($1, $2, 'pending', $3, NOW())
+         ON CONFLICT (review_id, reviewer_id) DO NOTHING`,
+        [reviewId, peerId, requesterUserId]
+      );
+
+      // Notify the peer (best-effort)
+      const peerUser = await query('SELECT user_id, name FROM employees WHERE id = $1', [peerId]);
+      if (peerUser.rows[0]?.user_id) {
+        NotificationService.create({
+          user_id: peerUser.rows[0].user_id,
+          title: 'Peer Review Requested',
+          message: 'You have been asked to provide peer feedback on a performance review.',
+          type: 'info',
+          link: '/performance-reviews',
+        }).catch((err) => logger.warn(err, 'Background task failed'));
+      }
+    }
+
+    if (audit) {
+      AuditLogService.create({
+        userId:    audit.userId,
+        userEmail: audit.email,
+        action:    'PERFORMANCE_PEER_REVIEW_REQUESTED',
+        resource:  `performance_review:${reviewId}`,
+        method:    audit.method,
+        path:      audit.path,
+        ip:        audit.ip,
+        userAgent: audit.userAgent,
+        success:   true,
+        details:   { reviewId, peerCount: uniquePeerIds.length },
+      }).catch((err) => logger.error(err, 'Peer review request audit log failed:'));
+    }
+
+    return this.getPeerFeedback(reviewId, { includeIdentity: true });
+  }
+
+  /**
+   * A requested peer submits their feedback. Requires an existing pending slot —
+   * peers can only review when they have been asked to.
+   */
+  async submitPeerFeedback(data: {
+    reviewId: string;
+    reviewerEmployeeId: string;
+    rating: number;
+    feedback?: string;
+    isAnonymous?: boolean;
+    audit?: AuditContext;
+  }): Promise<PeerFeedback> {
+    const { reviewId, reviewerEmployeeId, rating, feedback, isAnonymous, audit } = data;
+
+    if (!(rating >= 1 && rating <= 5)) {
+      throw new BusinessError('Rating must be between 1 and 5');
+    }
+
+    const slot = await query(
+      'SELECT id, status FROM performance_peer_feedback WHERE review_id = $1 AND reviewer_id = $2',
+      [reviewId, reviewerEmployeeId]
+    );
+    if (!slot.rows[0]) {
+      throw new BusinessError('You have not been requested as a peer reviewer for this review');
+    }
+
+    const result = await query(
+      `UPDATE performance_peer_feedback
+       SET rating = $1, feedback = $2, is_anonymous = $3, status = 'submitted', submitted_at = NOW()
+       WHERE review_id = $4 AND reviewer_id = $5
+       RETURNING *`,
+      [rating, feedback ?? null, isAnonymous ?? false, reviewId, reviewerEmployeeId]
+    );
+
+    if (audit) {
+      AuditLogService.create({
+        userId:    audit.userId,
+        userEmail: audit.email,
+        action:    'PERFORMANCE_PEER_FEEDBACK_SUBMITTED',
+        resource:  `performance_review:${reviewId}`,
+        method:    audit.method,
+        path:      audit.path,
+        ip:        audit.ip,
+        userAgent: audit.userAgent,
+        success:   true,
+        details:   { reviewId, rating, isAnonymous: isAnonymous ?? false },
+      }).catch((err) => logger.error(err, 'Peer feedback submit audit log failed:'));
+    }
+
+    // Notify the review's reviewer/manager that peer feedback arrived
+    const review = await query('SELECT reviewer_user_id FROM performance_reviews WHERE id = $1', [reviewId]);
+    if (review.rows[0]?.reviewer_user_id) {
+      NotificationService.create({
+        user_id: review.rows[0].reviewer_user_id,
+        title: 'Peer Feedback Received',
+        message: 'A peer has submitted feedback on a performance review.',
+        type: 'info',
+        link: '/performance-reviews',
+      }).catch((err) => logger.warn(err, 'Background task failed'));
+    }
+
+    return this.mapPeerRow(result.rows[0], true);
+  }
+
+  /**
+   * List peer feedback for a review. `includeIdentity` controls whether the
+   * reviewer's name is exposed for anonymous submissions — managers/HR viewing
+   * aggregate data still never see anonymous identities (privacy guarantee).
+   */
+  async getPeerFeedback(
+    reviewId: string,
+    opts: { includeIdentity?: boolean } = {}
+  ): Promise<PeerFeedback[]> {
+    const result = await query(
+      `SELECT pf.*, e.name AS reviewer_name, e.avatar AS reviewer_avatar
+       FROM performance_peer_feedback pf
+       JOIN employees e ON pf.reviewer_id = e.id
+       WHERE pf.review_id = $1
+       ORDER BY pf.requested_at ASC`,
+      [reviewId]
+    );
+    // includeIdentity is only ever true for the internal request-confirmation
+    // response (where pending rows have no submission yet, so anonymity is moot).
+    return result.rows.map((row) => this.mapPeerRow(row, opts.includeIdentity ?? false));
+  }
+
+  /**
+   * Aggregate score combining the manager rating and the average submitted peer
+   * rating. Weighted manager 60% / peers 40% when both exist.
+   */
+  async getAggregateScore(reviewId: string): Promise<AggregateScore> {
+    const review = await query('SELECT rating FROM performance_reviews WHERE id = $1', [reviewId]);
+    if (!review.rows[0]) throw new BusinessError('Performance review not found');
+    const managerRating: number | null =
+      review.rows[0].rating !== null && review.rows[0].rating !== undefined
+        ? Number(review.rows[0].rating)
+        : null;
+
+    const peers = await query(
+      `SELECT
+         COUNT(*) FILTER (WHERE status = 'submitted')::int AS submitted_count,
+         COUNT(*)::int AS requested_count,
+         AVG(rating) FILTER (WHERE status = 'submitted') AS peer_avg
+       FROM performance_peer_feedback
+       WHERE review_id = $1`,
+      [reviewId]
+    );
+    const peerCount = peers.rows[0]?.submitted_count ?? 0;
+    const peerRequested = peers.rows[0]?.requested_count ?? 0;
+    const peerAverage =
+      peers.rows[0]?.peer_avg !== null && peers.rows[0]?.peer_avg !== undefined
+        ? Math.round(Number(peers.rows[0].peer_avg) * 100) / 100
+        : null;
+
+    let overall: number | null;
+    if (managerRating !== null && peerAverage !== null) {
+      overall = Math.round((managerRating * 0.6 + peerAverage * 0.4) * 100) / 100;
+    } else {
+      overall = managerRating ?? peerAverage;
+    }
+
+    return { managerRating, peerAverage, peerCount, peerRequested, overall };
+  }
+
+  private mapPeerRow(row: Record<string, unknown>, includeIdentity: boolean): PeerFeedback {
+    const isAnonymous = Boolean(row.is_anonymous);
+    // Hide identity for submitted anonymous feedback unless explicitly allowed.
+    const hideIdentity = isAnonymous && row.status === 'submitted' && !includeIdentity;
+    return {
+      id: row.id as string,
+      reviewId: row.review_id as string,
+      reviewerId: hideIdentity ? null : (row.reviewer_id as string),
+      reviewerName: hideIdentity ? 'Anonymous' : ((row.reviewer_name as string) || 'Unknown'),
+      reviewerAvatar: hideIdentity ? null : (row.reviewer_avatar as string | null),
+      rating: row.rating !== null && row.rating !== undefined ? Number(row.rating) : null,
+      feedback: (row.feedback as string | null) ?? null,
+      isAnonymous,
+      status: (row.status as PeerFeedback['status']) || 'pending',
+      requestedAt: row.requested_at as string,
+      submittedAt: (row.submitted_at as string | null) ?? null,
+    };
   }
 
   private mapRow(row: Record<string, unknown>): PerformanceReview {

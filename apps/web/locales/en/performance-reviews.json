@@ -58,5 +58,27 @@
     "employeeHint": "Share what you've been working on and get feedback from your manager.",
     "startSelfReview": "Start a Self-Review",
     "adminHint": "No reviews need your attention right now."
+  },
+  "peer": {
+    "title": "360° Peer Review",
+    "aggregateTitle": "360° Score Breakdown",
+    "managerScore": "Manager",
+    "peerScore": "Peers ({{count}})",
+    "weighting": "Overall = Manager 60% + Peers 40%",
+    "request": "Request Peer Review",
+    "requestN": "Request ({{count}})",
+    "selectTitle": "Request Peer Feedback",
+    "noCandidates": "No more colleagues available to request.",
+    "statusSubmitted": "Submitted",
+    "statusPending": "Pending",
+    "empty": "No peer feedback requested yet.",
+    "yourTurn": "You were asked to give peer feedback",
+    "feedbackPlaceholder": "Share your feedback...",
+    "anonymous": "Submit anonymously",
+    "submit": "Submit Feedback",
+    "requestSent": "Peer review requests sent",
+    "requestFailed": "Failed to send peer requests",
+    "submitted": "Feedback submitted",
+    "submitFailed": "Failed to submit feedback"
   }
 }

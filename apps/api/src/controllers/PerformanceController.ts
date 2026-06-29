@@ -183,6 +183,75 @@ class PerformanceController {
       res.status(status).json({ error: safeErrorMessage(err, 'Failed to delete review') });
     }
   }
+
+  // ── 360-degree peer review ────────────────────────────────────────────────
+
+  async requestPeerReviews(req: Request, res: Response): Promise<void> {
+    const user = req.user!;
+    const { id } = req.params;
+    const { peerEmployeeIds } = req.body;
+    if (!Array.isArray(peerEmployeeIds) || peerEmployeeIds.length === 0) {
+      res.status(400).json({ error: 'peerEmployeeIds must be a non-empty array' });
+      return;
+    }
+    try {
+      const peers = await PerformanceService.requestPeerReviews({
+        reviewId: id,
+        peerEmployeeIds,
+        requesterUserId: user.userId,
+        audit: buildAudit(req),
+      });
+      res.status(201).json(peers);
+    } catch (err: any) {
+      logger.error(err, 'Error requesting peer reviews:');
+      const status = err.name === 'BusinessError' ? 400 : 500;
+      res.status(status).json({ error: safeErrorMessage(err, 'Failed to request peer reviews') });
+    }
+  }
+
+  async submitPeerFeedback(req: Request, res: Response): Promise<void> {
+    const user = req.user!;
+    const { id } = req.params;
+    const { rating, feedback, isAnonymous } = req.body;
+    if (!user.employeeId) {
+      res.status(400).json({ error: 'No employee profile linked to your account' });
+      return;
+    }
+    if (rating === undefined || rating === null) {
+      res.status(400).json({ error: 'rating is required' });
+      return;
+    }
+    try {
+      const result = await PerformanceService.submitPeerFeedback({
+        reviewId: id,
+        reviewerEmployeeId: user.employeeId,
+        rating: Number(rating),
+        feedback,
+        isAnonymous: Boolean(isAnonymous),
+        audit: buildAudit(req),
+      });
+      res.status(201).json(result);
+    } catch (err: any) {
+      logger.error(err, 'Error submitting peer feedback:');
+      const status = err.name === 'BusinessError' ? 400 : 500;
+      res.status(status).json({ error: safeErrorMessage(err, 'Failed to submit peer feedback') });
+    }
+  }
+
+  async getPeerFeedback(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+    try {
+      const [feedback, aggregate] = await Promise.all([
+        PerformanceService.getPeerFeedback(id),
+        PerformanceService.getAggregateScore(id),
+      ]);
+      res.json({ feedback, aggregate });
+    } catch (err: any) {
+      logger.error(err, 'Error fetching peer feedback:');
+      const status = err.name === 'BusinessError' ? 400 : 500;
+      res.status(status).json({ error: safeErrorMessage(err, 'Failed to fetch peer feedback') });
+    }
+  }
 }
 
 export default new PerformanceController();

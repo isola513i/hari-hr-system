@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp, Send, ThumbsUp, CheckCircle, XCircle, Download } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { PerformanceStatusBadge, StarRating } from './PerformanceStatusBadge';
+import { PeerReviewPanel } from './PeerReviewPanel';
 import { useToast } from '../contexts/ToastContext';
 import { getAuthToken, BASE_URL } from '../lib/api';
 import type { PerformanceReview } from '../types';
@@ -306,6 +307,15 @@ export function PerformanceReviewCard({
                 </div>
               )}
             </div>
+          )}
+
+          {/* 360-degree peer review — available once the review is past draft */}
+          {review.status !== 'draft' && (
+            <PeerReviewPanel
+              reviewId={review.id}
+              subjectEmployeeId={review.employeeId}
+              role={role}
+            />
           )}
         </div>
       )}
