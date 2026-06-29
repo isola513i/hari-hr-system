@@ -68,6 +68,16 @@ export function hashPII(plaintext: string): string {
 }
 
 /**
+ * True when `value` matches the `iv:authTag:ciphertext` format produced by
+ * `encrypt()` (three non-empty hex segments). Lets callers distinguish real
+ * ciphertext from legacy plaintext that predates encryption.
+ */
+export function isEncryptedFormat(value: string): boolean {
+    const parts = value.split(':');
+    return parts.length === 3 && parts.every((p) => p.length > 0 && /^[0-9a-fA-F]+$/.test(p));
+}
+
+/**
  * Decrypt a ciphertext string previously produced by `encrypt()`.
  * Throws if the ciphertext has been tampered with (authTag mismatch).
  */

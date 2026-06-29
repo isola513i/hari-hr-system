@@ -4,21 +4,30 @@ import { Employee, CreateEmployeeDTO, UpdateEmployeeDTO } from '../models/Employ
 import SystemConfigService from './SystemConfigService';
 import { PaginationParams, PaginatedResult, createPaginatedResult } from '../utils/pagination';
 import JobHistoryService from './JobHistoryService';
-import { encrypt, decrypt, hashPII } from '../utils/encryption';
+import { encrypt, decrypt, hashPII, isEncryptedFormat } from '../utils/encryption';
 import { toInt } from '../utils/coerce';
 import logger from '../utils/logger';
 
 /**
- * Silently decrypt a ciphertext produced by encrypt().
- * Returns null for nullish values and on any decryption error (tampered ciphertext,
- * plaintext accidentally stored, etc.) — callers always receive a safe value.
+ * Decrypt a PII ciphertext produced by encrypt(), tolerant of legacy data.
+ *
+ * - nullish            → null
+ * - legacy plaintext   → returned as-is (values stored before encryption was
+ *                        added don't match the iv:authTag:ciphertext format)
+ * - valid ciphertext   → decrypted
+ * - decrypt failure on  a properly-formatted ciphertext → logged loudly and null
+ *   (this is real data loss — wrong key or tampering — not silently swallowed)
  */
 function safeTryDecrypt(value: string | null | undefined): string | null {
     if (!value) return null;
+    // Legacy fallback: pre-encryption plaintext is returned unchanged.
+    if (!isEncryptedFormat(value)) {
+        return value;
+    }
     try {
         return decrypt(value);
-    } catch {
-        logger.error('PII decrypt failed — returning null for field');
+    } catch (err) {
+        logger.error(err, 'PII decrypt failed for formatted ciphertext — returning null (possible key mismatch or tampering)');
         return null;
     }
 }

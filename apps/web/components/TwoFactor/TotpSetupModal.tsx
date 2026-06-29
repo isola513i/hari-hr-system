@@ -92,7 +92,7 @@ export const TotpSetupModal: React.FC<TotpSetupModalProps> = ({ isOpen, onClose,
             </div>
             <div>
               <h2 className="font-semibold text-text-light dark:text-text-dark">{t('auth:totp.setup.title')}</h2>
-              <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
+              <p className="text-xs text-text-muted-light dark:text-text-muted-dark" role="status" aria-live="polite">
                 {step === 'qr' && t('auth:totp.setup.stepQr')}
                 {step === 'verify' && t('auth:totp.setup.stepVerify')}
                 {step === 'backup' && t('auth:totp.setup.stepBackup')}

@@ -96,6 +96,9 @@ const TaskGroup: React.FC<TaskGroupProps> = ({ stage, tasks, onToggle, updatingI
                             <button
                                 onClick={() => !task.completed && onToggle(task.id, true)}
                                 disabled={task.completed || updatingId === task.id}
+                                role="checkbox"
+                                aria-checked={task.completed}
+                                aria-label={task.title}
                                 className="mt-0.5 shrink-0 text-text-muted-light dark:text-text-muted-dark hover:text-primary disabled:cursor-default transition-colors"
                                 title={task.completed ? t('checklist.completedTitle') : t('checklist.markComplete')}
                             >
@@ -129,10 +132,12 @@ const TaskGroup: React.FC<TaskGroupProps> = ({ stage, tasks, onToggle, updatingI
                                         <User size={11} />
                                         {task.assignee}
                                     </span>
-                                    <span className="flex items-center gap-1 text-xs">
-                                        <span className={`inline-block w-1.5 h-1.5 rounded-full ${priorityDot(task.priority)}`} />
-                                        <span className="text-text-muted-light dark:text-text-muted-dark">{task.priority}</span>
-                                    </span>
+                                    {task.priority && (
+                                        <span className="flex items-center gap-1 text-xs">
+                                            <span className={`inline-block w-1.5 h-1.5 rounded-full ${priorityDot(task.priority)}`} />
+                                            <span className="text-text-muted-light dark:text-text-muted-dark">{task.priority}</span>
+                                        </span>
+                                    )}
                                 </div>
                             </div>
 
