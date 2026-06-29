@@ -15,8 +15,17 @@ import {
   Cell,
   Area,
   AreaChart,
+  ComposedChart,
+  Line,
 } from 'recharts';
-import { useAnalyticsDashboard } from '../hooks/queries';
+import { TrendingUp, TrendingDown } from 'lucide-react';
+import {
+  useAnalyticsDashboard,
+  useHeadcountForecast,
+  useLeaveForecast,
+  useAttritionRisk,
+} from '../hooks/queries';
+import type { ForecastResponse, AttritionRiskRow } from '../hooks/queries/dashboard';
 
 const PIE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#64748b', '#14b8a6', '#f97316', '#6366f1', '#84cc16'];
 
@@ -46,10 +55,139 @@ function downloadCsv(content: string, filename: string): void {
 const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = Array.from({ length: 4 }, (_, i) => CURRENT_YEAR - i);
 
+const tooltipStyleShared = {
+  backgroundColor: 'var(--color-card, #fff)',
+  borderRadius: '8px',
+  border: '1px solid var(--color-border, #e2e8f0)',
+  fontSize: '12px',
+};
+
+// Merge history + forecast into one series: `actual` for past, `projected`
+// (+ confidence band) for the future, with one shared point so lines connect.
+interface MergedPoint {
+  name: string;
+  actual?: number;
+  projected?: number;
+  lower?: number;
+  bandHeight?: number; // upper - lower, stacked on `lower` to render the band
+}
+function buildForecastSeries(res?: ForecastResponse): MergedPoint[] {
+  if (!res) return [];
+  const data: MergedPoint[] = res.history.map((h) => ({ name: h.name, actual: h.value }));
+  if (data.length && res.forecast.length) {
+    const lastVal = res.history[res.history.length - 1].value;
+    data[data.length - 1].projected = lastVal;
+    data[data.length - 1].lower = lastVal;
+    data[data.length - 1].bandHeight = 0;
+  }
+  for (const f of res.forecast) {
+    data.push({
+      name: f.name,
+      projected: f.value,
+      lower: f.lower ?? f.value,
+      bandHeight: (f.upper ?? f.value) - (f.lower ?? f.value),
+    });
+  }
+  return data;
+}
+
+function MomentumBadge({ value }: { value: number }) {
+  const up = value >= 0;
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs font-semibold ${up ? 'text-accent-green' : 'text-accent-red'}`}>
+      {up ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+      {up ? '+' : ''}{value}%
+    </span>
+  );
+}
+
+// Headcount-style forecast: line (actual solid + projected dashed) + confidence band
+function ForecastLineChart({ res }: { res?: ForecastResponse }) {
+  const series = buildForecastSeries(res);
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <ComposedChart data={series}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} />
+        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} allowDecimals={false} />
+        <Tooltip contentStyle={tooltipStyleShared} />
+        {/* Confidence band: transparent base up to `lower`, then a light band of height upper-lower */}
+        <Area dataKey="lower" stackId="band" stroke="none" fill="transparent" isAnimationActive={false} />
+        <Area dataKey="bandHeight" stackId="band" stroke="none" fill="#3b82f6" fillOpacity={0.12} isAnimationActive={false} />
+        <Line type="monotone" dataKey="actual" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
+        <Line type="monotone" dataKey="projected" stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 4" dot={{ r: 3 }} connectNulls />
+      </ComposedChart>
+    </ResponsiveContainer>
+  );
+}
+
+// Leave-style forecast: actual bars + projected bars (lighter)
+function ForecastBarChart({ res }: { res?: ForecastResponse }) {
+  const series = buildForecastSeries(res);
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <ComposedChart data={series}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} />
+        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} allowDecimals={false} />
+        <Tooltip contentStyle={tooltipStyleShared} />
+        <Bar dataKey="actual" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={18} isAnimationActive={false} />
+        <Bar dataKey="projected" fill="#c4b5fd" radius={[4, 4, 0, 0]} barSize={18} isAnimationActive={false} />
+      </ComposedChart>
+    </ResponsiveContainer>
+  );
+}
+
+const RISK_STYLES: Record<AttritionRiskRow['risk'], string> = {
+  low: 'bg-accent-green/10 text-accent-green',
+  medium: 'bg-accent-orange/10 text-accent-orange',
+  high: 'bg-accent-red/10 text-accent-red',
+};
+
+function AttritionTable({ rows, labels }: { rows: AttritionRiskRow[]; labels: { dept: string; active: string; left: string; rate: string; risk: string; low: string; medium: string; high: string; empty: string } }) {
+  if (!rows.length) {
+    return <div className="flex items-center justify-center h-full text-sm text-text-muted-light dark:text-text-muted-dark">{labels.empty}</div>;
+  }
+  const riskLabel = { low: labels.low, medium: labels.medium, high: labels.high };
+  return (
+    <div className="overflow-y-auto h-full">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-xs text-text-muted-light dark:text-text-muted-dark border-b border-border-light dark:border-border-dark">
+            <th className="py-2 font-medium">{labels.dept}</th>
+            <th className="py-2 font-medium text-right">{labels.active}</th>
+            <th className="py-2 font-medium text-right">{labels.left}</th>
+            <th className="py-2 font-medium text-right">{labels.rate}</th>
+            <th className="py-2 font-medium text-right">{labels.risk}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.department} className="border-b border-border-light/50 dark:border-border-dark/50">
+              <td className="py-2.5 text-text-light dark:text-text-dark font-medium">{r.department}</td>
+              <td className="py-2.5 text-right tabular-nums text-text-muted-light dark:text-text-muted-dark">{r.active}</td>
+              <td className="py-2.5 text-right tabular-nums text-text-muted-light dark:text-text-muted-dark">{r.departures}</td>
+              <td className="py-2.5 text-right tabular-nums text-text-light dark:text-text-dark">{r.turnoverRate}%</td>
+              <td className="py-2.5 text-right">
+                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${RISK_STYLES[r.risk]}`}>
+                  {riskLabel[r.risk]}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export const Analytics: React.FC = () => {
   const { t } = useTranslation(['analytics', 'common']);
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   const { data, isLoading } = useAnalyticsDashboard(selectedYear);
+  const { data: headcountForecast } = useHeadcountForecast();
+  const { data: leaveForecast } = useLeaveForecast();
+  const { data: attrition } = useAttritionRisk();
 
   const exportToCSV = useCallback(() => {
     if (!data) return;
@@ -136,6 +274,66 @@ export const Analytics: React.FC = () => {
           </button>
         </div>
       </header>
+
+      {/* ── Predictive Insights ─────────────────────────────────────── */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold text-text-light dark:text-text-dark">{t('predictive.sectionTitle', 'Predictive Insights')}</h2>
+          <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-semibold">{t('predictive.badge', 'Forecast')}</span>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          {/* Headcount projection */}
+          <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-base font-bold text-text-light dark:text-text-dark">{t('predictive.headcount.title', 'Headcount Projection')}</h3>
+                <p className="text-sm text-text-muted-light dark:text-text-muted-dark mb-5">{t('predictive.headcount.subtitle', '12-month trend with 3-month forecast')}</p>
+              </div>
+              {headcountForecast && <MomentumBadge value={headcountForecast.momentum} />}
+            </div>
+            <div className="h-[260px]">
+              <ForecastLineChart res={headcountForecast} />
+            </div>
+          </div>
+
+          {/* Leave demand forecast */}
+          <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-base font-bold text-text-light dark:text-text-dark">{t('predictive.leave.title', 'Leave Demand Forecast')}</h3>
+                <p className="text-sm text-text-muted-light dark:text-text-muted-dark mb-5">{t('predictive.leave.subtitle', 'Expected leave-days in coming months')}</p>
+              </div>
+              {leaveForecast && <MomentumBadge value={leaveForecast.momentum} />}
+            </div>
+            <div className="h-[260px]">
+              <ForecastBarChart res={leaveForecast} />
+            </div>
+          </div>
+
+          {/* Attrition risk */}
+          <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm lg:col-span-2">
+            <h3 className="text-base font-bold text-text-light dark:text-text-dark">{t('predictive.attrition.title', 'Attrition Risk by Department')}</h3>
+            <p className="text-sm text-text-muted-light dark:text-text-muted-dark mb-4">{t('predictive.attrition.subtitle', 'Turnover over the last 6 months')}</p>
+            <div className="max-h-[280px]">
+              <AttritionTable
+                rows={attrition?.departments ?? []}
+                labels={{
+                  dept: t('predictive.attrition.department', 'Department'),
+                  active: t('predictive.attrition.active', 'Active'),
+                  left: t('predictive.attrition.departures', 'Left'),
+                  rate: t('predictive.attrition.rate', 'Turnover'),
+                  risk: t('predictive.attrition.risk', 'Risk'),
+                  low: t('predictive.attrition.low', 'Low'),
+                  medium: t('predictive.attrition.medium', 'Medium'),
+                  high: t('predictive.attrition.high', 'High'),
+                  empty: t('predictive.attrition.empty', 'No department data'),
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 

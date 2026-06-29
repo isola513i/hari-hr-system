@@ -49,6 +49,54 @@ export const useAnalyticsDashboard = (year?: number) => {
   });
 };
 
+// ── Predictive analytics ────────────────────────────────────────────────────
+
+export interface ForecastPoint {
+  month: string;
+  name: string;
+  value: number;
+  lower?: number;
+  upper?: number;
+}
+
+export interface ForecastResponse {
+  history: ForecastPoint[];
+  forecast: ForecastPoint[];
+  momentum: number;
+}
+
+export interface AttritionRiskRow {
+  department: string;
+  active: number;
+  departures: number;
+  turnoverRate: number;
+  risk: 'low' | 'medium' | 'high';
+}
+
+export const useHeadcountForecast = () => {
+  return useQuery({
+    queryKey: queryKeys.analytics.headcountForecast(),
+    queryFn: () => api.get<ForecastResponse>('/analytics/headcount-forecast'),
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useLeaveForecast = () => {
+  return useQuery({
+    queryKey: queryKeys.analytics.leaveForecast(),
+    queryFn: () => api.get<ForecastResponse>('/analytics/leave-forecast'),
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useAttritionRisk = () => {
+  return useQuery({
+    queryKey: queryKeys.analytics.attritionRisk(),
+    queryFn: () => api.get<{ departments: AttritionRiskRow[] }>('/analytics/attrition-risk'),
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
 export const useTeamCalendar = (month: string, department?: string) => {
   return useQuery({
     queryKey: queryKeys.teamCalendar.byMonth(month, department),

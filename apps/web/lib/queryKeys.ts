@@ -133,6 +133,9 @@ export const queryKeys = {
   analytics: {
     all: ['analytics'] as const,
     dashboard: (year?: number) => [...queryKeys.analytics.all, 'dashboard', year] as const,
+    headcountForecast: () => [...queryKeys.analytics.all, 'headcount-forecast'] as const,
+    leaveForecast: () => [...queryKeys.analytics.all, 'leave-forecast'] as const,
+    attritionRisk: () => [...queryKeys.analytics.all, 'attrition-risk'] as const,
   },
   compliance: {
     all: ['compliance'] as const,
