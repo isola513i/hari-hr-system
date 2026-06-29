@@ -825,6 +825,30 @@ const runLightMigrations = async () => {
   } catch (err) {
     logger.error(err, "Migration: shifts tables creation failed:");
   }
+
+  // 360-degree peer feedback table (one slot per peer per review)
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS performance_peer_feedback (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        review_id UUID NOT NULL REFERENCES performance_reviews(id) ON DELETE CASCADE,
+        reviewer_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+        rating INT CHECK (rating BETWEEN 1 AND 5),
+        feedback TEXT,
+        is_anonymous BOOLEAN DEFAULT FALSE,
+        status VARCHAR(20) DEFAULT 'pending',
+        requested_by UUID REFERENCES users(id),
+        requested_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        submitted_at TIMESTAMP WITH TIME ZONE,
+        CONSTRAINT unique_peer_per_review UNIQUE (review_id, reviewer_id)
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_peer_feedback_review ON performance_peer_feedback(review_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_peer_feedback_reviewer ON performance_peer_feedback(reviewer_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_peer_feedback_status ON performance_peer_feedback(status)`);
+  } catch (err) {
+    logger.error(err, "Migration: performance_peer_feedback table creation failed:");
+  }
 };
 
 // Global error handlers (must be after all routes)

@@ -386,4 +386,108 @@ router.put('/reviews/:id', PerformanceController.updateReview.bind(PerformanceCo
 // DELETE /api/performance/reviews/:id - delete review
 router.delete('/reviews/:id', PerformanceController.deleteReview.bind(PerformanceController));
 
+// ── 360-degree peer review ──────────────────────────────────────────────────
+
+/**
+ * @swagger
+ * /api/performance/reviews/{id}/peer-feedback/request:
+ *   post:
+ *     summary: Request peer feedback on a review (manager or HR admin)
+ *     tags: [Performance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Performance review ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [peerEmployeeIds]
+ *             properties:
+ *               peerEmployeeIds:
+ *                 type: array
+ *                 items: { type: string, format: uuid }
+ *                 description: Employee IDs of the peers to request feedback from
+ *     responses:
+ *       201:
+ *         description: Peer feedback slots created (pending) and peers notified
+ *       400: { description: Validation error }
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden — manager or HR admin role required }
+ *       404: { description: Review not found }
+ */
+router.post('/reviews/:id/peer-feedback/request', requireAdminOrManager, PerformanceController.requestPeerReviews.bind(PerformanceController));
+
+/**
+ * @swagger
+ * /api/performance/reviews/{id}/peer-feedback:
+ *   post:
+ *     summary: Submit peer feedback on a review (requested peers only)
+ *     tags: [Performance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Performance review ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [rating]
+ *             properties:
+ *               rating: { type: integer, minimum: 1, maximum: 5 }
+ *               feedback: { type: string }
+ *               isAnonymous: { type: boolean, default: false }
+ *     responses:
+ *       201:
+ *         description: Peer feedback submitted
+ *       400: { description: Validation error — rating out of range or peer not requested }
+ *       401: { description: Unauthorized }
+ *   get:
+ *     summary: Get peer feedback and aggregate 360 score for a review
+ *     tags: [Performance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Performance review ID
+ *     responses:
+ *       200:
+ *         description: Peer feedback list + aggregate score (manager / peers / overall)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 feedback:
+ *                   type: array
+ *                   items: { type: object }
+ *                 aggregate:
+ *                   type: object
+ *                   properties:
+ *                     managerRating: { type: number, nullable: true }
+ *                     peerAverage: { type: number, nullable: true }
+ *                     peerCount: { type: integer }
+ *                     peerRequested: { type: integer }
+ *                     overall: { type: number, nullable: true }
+ *       401: { description: Unauthorized }
+ *       404: { description: Review not found }
+ */
+router.post('/reviews/:id/peer-feedback', PerformanceController.submitPeerFeedback.bind(PerformanceController));
+router.get('/reviews/:id/peer-feedback', PerformanceController.getPeerFeedback.bind(PerformanceController));
+
 export default router;
