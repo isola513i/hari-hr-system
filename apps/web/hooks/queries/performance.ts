@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { queryKeys } from '../../lib/queryKeys';
-import type { PerformanceReview, JobHistoryItem } from '../../types';
+import type { PerformanceReview, JobHistoryItem, PeerFeedback, PeerFeedbackResponse } from '../../types';
 
 export const useJobHistory = (id: string | undefined) => {
   return useQuery({
@@ -102,6 +102,40 @@ export const useRejectReview = () => {
     mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
       api.put<PerformanceReview>(`/performance/reviews/${id}/reject`, { reason }),
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.performanceReviews.all });
+    },
+  });
+};
+
+// ── 360-degree peer review ──────────────────────────────────────────────────
+
+export const usePeerFeedback = (reviewId: string | undefined, enabled = true) => {
+  return useQuery({
+    queryKey: queryKeys.performanceReviews.peerFeedback(reviewId!),
+    queryFn: () => api.get<PeerFeedbackResponse>(`/performance/reviews/${reviewId}/peer-feedback`),
+    enabled: !!reviewId && enabled,
+    staleTime: 30000,
+  });
+};
+
+export const useRequestPeerReviews = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ reviewId, peerEmployeeIds }: { reviewId: string; peerEmployeeIds: string[] }) =>
+      api.post<PeerFeedback[]>(`/performance/reviews/${reviewId}/peer-feedback/request`, { peerEmployeeIds }),
+    onSuccess: (_data, { reviewId }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.performanceReviews.peerFeedback(reviewId) });
+    },
+  });
+};
+
+export const useSubmitPeerFeedback = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ reviewId, rating, feedback, isAnonymous }: { reviewId: string; rating: number; feedback?: string; isAnonymous?: boolean }) =>
+      api.post<PeerFeedback>(`/performance/reviews/${reviewId}/peer-feedback`, { rating, feedback, isAnonymous }),
+    onSuccess: (_data, { reviewId }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.performanceReviews.peerFeedback(reviewId) });
       qc.invalidateQueries({ queryKey: queryKeys.performanceReviews.all });
     },
   });

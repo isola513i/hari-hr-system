@@ -453,6 +453,33 @@ export interface PerformanceReview {
   updatedAt?: string;
 }
 
+export interface PeerFeedback {
+  id: string;
+  reviewId: string;
+  reviewerId: string | null;
+  reviewerName: string;
+  reviewerAvatar?: string | null;
+  rating: number | null;
+  feedback: string | null;
+  isAnonymous: boolean;
+  status: 'pending' | 'submitted';
+  requestedAt: string;
+  submittedAt: string | null;
+}
+
+export interface AggregateScore {
+  managerRating: number | null;
+  peerAverage: number | null;
+  peerCount: number;
+  peerRequested: number;
+  overall: number | null;
+}
+
+export interface PeerFeedbackResponse {
+  feedback: PeerFeedback[];
+  aggregate: AggregateScore;
+}
+
 export interface CalendarEvent {
   id: string;
   eventType: 'leave' | 'wfh' | 'ot' | 'holiday';
