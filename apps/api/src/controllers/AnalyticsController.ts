@@ -1,7 +1,25 @@
 import { Request, Response } from 'express';
 import { query } from '../db';
 import { getAuditLogs } from '../middlewares/auditLog';
+import { projectForward, momentum } from '../utils/stats';
 import logger from '../utils/logger';
+
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// Short label for a 'YYYY-MM' key, e.g. "Jul '25".
+function monthLabel(yyyyMm: string): string {
+  const [y, m] = yyyyMm.split('-').map(Number);
+  return `${MONTH_NAMES[m - 1]} '${String(y).slice(2)}`;
+}
+
+// Advance a 'YYYY-MM' key by `n` months.
+function addMonths(yyyyMm: string, n: number): string {
+  const [y, m] = yyyyMm.split('-').map(Number);
+  const total = (y * 12 + (m - 1)) + n;
+  const ny = Math.floor(total / 12);
+  const nm = (total % 12) + 1;
+  return `${ny}-${String(nm).padStart(2, '0')}`;
+}
 
 class AnalyticsController {
   /**
@@ -81,6 +99,138 @@ class AnalyticsController {
     } catch (err) {
       logger.error(err, 'Error fetching audit logs:');
       res.status(500).json({ error: 'Failed to fetch audit logs' });
+    }
+  }
+
+  // ───────────────────────────────────────────────────────────────────────
+  // PREDICTIVE ANALYTICS
+  // ───────────────────────────────────────────────────────────────────────
+
+  /**
+   * GET /api/analytics/headcount-forecast
+   * Active headcount at each of the last 12 month-ends, plus a 3-month linear
+   * projection with a 95% confidence band.
+   */
+  async getHeadcountForecast(_req: Request, res: Response): Promise<void> {
+    try {
+      const result = await query(`
+        WITH months AS (
+          SELECT (date_trunc('month', CURRENT_DATE) - (interval '1 month' * g))::date AS month_start
+          FROM generate_series(0, 11) g
+        )
+        SELECT
+          TO_CHAR(month_start, 'YYYY-MM') AS month,
+          (SELECT COUNT(*) FROM employees e
+            WHERE e.join_date <= (month_start + interval '1 month - 1 day')
+              AND (e.termination_date IS NULL OR e.termination_date > (month_start + interval '1 month - 1 day'))
+          ) AS headcount
+        FROM months
+        ORDER BY month_start
+      `);
+
+      const history = result.rows.map((r: { month: string; headcount: string }) => ({
+        month: r.month,
+        name: monthLabel(r.month),
+        value: parseInt(r.headcount, 10),
+      }));
+
+      const series = history.map((h) => h.value);
+      const projections = projectForward(series, 3);
+      const lastMonth = history.length ? history[history.length - 1].month : null;
+      const forecast = projections.map((p, i) => {
+        const key = lastMonth ? addMonths(lastMonth, i + 1) : '';
+        return { month: key, name: key ? monthLabel(key) : '', ...p };
+      });
+
+      res.json({ history, forecast, momentum: momentum(series) });
+    } catch (err) {
+      logger.error(err, 'Error fetching headcount forecast:');
+      res.status(500).json({ error: 'Failed to fetch headcount forecast' });
+    }
+  }
+
+  /**
+   * GET /api/analytics/leave-forecast
+   * Approved leave-days per month over the last 12 months, plus a 3-month
+   * projection of expected leave demand.
+   */
+  async getLeaveForecast(_req: Request, res: Response): Promise<void> {
+    try {
+      const result = await query(`
+        WITH months AS (
+          SELECT (date_trunc('month', CURRENT_DATE) - (interval '1 month' * g))::date AS month_start
+          FROM generate_series(0, 11) g
+        )
+        SELECT
+          TO_CHAR(m.month_start, 'YYYY-MM') AS month,
+          COALESCE(SUM(
+            CASE WHEN lr.end_date >= lr.start_date
+              THEN (lr.end_date - lr.start_date + 1) ELSE 0 END
+          ), 0) AS days
+        FROM months m
+        LEFT JOIN leave_requests lr
+          ON date_trunc('month', lr.start_date) = m.month_start
+          AND lr.status = 'Approved'
+          AND lr.deleted_at IS NULL
+        GROUP BY m.month_start
+        ORDER BY m.month_start
+      `);
+
+      const history = result.rows.map((r: { month: string; days: string }) => ({
+        month: r.month,
+        name: monthLabel(r.month),
+        value: parseInt(r.days, 10),
+      }));
+
+      const series = history.map((h) => h.value);
+      const projections = projectForward(series, 3);
+      const lastMonth = history.length ? history[history.length - 1].month : null;
+      const forecast = projections.map((p, i) => {
+        const key = lastMonth ? addMonths(lastMonth, i + 1) : '';
+        return { month: key, name: key ? monthLabel(key) : '', ...p };
+      });
+
+      res.json({ history, forecast, momentum: momentum(series) });
+    } catch (err) {
+      logger.error(err, 'Error fetching leave forecast:');
+      res.status(500).json({ error: 'Failed to fetch leave forecast' });
+    }
+  }
+
+  /**
+   * GET /api/analytics/attrition-risk
+   * Per-department turnover over the last 6 months with a risk flag.
+   * rate = departures / (active + departures); >20% high, >10% medium, else low.
+   */
+  async getAttritionRisk(_req: Request, res: Response): Promise<void> {
+    try {
+      const result = await query(`
+        SELECT
+          department,
+          COUNT(*) FILTER (WHERE status = 'Active') AS active,
+          COUNT(*) FILTER (
+            WHERE termination_date IS NOT NULL
+              AND termination_date >= CURRENT_DATE - INTERVAL '6 months'
+          ) AS departures
+        FROM employees
+        WHERE department IS NOT NULL
+        GROUP BY department
+        ORDER BY department
+      `);
+
+      const departments = result.rows.map((r: { department: string; active: string; departures: string }) => {
+        const active = parseInt(r.active, 10);
+        const departures = parseInt(r.departures, 10);
+        const denom = active + departures;
+        const rate = denom > 0 ? Math.round((departures / denom) * 1000) / 10 : 0; // %
+        const risk = rate > 20 ? 'high' : rate > 10 ? 'medium' : 'low';
+        return { department: r.department, active, departures, turnoverRate: rate, risk };
+      });
+
+      res.json({ departments });
+    } catch (err) {
+      logger.error(err, 'Error fetching attrition risk:');
+      res.status(500).json({ error: 'Failed to fetch attrition risk' });
     }
   }
 
