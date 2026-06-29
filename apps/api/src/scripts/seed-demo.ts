@@ -515,11 +515,11 @@ async function seedUsersAndEmployees(hash: string) {
 }
 
 // ============================================================
-// SECTION 2: ATTENDANCE RECORDS (past 30 working days)
+// SECTION 2: ATTENDANCE RECORDS (past 12 months of working days)
 // ============================================================
 
 async function seedAttendance() {
-  console.log("  [2/20] Attendance Records...");
+  console.log("  [2/20] Attendance Records (12 months)...");
 
   const today = new Date();
   const rows: string[] = [];
@@ -529,7 +529,8 @@ async function seedAttendance() {
   // All active employees (skip intern for weekends logic)
   const empIds = ALL_EMP_IDS;
 
-  for (let dayOffset = 1; dayOffset <= 45; dayOffset++) {
+  // 12 months back so trend/analytics charts have real historical depth.
+  for (let dayOffset = 1; dayOffset <= 365; dayOffset++) {
     const d = new Date(today);
     d.setDate(d.getDate() - dayOffset);
     if (isWeekend(d)) continue;
@@ -622,6 +623,38 @@ async function seedLeaveRequests() {
     { emp: E.INTERN, type: "Personal Day", start: "2026-03-28", end: "2026-03-28", reason: "University exam preparation", status: "Rejected", approver: E.ENG_MGR, rejReason: "Demo day is on this date, please choose another day", days: 1 },
   ];
 
+  // Generate ~3 approved leaves per month for the past 12 months so the
+  // leave-demand forecast has a real historical series (seasonality + trend).
+  const histTypes = ["Vacation", "Sick Leave", "Personal Day"];
+  const histEmps = [E.SR_ENG, E.FS_DEV, E.UX, E.UI, E.DEVOPS, E.CONTENT, E.ACCT, E.HR_SPEC, E.MKT_MGR, E.JR_DEV];
+  const base = new Date();
+  base.setDate(1);
+  for (let monthsBack = 1; monthsBack <= 12; monthsBack++) {
+    const m = new Date(base);
+    m.setMonth(m.getMonth() - monthsBack);
+    const y = m.getFullYear();
+    const mm = m.getMonth(); // 0-based
+    const perMonth = rand(2, 4);
+    for (let k = 0; k < perMonth; k++) {
+      const startDay = rand(3, 22);
+      const len = rand(0, 3); // 0 → single day
+      const start = new Date(y, mm, startDay);
+      const end = new Date(y, mm, startDay + len);
+      const emp = histEmps[rand(0, histEmps.length - 1)];
+      const type = histTypes[rand(0, histTypes.length - 1)];
+      leaves.push({
+        emp,
+        type,
+        start: dateFmt(start),
+        end: dateFmt(end),
+        reason: "Approved leave",
+        status: "Approved",
+        approver: E.ENG_MGR,
+        days: len + 1,
+      } as typeof leaves[number]);
+    }
+  }
+
   for (const lv of leaves) {
     await query(
       `INSERT INTO leave_requests (
@@ -681,11 +714,24 @@ async function seedHolidays() {
 async function seedPayroll() {
   console.log("  [5/20] Payroll Records...");
 
-  const periods = [
-    { start: "2026-01-01", end: "2026-01-31", status: "Paid", payDate: "2026-01-31" },
-    { start: "2026-02-01", end: "2026-02-28", status: "Paid", payDate: "2026-02-28" },
-    { start: "2026-03-01", end: "2026-03-31", status: "Processed", payDate: "2026-03-31" },
-  ];
+  // 12 monthly periods ending last month so payroll history spans a full year.
+  const periods: { start: string; end: string; status: string; payDate: string }[] = [];
+  const pbase = new Date();
+  pbase.setDate(1);
+  for (let monthsBack = 12; monthsBack >= 1; monthsBack--) {
+    const m = new Date(pbase);
+    m.setMonth(m.getMonth() - monthsBack);
+    const y = m.getFullYear();
+    const mm = m.getMonth(); // 0-based
+    const start = new Date(y, mm, 1);
+    const end = new Date(y, mm + 1, 0); // last day of month
+    periods.push({
+      start: dateFmt(start),
+      end: dateFmt(end),
+      status: monthsBack === 1 ? "Processed" : "Paid",
+      payDate: dateFmt(end),
+    });
+  }
 
   // All salaried employees (with admin)
   const salariedEmps = [
@@ -704,7 +750,7 @@ async function seedPayroll() {
       const monthlyTax = parseFloat((annualTax / 12).toFixed(2));
       const overtime = Math.random() < 0.2 ? randDec(2, 8) : 0;
       const overtimePay = parseFloat((overtime * (base / 30 / 8) * 1.5).toFixed(2));
-      const bonus = period.end === "2026-01-31" && Math.random() < 0.3 ? rand(5000, 20000) : 0;
+      const bonus = period.end.endsWith("-12-31") && Math.random() < 0.5 ? rand(5000, 20000) : 0;
       const net = parseFloat(
         (base + overtimePay + bonus - ssfEmp - pvfEmp - monthlyTax).toFixed(2)
       );
@@ -1313,6 +1359,114 @@ async function seedSystemConfigs() {
 // MAIN
 // ============================================================
 
+// ============================================================
+// SECTION 21: TERMINATIONS (departed employees for turnover/attrition)
+// ============================================================
+
+async function seedTerminations() {
+  console.log("  [21/22] Terminated Employees...");
+
+  // Self-sufficient: ensure offboarding columns exist even if that migration
+  // hasn't run on this DB (seed may run standalone before server startup).
+  await query(`ALTER TABLE employees ADD COLUMN IF NOT EXISTS termination_date DATE`);
+  await query(`ALTER TABLE employees ADD COLUMN IF NOT EXISTS termination_reason VARCHAR(100)`);
+
+  // A few departed employees with join + termination dates in the last 6 months.
+  // user_id is left NULL — these are historical records for analytics only.
+  const monthsAgo = (n: number) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - n);
+    return dateFmt(d);
+  };
+  const departed = [
+    { name: "Kanya Phongphan", dept: "Engineering", role: "Backend Developer", join: "2022-03-01", term: monthsAgo(1), reason: "Resignation" },
+    { name: "Thanawat Semsri", dept: "Marketing", role: "Content Strategist", join: "2021-08-15", term: monthsAgo(3), reason: "Resignation" },
+    { name: "Niran Chaiyo", dept: "Engineering", role: "QA Engineer", join: "2023-01-10", term: monthsAgo(5), reason: "End of contract" },
+  ];
+
+  for (let i = 0; i < departed.length; i++) {
+    const d = departed[i];
+    await query(
+      `INSERT INTO employees (
+        name, email, role, department, avatar, status,
+        join_date, termination_date, termination_reason
+      ) VALUES ($1,$2,$3,$4,$5,'Terminated',$6,$7,$8)
+      ON CONFLICT (email) DO NOTHING`,
+      [
+        d.name,
+        `departed${i + 1}@aiya.ai`,
+        d.role,
+        d.dept,
+        avatar(d.name, BG_COLORS[i % BG_COLORS.length]),
+        d.join,
+        d.term,
+        d.reason,
+      ]
+    );
+  }
+}
+
+// ============================================================
+// SECTION 22: PEER FEEDBACK (360 review demo data)
+// ============================================================
+
+async function seedPeerFeedback() {
+  console.log("  [22/22] 360 Peer Feedback...");
+
+  // Self-sufficient: ensure the table exists (mirrors runLightMigrations).
+  await query(`
+    CREATE TABLE IF NOT EXISTS performance_peer_feedback (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      review_id UUID NOT NULL REFERENCES performance_reviews(id) ON DELETE CASCADE,
+      reviewer_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+      rating INT CHECK (rating BETWEEN 1 AND 5),
+      feedback TEXT,
+      is_anonymous BOOLEAN DEFAULT FALSE,
+      status VARCHAR(20) DEFAULT 'pending',
+      requested_by UUID REFERENCES users(id),
+      requested_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      submitted_at TIMESTAMP WITH TIME ZONE,
+      CONSTRAINT unique_peer_per_review UNIQUE (review_id, reviewer_id)
+    )
+  `);
+
+  // Attach peer feedback to Tanaka's (Sr Engineer) review so the 360 panel
+  // shows data immediately on demo load.
+  const review = await query(
+    `SELECT id FROM performance_reviews WHERE employee_id = $1 ORDER BY date DESC LIMIT 1`,
+    [E.SR_ENG]
+  );
+  if (!review.rows[0]) {
+    console.log("    (no review found for Sr Engineer — skipping peer feedback)");
+    return;
+  }
+  const reviewId = review.rows[0].id;
+
+  const feedbacks = [
+    { reviewer: E.FS_DEV, rating: 5, feedback: "Tanaka is always willing to pair and unblock others. Strong technical mentor.", anon: false, status: "submitted" },
+    { reviewer: E.DEVOPS, rating: 4, feedback: "Great collaboration on the deployment pipeline. Clear communicator.", anon: true, status: "submitted" },
+    { reviewer: E.UI, rating: 0, feedback: null, anon: false, status: "pending" },
+  ];
+
+  for (const f of feedbacks) {
+    await query(
+      `INSERT INTO performance_peer_feedback
+         (review_id, reviewer_id, rating, feedback, is_anonymous, status, requested_at, submitted_at)
+       VALUES ($1,$2,$3,$4,$5,$6, NOW(), $7)
+       ON CONFLICT (review_id, reviewer_id) DO NOTHING`,
+      [
+        reviewId,
+        f.reviewer,
+        f.status === "submitted" ? f.rating : null,
+        f.feedback,
+        f.anon,
+        f.status,
+        f.status === "submitted" ? new Date().toISOString() : null,
+      ]
+    );
+  }
+}
+
 export async function seedDemoData() {
   // Idempotency check
   const existing = await query(
@@ -1347,6 +1501,8 @@ export async function seedDemoData() {
   await seedSurveyData();
   await seedStats();
   await seedSystemConfigs();
+  await seedTerminations();
+  await seedPeerFeedback();
 
   console.log("\nDemo data seeded successfully!");
   console.log("──────────────────────────────────────");
