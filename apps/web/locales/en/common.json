@@ -209,7 +209,10 @@
     "previous": "Previous",
     "next": "Next",
     "page": "Page",
-    "singlePage": "Showing all {{count}} items"
+    "singlePage": "Showing all {{count}} items",
+    "showingRange": "Showing {{start}}–{{end}} of {{total}}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page"
   },
   "modal": {
     "backdropDismiss": "Press Escape or click outside to close"

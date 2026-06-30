@@ -135,3 +135,21 @@ export const useDeleteEmployee = () => {
     },
   });
 };
+
+export interface BulkDeleteResult {
+  total: number;
+  succeeded: number;
+  failed: number;
+  results: { id: string; success: boolean; error?: string }[];
+}
+
+export const useBulkDeleteEmployees = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => api.delete<BulkDeleteResult>('/employees/bulk', { ids }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.employees.all });
+      qc.invalidateQueries({ queryKey: queryKeys.orgChart.all });
+    },
+  });
+};

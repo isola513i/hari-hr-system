@@ -57,7 +57,8 @@
     "csvAutoCheckout": "ออกอัตโนมัติ",
     "csvStatus": "สถานะ",
     "yes": "ใช่",
-    "no": "ไม่"
+    "no": "ไม่",
+    "columns": "คอลัมน์"
   },
   "filters": {
     "allDepartments": "ทุกแผนก",

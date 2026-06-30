@@ -49,6 +49,33 @@ async function createSystemConfigsTable() {
                 data_type: 'json',
                 description: 'Leave quotas by type. -1 means unlimited.'
             },
+            // Performance review templates (criteria prompts to guide authored reviews)
+            {
+                category: 'performance',
+                key: 'templates',
+                value: JSON.stringify([
+                    { id: 'quarterly', name: 'Quarterly Review', criteria: [
+                        { key: 'achievements', prompt: 'Key achievements this quarter' },
+                        { key: 'strengths', prompt: 'Strengths demonstrated' },
+                        { key: 'improvements', prompt: 'Areas to improve' },
+                        { key: 'goals', prompt: 'Goals for next quarter' },
+                    ] },
+                    { id: 'probation', name: 'Probation Review', criteria: [
+                        { key: 'onboarding', prompt: 'Onboarding & ramp-up progress' },
+                        { key: 'performance', prompt: 'Performance against role expectations' },
+                        { key: 'culture', prompt: 'Team & culture fit' },
+                        { key: 'recommendation', prompt: 'Recommendation (confirm / extend / release)' },
+                    ] },
+                    { id: 'annual', name: 'Annual Review', criteria: [
+                        { key: 'impact', prompt: 'Overall impact this year' },
+                        { key: 'strengths', prompt: 'Top strengths' },
+                        { key: 'growth', prompt: 'Growth areas' },
+                        { key: 'goals', prompt: 'Goals & development plan' },
+                    ] },
+                ]),
+                data_type: 'json',
+                description: 'Reusable performance-review templates (criteria prompts).'
+            },
             // Employee settings
             {
                 category: 'employee',

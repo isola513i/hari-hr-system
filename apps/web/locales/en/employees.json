@@ -27,7 +27,11 @@
     "importing": "Importing...",
     "importComplete": "Import Complete",
     "created": "Created",
-    "skipped": "Skipped"
+    "skipped": "Skipped",
+    "selectedCount": "{{count}} selected",
+    "deleteSelected": "Delete selected",
+    "selectAll": "Select all",
+    "selectRow": "Select {{name}}"
   },
   "detail": {
     "back": "Back",
@@ -308,7 +312,11 @@
       "office": "Office",
       "remote": "Remote",
       "hybrid": "Hybrid"
-    }
+    },
+    "bulkDeleteTitle": "Delete selected employees",
+    "bulkDeleteConfirm": "Terminate {{count}} selected employees? This cannot be undone.",
+    "bulkResultTitle": "Bulk delete results",
+    "bulkResultSummary": "{{succeeded}} terminated, {{failed}} failed"
   },
   "toast": {
     "employeeDeleted": "Employee terminated successfully.",
@@ -347,7 +355,8 @@
     "quotaFailed": "Failed to update leave quotas",
     "quotaResetSuccess": "quota reset to default",
     "quotaResetFailed": "Failed to reset quota",
-    "trainingStatusUpdated": "Training marked as {{status}}"
+    "trainingStatusUpdated": "Training marked as {{status}}",
+    "bulkDeleted": "{{count}} employees terminated"
   },
   "status": {
     "allStatuses": "All Statuses",
@@ -366,7 +375,7 @@
     "subtitleEmployee": "View the company hierarchy.",
     "fullOrgChart": "Full Org Chart",
     "findEmployee": "Find employee...",
-    "dragToZoom": "Drag to pan \u2022 Scroll to zoom",
+    "dragToZoom": "Drag to pan • Scroll to zoom",
     "dragging": "Dragging",
     "dropToReassign": "— drop on a card to reassign manager",
     "addNewPosition": "Add New Position",

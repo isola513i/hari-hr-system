@@ -165,6 +165,43 @@ export class EmployeeController {
         }
     }
 
+    /**
+     * Bulk-terminate employees. Loops the single-delete path per id and returns a
+     * per-item success/error breakdown (200 all-ok, 207 partial, 422 none).
+     */
+    async bulkDeleteEmployees(req: Request, res: Response): Promise<void> {
+        try {
+            const { ids } = req.body;
+            if (!Array.isArray(ids) || ids.length === 0) {
+                res.status(400).json({ error: 'ids must be a non-empty array' });
+                return;
+            }
+            if (ids.length > 100) {
+                res.status(400).json({ error: 'Cannot process more than 100 employees at once' });
+                return;
+            }
+
+            const results = await Promise.all(
+                ids.map(async (id: string) => {
+                    try {
+                        await EmployeeService.deleteEmployee(id);
+                        return { id, success: true };
+                    } catch (error: any) {
+                        return { id, success: false, error: error.message || 'Failed to terminate' };
+                    }
+                })
+            );
+
+            const succeeded = results.filter((r) => r.success).length;
+            const failed = ids.length - succeeded;
+            const httpStatus = succeeded === 0 ? 422 : failed > 0 ? 207 : 200;
+            res.status(httpStatus).json({ total: ids.length, succeeded, failed, results });
+        } catch (error: any) {
+            logger.error(error, 'Bulk delete employees error:');
+            res.status(500).json({ error: 'Failed to bulk delete employees' });
+        }
+    }
+
     async getEmployeeManager(req: Request, res: Response): Promise<void> {
         try {
             const { id } = req.params;

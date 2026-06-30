@@ -57,7 +57,8 @@
     "csvAutoCheckout": "Auto-checkout",
     "csvStatus": "Status",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "columns": "Columns"
   },
   "filters": {
     "allDepartments": "All Departments",

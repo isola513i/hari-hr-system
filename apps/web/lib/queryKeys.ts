@@ -74,6 +74,7 @@ export const queryKeys = {
     byEmployee: (id: string) => [...queryKeys.performanceReviews.all, id] as const,
     list: (filters?: Record<string, string>) => [...queryKeys.performanceReviews.all, 'list', filters] as const,
     peerFeedback: (reviewId: string) => [...queryKeys.performanceReviews.all, 'peer-feedback', reviewId] as const,
+    templates: () => [...queryKeys.performanceReviews.all, 'templates'] as const,
   },
   teamCalendar: {
     all: ['teamCalendar'] as const,

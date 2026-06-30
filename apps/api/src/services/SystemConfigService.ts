@@ -1,5 +1,5 @@
 import { query } from '../db';
-import { SystemConfig, CreateSystemConfigDTO, UpdateSystemConfigDTO, LeaveQuota } from '../models/SystemConfig';
+import { SystemConfig, CreateSystemConfigDTO, UpdateSystemConfigDTO, LeaveQuota, ReviewTemplate } from '../models/SystemConfig';
 import logger from '../utils/logger';
 
 export class SystemConfigService {
@@ -124,6 +124,43 @@ export class SystemConfigService {
      */
     async getDefaultPassword(): Promise<string> {
         return await this.getConfigValue('employee', 'default_password', 'Welcome123!');
+    }
+
+    /**
+     * Get reusable performance-review templates (criteria prompts to guide an
+     * authored review). Falls back to built-in defaults when not configured.
+     */
+    async getReviewTemplates(): Promise<ReviewTemplate[]> {
+        const templates = await this.getConfigValue('performance', 'templates', null);
+        if (!templates) {
+            return [
+                {
+                    id: 'quarterly', name: 'Quarterly Review', criteria: [
+                        { key: 'achievements', prompt: 'Key achievements this quarter' },
+                        { key: 'strengths', prompt: 'Strengths demonstrated' },
+                        { key: 'improvements', prompt: 'Areas to improve' },
+                        { key: 'goals', prompt: 'Goals for next quarter' },
+                    ],
+                },
+                {
+                    id: 'probation', name: 'Probation Review', criteria: [
+                        { key: 'onboarding', prompt: 'Onboarding & ramp-up progress' },
+                        { key: 'performance', prompt: 'Performance against role expectations' },
+                        { key: 'culture', prompt: 'Team & culture fit' },
+                        { key: 'recommendation', prompt: 'Recommendation (confirm / extend / release)' },
+                    ],
+                },
+                {
+                    id: 'annual', name: 'Annual Review', criteria: [
+                        { key: 'impact', prompt: 'Overall impact this year' },
+                        { key: 'strengths', prompt: 'Top strengths' },
+                        { key: 'growth', prompt: 'Growth areas' },
+                        { key: 'goals', prompt: 'Goals & development plan' },
+                    ],
+                },
+            ];
+        }
+        return templates;
     }
 
     /**

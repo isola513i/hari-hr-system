@@ -49,7 +49,9 @@
     "reviewPeriod": "Review Period",
     "selectPeriod": "Select period...",
     "selfAssessment": "Self Assessment",
-    "selfAssessmentPlaceholder": "Describe your accomplishments, challenges, and goals for next period..."
+    "selfAssessmentPlaceholder": "Describe your accomplishments, challenges, and goals for next period...",
+    "template": "Template",
+    "noTemplate": "No template (free-form)"
   },
   "reviewer": "By {{name}}",
   "empty": {

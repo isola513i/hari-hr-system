@@ -49,7 +49,9 @@
     "reviewPeriod": "ช่วงเวลาประเมิน",
     "selectPeriod": "เลือกช่วงเวลา...",
     "selfAssessment": "การประเมินตนเอง",
-    "selfAssessmentPlaceholder": "อธิบายผลงาน ความท้าทาย และเป้าหมายสำหรับช่วงถัดไป..."
+    "selfAssessmentPlaceholder": "อธิบายผลงาน ความท้าทาย และเป้าหมายสำหรับช่วงถัดไป...",
+    "template": "เทมเพลต",
+    "noTemplate": "ไม่ใช้เทมเพลต (เขียนอิสระ)"
   },
   "reviewer": "โดย {{name}}",
   "empty": {

@@ -13,6 +13,7 @@ import {
   MoreVertical,
   Download,
   MapPin,
+  Columns3,
 } from 'lucide-react';
 import { AttendanceAnalyticsPanel } from '../components/AttendanceAnalyticsPanel';
 import { Dropdown, DropdownOption } from '../components/Dropdown';
@@ -36,6 +37,20 @@ import { getStatusStyle } from '../lib/attendanceStatusStyles';
 import type { AdminAttendanceRecord, AdminAttendanceFilters, AttendanceStatus } from '../types';
 
 const ITEMS_PER_PAGE = 20;
+
+// Columns the admin can show/hide (employee + actions are always shown).
+const TOGGLEABLE_COLUMNS = ['department', 'checkIn', 'checkOut', 'hours', 'ot', 'type', 'status'] as const;
+type ToggleCol = typeof TOGGLEABLE_COLUMNS[number];
+const COLUMNS_STORAGE_KEY = 'attendanceVisibleColumns';
+
+function loadVisibleColumns(): Record<ToggleCol, boolean> {
+  const def = Object.fromEntries(TOGGLEABLE_COLUMNS.map((k) => [k, true])) as Record<ToggleCol, boolean>;
+  try {
+    const saved = localStorage.getItem(COLUMNS_STORAGE_KEY);
+    if (saved) return { ...def, ...JSON.parse(saved) };
+  } catch { /* ignore malformed storage */ }
+  return def;
+}
 
 /* DEPARTMENTS and STATUS_FILTER_OPTIONS moved inside component for i18n */
 
@@ -185,6 +200,16 @@ const AdminAttendance: React.FC = () => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
   const [locationRecord, setLocationRecord] = useState<AdminAttendanceRecord | null>(null);
+
+  // Column visibility (persisted to localStorage)
+  const [visibleColumns, setVisibleColumns] = useState<Record<ToggleCol, boolean>>(loadVisibleColumns);
+  const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
+  useEffect(() => {
+    try { localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(visibleColumns)); } catch { /* ignore */ }
+  }, [visibleColumns]);
+  const visibleColCount = 2 + TOGGLEABLE_COLUMNS.filter((k) => visibleColumns[k]).length;
+  const toggleColumn = (key: ToggleCol) =>
+    setVisibleColumns((prev) => ({ ...prev, [key]: !prev[key] }));
 
   // Debounce search
   useEffect(() => {
@@ -440,6 +465,39 @@ const AdminAttendance: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <DatePicker value={selectedDate} onChange={setSelectedDate} placeholder={t('attendance:admin.selectDate')} />
+            {/* Columns show/hide (desktop) */}
+            <div className="relative hidden md:block">
+              <button
+                onClick={() => setColumnsMenuOpen((v) => !v)}
+                className="flex items-center gap-2 px-4 py-2.5 border border-border-light dark:border-border-dark text-text-light dark:text-text-dark rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm font-medium whitespace-nowrap"
+                aria-haspopup="true"
+                aria-expanded={columnsMenuOpen}
+              >
+                <Columns3 size={16} />
+                <span>{t('attendance:admin.columns', { defaultValue: 'Columns' })}</span>
+              </button>
+              {columnsMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setColumnsMenuOpen(false)} />
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg shadow-lg z-20 py-1">
+                    {TOGGLEABLE_COLUMNS.map((key) => (
+                      <label
+                        key={key}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={visibleColumns[key]}
+                          onChange={() => toggleColumn(key)}
+                          className="w-4 h-4 rounded accent-primary"
+                        />
+                        {t(`attendance:admin.${key}`)}
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
             <button
               onClick={exportToCSV}
               className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm font-medium shadow-sm whitespace-nowrap"
@@ -457,27 +515,41 @@ const AdminAttendance: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
                   {t('attendance:admin.employee')}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
-                  {t('attendance:admin.department')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
-                  {t('attendance:admin.checkIn')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
-                  {t('attendance:admin.checkOut')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
-                  {t('attendance:admin.hours')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
-                  {t('attendance:admin.ot')}
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
-                  {t('attendance:admin.type')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
-                  {t('attendance:admin.status')}
-                </th>
+                {visibleColumns.department && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
+                    {t('attendance:admin.department')}
+                  </th>
+                )}
+                {visibleColumns.checkIn && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
+                    {t('attendance:admin.checkIn')}
+                  </th>
+                )}
+                {visibleColumns.checkOut && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
+                    {t('attendance:admin.checkOut')}
+                  </th>
+                )}
+                {visibleColumns.hours && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
+                    {t('attendance:admin.hours')}
+                  </th>
+                )}
+                {visibleColumns.ot && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
+                    {t('attendance:admin.ot')}
+                  </th>
+                )}
+                {visibleColumns.type && (
+                  <th className="px-4 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
+                    {t('attendance:admin.type')}
+                  </th>
+                )}
+                {visibleColumns.status && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
+                    {t('attendance:admin.status')}
+                  </th>
+                )}
                 <th className="px-6 py-3 text-right text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">
                   {t('attendance:admin.actions')}
                 </th>
@@ -486,13 +558,13 @@ const AdminAttendance: React.FC = () => {
             <tbody className="divide-y divide-border-light dark:divide-border-dark">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-8 text-center text-text-muted-light dark:text-text-muted-dark">
+                  <td colSpan={visibleColCount} className="px-6 py-8 text-center text-text-muted-light dark:text-text-muted-dark">
                     {t('attendance:admin.loading')}
                   </td>
                 </tr>
               ) : records.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-8 text-center text-text-muted-light dark:text-text-muted-dark">
+                  <td colSpan={visibleColCount} className="px-6 py-8 text-center text-text-muted-light dark:text-text-muted-dark">
                     {t('attendance:admin.noRecords')}
                   </td>
                 </tr>
@@ -518,46 +590,60 @@ const AdminAttendance: React.FC = () => {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-muted-light dark:text-text-muted-dark">
-                      {record.employeeDepartment}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">
-                      {formatTime(record.clockIn)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">
-                      {record.autoCheckout ? (
-                        <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">ไม่ได้เช็คเอ้าท์</span>
-                      ) : (
-                        formatTime(record.clockOut)
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">
-                      <HoursCell totalHours={record.totalHours} breakDuration={record.breakDuration} />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {record.overtimeHours != null && record.overtimeHours > 0
-                        ? <span className="text-amber-600 dark:text-amber-400 font-medium">{Number(record.overtimeHours).toFixed(1)}h</span>
-                        : <span className="text-text-muted-light dark:text-text-muted-dark">-</span>}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      {record.clockIn
-                        ? <CheckInTypeBadge type={record.checkInType ?? 'office'} />
-                        : <span className="text-text-muted-light dark:text-text-muted-dark">-</span>}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        {(() => {
-                          const ds = displayStatus(record);
-                          const s = getStatusStyle(ds);
-                          return (
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full ring-1 ring-inset ${s.badge}`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
-                              {translateStatus(ds)}
-                            </span>
-                          );
-                        })()}
-                      </div>
-                    </td>
+                    {visibleColumns.department && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-muted-light dark:text-text-muted-dark">
+                        {record.employeeDepartment}
+                      </td>
+                    )}
+                    {visibleColumns.checkIn && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">
+                        {formatTime(record.clockIn)}
+                      </td>
+                    )}
+                    {visibleColumns.checkOut && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">
+                        {record.autoCheckout ? (
+                          <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">ไม่ได้เช็คเอ้าท์</span>
+                        ) : (
+                          formatTime(record.clockOut)
+                        )}
+                      </td>
+                    )}
+                    {visibleColumns.hours && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">
+                        <HoursCell totalHours={record.totalHours} breakDuration={record.breakDuration} />
+                      </td>
+                    )}
+                    {visibleColumns.ot && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {record.overtimeHours != null && record.overtimeHours > 0
+                          ? <span className="text-amber-600 dark:text-amber-400 font-medium">{Number(record.overtimeHours).toFixed(1)}h</span>
+                          : <span className="text-text-muted-light dark:text-text-muted-dark">-</span>}
+                      </td>
+                    )}
+                    {visibleColumns.type && (
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        {record.clockIn
+                          ? <CheckInTypeBadge type={record.checkInType ?? 'office'} />
+                          : <span className="text-text-muted-light dark:text-text-muted-dark">-</span>}
+                      </td>
+                    )}
+                    {visibleColumns.status && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          {(() => {
+                            const ds = displayStatus(record);
+                            const s = getStatusStyle(ds);
+                            return (
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full ring-1 ring-inset ${s.badge}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+                                {translateStatus(ds)}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="relative inline-block">
                         <button

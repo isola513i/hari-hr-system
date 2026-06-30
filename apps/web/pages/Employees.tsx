@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { useEmployeeList, useAddEmployee, useDeleteEmployee } from '../hooks/queries';
+import { useEmployeeList, useAddEmployee, useDeleteEmployee, useBulkDeleteEmployees } from '../hooks/queries';
+import type { BulkDeleteResult } from '../hooks/queries/employee';
 import { Modal } from '../components/Modal';
 import { Dropdown, DropdownOption } from '../components/Dropdown';
 import { Avatar } from '../components/Avatar';
@@ -66,6 +67,49 @@ export const Employees: React.FC = () => {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResult, setImportResult] = useState<{ created: number; skipped: number; errors: string[] } | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+
+  // Bulk-delete selection state (desktop table)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [bulkResult, setBulkResult] = useState<BulkDeleteResult | null>(null);
+  const bulkDeleteMutation = useBulkDeleteEmployees();
+
+  // Reset selection whenever the visible page/filter set changes
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [currentPage, departmentFilter, statusFilter, searchTerm]);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const allOnPageSelected = employeesList.length > 0 && employeesList.every((e) => selectedIds.has(e.id));
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) => {
+      if (employeesList.every((e) => prev.has(e.id))) {
+        const next = new Set(prev);
+        employeesList.forEach((e) => next.delete(e.id));
+        return next;
+      }
+      return new Set([...prev, ...employeesList.map((e) => e.id)]);
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    try {
+      const result = await bulkDeleteMutation.mutateAsync([...selectedIds]);
+      setBulkResult(result);
+      setBulkConfirmOpen(false);
+      setSelectedIds(new Set());
+      showToast(t('employees:toast.bulkDeleted', { count: result.succeeded, defaultValue: '{{count}} employees terminated' }), 'success');
+    } catch (error) {
+      showToast((error as Error).message || t('employees:toast.deleteFailed'), 'error');
+    }
+  };
 
   // Close action menu on click outside
   useEffect(() => {
@@ -257,11 +301,45 @@ export const Employees: React.FC = () => {
           />
         </FilterToolbar>
 
+        {/* Bulk action bar (admin, desktop) */}
+        {isAdmin && selectedIds.size > 0 && (
+          <div className="hidden md:flex items-center justify-between px-6 py-3 bg-primary/5 dark:bg-primary/10 border-y border-border-light dark:border-border-dark">
+            <span className="text-sm font-medium text-text-light dark:text-text-dark">
+              {t('employees:list.selectedCount', { count: selectedIds.size, defaultValue: '{{count}} selected' })}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="px-3 py-1.5 text-sm text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors"
+              >
+                {t('common:buttons.cancel', { defaultValue: 'Cancel' })}
+              </button>
+              <button
+                onClick={() => { setBulkResult(null); setBulkConfirmOpen(true); }}
+                className="px-3 py-1.5 text-sm font-medium bg-accent-red text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+              >
+                <Trash2 size={14} /> {t('employees:list.deleteSelected', { defaultValue: 'Delete selected' })}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Desktop Table View */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-text-muted-light dark:text-text-muted-dark font-semibold tracking-wide">
               <tr>
+                {isAdmin && (
+                  <th className="px-6 py-4 w-10">
+                    <input
+                      type="checkbox"
+                      checked={allOnPageSelected}
+                      onChange={toggleSelectAll}
+                      aria-label={t('employees:list.selectAll', { defaultValue: 'Select all' })}
+                      className="w-4 h-4 rounded accent-primary cursor-pointer"
+                    />
+                  </th>
+                )}
                 <th className="px-6 py-4">{t('employees:list.employee')}</th>
                 <th className="px-6 py-4">{t('employees:list.role')}</th>
                 <th className="px-6 py-4">{t('employees:list.status')}</th>
@@ -274,9 +352,20 @@ export const Employees: React.FC = () => {
               {employeesList.map((emp) => (
                 <tr
                   key={emp.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group cursor-pointer"
+                  className={`hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group cursor-pointer ${selectedIds.has(emp.id) ? 'bg-primary/5 dark:bg-primary/10' : ''}`}
                   onClick={() => navigate(`/employees/${emp.id}`)}
                 >
+                  {isAdmin && (
+                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(emp.id)}
+                        onChange={() => toggleSelect(emp.id)}
+                        aria-label={t('employees:list.selectRow', { name: emp.name, defaultValue: 'Select {{name}}' })}
+                        className="w-4 h-4 rounded accent-primary cursor-pointer"
+                      />
+                    </td>
+                  )}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-3">
                       <div className="relative">
@@ -619,6 +708,67 @@ export const Employees: React.FC = () => {
               className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 flex items-center gap-2 disabled:opacity-50"
             >
               <Trash2 size={16} /> {deleteEmployeeMutation.isPending ? t('employees:modals.deleting') : t('employees:modals.delete')}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Bulk Delete Confirmation Modal */}
+      <Modal
+        isOpen={bulkConfirmOpen}
+        onClose={() => setBulkConfirmOpen(false)}
+        title={t('employees:modals.bulkDeleteTitle', { defaultValue: 'Delete selected employees' })}
+        maxWidth="sm"
+      >
+        <div className="p-6 text-center">
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+            <Trash2 className="text-red-600 dark:text-red-400" size={24} />
+          </div>
+          <p className="text-sm text-text-muted-light dark:text-text-muted-dark mb-6">
+            {t('employees:modals.bulkDeleteConfirm', { count: selectedIds.size, defaultValue: 'Terminate {{count}} selected employees? This cannot be undone.' })}
+          </p>
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={() => setBulkConfirmOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:text-text-muted-dark dark:hover:text-text-dark"
+            >
+              {t('employees:modals.cancel')}
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              disabled={bulkDeleteMutation.isPending}
+              className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 flex items-center gap-2 disabled:opacity-50"
+            >
+              <Trash2 size={16} /> {bulkDeleteMutation.isPending ? t('employees:modals.deleting') : t('employees:modals.delete')}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Bulk Delete Result Modal (partial-success report) */}
+      <Modal
+        isOpen={!!bulkResult && bulkResult.failed > 0}
+        onClose={() => setBulkResult(null)}
+        title={t('employees:modals.bulkResultTitle', { defaultValue: 'Bulk delete results' })}
+        maxWidth="sm"
+      >
+        <div className="p-6">
+          <p className="text-sm text-text-light dark:text-text-dark mb-3">
+            {t('employees:modals.bulkResultSummary', { succeeded: bulkResult?.succeeded ?? 0, failed: bulkResult?.failed ?? 0, defaultValue: '{{succeeded}} terminated, {{failed}} failed' })}
+          </p>
+          {bulkResult && bulkResult.failed > 0 && (
+            <ul className="text-xs text-accent-red space-y-1 max-h-40 overflow-y-auto">
+              {bulkResult.results.filter((r) => !r.success).map((r) => (
+                <li key={r.id}>• {r.id.slice(0, 8)}… — {r.error}</li>
+              ))}
+            </ul>
+          )}
+          <div className="flex justify-end mt-5">
+            <button
+              onClick={() => setBulkResult(null)}
+              className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-hover"
+            >
+              {t('common:buttons.close', { defaultValue: 'Close' })}
             </button>
           </div>
         </div>
