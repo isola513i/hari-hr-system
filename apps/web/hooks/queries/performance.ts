@@ -129,6 +129,20 @@ export const useRequestPeerReviews = () => {
   });
 };
 
+export interface ReviewTemplate {
+  id: string;
+  name: string;
+  criteria: { key: string; prompt: string }[];
+}
+
+export const useReviewTemplates = () => {
+  return useQuery({
+    queryKey: queryKeys.performanceReviews.templates(),
+    queryFn: () => api.get<ReviewTemplate[]>('/performance/review-templates'),
+    staleTime: 60 * 60 * 1000,
+  });
+};
+
 export const useSubmitPeerFeedback = () => {
   const qc = useQueryClient();
   return useMutation({

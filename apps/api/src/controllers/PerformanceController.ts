@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import PerformanceService from '../services/PerformanceService';
+import SystemConfigService from '../services/SystemConfigService';
 import type { AuditContext } from '../services/PerformanceService';
 import { safeErrorMessage } from '../utils/errorResponse';
 import logger from '../utils/logger';
@@ -181,6 +182,17 @@ class PerformanceController {
       logger.error(err, 'Error deleting performance review:');
       const status = err.name === 'BusinessError' ? 400 : 500;
       res.status(status).json({ error: safeErrorMessage(err, 'Failed to delete review') });
+    }
+  }
+
+  /** GET /performance/review-templates — reusable review templates */
+  async getReviewTemplates(_req: Request, res: Response): Promise<void> {
+    try {
+      const templates = await SystemConfigService.getReviewTemplates();
+      res.json(templates);
+    } catch (err) {
+      logger.error(err, 'Error fetching review templates:');
+      res.status(500).json({ error: 'Failed to fetch review templates' });
     }
   }
 

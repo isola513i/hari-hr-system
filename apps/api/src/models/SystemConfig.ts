@@ -30,6 +30,17 @@ export interface LeaveQuota {
     color?: string;
 }
 
+export interface ReviewTemplateCriterion {
+    key: string;
+    prompt: string;
+}
+
+export interface ReviewTemplate {
+    id: string;
+    name: string;
+    criteria: ReviewTemplateCriterion[];
+}
+
 export interface SystemSettings {
     defaultPassword: string;
     leaveQuotas: LeaveQuota[];

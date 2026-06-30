@@ -10,6 +10,37 @@ const router = Router();
 
 router.use(authenticateToken);
 
+/**
+ * @swagger
+ * /api/performance/review-templates:
+ *   get:
+ *     summary: List reusable performance-review templates
+ *     tags: [Performance]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of templates with criteria prompts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id: { type: string }
+ *                   name: { type: string }
+ *                   criteria:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         key: { type: string }
+ *                         prompt: { type: string }
+ *       401: { description: Unauthorized }
+ */
+router.get('/review-templates', PerformanceController.getReviewTemplates.bind(PerformanceController));
+
 // GET /api/performance/reviews/:id/pdf - download review as PDF
 // (defined BEFORE /reviews/:id to avoid route shadowing)
 /**
