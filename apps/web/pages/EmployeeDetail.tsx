@@ -199,6 +199,9 @@ export const EmployeeDetail: React.FC = () => {
                 emergencyContact: editForm.emergencyContact,
                 address: editForm.address,
                 workType: editForm.workType,
+                workDays: editForm.workDays,
+                nationalId: editForm.nationalId,
+                bankAccountNumber: editForm.bankAccountNumber,
             });
 
             if (isOwnProfile && updateUser) {
@@ -359,9 +362,9 @@ export const EmployeeDetail: React.FC = () => {
                 });
                 setEditingHistoryId(null);
                 setTempHistoryItem(null);
-                showToast('Job history updated', 'success');
+                showToast(t('employees:toast.jobHistoryUpdated'), 'success');
             } catch {
-                showToast('Failed to update job history', 'error');
+                showToast(t('employees:toast.jobHistoryUpdateFailed'), 'error');
             }
         }
     };
@@ -369,9 +372,9 @@ export const EmployeeDetail: React.FC = () => {
     const handleDeleteHistory = async (historyId: string) => {
         try {
             await deleteHistoryMutation.mutateAsync(historyId);
-            showToast('Job history entry deleted', 'success');
+            showToast(t('employees:toast.jobHistoryDeleted'), 'success');
         } catch {
-            showToast('Failed to delete job history', 'error');
+            showToast(t('employees:toast.jobHistoryDeleteFailed'), 'error');
         }
     };
 
@@ -384,18 +387,18 @@ export const EmployeeDetail: React.FC = () => {
         try {
             await assignTrainingMutation.mutateAsync({ employeeId: id, moduleId, dueDate });
             setIsAssignTrainingOpen(false);
-            showToast('Training assigned successfully', 'success');
+            showToast(t('employees:toast.trainingAssigned'), 'success');
         } catch {
-            showToast('Failed to assign training', 'error');
+            showToast(t('employees:toast.trainingAssignFailed'), 'error');
         }
     };
 
     const handleDeleteTraining = async (trainingId: string) => {
         try {
             await deleteTrainingMutation.mutateAsync(trainingId);
-            showToast('Training record deleted', 'success');
+            showToast(t('employees:toast.trainingDeleted'), 'success');
         } catch {
-            showToast('Failed to delete training', 'error');
+            showToast(t('employees:toast.trainingDeleteFailed'), 'error');
         }
     };
 
@@ -404,7 +407,7 @@ export const EmployeeDetail: React.FC = () => {
             await updateTrainingStatusMutation.mutateAsync({ id: trainingId, status });
             showToast(t('employees:toast.trainingStatusUpdated', { status }), 'success');
         } catch {
-            showToast('Failed to update training status', 'error');
+            showToast(t('employees:toast.trainingStatusFailed'), 'error');
         }
     };
 
@@ -589,7 +592,7 @@ export const EmployeeDetail: React.FC = () => {
     const handleConfirmTerminate = async () => {
         if (!employee || !id) return;
         if (!terminateForm.terminationReason || !terminateForm.lastWorkingDay) {
-            showToast('Please fill in all required fields', 'error');
+            showToast(t('employees:toast.fillRequired'), 'error');
             return;
         }
         try {
@@ -603,11 +606,11 @@ export const EmployeeDetail: React.FC = () => {
             });
             setIsTerminateOpen(false);
             setTerminateForm({ terminationReason: '', lastWorkingDay: '', terminationNotes: '' });
-            showToast('Offboarding initiated — employee is now in Notice Period', 'success');
+            showToast(t('employees:toast.offboardingInitiated'), 'success');
             qc.invalidateQueries({ queryKey: queryKeys.employees.all });
             qc.invalidateQueries({ queryKey: queryKeys.orgChart.all });
         } catch (error: any) {
-            const msg = error?.message || 'Failed to initiate offboarding';
+            const msg = error?.message || t('employees:toast.offboardingInitiateFailed');
             showToast(msg, 'error');
         }
     };

@@ -68,6 +68,7 @@ export const queryKeys = {
     tasks: () => [...queryKeys.onboarding.all, 'tasks'] as const,
     contacts: () => [...queryKeys.onboarding.all, 'contacts'] as const,
     documents: () => [...queryKeys.onboarding.all, 'documents'] as const,
+    employeeDocuments: (employeeId: string) => [...queryKeys.onboarding.all, 'documents', employeeId] as const,
   },
   performanceReviews: {
     all: ['performanceReviews'] as const,

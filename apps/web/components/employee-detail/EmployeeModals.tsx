@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { DatePicker } from '../../components/DatePicker';
+import { WorkDaysSelector } from '../../components/WorkDaysSelector';
+import { ProfileDocumentAttachment } from './ProfileDocumentAttachment';
 import { Dropdown } from '../../components/Dropdown';
 import { ThaiAddressForm } from '../../components/ThaiAddressForm';
 import { EmployeeModalsProps } from './EmployeeDetailTypes';
@@ -78,7 +80,7 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
     onCloseTerminate,
     onConfirmTerminate,
 }) => {
-    const { t } = useTranslation(['employees', 'common']);
+    const { t } = useTranslation(['employees', 'common', 'offboarding']);
     const { canEditSensitiveInfo, isOwnProfile } = permissions;
 
     // Phone: split into country code + number for the UI, combine before saving
@@ -264,6 +266,21 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                                 </div>
                             )}
 
+                            {canEditSensitiveInfo && (
+                                <div>
+                                    <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                                        {t('employees:modals.workDays')}
+                                    </label>
+                                    <WorkDaysSelector
+                                        value={((editForm as Record<string, unknown>).workDays as number[]) ?? [1, 2, 3, 4, 5]}
+                                        onChange={(days) => onProfileChange('workDays', days)}
+                                    />
+                                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">
+                                        {t('employees:modals.workDaysNote')}
+                                    </p>
+                                </div>
+                            )}
+
                             <div>
                                 <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                                     {t('employees:modals.joinDate')}
@@ -370,7 +387,7 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                                 <>
                                     <div>
                                         <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
-                                            National ID
+                                            {t('employees:modals.nationalId')}
                                         </label>
                                         <div className="relative">
                                             <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
@@ -379,15 +396,18 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                                                 value={editForm.nationalId ?? ''}
                                                 onChange={(e) => onProfileChange('nationalId', e.target.value)}
                                                 className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark font-mono"
-                                                placeholder="e.g. 1234567890123"
+                                                placeholder={t('employees:modals.nationalIdPlaceholder')}
                                                 maxLength={20}
                                             />
                                         </div>
+                                        {editForm.id && (
+                                            <ProfileDocumentAttachment employeeId={editForm.id} slot="national-id" />
+                                        )}
                                     </div>
 
                                     <div>
                                         <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
-                                            Bank Account Number
+                                            {t('employees:modals.bankAccountNumber')}
                                         </label>
                                         <div className="relative">
                                             <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
@@ -396,10 +416,13 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                                                 value={editForm.bankAccountNumber ?? ''}
                                                 onChange={(e) => onProfileChange('bankAccountNumber', e.target.value)}
                                                 className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark font-mono"
-                                                placeholder="e.g. 123-4-56789-0"
+                                                placeholder={t('employees:modals.bankAccountPlaceholder')}
                                                 maxLength={30}
                                             />
                                         </div>
+                                        {editForm.id && (
+                                            <ProfileDocumentAttachment employeeId={editForm.id} slot="bank-account" />
+                                        )}
                                     </div>
                                 </>
                             )}
@@ -721,7 +744,7 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                                     <AlertTriangle className="text-red-600 dark:text-red-400" size={18} />
                                 </div>
                                 <h3 className="font-bold text-base text-text-light dark:text-text-dark">
-                                    Initiate Offboarding
+                                    {t('offboarding:initiate.title')}
                                 </h3>
                             </div>
                             <button onClick={onCloseTerminate} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark">
@@ -738,13 +761,13 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                             className="p-6 space-y-4"
                         >
                             <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
-                                This will move the employee to <span className="font-semibold text-amber-600 dark:text-amber-400">Notice Period</span> and create an offboarding checklist. They will be fully terminated only after all tasks are completed.
+                                {t('offboarding:initiate.descriptionBefore')} <span className="font-semibold text-amber-600 dark:text-amber-400">{t('offboarding:initiate.noticePeriod')}</span> {t('offboarding:initiate.descriptionAfter')}
                             </p>
 
                             {/* Termination Reason */}
                             <div>
                                 <label className="block text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-1.5">
-                                    Reason for Termination <span className="text-red-500">*</span>
+                                    {t('offboarding:initiate.reasonLabel')} <span className="text-red-500">*</span>
                                 </label>
                                 <select
                                     value={terminateForm.terminationReason}
@@ -752,40 +775,37 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                                     required
                                     className="w-full px-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20"
                                 >
-                                    <option value="">Select a reason...</option>
-                                    <option value="Resignation">Resignation</option>
-                                    <option value="Performance">Performance</option>
-                                    <option value="Restructuring">Restructuring</option>
-                                    <option value="Retirement">Retirement</option>
-                                    <option value="Other">Other</option>
+                                    <option value="">{t('offboarding:initiate.selectReason')}</option>
+                                    <option value="Resignation">{t('offboarding:terminationReasons.Resignation')}</option>
+                                    <option value="Performance">{t('offboarding:terminationReasons.Performance')}</option>
+                                    <option value="Restructuring">{t('offboarding:terminationReasons.Restructuring')}</option>
+                                    <option value="Retirement">{t('offboarding:terminationReasons.Retirement')}</option>
+                                    <option value="Other">{t('offboarding:terminationReasons.Other')}</option>
                                 </select>
                             </div>
 
                             {/* Last Working Day */}
                             <div>
                                 <label className="block text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-1.5">
-                                    Last Working Day <span className="text-red-500">*</span>
+                                    {t('offboarding:initiate.lastWorkingDay')} <span className="text-red-500">*</span>
                                 </label>
-                                <input
-                                    type="date"
+                                <DatePicker
                                     value={terminateForm.lastWorkingDay}
-                                    onChange={(e) => onTerminateFormChange('lastWorkingDay', e.target.value)}
-                                    required
-                                    min={new Date().toISOString().split('T')[0]}
-                                    className="w-full px-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    onChange={(v) => onTerminateFormChange('lastWorkingDay', v)}
+                                    minDate={new Date().toISOString().split('T')[0]}
                                 />
                             </div>
 
                             {/* Notes */}
                             <div>
                                 <label className="block text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-1.5">
-                                    Notes <span className="text-text-muted-light dark:text-text-muted-dark font-normal">(HR only, optional)</span>
+                                    {t('offboarding:initiate.notesLabel')} <span className="text-text-muted-light dark:text-text-muted-dark font-normal">{t('offboarding:initiate.notesHint')}</span>
                                 </label>
                                 <textarea
                                     value={terminateForm.terminationNotes}
                                     onChange={(e) => onTerminateFormChange('terminationNotes', e.target.value)}
                                     rows={3}
-                                    placeholder="Any additional context for the offboarding..."
+                                    placeholder={t('offboarding:initiate.notesPlaceholder')}
                                     className="w-full px-3 py-2 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                                 />
                             </div>
@@ -797,14 +817,14 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                                     onClick={onCloseTerminate}
                                     className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:text-text-muted-dark dark:hover:text-text-dark"
                                 >
-                                    Cancel
+                                    {t('employees:modals.cancel')}
                                 </button>
                                 <button
                                     type="submit"
                                     className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 flex items-center gap-2 disabled:opacity-50"
                                     disabled={!terminateForm.terminationReason || !terminateForm.lastWorkingDay}
                                 >
-                                    <AlertTriangle size={16} /> Initiate Offboarding
+                                    <AlertTriangle size={16} /> {t('offboarding:initiate.submit')}
                                 </button>
                             </div>
                         </form>

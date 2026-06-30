@@ -532,6 +532,39 @@ export class OnboardingService {
     return result.rows.map(mapDocumentRow);
   }
 
+  /**
+   * Find (or create) the onboarding document checklist row matching a canonical
+   * document name for an employee, and return its id. Used by the employee-profile
+   * bridge so attaching a passbook / ID copy from the Edit Profile modal targets the
+   * SAME checklist item shown on the Onboarding page (single source of truth).
+   *
+   * If the employee has no checklist yet, the full default checklist is seeded first
+   * (idempotent). A residual insert covers employees whose checklist predates this name.
+   */
+  async ensureDocument(employeeId: string, name: string): Promise<string> {
+    const find = () =>
+      query(
+        `SELECT id FROM onboarding_documents WHERE employee_id = $1 AND name = $2 LIMIT 1`,
+        [employeeId, name]
+      );
+
+    let r = await find();
+    if (r.rows[0]) return r.rows[0].id;
+
+    // Employee may not have been seeded yet — seed the full checklist (idempotent).
+    await this.seedDefaultTasks(employeeId);
+    r = await find();
+    if (r.rows[0]) return r.rows[0].id;
+
+    // Residual: employee has other docs but not this canonical name — add just this one.
+    const def = DEFAULT_DOCUMENTS.find((d) => d.name === name);
+    const ins = await query(
+      `INSERT INTO onboarding_documents (employee_id, name, description) VALUES ($1, $2, $3) RETURNING id`,
+      [employeeId, name, def?.description ?? '']
+    );
+    return ins.rows[0].id;
+  }
+
   async uploadDocument(
     id: string,
     filePath: string,

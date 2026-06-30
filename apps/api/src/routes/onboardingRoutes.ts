@@ -367,6 +367,17 @@ router.post(
   OnboardingController.uploadDocument.bind(OnboardingController)
 );
 
+// POST /api/onboarding/employees/:employeeId/documents/:slot/upload
+// Profile bridge (admin) — attach a passbook / ID copy from the Edit Profile modal
+// to the matching onboarding checklist item.
+router.post(
+  "/employees/:employeeId/documents/:slot/upload",
+  requireAdmin,
+  apiLimiter,
+  onboardingDocUpload.single("file"),
+  OnboardingController.uploadProfileDocument.bind(OnboardingController)
+);
+
 /**
  * @swagger
  * /api/onboarding/documents/{id}/review:

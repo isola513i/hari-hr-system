@@ -6,6 +6,16 @@ import { storageService } from "../services/StorageService";
 import { generateStorageKey, getFileBuffer } from "../middlewares/upload";
 import logger from '../utils/logger';
 
+/**
+ * Maps an Edit-Profile attachment slot to its canonical onboarding checklist
+ * document name, so a passbook / ID copy uploaded from the profile targets the
+ * same checklist item shown during onboarding.
+ */
+const PROFILE_DOC_SLOTS: Record<string, string> = {
+  'national-id': 'ID / Passport Copy',
+  'bank-account': 'Bank Account Details',
+};
+
 export class OnboardingController {
   // GET /api/onboarding/tasks?employeeId=xxx
   async getTasks(req: Request, res: Response): Promise<void> {
@@ -270,6 +280,42 @@ export class OnboardingController {
       res.json(doc);
     } catch (error) {
       logger.error(error, "Error uploading onboarding document:");
+      res.status(500).json({ error: "Failed to upload document" });
+    }
+  }
+
+  // POST /api/onboarding/employees/:employeeId/documents/:slot/upload
+  // Profile bridge: attach a file to a PII-linked checklist item (passbook, ID copy)
+  // from the Edit Profile modal. Resolves the slot to its canonical onboarding
+  // document, ensuring the row exists, then stores the file — so the same upload
+  // shows up on the Onboarding checklist.
+  async uploadProfileDocument(req: Request, res: Response): Promise<void> {
+    try {
+      const { employeeId, slot } = req.params;
+      const name = PROFILE_DOC_SLOTS[slot];
+      if (!name) {
+        res.status(400).json({ error: "Unknown document slot" });
+        return;
+      }
+      const file = (req as any).file;
+      if (!file) {
+        res.status(400).json({ error: "No file uploaded" });
+        return;
+      }
+
+      const id = await OnboardingService.ensureDocument(employeeId, name);
+
+      const key = generateStorageKey("onboarding", file);
+      const buffer = getFileBuffer(file);
+      await storageService.upload({ key, body: buffer, contentType: file.mimetype });
+
+      const ext = path.extname(file.originalname).replace(".", "").toUpperCase();
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(1) + " MB";
+
+      const doc = await OnboardingService.uploadDocument(id, key, ext, sizeMB);
+      res.json(doc);
+    } catch (error) {
+      logger.error(error, "Error uploading profile document:");
       res.status(500).json({ error: "Failed to upload document" });
     }
   }

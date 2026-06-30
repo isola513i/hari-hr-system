@@ -49,3 +49,12 @@ export const useOnboardingDocuments = () => {
     queryFn: () => api.get<OnboardingDocument[]>('/onboarding/documents'),
   });
 };
+
+/** Admin/manager: fetch a specific employee's onboarding documents (for the Edit Profile bridge). */
+export const useEmployeeOnboardingDocuments = (employeeId: string | undefined) => {
+  return useQuery({
+    queryKey: queryKeys.onboarding.employeeDocuments(employeeId ?? ''),
+    queryFn: () => api.get<OnboardingDocument[]>(`/onboarding/documents?employeeId=${employeeId}`),
+    enabled: !!employeeId,
+  });
+};
