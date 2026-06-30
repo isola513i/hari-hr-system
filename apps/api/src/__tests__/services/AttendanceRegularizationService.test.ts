@@ -54,6 +54,9 @@ describe('AttendanceRegularizationService', () => {
   describe('create', () => {
     it('inserts a request and notifies admins', async () => {
       mockedQuery
+        // create() pre-checks: SELECT work_days, then HolidayService.isHoliday
+        .mockResolvedValueOnce({ rows: [{ work_days: [0, 1, 2, 3, 4, 5, 6] }], rowCount: 1 } as never) // SELECT work_days
+        .mockResolvedValueOnce({ rows: [{ is_holiday: false }], rowCount: 1 } as never) // isHoliday
         .mockResolvedValueOnce({ rows: [REG_ROW], rowCount: 1 } as never) // INSERT
         .mockResolvedValueOnce({ rows: [{ name: 'Alice', manager_user_id: null }], rowCount: 1 } as never); // emp lookup
 
@@ -66,12 +69,14 @@ describe('AttendanceRegularizationService', () => {
 
       expect(result.id).toBe('reg-1');
       expect(result.status).toBe('pending');
-      expect(mockedQuery.mock.calls[0][0]).toContain('INSERT INTO attendance_regularization_requests');
+      expect(mockedQuery.mock.calls.some((c) => String(c[0]).includes('INSERT INTO attendance_regularization_requests'))).toBe(true);
       expect(mockedNotifyAdmins).toHaveBeenCalled();
     });
 
     it('notifies the manager when one exists', async () => {
       mockedQuery
+        .mockResolvedValueOnce({ rows: [{ work_days: [0, 1, 2, 3, 4, 5, 6] }], rowCount: 1 } as never) // SELECT work_days
+        .mockResolvedValueOnce({ rows: [{ is_holiday: false }], rowCount: 1 } as never) // isHoliday
         .mockResolvedValueOnce({ rows: [REG_ROW], rowCount: 1 } as never)
         .mockResolvedValueOnce({ rows: [{ name: 'Alice', manager_user_id: 'mgr-user-1' }], rowCount: 1 } as never);
 
@@ -104,6 +109,23 @@ describe('AttendanceRegularizationService', () => {
       await expect(
         AttendanceRegularizationService.create('emp-1', { date: future, requestedClockIn: 'x', reason: 'fix' })
       ).rejects.toThrow(/future/);
+    });
+
+    it('rejects a date that is not a working day for the employee', async () => {
+      // 2026-06-20 is a Saturday; default Mon–Fri schedule → not a working day
+      mockedQuery.mockResolvedValueOnce({ rows: [{ work_days: [1, 2, 3, 4, 5] }], rowCount: 1 } as never);
+      await expect(
+        AttendanceRegularizationService.create('emp-1', { date: '2026-06-20', requestedClockIn: 'x', reason: 'fix' })
+      ).rejects.toThrow(/non-working day/);
+    });
+
+    it('rejects a public holiday', async () => {
+      mockedQuery
+        .mockResolvedValueOnce({ rows: [{ work_days: [0, 1, 2, 3, 4, 5, 6] }], rowCount: 1 } as never) // works every day
+        .mockResolvedValueOnce({ rows: [{ is_holiday: true }], rowCount: 1 } as never); // isHoliday → true
+      await expect(
+        AttendanceRegularizationService.create('emp-1', { date: '2026-06-20', requestedClockIn: 'x', reason: 'fix' })
+      ).rejects.toThrow(/holiday/);
     });
   });
 

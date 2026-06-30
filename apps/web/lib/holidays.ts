@@ -38,9 +38,13 @@ export function expandHolidayDates(
     const end = new Date(toDateKey(h.endDate ?? h.date) + 'T00:00:00');
 
     if (h.isRecurring) {
-      for (let y = startYear; y <= endYear; y++) {
+      // Start a year early so a span that wraps year-end (e.g. Dec 31 → Jan 2)
+      // still contributes its January days to a range that begins in January.
+      for (let y = startYear - 1; y <= endYear; y++) {
         const cur = new Date(y, start.getMonth(), start.getDate());
         const last = new Date(y, end.getMonth(), end.getDate());
+        // Year-wrap: end MM-DD precedes start MM-DD → end falls in the next year.
+        if (last < cur) last.setFullYear(y + 1);
         while (cur <= last) {
           set.add(fmt(cur));
           cur.setDate(cur.getDate() + 1);

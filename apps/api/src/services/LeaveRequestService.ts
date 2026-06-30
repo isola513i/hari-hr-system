@@ -42,8 +42,10 @@ export class LeaveRequestService {
     static async calculateBusinessDays(startDate: string, endDate: string, workDays?: number[]): Promise<number> {
         const days = resolveWorkDays(workDays);
         const holidayDates = await HolidayService.getHolidayDatesSet(startDate, endDate);
-        const start = new Date(startDate);
-        const end = new Date(endDate);
+        // Parse as LOCAL midnight (not UTC) so getDay()/getDate() reflect the intended
+        // calendar date regardless of server timezone — consistent with the holiday-set keys.
+        const start = new Date(`${startDate}T00:00:00`);
+        const end = new Date(`${endDate}T00:00:00`);
         let count = 0;
         const current = new Date(start);
         while (current <= end) {

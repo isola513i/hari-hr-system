@@ -3,6 +3,7 @@ import SystemConfigService from './SystemConfigService';
 import OTRequestService from './OTRequestService';
 import { BusinessError } from '../utils/errorResponse';
 import { resolveWorkDays } from '../utils/workdays';
+import { holidayDateSql } from './HolidayService';
 import logger from '../utils/logger';
 
 export interface PayrollRecord {
@@ -292,10 +293,7 @@ export class PayrollService {
       `SELECT COUNT(*)::int AS working_days
        FROM generate_series($1::date, $2::date, '1 day'::interval) AS d(day)
        WHERE EXTRACT(DOW FROM d.day)::int = ANY($3::int[])
-         AND NOT EXISTS (
-           SELECT 1 FROM holidays h
-           WHERE h.date = d.day::date
-         )`,
+         AND NOT ${holidayDateSql('d.day::date')}`,
       [payPeriodStart, payPeriodEnd, workDays]
     );
     return result.rows[0]?.working_days ?? 1;
@@ -326,9 +324,7 @@ export class PayrollService {
       `SELECT COUNT(*)::int AS absent_days
        FROM generate_series($2::date, $3::date, '1 day'::interval) AS d(day)
        WHERE EXTRACT(DOW FROM d.day)::int = ANY($4::int[])
-         AND NOT EXISTS (
-           SELECT 1 FROM holidays h WHERE h.date = d.day::date
-         )
+         AND NOT ${holidayDateSql('d.day::date')}
          AND NOT EXISTS (
            SELECT 1 FROM leave_requests lr
            WHERE lr.employee_id = $1 AND lr.status = 'Approved'

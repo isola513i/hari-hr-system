@@ -1,6 +1,34 @@
 import { query } from '../db';
 import { Holiday, CreateHolidayDTO, UpdateHolidayDTO } from '../models/Holiday';
 
+/**
+ * Canonical "is `dateExpr` a public holiday?" SQL predicate — the single source of
+ * truth reused by HolidayService, PayrollService and AttendanceScheduler so every
+ * feature classifies a date the same way.
+ *
+ * Handles:
+ *  - single-day and multi-day non-recurring holidays (date..COALESCE(end_date,date))
+ *  - recurring (annual) holidays matched by MM-DD, including spans that wrap the
+ *    year boundary (e.g. Dec 31 → Jan 2), where a plain BETWEEN would never match.
+ *
+ * `dateExpr` must be a trusted SQL date expression (a column like `d.day::date` or
+ * a bound param like `$1::date`) — never raw user input.
+ */
+export function holidayDateSql(dateExpr: string): string {
+    return `EXISTS (
+        SELECT 1 FROM holidays h
+        WHERE (h.is_recurring = FALSE AND ${dateExpr} BETWEEN h.date AND COALESCE(h.end_date, h.date))
+           OR (h.is_recurring = TRUE AND (
+                CASE
+                  WHEN TO_CHAR(h.date, 'MM-DD') <= TO_CHAR(COALESCE(h.end_date, h.date), 'MM-DD')
+                    THEN TO_CHAR(${dateExpr}, 'MM-DD') BETWEEN TO_CHAR(h.date, 'MM-DD') AND TO_CHAR(COALESCE(h.end_date, h.date), 'MM-DD')
+                  ELSE (TO_CHAR(${dateExpr}, 'MM-DD') >= TO_CHAR(h.date, 'MM-DD')
+                        OR TO_CHAR(${dateExpr}, 'MM-DD') <= TO_CHAR(COALESCE(h.end_date, h.date), 'MM-DD'))
+                END
+              ))
+    )`;
+}
+
 export class HolidayService {
     async getAllHolidays(): Promise<Holiday[]> {
         const result = await query('SELECT id, date, end_date, name, is_recurring, created_at, updated_at FROM holidays ORDER BY date ASC');
@@ -9,11 +37,18 @@ export class HolidayService {
 
     async getHolidaysByRange(startDate: string, endDate: string): Promise<Holiday[]> {
         const result = await query(
+            // Non-recurring: range OVERLAP (not containment). Recurring: MM-DD overlap,
+            // wrap-safe for query ranges that cross the year boundary, honoring end_date.
             `SELECT id, date, end_date, name, is_recurring, created_at, updated_at FROM holidays
-             WHERE (is_recurring = FALSE AND date >= $1::date AND COALESCE(end_date, date) <= $2::date)
+             WHERE (is_recurring = FALSE AND date <= $2::date AND COALESCE(end_date, date) >= $1::date)
                 OR (is_recurring = TRUE AND (
-                    TO_CHAR(date, 'MM-DD') >= TO_CHAR($1::date, 'MM-DD')
-                    AND TO_CHAR(date, 'MM-DD') <= TO_CHAR($2::date, 'MM-DD')
+                    CASE
+                      WHEN TO_CHAR($1::date, 'MM-DD') <= TO_CHAR($2::date, 'MM-DD')
+                        THEN TO_CHAR(COALESCE(end_date, date), 'MM-DD') >= TO_CHAR($1::date, 'MM-DD')
+                             AND TO_CHAR(date, 'MM-DD') <= TO_CHAR($2::date, 'MM-DD')
+                      ELSE TO_CHAR(COALESCE(end_date, date), 'MM-DD') >= TO_CHAR($1::date, 'MM-DD')
+                             OR TO_CHAR(date, 'MM-DD') <= TO_CHAR($2::date, 'MM-DD')
+                    END
                 ))
              ORDER BY date ASC`,
             [startDate, endDate]
@@ -23,8 +58,10 @@ export class HolidayService {
 
     async getHolidayDatesSet(startDate: string, endDate: string): Promise<Set<string>> {
         const result = await query(
+            // Non-recurring rows are fetched on date-range OVERLAP (not full containment),
+            // so a multi-day holiday straddling a range edge is not dropped.
             `SELECT date, end_date, is_recurring FROM holidays
-             WHERE (is_recurring = FALSE AND date >= $1::date AND COALESCE(end_date, date) <= $2::date)
+             WHERE (is_recurring = FALSE AND date <= $2::date AND COALESCE(end_date, date) >= $1::date)
                 OR is_recurring = TRUE`,
             [startDate, endDate]
         );
@@ -41,9 +78,13 @@ export class HolidayService {
             const rowEnd = row.end_date ? new Date(row.end_date) : rowStart;
 
             if (row.is_recurring) {
-                for (let y = targetYear; y <= endYear; y++) {
+                // Start a year early so a span that wraps year-end (e.g. Dec 31 → Jan 2)
+                // contributes its January days to a range that begins in January.
+                for (let y = targetYear - 1; y <= endYear; y++) {
                     const cur = new Date(y, rowStart.getMonth(), rowStart.getDate());
                     const last = new Date(y, rowEnd.getMonth(), rowEnd.getDate());
+                    // Year-wrap: end MM-DD precedes start MM-DD → end falls in the next year.
+                    if (last < cur) last.setFullYear(y + 1);
                     while (cur <= last) {
                         const dateStr = formatDate(cur);
                         if (dateStr >= startDate && dateStr <= endDate) {
@@ -69,19 +110,12 @@ export class HolidayService {
 
     /**
      * True if a given "YYYY-MM-DD" date falls on a public holiday — covers
-     * single-day, multi-day (date..end_date) and recurring (annual, matched by MM-DD) holidays.
+     * single-day, multi-day (date..end_date) and recurring (annual, MM-DD with
+     * year-wrap) holidays via the shared {@link holidayDateSql} predicate.
      */
     async isHoliday(date: string): Promise<boolean> {
-        const result = await query(
-            `SELECT 1 FROM holidays
-             WHERE (is_recurring = FALSE AND $1::date BETWEEN date AND COALESCE(end_date, date))
-                OR (is_recurring = TRUE
-                    AND TO_CHAR($1::date, 'MM-DD')
-                        BETWEEN TO_CHAR(date, 'MM-DD') AND TO_CHAR(COALESCE(end_date, date), 'MM-DD'))
-             LIMIT 1`,
-            [date]
-        );
-        return (result.rowCount ?? 0) > 0;
+        const result = await query(`SELECT ${holidayDateSql('$1::date')} AS is_holiday`, [date]);
+        return result.rows[0]?.is_holiday === true;
     }
 
     async getHolidayById(id: string): Promise<Holiday | null> {

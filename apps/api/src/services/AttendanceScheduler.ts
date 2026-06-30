@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import { query } from '../db';
 import { getIO } from '../socket';
+import HolidayService from './HolidayService';
 
 /**
  * Auto-checkout: runs at 23:59 Bangkok time daily.
@@ -85,15 +86,8 @@ async function autoMarkAbsent(): Promise<void> {
   // Weekends are no longer skipped globally — each employee has their own
   // work_days schedule (default Mon–Fri), enforced per-row in the INSERT below.
 
-  // Skip public holidays
-  const holidayCheck = await query(
-    `SELECT 1 FROM holidays
-     WHERE (is_recurring = FALSE AND $1::date BETWEEN date AND COALESCE(end_date, date))
-        OR (is_recurring = TRUE  AND TO_CHAR($1::date, 'MM-DD') BETWEEN TO_CHAR(date, 'MM-DD') AND TO_CHAR(COALESCE(end_date, date), 'MM-DD'))
-     LIMIT 1`,
-    [prevDate]
-  );
-  if (holidayCheck.rows.length > 0) {
+  // Skip public holidays (company-wide) — uses the canonical holiday predicate.
+  if (await HolidayService.isHoliday(prevDate)) {
     console.log(`[AttendanceScheduler] Auto-absent: skipping public holiday (${prevDate})`);
     return;
   }
@@ -105,8 +99,10 @@ async function autoMarkAbsent(): Promise<void> {
        SELECT e.id, $1, 'Absent', 'Auto-marked absent'
        FROM employees e
        WHERE e.status = 'Active'
-         -- Only employees scheduled to work this weekday (per-employee work_days, default Mon–Fri)
-         AND EXTRACT(DOW FROM $1::date)::int = ANY(e.work_days)
+         -- Only employees scheduled to work this weekday (per-employee work_days).
+         -- Empty/NULL work_days falls back to Mon–Fri, matching resolveWorkDays() used
+         -- by payroll/leave, so a cleared schedule can't silently dodge auto-absent.
+         AND EXTRACT(DOW FROM $1::date)::int = ANY(COALESCE(NULLIF(e.work_days, '{}'), '{1,2,3,4,5}'))
          AND NOT EXISTS (
            -- Intentionally counts soft-deleted rows too: they still occupy the
            -- UNIQUE (employee_id, date) slot, so inserting would violate it.

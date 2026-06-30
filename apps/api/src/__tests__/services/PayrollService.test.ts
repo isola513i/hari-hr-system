@@ -79,6 +79,8 @@ describe('PayrollService', () => {
   const setupCreateMocks = (baseSalary: number, overtimeHours = 0, bonus = 0, leaveDeduction = 0, deductions = 0, role = 'Developer', autoCalcLeave = true) => {
     if (autoCalcLeave) {
       mockedQuery
+        // calcLeaveDeduction → SELECT work_days (no hint passed by single createPayroll)
+        .mockResolvedValueOnce({ rows: [{ work_days: [1, 2, 3, 4, 5] }], rowCount: 1 } as never)
         // calcLeaveDeduction → getWorkingDays
         .mockResolvedValueOnce({ rows: [{ working_days: 22 }], rowCount: 1 } as never)
         // calcLeaveDeduction → absent count (0 → no auto deduction)
@@ -120,6 +122,7 @@ describe('PayrollService', () => {
     const effectiveSalary = (dailyRate || 350) * daysWorked;
     if (autoCalcLeave) {
       mockedQuery
+        .mockResolvedValueOnce({ rows: [{ work_days: [1, 2, 3, 4, 5] }], rowCount: 1 } as never)
         .mockResolvedValueOnce({ rows: [{ working_days: 22 }], rowCount: 1 } as never)
         .mockResolvedValueOnce({ rows: [{ absent_days: 0 }], rowCount: 1 } as never);
     }
@@ -390,8 +393,10 @@ describe('PayrollService', () => {
     const PERIOD_START = '2026-06-01';
     const PERIOD_END = '2026-06-30';
 
+    // calcLeaveDeduction (no workDaysHint) fires 3 queries: work_days, getWorkingDays, absent count.
     const mockLeaveDeductionQueries = (workingDays: number, absentDays: number) => {
       mockedQuery
+        .mockResolvedValueOnce({ rows: [{ work_days: [1, 2, 3, 4, 5] }], rowCount: 1 } as never)
         .mockResolvedValueOnce({ rows: [{ working_days: workingDays }], rowCount: 1 } as never)
         .mockResolvedValueOnce({ rows: [{ absent_days: absentDays }], rowCount: 1 } as never);
     };
@@ -443,12 +448,12 @@ describe('PayrollService', () => {
 
       await service.calcLeaveDeduction('emp-1', PERIOD_START, PERIOD_END, 22000);
 
-      // Second query is the absent-days one
-      const absentQueryCall = mockedQuery.mock.calls[1];
+      // Queries: [0] SELECT work_days, [1] getWorkingDays, [2] absent-days
+      const absentQueryCall = mockedQuery.mock.calls[2];
       const absentSql = absentQueryCall[0] as string;
 
-      // Weekends excluded
-      expect(absentSql).toMatch(/EXTRACT\(DOW FROM .*?\) NOT IN \(0, 6\)/);
+      // Non-working weekdays excluded via per-employee work_days array
+      expect(absentSql).toMatch(/EXTRACT\(DOW FROM .*?\)::int = ANY\(\$\d::int\[\]\)/);
       // Holidays excluded
       expect(absentSql).toMatch(/NOT EXISTS\s*\(\s*SELECT 1 FROM holidays/);
       // Approved leave excluded
@@ -464,9 +469,10 @@ describe('PayrollService', () => {
 
       await service.calcLeaveDeduction('emp-1', PERIOD_START, PERIOD_END, 22000);
 
-      const workingQuerySql = mockedQuery.mock.calls[0][0] as string;
+      // Queries: [0] SELECT work_days, [1] getWorkingDays, [2] absent-days
+      const workingQuerySql = mockedQuery.mock.calls[1][0] as string;
 
-      expect(workingQuerySql).toMatch(/EXTRACT\(DOW FROM .*?\) NOT IN \(0, 6\)/);
+      expect(workingQuerySql).toMatch(/EXTRACT\(DOW FROM .*?\)::int = ANY\(\$\d::int\[\]\)/);
       expect(workingQuerySql).toMatch(/NOT EXISTS\s*\(\s*SELECT 1 FROM holidays/);
     });
   });
