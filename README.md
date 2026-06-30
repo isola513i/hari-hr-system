@@ -244,9 +244,11 @@ PostgreSQL (Neon cloud)
 ## Getting Started
 
 ### Prerequisites
-- **Node.js** v18+
-- **npm** v8+
-- **PostgreSQL** database (Neon DB recommended)
+
+Install these on the machine first:
+- **Node.js** v18 or newer (`node -v`) and **npm** v8+ (`npm -v`)
+- **git**
+- A **PostgreSQL** database — either a free [Neon](https://neon.tech) cloud DB (recommended, no local install) or a local PostgreSQL 15+
 
 ### Installation
 
@@ -256,39 +258,41 @@ PostgreSQL (Neon cloud)
    cd hari-hr-system
    ```
 
-2. **Install dependencies**
+2. **Install dependencies** (installs all workspaces)
    ```bash
    npm install
    ```
 
-3. **Setup Environment Variables**
-
-   **Backend** (`apps/api/.env`):
-   ```env
-   PORT=3001
-   DATABASE_URL=postgresql://user:password@host/database?sslmode=require
-   JWT_SECRET=your_super_secret_jwt_key
-   JWT_REFRESH_SECRET=your_refresh_secret_key
-   FRONTEND_URL=http://localhost:5173
-   ALLOWED_ORIGINS=http://localhost:5173
-   NODE_ENV=development
-   LOG_LEVEL=info
+3. **Create the environment files from the examples**
+   ```bash
+   cp apps/api/.env.example apps/api/.env
+   cp apps/web/.env.example apps/web/.env.local
    ```
 
-   **Frontend** (`apps/web/.env.local`) — optional for local dev:
-   ```env
-   VITE_API_URL=http://localhost:3001/api
-   ```
-   > If omitted, the Vite dev server proxies `/api` and `/uploads` to `localhost:3001` automatically.
+4. **Fill in the required backend values** in `apps/api/.env`:
 
-4. **Database Setup**
-   - Create a PostgreSQL database on [Neon](https://neon.tech) or locally
-   - Copy the connection string to `DATABASE_URL`
-   - Navigate to `http://localhost:3001/api/setup` to initialize tables and seed data
-   - Optionally run the index migration for better query performance:
-     ```bash
-     cd apps/api && npm run db:migrate:indexes
-     ```
+   | Variable | How to get it |
+   |---|---|
+   | `DATABASE_URL` | Connection string from Neon (or your local Postgres) |
+   | `JWT_SECRET` | `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"` |
+   | `TOTP_ENCRYPTION_KEY` | `openssl rand -hex 32` — **required, exactly 64 hex chars**; the API will not start without it |
+
+   Everything else has safe defaults or is optional (email, push, R2 storage, Sentry — see comments in `.env.example`).
+
+   > **Frontend** (`apps/web/.env.local`) needs nothing for local dev — the Vite dev
+   > server proxies `/api` and `/uploads` to `localhost:3001` automatically. Set
+   > `VITE_API_URL` only when pointing at a deployed API.
+
+5. **Initialize the database** (creates all tables, then loads demo data)
+   ```bash
+   cd apps/api
+   npx ts-node src/scripts/init-db.ts      # create schema + base config
+   npx ts-node src/scripts/seed-demo.ts    # demo employees, attendance, payroll, reviews…
+   npm run db:migrate:indexes              # optional: performance indexes
+   cd ../..
+   ```
+   > `init-db` **drops and recreates** all tables — only run it on a fresh/empty database.
+   > After seeding, log in with `admin@aiya.ai` / `Welcome123!` (demo employees use `Demo123!`).
 
 ### Running the Application
 
@@ -521,7 +525,7 @@ cd apps/web && npm run build
 ### Backend (Railway / Render)
 ```bash
 cd apps/api && npm start
-# Required env vars: DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET,
+# Required env vars: DATABASE_URL, JWT_SECRET, TOTP_ENCRYPTION_KEY,
 #                   FRONTEND_URL, ALLOWED_ORIGINS, NODE_ENV=production
 ```
 
@@ -529,12 +533,14 @@ cd apps/api && npm start
 ```env
 NODE_ENV=production
 DATABASE_URL=postgresql://...
-JWT_SECRET=<secure-random-string>
-JWT_REFRESH_SECRET=<secure-random-string>
+JWT_SECRET=<64-hex-secret>            # node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+TOTP_ENCRYPTION_KEY=<64-hex-key>      # openssl rand -hex 32  (required — API won't boot without it)
 FRONTEND_URL=https://your-frontend.vercel.app
 ALLOWED_ORIGINS=https://your-frontend.vercel.app
 LOG_LEVEL=warn
 ```
+> See `apps/api/.env.example` for the full list of optional variables
+> (email, web push, R2 storage, Sentry, rate limits, cron schedules).
 
 ---
 
