@@ -116,7 +116,7 @@ class AnalyticsController {
       const result = await query(`
         WITH months AS (
           SELECT (date_trunc('month', CURRENT_DATE) - (interval '1 month' * g))::date AS month_start
-          FROM generate_series(0, 11) g
+          FROM generate_series(1, 12) g
         )
         SELECT
           TO_CHAR(month_start, 'YYYY-MM') AS month,
@@ -159,7 +159,7 @@ class AnalyticsController {
       const result = await query(`
         WITH months AS (
           SELECT (date_trunc('month', CURRENT_DATE) - (interval '1 month' * g))::date AS month_start
-          FROM generate_series(0, 11) g
+          FROM generate_series(1, 12) g
         )
         SELECT
           TO_CHAR(m.month_start, 'YYYY-MM') AS month,

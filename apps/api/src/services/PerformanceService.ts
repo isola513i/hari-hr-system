@@ -583,7 +583,9 @@ export class PerformanceService {
       }).catch((err) => logger.error(err, 'Peer review request audit log failed:'));
     }
 
-    return this.getPeerFeedback(reviewId, { includeIdentity: true });
+    // Do NOT expose identities here — the review may already contain submitted
+    // anonymous feedback, and this response goes to the requesting manager/HR.
+    return this.getPeerFeedback(reviewId);
   }
 
   /**
@@ -611,11 +613,16 @@ export class PerformanceService {
     if (!slot.rows[0]) {
       throw new BusinessError('You have not been requested as a peer reviewer for this review');
     }
+    // Feedback can only be submitted once — prevent silent overwrite of a prior
+    // submission (which would change the 360 aggregate after the fact).
+    if (slot.rows[0].status === 'submitted') {
+      throw new BusinessError('You have already submitted feedback for this review');
+    }
 
     const result = await query(
       `UPDATE performance_peer_feedback
        SET rating = $1, feedback = $2, is_anonymous = $3, status = 'submitted', submitted_at = NOW()
-       WHERE review_id = $4 AND reviewer_id = $5
+       WHERE review_id = $4 AND reviewer_id = $5 AND status = 'pending'
        RETURNING *`,
       [rating, feedback ?? null, isAnonymous ?? false, reviewId, reviewerEmployeeId]
     );

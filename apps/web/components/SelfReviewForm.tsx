@@ -19,6 +19,9 @@ export function SelfReviewForm({ onSubmit, loading }: SelfReviewFormProps) {
   const [selfReview, setSelfReview] = useState('');
   const [reviewPeriod, setReviewPeriod] = useState('');
   const [templateId, setTemplateId] = useState('');
+  // The exact scaffold text we last inserted, so we only replace OUR scaffold —
+  // never text the user has typed (even if it happens to start with "## ").
+  const [lastScaffold, setLastScaffold] = useState('');
   const periods = getReviewPeriods();
   const { data: templates = [] } = useReviewTemplates();
 
@@ -26,10 +29,13 @@ export function SelfReviewForm({ onSubmit, loading }: SelfReviewFormProps) {
     setTemplateId(id);
     const tpl = templates.find((x) => x.id === id);
     if (!tpl) return;
-    // Only overwrite when the box is empty or still holds an untouched scaffold,
-    // so we don't clobber text the user already wrote.
-    const isScaffold = selfReview.trim() === '' || selfReview.trimStart().startsWith('## ');
-    if (isScaffold) setSelfReview(buildScaffold(tpl));
+    // Only overwrite when the box is empty or still holds the untouched scaffold
+    // we previously inserted — so we never clobber text the user wrote.
+    if (selfReview.trim() === '' || selfReview === lastScaffold) {
+      const scaffold = buildScaffold(tpl);
+      setSelfReview(scaffold);
+      setLastScaffold(scaffold);
+    }
   };
 
   return (
