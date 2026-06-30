@@ -232,6 +232,16 @@ export const validateLeaveBulkUpdate = [
     .escape(),
 ];
 
+// Bulk employee delete (DELETE /api/employees/bulk) — array of UUIDs, max 100.
+export const validateEmployeeBulkDelete = [
+  body('ids')
+    .isArray({ min: 1, max: 100 })
+    .withMessage('ids must be a non-empty array of at most 100 items'),
+  body('ids.*')
+    .isUUID()
+    .withMessage('Each id must be a valid UUID'),
+];
+
 // Attendance clock-in validation (GPS coords + accuracy are optional but, when
 // present, must be sane). Notes are length-bounded and escaped.
 export const validateClockIn = [

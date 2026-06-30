@@ -206,14 +206,14 @@ export const api = {
         );
     },
 
-    delete: async <T>(endpoint: string): Promise<T> => {
-        const response = await fetch(`${BASE_URL}${endpoint}`, {
+    delete: async <T>(endpoint: string, data?: RequestBody): Promise<T> => {
+        const init = (): RequestInit => ({
             method: 'DELETE',
             headers: getHeaders(),
+            ...(data !== undefined ? { body: JSON.stringify(data) } : {}),
         });
-        return handleResponse(response, () =>
-            fetch(`${BASE_URL}${endpoint}`, { method: 'DELETE', headers: getHeaders() })
-        );
+        const response = await fetch(`${BASE_URL}${endpoint}`, init());
+        return handleResponse(response, () => fetch(`${BASE_URL}${endpoint}`, init()));
     },
 
     // Specifically for login which might not need token header or needs custom handling

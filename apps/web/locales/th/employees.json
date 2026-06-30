@@ -27,7 +27,11 @@
     "importing": "กำลังนำเข้า...",
     "importComplete": "นำเข้าเสร็จสิ้น",
     "created": "สร้างแล้ว",
-    "skipped": "ข้ามแล้ว"
+    "skipped": "ข้ามแล้ว",
+    "selectedCount": "เลือก {{count}} รายการ",
+    "deleteSelected": "ลบที่เลือก",
+    "selectAll": "เลือกทั้งหมด",
+    "selectRow": "เลือก {{name}}"
   },
   "detail": {
     "back": "กลับ",
@@ -308,7 +312,11 @@
       "office": "ที่ออฟฟิศ",
       "remote": "ทำงานจากระยะไกล",
       "hybrid": "ผสมผสาน"
-    }
+    },
+    "bulkDeleteTitle": "ลบพนักงานที่เลือก",
+    "bulkDeleteConfirm": "ยืนยันการเลิกจ้างพนักงาน {{count}} คนที่เลือก? ไม่สามารถย้อนกลับได้",
+    "bulkResultTitle": "ผลการลบ",
+    "bulkResultSummary": "สำเร็จ {{succeeded}} คน, ล้มเหลว {{failed}} คน"
   },
   "toast": {
     "employeeDeleted": "เลิกจ้างพนักงานสำเร็จ",
@@ -347,7 +355,8 @@
     "quotaFailed": "ไม่สามารถอัปเดตโควต้าลาได้",
     "quotaResetSuccess": "รีเซ็ตโควต้าเป็นค่าเริ่มต้นแล้ว",
     "quotaResetFailed": "ไม่สามารถรีเซ็ตโควต้าได้",
-    "trainingStatusUpdated": "อัปเดตสถานะการอบรมเป็น {{status}} แล้ว"
+    "trainingStatusUpdated": "อัปเดตสถานะการอบรมเป็น {{status}} แล้ว",
+    "bulkDeleted": "เลิกจ้างพนักงาน {{count}} คนแล้ว"
   },
   "status": {
     "allStatuses": "ทุกสถานะ",
@@ -366,7 +375,7 @@
     "subtitleEmployee": "ดูโครงสร้างลำดับขั้นของบริษัท",
     "fullOrgChart": "ผังองค์กรทั้งหมด",
     "findEmployee": "ค้นหาพนักงาน...",
-    "dragToZoom": "ลากเพื่อเลื่อน \u2022 เลื่อนเพื่อซูม",
+    "dragToZoom": "ลากเพื่อเลื่อน • เลื่อนเพื่อซูม",
     "dragging": "กำลังลาก",
     "dropToReassign": "— วางบนการ์ดเพื่อเปลี่ยนผู้จัดการ",
     "addNewPosition": "เพิ่มตำแหน่งใหม่",

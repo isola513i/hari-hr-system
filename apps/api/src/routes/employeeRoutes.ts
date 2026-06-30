@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import EmployeeController from '../controllers/EmployeeController';
 import EmployeeLeaveQuotaController from '../controllers/EmployeeLeaveQuotaController';
-import { apiLimiter, validateEmployeeCreation, validateRequest } from '../middlewares/security';
+import { apiLimiter, validateEmployeeCreation, validateRequest, validateEmployeeBulkDelete } from '../middlewares/security';
 import { authenticateToken, requireAdmin } from '../middlewares/auth';
 import { cacheMiddleware, invalidateCache } from '../middlewares/cache';
 import { avatarUpload, csvUpload, generateStorageKey, getFileBuffer } from '../middlewares/upload';
@@ -600,6 +600,37 @@ router.put('/:id', requireAdmin, apiLimiter, invalidateCache('/api/employees'), 
  *       403: { description: HR_ADMIN role required }
  *       404: { description: Employee not found }
  */
+/**
+ * @swagger
+ * /api/employees/bulk:
+ *   delete:
+ *     summary: Bulk-terminate employees (HR_ADMIN only)
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [ids]
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 items: { type: string, format: uuid }
+ *                 description: Employee IDs to terminate (1–100)
+ *     responses:
+ *       200: { description: All employees terminated }
+ *       207: { description: Partial success — some failed }
+ *       400: { description: Validation error }
+ *       401: { description: Unauthorized }
+ *       403: { description: HR_ADMIN role required }
+ *       422: { description: None could be terminated }
+ */
+// DELETE /api/employees/bulk - Bulk delete (must be BEFORE '/:id' so 'bulk' isn't an id)
+router.delete('/bulk', requireAdmin, apiLimiter, validateEmployeeBulkDelete, validateRequest, invalidateCache('/api/employees'), EmployeeController.bulkDeleteEmployees.bind(EmployeeController));
+
 // DELETE /api/employees/:id - Delete employee (HR_ADMIN only)
 router.delete('/:id', requireAdmin, apiLimiter, invalidateCache('/api/employees'), EmployeeController.deleteEmployee.bind(EmployeeController));
 

@@ -60,7 +60,12 @@ export const Pagination: React.FC<PaginationProps> = ({
     <div className={`flex items-center justify-between ${className}`}>
       {totalItems && itemsPerPage && (
         <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
-          {startItem}–{endItem} {t('pagination.of')} {totalItems}
+          {t('pagination.showingRange', {
+            defaultValue: 'Showing {{start}}–{{end}} of {{total}}',
+            start: startItem,
+            end: endItem,
+            total: totalItems,
+          })}
         </p>
       )}
 
@@ -69,7 +74,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
           className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded"
-          aria-label="Previous page"
+          aria-label={t('pagination.previousPage', { defaultValue: 'Previous page' })}
         >
           <ChevronLeft size={15} />
         </button>
@@ -91,6 +96,8 @@ export const Pagination: React.FC<PaginationProps> = ({
               <button
                 key={pageNum}
                 onClick={() => onPageChange(pageNum)}
+                aria-label={`${t('pagination.page', { defaultValue: 'Page' })} ${pageNum}`}
+                aria-current={isActive ? 'page' : undefined}
                 className={`relative w-7 h-7 text-xs rounded transition-colors ${
                   isActive
                     ? 'text-primary font-semibold'
@@ -110,7 +117,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
           className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded"
-          aria-label="Next page"
+          aria-label={t('pagination.nextPage', { defaultValue: 'Next page' })}
         >
           <ChevronRight size={15} />
         </button>
