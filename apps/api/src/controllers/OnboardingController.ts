@@ -253,6 +253,18 @@ export class OnboardingController {
     }
   }
 
+  // Store an uploaded file in object storage and record it against a checklist row.
+  private async persistOnboardingFile(id: string, file: any) {
+    const key = generateStorageKey("onboarding", file);
+    const buffer = getFileBuffer(file);
+    await storageService.upload({ key, body: buffer, contentType: file.mimetype });
+
+    const ext = path.extname(file.originalname).replace(".", "").toUpperCase();
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(1) + " MB";
+
+    return OnboardingService.uploadDocument(id, key, ext, sizeMB);
+  }
+
   // POST /api/onboarding/documents/:id/upload
   async uploadDocument(req: Request, res: Response): Promise<void> {
     try {
@@ -264,14 +276,7 @@ export class OnboardingController {
         return;
       }
 
-      const key = generateStorageKey("onboarding", file);
-      const buffer = getFileBuffer(file);
-      await storageService.upload({ key, body: buffer, contentType: file.mimetype });
-
-      const ext = path.extname(file.originalname).replace(".", "").toUpperCase();
-      const sizeMB = (file.size / (1024 * 1024)).toFixed(1) + " MB";
-
-      const doc = await OnboardingService.uploadDocument(id, key, ext, sizeMB);
+      const doc = await this.persistOnboardingFile(id, file);
       if (!doc) {
         res.status(404).json({ error: "Document checklist item not found" });
         return;
@@ -304,15 +309,7 @@ export class OnboardingController {
       }
 
       const id = await OnboardingService.ensureDocument(employeeId, name);
-
-      const key = generateStorageKey("onboarding", file);
-      const buffer = getFileBuffer(file);
-      await storageService.upload({ key, body: buffer, contentType: file.mimetype });
-
-      const ext = path.extname(file.originalname).replace(".", "").toUpperCase();
-      const sizeMB = (file.size / (1024 * 1024)).toFixed(1) + " MB";
-
-      const doc = await OnboardingService.uploadDocument(id, key, ext, sizeMB);
+      const doc = await this.persistOnboardingFile(id, file);
       res.json(doc);
     } catch (error) {
       logger.error(error, "Error uploading profile document:");

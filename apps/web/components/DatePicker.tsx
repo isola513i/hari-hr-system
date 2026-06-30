@@ -188,17 +188,9 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   };
 
   const handleDateClick = (date: Date) => {
-    if (date.getTime() === 0) return; // Skip empty days
-
-    const dateString = formatDate(date);
-
-    // Respect min/max bounds, non-working weekdays, and explicitly disabled dates (e.g. holidays)
-    if (minDate && dateString < minDate) return;
-    if (maxDate && dateString > maxDate) return;
-    if (disabledWeekdays?.includes(date.getDay())) return;
-    if (disabledDates?.has(dateString)) return;
-
-    onChange(dateString);
+    // isDisabled() covers empty days, min/max bounds, non-working weekdays and holidays
+    if (isDisabled(date)) return;
+    onChange(formatDate(date));
     setIsOpen(false);
   };
 

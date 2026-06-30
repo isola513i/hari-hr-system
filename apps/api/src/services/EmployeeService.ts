@@ -6,6 +6,7 @@ import { PaginationParams, PaginatedResult, createPaginatedResult } from '../uti
 import JobHistoryService from './JobHistoryService';
 import { encrypt, decrypt, hashPII, isEncryptedFormat } from '../utils/encryption';
 import { toInt } from '../utils/coerce';
+import { DEFAULT_WORK_DAYS } from '../utils/workdays';
 import logger from '../utils/logger';
 
 /**
@@ -483,7 +484,7 @@ export class EmployeeService {
             onboardingPercentage: row.onboarding_percentage || 0,
             bannerColor: row.banner_color || null,
             workType: row.work_type || 'office',
-            workDays: row.work_days ?? [1, 2, 3, 4, 5],
+            workDays: row.work_days ?? DEFAULT_WORK_DAYS,
             // PII fields: transparently decrypt on read; null if not set or decrypt error
             nationalId: safeTryDecrypt(row.national_id),
             bankAccountNumber: safeTryDecrypt(row.bank_account_number),

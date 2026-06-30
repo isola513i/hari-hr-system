@@ -1,16 +1,16 @@
 import type { PublicHoliday } from '../types';
 
-/** Normalize any date-ish string to a local "YYYY-MM-DD" key (no timezone shift). */
+/** Format a Date as a local "YYYY-MM-DD" key (no timezone shift). */
+function fmt(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Normalize any date-ish string to a local "YYYY-MM-DD" key. */
 function toDateKey(raw: string): string {
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
   const isoMatch = raw.match(/^(\d{4}-\d{2}-\d{2})/);
   if (isoMatch) return isoMatch[1] as string;
-  const d = new Date(raw);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function fmt(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return fmt(new Date(raw));
 }
 
 /**

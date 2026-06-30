@@ -12,13 +12,12 @@ export function dayOfWeekUTC(dateStr: string): number {
   return new Date(`${dateStr}T00:00:00Z`).getUTCDay();
 }
 
-/** True if the given YYYY-MM-DD date is a scheduled work day for the employee. */
-export function isWorkDay(dateStr: string, workDays?: number[] | null): boolean {
-  const days = workDays && workDays.length ? workDays : DEFAULT_WORK_DAYS;
-  return days.includes(dayOfWeekUTC(dateStr));
-}
-
 /** Coerce a possibly-null/empty work_days array to a sane default (Mon–Fri). */
 export function resolveWorkDays(workDays?: number[] | null): number[] {
   return workDays && workDays.length ? workDays : DEFAULT_WORK_DAYS;
+}
+
+/** True if the given YYYY-MM-DD date is a scheduled work day for the employee. */
+export function isWorkDay(dateStr: string, workDays?: number[] | null): boolean {
+  return resolveWorkDays(workDays).includes(dayOfWeekUTC(dateStr));
 }

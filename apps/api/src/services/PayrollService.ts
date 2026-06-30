@@ -311,12 +311,16 @@ export class PayrollService {
     payPeriodStart: string,
     payPeriodEnd: string,
     baseSalary: number,
-    client?: { query: (sql: string, params: any[]) => Promise<any> }
+    client?: { query: (sql: string, params: any[]) => Promise<any> },
+    workDaysHint?: number[] | null
   ): Promise<number> {
     const db = client || { query };
-    // Resolve the employee's work-day schedule (default Mon–Fri preserves prior behavior)
-    const schedRes = await db.query('SELECT work_days FROM employees WHERE id = $1', [employeeId]);
-    const workDays: number[] = resolveWorkDays(schedRes.rows[0]?.work_days);
+    // Resolve the employee's work-day schedule (default Mon–Fri preserves prior behavior).
+    // Callers that already have the employee row (e.g. the bulk generator) pass workDaysHint
+    // to avoid an extra per-employee round-trip.
+    const workDays: number[] = workDaysHint !== undefined
+      ? resolveWorkDays(workDaysHint)
+      : resolveWorkDays((await db.query('SELECT work_days FROM employees WHERE id = $1', [employeeId])).rows[0]?.work_days);
     const workingDays = await this.getWorkingDays(payPeriodStart, payPeriodEnd, workDays, client);
     const result = await db.query(
       `SELECT COUNT(*)::int AS absent_days
@@ -761,7 +765,7 @@ export class PayrollService {
 
       // Get all active employees with their salary, role, and daily_rate
       const employees = await client.query(
-        `SELECT e.id, e.name, e.role, e.daily_rate, COALESCE(e.salary, sh.base_salary, 0) AS salary
+        `SELECT e.id, e.name, e.role, e.daily_rate, e.work_days, COALESCE(e.salary, sh.base_salary, 0) AS salary
          FROM employees e
          LEFT JOIN LATERAL (
            SELECT base_salary FROM salary_history
@@ -823,7 +827,7 @@ export class PayrollService {
         // Auto-calculate absent deduction from attendance (interns already paid per day)
         const leaveDeduction = isIntern
           ? 0
-          : await this.calcLeaveDeduction(emp.id, payPeriodStart, payPeriodEnd, effectiveSalary, client);
+          : await this.calcLeaveDeduction(emp.id, payPeriodStart, payPeriodEnd, effectiveSalary, client, emp.work_days);
 
         const { monthlyTax: batchTax, netPay, ssfEmployee, ssfEmployer, pvfEmployee, pvfEmployer } = isIntern
           ? this.calculateInternPayroll(effectiveSalary, 0, 0, leaveDeduction, 0, config)
