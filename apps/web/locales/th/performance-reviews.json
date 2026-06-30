@@ -41,6 +41,9 @@
     "newSelfReview": "ประเมินตนเองใหม่",
     "downloadPdf": "ดาวน์โหลด PDF"
   },
+  "errors": {
+    "downloadFailed": "ไม่สามารถดาวน์โหลด PDF ได้"
+  },
   "form": {
     "rating": "คะแนน",
     "feedbackPlaceholder": "เพิ่มความเห็นของคุณ...",

@@ -52,13 +52,11 @@ export function PerformanceReviewCard({
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      showToast(t('errors.downloadFailed', 'Failed to download PDF'), 'error');
+      showToast(t('performance-reviews:errors.downloadFailed'), 'error');
     } finally {
       setDownloading(false);
     }
   };
-
-  const canDownloadPdf = review.status !== 'draft';
 
   const canManagerReview = role === 'MANAGER' || role === 'HR_ADMIN';
   const canHrApprove = role === 'HR_ADMIN';
@@ -112,13 +110,13 @@ export function PerformanceReviewCard({
         <div className="flex items-center gap-3 shrink-0">
           {review.rating !== null && <StarRating value={review.rating} readonly />}
           <PerformanceStatusBadge status={review.status} />
-          {canDownloadPdf && (
+          {review.status !== 'draft' && (
             <button
               type="button"
               onClick={handleDownloadPdf}
               disabled={downloading}
-              aria-label={t('actions.downloadPdf', 'Download PDF')}
-              title={t('actions.downloadPdf', 'Download PDF')}
+              aria-label={t('actions.downloadPdf')}
+              title={t('actions.downloadPdf')}
               className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
             >
               <Download size={16} />

@@ -4,7 +4,11 @@ import PerformanceService from '../services/PerformanceService';
 import { generatePerformanceReviewPdf } from '../services/PerformanceReviewPdfService';
 import SystemConfigService from '../services/SystemConfigService';
 import { query } from '../db';
+import { BusinessError } from '../utils/errorResponse';
 import { authenticateToken, requireAdmin, requireAdminOrManager } from '../middlewares/auth';
+
+const PRIVILEGED_ROLES = ['HR_ADMIN', 'MANAGER'];
+const slugify = (s: string) => s.replace(/[^A-Za-z0-9-]+/g, '-');
 
 const router = Router();
 
@@ -79,21 +83,21 @@ router.get('/reviews/:id/pdf', async (req: Request, res: Response) => {
 
     // Access control: owner, manager, or HR admin
     const isOwner = user?.employeeId === review.employeeId;
-    const isPrivileged = user?.role === 'HR_ADMIN' || user?.role === 'MANAGER';
+    const isPrivileged = !!user?.role && PRIVILEGED_ROLES.includes(user.role);
     if (!isOwner && !isPrivileged) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const empResult = await query(
-      'SELECT department FROM employees WHERE id = $1',
-      [review.employeeId]
-    );
+    // Independent fetches — run in parallel
+    const [empResult, companyName] = await Promise.all([
+      query('SELECT department FROM employees WHERE id = $1', [review.employeeId]),
+      SystemConfigService.getConfigValue('system', 'app_name', 'HARI HR System'),
+    ]);
     const department = empResult.rows[0]?.department;
 
-    const companyName = await SystemConfigService.getConfigValue('system', 'app_name', 'HARI HR System');
-
-    const periodSlug = (review.reviewPeriod || review.date).replace(/[^A-Za-z0-9-]+/g, '-');
-    const employeeSlug = (review.employeeName || review.employeeId).replace(/[^A-Za-z0-9-]+/g, '-');
+    // Defensive slugs — schema allows nullable reviewPeriod and date
+    const periodSlug = slugify(review.reviewPeriod || review.date || 'review');
+    const employeeSlug = slugify(review.employeeName || review.employeeId);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="performance-review-${employeeSlug}-${periodSlug}.pdf"`);
@@ -104,6 +108,10 @@ router.get('/reviews/:id/pdf', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Performance review PDF error:', error);
+    // BusinessError = expected validation/not-found (404). Anything else is server fault (500).
+    if (error instanceof BusinessError) {
+      return res.status(404).json({ error: error.message });
+    }
     res.status(500).json({ error: 'Failed to generate performance review PDF' });
   }
 });

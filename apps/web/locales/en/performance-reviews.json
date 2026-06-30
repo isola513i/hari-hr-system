@@ -41,6 +41,9 @@
     "newSelfReview": "New Self-Review",
     "downloadPdf": "Download PDF"
   },
+  "errors": {
+    "downloadFailed": "Failed to download PDF"
+  },
   "form": {
     "rating": "Rating",
     "feedbackPlaceholder": "Add your feedback...",

@@ -12,6 +12,11 @@ jest.mock('../../services/SystemConfigService', () => ({
 // Mock OTRequestService — createPayroll auto-sums approved OT hours when
 // data.overtimeHours is not provided. Default to 0 so existing tests that
 // don't care about OT keep working.
+//
+// NOTE: This mock is module-scoped — every test in this file gets the same
+// stub. If a future test needs a non-zero OT count, use
+// `(OTRequestService.getApprovedOTHours as jest.Mock).mockResolvedValueOnce(N)`
+// inside the individual test instead of editing this default.
 jest.mock('../../services/OTRequestService', () => ({
   __esModule: true,
   default: {

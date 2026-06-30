@@ -70,7 +70,9 @@ export function generatePerformanceReviewPdf(
   doc.font(fontBold).fontSize(12).text('Overall Rating / คะแนนประเมิน', { underline: true });
   doc.font(fontName).fontSize(10);
   if (review.rating != null) {
-    const stars = '★'.repeat(review.rating) + '☆'.repeat(Math.max(0, 5 - review.rating));
+    // Clamp rating to [0, 5] — performance_reviews.rating has no DB constraint
+    const r = Math.max(0, Math.min(5, review.rating));
+    const stars = '★'.repeat(r) + '☆'.repeat(5 - r);
     doc.text(`${stars}   ${review.rating}/5`);
   } else {
     doc.text('Not yet rated');
