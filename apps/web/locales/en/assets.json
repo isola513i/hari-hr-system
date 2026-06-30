@@ -67,6 +67,9 @@
   "empty": {
     "noAssets": "No assets found"
   },
+  "actions": {
+    "unassign": "Unassign"
+  },
   "confirm": {
     "delete": "Delete this asset?"
   },

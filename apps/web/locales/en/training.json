@@ -15,7 +15,9 @@
     "noModules": "No training modules yet",
     "noModulesHint": "Create your first module to get started",
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "activate": "Activate",
+    "deactivate": "Deactivate"
   },
   "department": {
     "sectionTitle": "Completion by Department"

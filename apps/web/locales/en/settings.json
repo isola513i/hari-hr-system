@@ -6,11 +6,13 @@
     "notifications": "Notifications",
     "appearance": "Appearance",
     "security": "Security",
-    "leaveTypes": "Leave Types"
+    "leaveTypes": "Leave Types",
+    "attendance": "GPS & Attendance"
   },
   "general": {
     "title": "Profile Information",
     "subtitle": "Update your public profile details.",
+    "profileAlt": "Profile",
     "changeAvatar": "Change Avatar",
     "avatarHint": "JPG, GIF or PNG. Max size 5MB",
     "firstName": "First Name",
@@ -169,5 +171,38 @@
     "preview": "Preview ({{count}} rows)",
     "pastePlaceholder": "Or paste CSV here:",
     "importSuccess": "Imported {{created}} holidays"
+  },
+  "twoFactor": {
+    "title": "Two-Factor Authentication",
+    "subtitle": "Add an extra layer of security to your account using an authenticator app.",
+    "enabled": "2FA Enabled",
+    "disabled": "2FA Disabled",
+    "backupCodesRemaining": "{{count}} backup codes remaining",
+    "backupCodesRemaining_one": "{{count}} backup code remaining",
+    "backupCodes": "Backup Codes",
+    "disable": "Disable",
+    "enable": "Enable 2FA",
+    "enabledToast": "Two-factor authentication enabled!",
+    "disabledToast": "Two-factor authentication disabled"
+  },
+  "attendance": {
+    "title": "GPS & Attendance",
+    "subtitle": "Configure office location and geofence for employee check-in",
+    "requireGps": "Require GPS for Check-in",
+    "requireGpsDesc": "Employees must be within the geofence to clock in (except Remote/WFH)",
+    "officeLocation": "Office Location",
+    "viewOnMap": "View on map",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "geofenceRadius": "Geofence Radius (meters)",
+    "officeIpAllowlist": "Office IP Allowlist",
+    "officeIpDesc": "Desktop users on this network can clock in without GPS",
+    "officeIpLabel": "Office Public IP(s) — separate with commas",
+    "officeIpPlaceholder": "e.g. 203.0.113.10, 203.0.113.11",
+    "officeIpHint": "Leave blank to disable IP-based check-in",
+    "saving": "Saving…",
+    "saveButton": "Save GPS Settings",
+    "saved": "GPS settings saved",
+    "saveFailed": "Failed to save GPS settings"
   }
 }

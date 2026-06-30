@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface LoadingSpinnerProps {
   message?: string;
@@ -15,6 +16,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = 'md',
   className = '',
 }) => {
+  const { t } = useTranslation('common');
   const sizeClasses = {
     sm: 'h-6 w-6',
     md: 'h-12 w-12',
@@ -26,7 +28,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       <div
         className={`animate-spin rounded-full border-b-2 border-primary ${sizeClasses[size]}`}
         role="status"
-        aria-label="Loading"
+        aria-label={t('aria.loading')}
       />
       {message && (
         <p className="mt-4 text-text-muted-light dark:text-text-muted-dark text-sm">
@@ -41,11 +43,12 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
  * Inline loading spinner (smaller, for buttons or inline use)
  */
 export const InlineSpinner: React.FC<{ className?: string }> = ({ className = '' }) => {
+  const { t } = useTranslation('common');
   return (
     <div
       className={`inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-current ${className}`}
       role="status"
-      aria-label="Loading"
+      aria-label={t('aria.loading')}
     />
   );
 };

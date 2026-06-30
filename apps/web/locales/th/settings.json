@@ -6,11 +6,13 @@
     "notifications": "การแจ้งเตือน",
     "appearance": "หน้าตา",
     "security": "ความปลอดภัย",
-    "leaveTypes": "ประเภทการลา"
+    "leaveTypes": "ประเภทการลา",
+    "attendance": "GPS และการลงเวลา"
   },
   "general": {
     "title": "ข้อมูลโปรไฟล์",
     "subtitle": "อัปเดตข้อมูลโปรไฟล์สาธารณะของคุณ",
+    "profileAlt": "โปรไฟล์",
     "changeAvatar": "เปลี่ยนรูปโปรไฟล์",
     "avatarHint": "JPG, GIF หรือ PNG ขนาดสูงสุด 5MB",
     "firstName": "ชื่อ",
@@ -169,5 +171,38 @@
     "preview": "ตัวอย่าง ({{count}} แถว)",
     "pastePlaceholder": "หรือวาง CSV ที่นี่:",
     "importSuccess": "นำเข้า {{created}} วันหยุดสำเร็จ"
+  },
+  "twoFactor": {
+    "title": "การยืนยันตัวตนสองชั้น",
+    "subtitle": "เพิ่มความปลอดภัยอีกชั้นให้บัญชีของคุณด้วยแอปยืนยันตัวตน",
+    "enabled": "เปิดใช้ 2FA แล้ว",
+    "disabled": "ปิดใช้ 2FA",
+    "backupCodesRemaining": "เหลือรหัสสำรอง {{count}} รหัส",
+    "backupCodesRemaining_one": "เหลือรหัสสำรอง {{count}} รหัส",
+    "backupCodes": "รหัสสำรอง",
+    "disable": "ปิดใช้งาน",
+    "enable": "เปิดใช้ 2FA",
+    "enabledToast": "เปิดใช้การยืนยันตัวตนสองชั้นแล้ว!",
+    "disabledToast": "ปิดใช้การยืนยันตัวตนสองชั้นแล้ว"
+  },
+  "attendance": {
+    "title": "GPS และการลงเวลา",
+    "subtitle": "กำหนดตำแหน่งออฟฟิศและขอบเขต Geofence สำหรับการลงเวลาของพนักงาน",
+    "requireGps": "บังคับใช้ GPS ในการลงเวลา",
+    "requireGpsDesc": "พนักงานต้องอยู่ในขอบเขต Geofence จึงจะลงเวลาได้ (ยกเว้นทำงานนอกสถานที่/WFH)",
+    "officeLocation": "ตำแหน่งออฟฟิศ",
+    "viewOnMap": "ดูบนแผนที่",
+    "latitude": "ละติจูด",
+    "longitude": "ลองจิจูด",
+    "geofenceRadius": "รัศมี Geofence (เมตร)",
+    "officeIpAllowlist": "รายการ IP ที่อนุญาตของออฟฟิศ",
+    "officeIpDesc": "ผู้ใช้เดสก์ท็อปในเครือข่ายนี้สามารถลงเวลาได้โดยไม่ต้องใช้ GPS",
+    "officeIpLabel": "IP สาธารณะของออฟฟิศ — คั่นด้วยจุลภาค",
+    "officeIpPlaceholder": "เช่น 203.0.113.10, 203.0.113.11",
+    "officeIpHint": "เว้นว่างเพื่อปิดการลงเวลาด้วย IP",
+    "saving": "กำลังบันทึก…",
+    "saveButton": "บันทึกการตั้งค่า GPS",
+    "saved": "บันทึกการตั้งค่า GPS แล้ว",
+    "saveFailed": "ไม่สามารถบันทึกการตั้งค่า GPS ได้"
   }
 }

@@ -165,6 +165,7 @@
     "taxBracketsDesc": "Progressive tax brackets applied to taxable income. Set max to -1 for the highest bracket (unlimited).",
     "bracketMin": "Min (฿)",
     "bracketMax": "Max (฿)",
+    "bracketMaxPlaceholder": "-1 = unlimited",
     "bracketRate": "Rate",
     "addBracket": "Add Bracket",
     "ssfRate": "SSF Rate (Employee)",

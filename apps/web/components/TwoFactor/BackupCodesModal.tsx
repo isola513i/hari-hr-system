@@ -3,6 +3,7 @@
  * Regeneration requires an active 6-digit TOTP code.
  */
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, KeyRound, Copy, Download, Check, RotateCcw } from 'lucide-react';
 import { useTwoFactor } from '../../hooks/useTwoFactor';
 
@@ -14,6 +15,7 @@ interface BackupCodesModalProps {
 }
 
 export const BackupCodesModal: React.FC<BackupCodesModalProps> = ({ isOpen, onClose, backupCodesRemaining, isLoading = false }) => {
+  const { t } = useTranslation(['auth', 'common']);
   const [token, setToken] = useState('');
   const [copied, setCopied] = useState(false);
   const [showCodes, setShowCodes] = useState(false);
@@ -70,7 +72,7 @@ export const BackupCodesModal: React.FC<BackupCodesModalProps> = ({ isOpen, onCl
             <div className="flex items-center justify-center h-10 w-10 bg-primary/10 rounded-xl">
               <KeyRound size={20} className="text-primary" />
             </div>
-            <h2 className="font-semibold text-text-light dark:text-text-dark">Backup Codes</h2>
+            <h2 className="font-semibold text-text-light dark:text-text-dark">{t('backupCodes.title')}</h2>
           </div>
           <button onClick={onClose} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors">
             <X size={20} />
@@ -81,7 +83,7 @@ export const BackupCodesModal: React.FC<BackupCodesModalProps> = ({ isOpen, onCl
 
           {/* Status */}
           <div className="bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl p-4 flex items-center justify-between">
-            <span className="text-sm text-text-muted-light dark:text-text-muted-dark">Remaining codes</span>
+            <span className="text-sm text-text-muted-light dark:text-text-muted-dark">{t('backupCodes.remaining')}</span>
             {isLoading ? (
               <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
             ) : (
@@ -93,7 +95,7 @@ export const BackupCodesModal: React.FC<BackupCodesModalProps> = ({ isOpen, onCl
 
           {backupCodesRemaining <= 2 && (
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-sm text-amber-800 dark:text-amber-300">
-              ⚠️ You're running low on backup codes. Regenerate them now.
+              {t('backupCodes.lowWarning')}
             </div>
           )}
 
@@ -107,7 +109,7 @@ export const BackupCodesModal: React.FC<BackupCodesModalProps> = ({ isOpen, onCl
           {showCodes && regeneratedCodes.length > 0 && (
             <div className="space-y-3">
               <div className="bg-accent-green/10 text-accent-green p-3 rounded-xl text-sm border border-accent-green/20">
-                ✓ New backup codes generated. Save them now!
+                {t('backupCodes.generatedSuccess')}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {regeneratedCodes.map((code) => (
@@ -119,11 +121,11 @@ export const BackupCodesModal: React.FC<BackupCodesModalProps> = ({ isOpen, onCl
               <div className="flex gap-3">
                 <button onClick={handleCopyAll} className="flex-1 flex items-center justify-center gap-2 border border-border-light dark:border-border-dark rounded-xl py-2 text-sm text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors">
                   {copied ? <Check size={14} className="text-accent-green" /> : <Copy size={14} />}
-                  {copied ? 'Copied!' : 'Copy'}
+                  {copied ? t('backupCodes.copied') : t('backupCodes.copy')}
                 </button>
                 <button onClick={handleDownload} className="flex-1 flex items-center justify-center gap-2 border border-border-light dark:border-border-dark rounded-xl py-2 text-sm text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors">
                   <Download size={14} />
-                  Download
+                  {t('common:buttons.download')}
                 </button>
               </div>
             </div>
@@ -134,10 +136,10 @@ export const BackupCodesModal: React.FC<BackupCodesModalProps> = ({ isOpen, onCl
             <form onSubmit={handleRegenerate} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">
-                  Confirm with TOTP code
+                  {t('backupCodes.confirmTotp')}
                 </label>
                 <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-3">
-                  Regenerating will invalidate all existing backup codes. Enter your current 6-digit authenticator code to confirm.
+                  {t('backupCodes.regenerateWarning')}
                 </p>
                 <div className="relative group">
                   <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark group-focus-within:text-primary transition-colors" size={20} />
@@ -166,14 +168,14 @@ export const BackupCodesModal: React.FC<BackupCodesModalProps> = ({ isOpen, onCl
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                 ) : (
-                  <><RotateCcw size={16} /> Regenerate Codes</>
+                  <><RotateCcw size={16} /> {t('backupCodes.regenerate')}</>
                 )}
               </button>
             </form>
           )}
 
           <button onClick={onClose} className="w-full border border-border-light dark:border-border-dark rounded-xl py-2.5 text-sm text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors">
-            Close
+            {t('common:buttons.close')}
           </button>
         </div>
       </div>

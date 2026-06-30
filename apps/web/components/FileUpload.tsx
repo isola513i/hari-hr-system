@@ -1,4 +1,5 @@
 import React, { useRef, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload, X, FileText, AlertCircle } from 'lucide-react';
 
 interface FileUploadProps {
@@ -20,6 +21,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   required = false,
   error,
 }) => {
+  const { t } = useTranslation('common');
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [localError, setLocalError] = useState('');
@@ -30,17 +32,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     (file: File): string | null => {
       // Size check
       if (file.size > maxSizeMB * 1024 * 1024) {
-        return `File size exceeds ${maxSizeMB}MB limit.`;
+        return t('fileUpload.sizeExceeds', { max: maxSizeMB });
       }
       // Type check
       const allowedExts = accept.split(',').map((e) => e.trim().toLowerCase());
       const ext = '.' + file.name.split('.').pop()?.toLowerCase();
       if (!allowedExts.includes(ext)) {
-        return `Invalid file type. Accepted: ${accept}`;
+        return t('fileUpload.invalidType', { accept });
       }
       return null;
     },
-    [accept, maxSizeMB],
+    [accept, maxSizeMB, t],
   );
 
   const handleFile = useCallback(
@@ -129,10 +131,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <Upload size={20} className={dragOver ? 'text-primary' : 'text-text-muted-light dark:text-text-muted-dark'} />
           <div className="text-center">
             <p className="text-sm text-text-light dark:text-text-dark">
-              <span className="font-medium text-primary">Click to upload</span> or drag and drop
+              <span className="font-medium text-primary">{t('fileUpload.clickToUpload')}</span> {t('fileUpload.orDragAndDrop')}
             </p>
             <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">
-              PDF, JPG, PNG up to {maxSizeMB}MB
+              {t('fileUpload.fileTypeHint', { max: maxSizeMB })}
             </p>
           </div>
         </div>

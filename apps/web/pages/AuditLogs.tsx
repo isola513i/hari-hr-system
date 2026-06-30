@@ -150,7 +150,7 @@ export const AuditLogs: React.FC = () => {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      showToast('Failed to export audit logs', 'error');
+      showToast(t('toast.exportFailed'), 'error');
     }
   };
 

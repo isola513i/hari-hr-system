@@ -39,6 +39,9 @@
   },
   "empty": "No audit logs found",
   "system": "System",
+  "toast": {
+    "exportFailed": "Failed to export audit logs"
+  },
   "pagination": {
     "pageOf": "Page {{page}} of {{total}} · ",
     "result": "result",

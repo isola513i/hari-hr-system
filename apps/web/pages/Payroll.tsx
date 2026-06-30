@@ -708,7 +708,7 @@ export const Payroll: React.FC = () => {
                           );
                           setSettingsForm((f) => f ? { ...f, taxBrackets: brackets } : f);
                         }}
-                        placeholder="-1 = unlimited"
+                        placeholder={t('settings.bracketMaxPlaceholder')}
                         className="px-2 py-1.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded text-xs text-text-light dark:text-text-dark focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                       <input

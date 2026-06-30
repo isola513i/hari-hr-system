@@ -105,7 +105,37 @@
     "saving": "Saving...",
     "submitting": "Submitting...",
     "loading": "Loading...",
-    "update": "Update"
+    "update": "Update",
+    "download": "Download"
+  },
+  "aria": {
+    "dismissNotification": "Dismiss notification",
+    "notifications": "Notifications",
+    "loading": "Loading",
+    "breadcrumb": "Breadcrumb"
+  },
+  "fileUpload": {
+    "clickToUpload": "Click to upload",
+    "orDragAndDrop": "or drag and drop",
+    "fileTypeHint": "PDF, JPG, PNG up to {{max}}MB",
+    "sizeExceeds": "File size exceeds {{max}}MB limit.",
+    "invalidType": "Invalid file type. Accepted: {{accept}}"
+  },
+  "queryError": {
+    "noInternet": "No Internet Connection",
+    "couldNotLoad": "Could not load data",
+    "checkConnection": "Please check your connection and try again.",
+    "genericMessage": "Something went wrong while loading this page. Please try again."
+  },
+  "gps": {
+    "couldNotGetLocation": "Could not get your location. Please try again.",
+    "notSupported": "GPS is not supported on this device"
+  },
+  "thaiAddress": {
+    "currentAddress": "Current Address",
+    "provinceDistrictSubdistrict": "Province / District / Sub-district",
+    "selectPlaceholder": "Province, District, Sub-district, Postal Code",
+    "addressLabel": "Address"
   },
   "status": {
     "pending": "Pending",

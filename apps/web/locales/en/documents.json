@@ -23,7 +23,9 @@
   "preview": {
     "notAvailable": "Preview not available",
     "notAvailableDesc": "This file type cannot be previewed directly in the browser. Please download the file to view its contents.",
-    "downloadFile": "Download File"
+    "downloadFile": "Download File",
+    "previewAlt": "Preview",
+    "pdfPreview": "PDF Preview"
   },
   "upload": {
     "title": "Upload Document",

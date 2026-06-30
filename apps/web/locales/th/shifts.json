@@ -48,6 +48,9 @@
   "filters": {
     "allDepartments": "ทุกแผนก"
   },
+  "actions": {
+    "confirmRemove": "ยืนยันการลบ"
+  },
   "empty": {
     "noShifts": "ยังไม่มีกะที่กำหนด คลิก \"เพิ่มกะ\" เพื่อสร้าง",
     "noShiftsSchedule": "ยังไม่มีกะที่กำหนด",

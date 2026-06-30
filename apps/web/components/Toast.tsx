@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -52,6 +53,7 @@ export const Toast: React.FC<ToastProps> = ({
   duration = 3000,
   onClose,
 }) => {
+  const { t } = useTranslation('common');
   const [isExiting, setIsExiting] = useState(false);
 
   const triggerExit = useCallback(() => {
@@ -103,7 +105,7 @@ export const Toast: React.FC<ToastProps> = ({
       <button
         onClick={triggerExit}
         className="flex-shrink-0 p-0.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-        aria-label="Dismiss notification"
+        aria-label={t('aria.dismissNotification')}
       >
         <X className="w-4 h-4" />
       </button>

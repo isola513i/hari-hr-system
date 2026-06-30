@@ -245,7 +245,7 @@ const Login: React.FC = () => {
                   <div className="inline-flex items-center justify-center h-14 w-14 bg-gradient-to-br from-primary to-primary-dark text-white rounded-xl shadow-lg shadow-primary/30 mb-4">
                     <ShieldCheck size={26} />
                   </div>
-                  <h2 className="text-2xl font-bold text-text-light dark:text-text-dark">Two-Factor Auth</h2>
+                  <h2 className="text-2xl font-bold text-text-light dark:text-text-dark">{t('twoFactorAuth')}</h2>
                   <p className="text-text-muted-light dark:text-text-muted-dark mt-2">
                     {useBackupCode
                       ? "Enter one of your backup recovery codes"

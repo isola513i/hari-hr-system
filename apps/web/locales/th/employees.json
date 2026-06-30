@@ -1,4 +1,16 @@
 {
+  "attach": {
+    "attach": "แนบไฟล์",
+    "replace": "เปลี่ยนไฟล์",
+    "uploading": "กำลังอัปโหลด…",
+    "uploaded": "แนบไฟล์แล้ว",
+    "uploadFailed": "แนบไฟล์ไม่สำเร็จ",
+    "downloadFailed": "ดาวน์โหลดไฟล์ไม่สำเร็จ",
+    "statusPending": "ยังไม่ได้แนบ",
+    "statusUploaded": "รอตรวจสอบ",
+    "statusApproved": "ตรวจสอบแล้ว",
+    "statusRejected": "ถูกปฏิเสธ"
+  },
   "list": {
     "title": "พนักงาน",
     "subtitle": "จัดการและดูบุคลากรขององค์กร",
@@ -59,7 +71,9 @@
     "actions": "การดำเนินการ",
     "promote": "เลื่อนตำแหน่ง",
     "transfer": "โอนย้าย",
-    "terminate": "เลิกจ้าง"
+    "terminate": "เลิกจ้าง",
+    "downloadReport": "ดาวน์โหลดรายงาน PDF",
+    "downloadReportFailed": "ไม่สามารถดาวน์โหลดรายงานได้"
   },
   "overview": {
     "personalInfo": "ข้อมูลส่วนบุคคล",
@@ -194,6 +208,7 @@
     "unlimited": "ไม่จำกัด",
     "custom": "กำหนดเอง",
     "reset": "รีเซ็ต",
+    "resetToDefault": "รีเซ็ตเป็นค่าเริ่มต้น",
     "days": "วัน",
     "updateSuccess": "อัปเดตโควต้าลาสำเร็จ!",
     "updateFailed": "ไม่สามารถอัปเดตโควต้าลาได้",
@@ -207,6 +222,13 @@
     "officeAddress": "ที่อยู่สำนักงาน",
     "currentAddress": "ที่อยู่ปัจจุบัน",
     "emergencyContact": "ผู้ติดต่อฉุกเฉิน",
+    "sensitiveInfo": "ข้อมูลที่ละเอียดอ่อน",
+    "nationalId": "เลขบัตรประชาชน",
+    "bankAccount": "บัญชีธนาคาร",
+    "showNationalId": "แสดงเลขบัตรประชาชน",
+    "hideNationalId": "ซ่อนเลขบัตรประชาชน",
+    "showBankAccount": "แสดงเลขที่บัญชีธนาคาร",
+    "hideBankAccount": "ซ่อนเลขที่บัญชีธนาคาร",
     "team": "ทีม",
     "reportsTo": "รายงานต่อ",
     "directReports": "ผู้ใต้บังคับบัญชาโดยตรง",
@@ -260,6 +282,10 @@
     "emergencyContact": "ผู้ติดต่อฉุกเฉิน",
     "phoneNumber": "หมายเลขโทรศัพท์",
     "bio": "ประวัติส่วนตัว",
+    "nationalId": "เลขบัตรประชาชน",
+    "nationalIdPlaceholder": "เช่น 1234567890123",
+    "bankAccountNumber": "เลขที่บัญชีธนาคาร",
+    "bankAccountPlaceholder": "เช่น 123-4-56789-0",
     "cancel": "ยกเลิก",
     "save": "บันทึกการเปลี่ยนแปลง",
     "saving": "กำลังบันทึก...",
@@ -306,6 +332,8 @@
     "onboardEmail": "ที่อยู่อีเมล",
     "onboardStartDate": "วันเริ่มงาน",
     "workType": "ประเภทการทำงาน",
+    "workDays": "วันทำงาน",
+    "workDaysNote": "วันที่พนักงานคนนี้ทำงาน มีผลต่อการลงเวลา เงินเดือน และการลา",
     "selectWorkType": "เลือกประเภทการทำงาน",
     "selectBirthDate": "เลือกวันเกิด",
     "workTypes": {
@@ -356,7 +384,18 @@
     "quotaResetSuccess": "รีเซ็ตโควต้าเป็นค่าเริ่มต้นแล้ว",
     "quotaResetFailed": "ไม่สามารถรีเซ็ตโควต้าได้",
     "trainingStatusUpdated": "อัปเดตสถานะการอบรมเป็น {{status}} แล้ว",
-    "bulkDeleted": "เลิกจ้างพนักงาน {{count}} คนแล้ว"
+    "bulkDeleted": "เลิกจ้างพนักงาน {{count}} คนแล้ว",
+    "jobHistoryUpdated": "อัปเดตประวัติการทำงานแล้ว",
+    "jobHistoryUpdateFailed": "ไม่สามารถอัปเดตประวัติการทำงานได้",
+    "jobHistoryDeleted": "ลบรายการประวัติการทำงานแล้ว",
+    "jobHistoryDeleteFailed": "ไม่สามารถลบประวัติการทำงานได้",
+    "trainingAssigned": "มอบหมายการอบรมสำเร็จ",
+    "trainingAssignFailed": "ไม่สามารถมอบหมายการอบรมได้",
+    "trainingDeleted": "ลบบันทึกการอบรมแล้ว",
+    "trainingDeleteFailed": "ไม่สามารถลบการอบรมได้",
+    "trainingStatusFailed": "ไม่สามารถอัปเดตสถานะการอบรมได้",
+    "offboardingInitiated": "เริ่มกระบวนการออกจากงานแล้ว — พนักงานอยู่ในช่วงแจ้งลาออกแล้ว",
+    "offboardingInitiateFailed": "ไม่สามารถเริ่มกระบวนการออกจากงานได้"
   },
   "status": {
     "allStatuses": "ทุกสถานะ",

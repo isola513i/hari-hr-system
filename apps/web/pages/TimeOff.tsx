@@ -332,7 +332,7 @@ export const TimeOff: React.FC = () => {
                           <button
                             onClick={() => navigate(`/time-off/request/${req.id}`)}
                             className="p-1.5 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                            title="Edit"
+                            title={t('common:buttons.edit')}
                           >
                             <Pencil size={12} />
                           </button>

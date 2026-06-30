@@ -15,7 +15,9 @@
     "noModules": "ยังไม่มีโมดูลฝึกอบรม",
     "noModulesHint": "สร้างโมดูลแรกของคุณเพื่อเริ่มต้น",
     "active": "ใช้งาน",
-    "inactive": "ไม่ใช้งาน"
+    "inactive": "ไม่ใช้งาน",
+    "activate": "เปิดใช้งาน",
+    "deactivate": "ปิดใช้งาน"
   },
   "department": {
     "sectionTitle": "ความสำเร็จแยกตามแผนก"

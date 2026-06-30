@@ -858,17 +858,17 @@ export const LeaveGanttCalendar: React.FC<LeaveCalendarProps> = ({
                       {h.isRecurring && (
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 text-[10px] font-medium rounded-full">
                           <RotateCw size={9} />
-                          Annual
+                          {t('leave:calendar.annual')}
                         </span>
                       )}
                       {endDate && (
                         <span className="inline-flex items-center px-1.5 py-0.5 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 text-[10px] font-medium rounded-full">
-                          Multi-day
+                          {t('leave:calendar.multiDay')}
                         </span>
                       )}
                       {isToday && (
                         <span className="inline-flex items-center px-1.5 py-0.5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-300 text-[10px] font-medium rounded-full">
-                          Today
+                          {t('leave:calendar.today')}
                         </span>
                       )}
                     </div>

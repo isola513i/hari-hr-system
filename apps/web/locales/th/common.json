@@ -105,7 +105,37 @@
     "saving": "กำลังบันทึก...",
     "submitting": "กำลังส่ง...",
     "loading": "กำลังโหลด...",
-    "update": "อัปเดต"
+    "update": "อัปเดต",
+    "download": "ดาวน์โหลด"
+  },
+  "aria": {
+    "dismissNotification": "ปิดการแจ้งเตือน",
+    "notifications": "การแจ้งเตือน",
+    "loading": "กำลังโหลด",
+    "breadcrumb": "เส้นทางนำทาง"
+  },
+  "fileUpload": {
+    "clickToUpload": "คลิกเพื่ออัปโหลด",
+    "orDragAndDrop": "หรือลากไฟล์มาวาง",
+    "fileTypeHint": "PDF, JPG, PNG สูงสุด {{max}}MB",
+    "sizeExceeds": "ขนาดไฟล์เกินขีดจำกัด {{max}}MB",
+    "invalidType": "ประเภทไฟล์ไม่ถูกต้อง รองรับ: {{accept}}"
+  },
+  "queryError": {
+    "noInternet": "ไม่มีการเชื่อมต่ออินเทอร์เน็ต",
+    "couldNotLoad": "ไม่สามารถโหลดข้อมูลได้",
+    "checkConnection": "กรุณาตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง",
+    "genericMessage": "เกิดข้อผิดพลาดขณะโหลดหน้านี้ กรุณาลองอีกครั้ง"
+  },
+  "gps": {
+    "couldNotGetLocation": "ไม่สามารถระบุตำแหน่งของคุณได้ กรุณาลองอีกครั้ง",
+    "notSupported": "อุปกรณ์นี้ไม่รองรับ GPS"
+  },
+  "thaiAddress": {
+    "currentAddress": "ที่อยู่ปัจจุบัน",
+    "provinceDistrictSubdistrict": "จังหวัด / อำเภอ / ตำบล",
+    "selectPlaceholder": "จังหวัด, อำเภอ, ตำบล, รหัสไปรษณีย์",
+    "addressLabel": "ที่อยู่"
   },
   "status": {
     "pending": "รอดำเนินการ",

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ExclamationTriangleIcon, WifiIcon } from '@heroicons/react/24/outline';
 
 interface QueryErrorStateProps {
@@ -19,6 +20,7 @@ function isNetworkError(error: Error | null): boolean {
 }
 
 const QueryErrorState: React.FC<QueryErrorStateProps> = ({ error, onRetry, message }) => {
+  const { t } = useTranslation('common');
   const networkError = isNetworkError(error);
 
   return (
@@ -36,13 +38,13 @@ const QueryErrorState: React.FC<QueryErrorStateProps> = ({ error, onRetry, messa
       </div>
 
       <h3 className="text-lg font-semibold text-text-light dark:text-text-dark mb-1">
-        {networkError ? 'No Internet Connection' : 'Could not load data'}
+        {networkError ? t('queryError.noInternet') : t('queryError.couldNotLoad')}
       </h3>
       <p className="text-sm text-text-muted-light dark:text-text-muted-dark max-w-sm mb-6">
         {message ??
           (networkError
-            ? 'Please check your connection and try again.'
-            : 'Something went wrong while loading this page. Please try again.')}
+            ? t('queryError.checkConnection')
+            : t('queryError.genericMessage'))}
       </p>
 
       {onRetry && (
@@ -50,7 +52,7 @@ const QueryErrorState: React.FC<QueryErrorStateProps> = ({ error, onRetry, messa
           onClick={onRetry}
           className="px-5 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary-hover transition-colors text-sm"
         >
-          Try Again
+          {t('errors.tryAgain')}
         </button>
       )}
     </div>

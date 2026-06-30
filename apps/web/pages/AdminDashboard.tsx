@@ -668,7 +668,7 @@ export const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
                   ))}
-                  <button onClick={() => navigate('/compliance')} className="w-full text-center text-xs text-primary mt-2 hover:underline">View Full Log</button>
+                  <button onClick={() => navigate('/compliance')} className="w-full text-center text-xs text-primary mt-2 hover:underline">{t('dashboard:admin.viewFullLog')}</button>
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-text-muted-light dark:text-text-muted-dark">
@@ -694,7 +694,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
             <div className="p-4 flex-grow flex flex-col">
               <div className="relative">
-                <label htmlFor="adminNote" className="sr-only">Quick Note</label>
+                <label htmlFor="adminNote" className="sr-only">{t('dashboard:admin.quickNoteLabel')}</label>
                 <textarea
                   id="adminNote"
                   name="adminNote"

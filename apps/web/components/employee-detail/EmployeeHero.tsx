@@ -205,11 +205,11 @@ export const EmployeeHero: React.FC<EmployeeHeroProps> = ({
                                                     a.download = `report-${employee.name?.replace(/\s+/g, '-')}.pdf`;
                                                     a.click();
                                                     URL.revokeObjectURL(url);
-                                                } catch { alert('Failed to download report'); }
+                                                } catch { alert(t('employees:hero.downloadReportFailed')); }
                                             }}
                                             className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-text-light dark:text-text-dark"
                                         >
-                                            Download Report PDF
+                                            {t('employees:hero.downloadReport')}
                                         </button>
                                         <button
                                             onClick={() => { setActionsOpen(false); onTerminate(); }}

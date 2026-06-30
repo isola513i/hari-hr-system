@@ -229,13 +229,13 @@ export const Training: React.FC = () => {
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${mod.isActive ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}>
                     {mod.isActive ? t('training:modules.active') : t('training:modules.inactive')}
                   </span>
-                  <button onClick={() => handleToggleActive(mod)} className="p-1.5 text-text-muted-light hover:text-primary rounded transition-colors" title={mod.isActive ? 'Deactivate' : 'Activate'}>
+                  <button onClick={() => handleToggleActive(mod)} className="p-1.5 text-text-muted-light hover:text-primary rounded transition-colors" title={mod.isActive ? t('modules.deactivate') : t('modules.activate')}>
                     {mod.isActive ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
                   </button>
-                  <button onClick={() => openEditForm(mod)} className="p-1.5 text-text-muted-light hover:text-primary rounded transition-colors" title="Edit">
+                  <button onClick={() => openEditForm(mod)} className="p-1.5 text-text-muted-light hover:text-primary rounded transition-colors" title={t('common:buttons.edit')}>
                     <Pencil size={16} />
                   </button>
-                  <button onClick={() => handleDelete(mod.id)} className="p-1.5 text-text-muted-light hover:text-red-500 rounded transition-colors" title="Delete">
+                  <button onClick={() => handleDelete(mod.id)} className="p-1.5 text-text-muted-light hover:text-red-500 rounded transition-colors" title={t('common:buttons.delete')}>
                     <Trash2 size={16} />
                   </button>
                 </div>

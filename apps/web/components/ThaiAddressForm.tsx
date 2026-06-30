@@ -263,11 +263,11 @@ export const ThaiAddressForm: React.FC<ThaiAddressFormProps> = ({ value, onChang
 
     return (
         <div className="md:col-span-2 space-y-4">
-            <label className={labelClass}>Current Address</label>
+            <label className={labelClass}>{t('thaiAddress.currentAddress')}</label>
 
             {/* Unified address picker */}
             <div ref={containerRef}>
-                <label className={labelClass}>Province / District / Sub-district</label>
+                <label className={labelClass}>{t('thaiAddress.provinceDistrictSubdistrict')}</label>
 
                 {/* Trigger button */}
                 <div
@@ -286,7 +286,7 @@ export const ThaiAddressForm: React.FC<ThaiAddressFormProps> = ({ value, onChang
                         </span>
                     ) : (
                         <span className="flex-1 text-text-muted-light dark:text-text-muted-dark">
-                            Province, District, Sub-district, Postal Code
+                            {t('thaiAddress.selectPlaceholder')}
                         </span>
                     )}
                     {displayText && (
@@ -423,7 +423,7 @@ export const ThaiAddressForm: React.FC<ThaiAddressFormProps> = ({ value, onChang
 
             {/* Address detail textarea */}
             <div>
-                <label className={labelClass}>Address</label>
+                <label className={labelClass}>{t('thaiAddress.addressLabel')}</label>
                 <div className="relative">
                     <MapPin className="absolute left-3 top-3 text-text-muted-light" size={16} />
                     <textarea

@@ -124,14 +124,14 @@ export const KeyContacts: React.FC<KeyContactsProps> = ({
                                         <button
                                             onClick={() => startEdit(contact)}
                                             className="p-1.5 opacity-0 group-hover:opacity-100 text-text-muted-light hover:text-primary transition-all"
-                                            title="Edit"
+                                            title={t('common:buttons.edit')}
                                         >
                                             <Pencil size={14} />
                                         </button>
                                         <button
                                             onClick={() => onDeleteContact?.(contact.id)}
                                             className="p-1.5 opacity-0 group-hover:opacity-100 text-text-muted-light hover:text-red-500 transition-all"
-                                            title="Delete"
+                                            title={t('common:buttons.delete')}
                                         >
                                             <Trash2 size={14} />
                                         </button>

@@ -344,7 +344,7 @@ const AssignModal: React.FC<AssignModalProps> = ({
 // Main Page
 // ---------------------------------------------------------------------------
 export const ShiftManagement: React.FC = () => {
-  const { t } = useTranslation(['shifts']);
+  const { t } = useTranslation(['shifts', 'common']);
   const dayLabels = t('days.short', { returnObjects: true }) as string[];
   const { showToast } = useToast();
   const [tab, setTab] = useState<'shifts' | 'schedule'>('schedule');
@@ -519,14 +519,14 @@ export const ShiftManagement: React.FC = () => {
                               <button
                                 onClick={() => handleDeleteShift(s.id)}
                                 className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                                title="Confirm"
+                                title={t('common:buttons.confirm')}
                               >
                                 <Check size={14} />
                               </button>
                               <button
                                 onClick={() => setDeleteShiftConfirm(null)}
                                 className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:bg-background-light dark:hover:bg-background-dark rounded transition-colors"
-                                title="Cancel"
+                                title={t('common:buttons.cancel')}
                               >
                                 <X size={14} />
                               </button>
@@ -649,7 +649,7 @@ export const ShiftManagement: React.FC = () => {
                                       <button
                                         onClick={() => handleRemove(assignment.assignmentId)}
                                         className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                                        title="Confirm remove"
+                                        title={t('actions.confirmRemove')}
                                       >
                                         <Check size={12} />
                                       </button>
@@ -674,7 +674,7 @@ export const ShiftManagement: React.FC = () => {
                                 <button
                                   onClick={() => setAssignModal({ open: true, preEmp: emp.id, preDate: date })}
                                   className="w-full h-7 border border-dashed border-border-light dark:border-border-dark rounded text-text-muted-light dark:text-text-muted-dark hover:border-primary hover:text-primary transition-colors flex items-center justify-center"
-                                  title="Assign shift"
+                                  title={t('buttons.assignShift')}
                                 >
                                   <Plus size={12} />
                                 </button>

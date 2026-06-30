@@ -48,6 +48,9 @@
   "filters": {
     "allDepartments": "All departments"
   },
+  "actions": {
+    "confirmRemove": "Confirm remove"
+  },
   "empty": {
     "noShifts": "No shifts defined yet. Click \"Add Shift\" to create one.",
     "noShiftsSchedule": "No shifts defined yet",

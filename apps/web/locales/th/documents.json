@@ -23,7 +23,9 @@
   "preview": {
     "notAvailable": "ไม่สามารถแสดงตัวอย่างได้",
     "notAvailableDesc": "ไม่สามารถแสดงตัวอย่างไฟล์ประเภทนี้ได้โดยตรง กรุณาดาวน์โหลดไฟล์เพื่อดู",
-    "downloadFile": "ดาวน์โหลดไฟล์"
+    "downloadFile": "ดาวน์โหลดไฟล์",
+    "previewAlt": "ตัวอย่าง",
+    "pdfPreview": "ตัวอย่าง PDF"
   },
   "upload": {
     "title": "อัปโหลดเอกสาร",

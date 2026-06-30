@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 import { useToast, Toast as ToastData, ToastType } from '../contexts/ToastContext';
 
@@ -41,6 +42,7 @@ const TOAST_CONFIG: Record<
 // ── Single toast item ──────────────────────────────────────────────────────
 
 const ToastItem: React.FC<{ toast: ToastData; onClose: () => void }> = ({ toast, onClose }) => {
+  const { t } = useTranslation('common');
   const config = TOAST_CONFIG[toast.type];
   const { Icon } = config;
 
@@ -80,7 +82,7 @@ const ToastItem: React.FC<{ toast: ToastData; onClose: () => void }> = ({ toast,
       <button
         onClick={onClose}
         className="flex-shrink-0 p-0.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-        aria-label="Dismiss notification"
+        aria-label={t('aria.dismissNotification')}
       >
         <X className="w-4 h-4" />
       </button>
@@ -103,6 +105,7 @@ const ToastItem: React.FC<{ toast: ToastData; onClose: () => void }> = ({ toast,
 // ── Container ──────────────────────────────────────────────────────────────
 
 export const ToastContainer: React.FC = () => {
+  const { t } = useTranslation('common');
   const { toasts, hideToast } = useToast();
 
   if (toasts.length === 0) return null;
@@ -112,7 +115,7 @@ export const ToastContainer: React.FC = () => {
       {/* Mobile: top-center */}
       <div
         className="md:hidden fixed top-4 inset-x-4 z-[9999] flex flex-col gap-3"
-        aria-label="Notifications"
+        aria-label={t('aria.notifications')}
       >
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onClose={() => hideToast(toast.id)} />
@@ -122,7 +125,7 @@ export const ToastContainer: React.FC = () => {
       {/* Desktop: bottom-right */}
       <div
         className="hidden md:flex fixed bottom-4 right-4 z-[9999] flex-col gap-3 w-96"
-        aria-label="Notifications"
+        aria-label={t('aria.notifications')}
       >
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onClose={() => hideToast(toast.id)} />

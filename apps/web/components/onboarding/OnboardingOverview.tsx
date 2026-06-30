@@ -117,11 +117,11 @@ export const OnboardingOverview: React.FC<OnboardingOverviewProps> = ({
 
                     {/* Stats row */}
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-muted-light dark:text-text-muted-dark">
-                        <div className="flex items-center gap-1.5" title="Tasks assigned to the employee">
+                        <div className="flex items-center gap-1.5" title={t('overview.tasksEmployeeTooltip')}>
                             <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
                             <span>{t('overview.employee')} {selfCompleted}/{selfTotal}</span>
                         </div>
-                        <div className="flex items-center gap-1.5" title="Tasks assigned to IT/HR">
+                        <div className="flex items-center gap-1.5" title={t('overview.tasksItHrTooltip')}>
                             <div className="w-2 h-2 rounded-full bg-purple-500 flex-shrink-0" />
                             <span>{t('overview.itHr')} {adminCompleted}/{adminTotal}</span>
                         </div>

@@ -103,7 +103,9 @@
     "progress": "ความคืบหน้า",
     "employee": "พนักงาน",
     "itHr": "IT/HR",
-    "docs": "เอกสาร"
+    "docs": "เอกสาร",
+    "tasksEmployeeTooltip": "งานที่มอบหมายให้พนักงาน",
+    "tasksItHrTooltip": "งานที่มอบหมายให้ IT/HR"
   },
   "taskList": {
     "allAssignees": "ผู้รับผิดชอบทั้งหมด",

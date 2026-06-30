@@ -188,7 +188,9 @@
     "absent": "Absent",
     "pending": "Pending",
     "noDataForDay": "No data for this day",
-    "publicHoliday": "Public Holiday"
+    "publicHoliday": "Public Holiday",
+    "annual": "Annual",
+    "multiDay": "Multi-day"
   },
   "rejectDialog": {
     "title": "Reject Leave Request",
@@ -197,7 +199,8 @@
     "cancel": "Cancel",
     "rejecting": "Rejecting...",
     "reject": "Reject Request",
-    "explanation": "Please provide a reason for rejecting {{name}}'s leave request."
+    "explanation": "Please provide a reason for rejecting {{name}}'s leave request.",
+    "confirmAria": "Confirm rejection"
   },
   "halfDay": {
     "label": "Half Day",
@@ -281,7 +284,10 @@
     "success": "Correction request submitted",
     "failedSubmit": "Failed to submit correction request",
     "errorNoReason": "Please provide a reason for the correction",
-    "errorNoTime": "Provide at least a corrected clock-in or clock-out time"
+    "errorNoTime": "Provide at least a corrected clock-in or clock-out time",
+    "errorHoliday": "You cannot request a correction for a public holiday",
+    "errorNonWorkingDay": "You cannot request a correction for a non-working day",
+    "holidayHint": "Days off and public holidays cannot be selected."
   },
   "wfhModal": {
     "title": "Work From Home Request",

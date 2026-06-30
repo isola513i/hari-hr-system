@@ -223,7 +223,7 @@ export const Settings: React.FC = () => {
                 }`}
               >
                 <MapPin size={18} />
-                GPS & Attendance
+                {t('tabs.attendance')}
               </button>
             )}
           </div>
@@ -247,7 +247,7 @@ export const Settings: React.FC = () => {
                 <div className="relative group">
                   <img
                     src={avatarPreview}
-                    alt="Profile"
+                    alt={t('general.profileAlt')}
                     className="w-20 h-20 rounded-full object-cover ring-4 ring-gray-50 dark:ring-gray-800"
                   />
                   <button
@@ -677,9 +677,9 @@ export const Settings: React.FC = () => {
               {/* ── Two-Factor Authentication ───────────────────────────── */}
               <div className="border-t border-border-light dark:border-border-dark pt-6 space-y-4">
                 <div>
-                  <h3 className="font-semibold text-text-light dark:text-text-dark">Two-Factor Authentication</h3>
+                  <h3 className="font-semibold text-text-light dark:text-text-dark">{t('twoFactor.title')}</h3>
                   <p className="text-sm text-text-muted-light dark:text-text-muted-dark mt-0.5">
-                    Add an extra layer of security to your account using an authenticator app.
+                    {t('twoFactor.subtitle')}
                   </p>
                 </div>
 
@@ -698,11 +698,11 @@ export const Settings: React.FC = () => {
                     )}
                     <div>
                       <p className="text-sm font-medium text-text-light dark:text-text-dark">
-                        {totpStatus?.enabled ? '2FA Enabled' : '2FA Disabled'}
+                        {totpStatus?.enabled ? t('twoFactor.enabled') : t('twoFactor.disabled')}
                       </p>
                       {totpStatus?.enabled && (
                         <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
-                          {totpStatus.backupCodesRemaining} backup code{totpStatus.backupCodesRemaining !== 1 ? 's' : ''} remaining
+                          {t('twoFactor.backupCodesRemaining', { count: totpStatus.backupCodesRemaining })}
                         </p>
                       )}
                     </div>
@@ -716,14 +716,14 @@ export const Settings: React.FC = () => {
                           className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark hover:bg-card-light dark:hover:bg-card-dark transition-colors"
                         >
                           <KeyRound size={14} />
-                          Backup Codes
+                          {t('twoFactor.backupCodes')}
                         </button>
                         <button
                           onClick={() => setShowDisableModal(true)}
                           className="flex items-center gap-1.5 px-3 py-2 text-sm border border-accent-red/30 rounded-lg text-accent-red hover:bg-accent-red/10 transition-colors"
                         >
                           <ShieldOff size={14} />
-                          Disable
+                          {t('twoFactor.disable')}
                         </button>
                       </>
                     ) : (
@@ -732,7 +732,7 @@ export const Settings: React.FC = () => {
                         className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
                       >
                         <ShieldCheck size={14} />
-                        Enable 2FA
+                        {t('twoFactor.enable')}
                       </button>
                     )}
                   </div>
@@ -745,12 +745,12 @@ export const Settings: React.FC = () => {
           <TotpSetupModal
             isOpen={showSetupModal}
             onClose={() => setShowSetupModal(false)}
-            onEnabled={() => { fetchTotpStatus(); setShowSetupModal(false); showToast('Two-factor authentication enabled!', 'success'); }}
+            onEnabled={() => { fetchTotpStatus(); setShowSetupModal(false); showToast(t('twoFactor.enabledToast'), 'success'); }}
           />
           <TotpDisableModal
             isOpen={showDisableModal}
             onClose={() => setShowDisableModal(false)}
-            onDisabled={() => { fetchTotpStatus(); showToast('Two-factor authentication disabled', 'info'); }}
+            onDisabled={() => { fetchTotpStatus(); showToast(t('twoFactor.disabledToast'), 'info'); }}
           />
           {totpStatus && (
             <BackupCodesModal
@@ -778,6 +778,7 @@ export const Settings: React.FC = () => {
 // ---------------------------------------------------------------------------
 
 function GPSSettingsTab() {
+  const { t } = useTranslation('settings');
   const { showToast } = useToast();
   const { data: cfg } = useAttendanceGPSConfig();
   const updateMutation = useUpdateGPSConfig();
@@ -807,9 +808,9 @@ function GPSSettingsTab() {
         gpsRequired: String(gpsRequired),
         officeIp,
       });
-      showToast('GPS settings saved', 'success');
+      showToast(t('attendance.saved'), 'success');
     } catch {
-      showToast('Failed to save GPS settings', 'error');
+      showToast(t('attendance.saveFailed'), 'error');
     }
   };
 
@@ -820,18 +821,18 @@ function GPSSettingsTab() {
     <div className="p-6 space-y-5 animate-fade-in">
       {/* Header */}
       <div className="border-b border-border-light dark:border-border-dark pb-4">
-        <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">GPS & Attendance</h2>
+        <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">{t('attendance.title')}</h2>
         <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">
-          Configure office location and geofence for employee check-in
+          {t('attendance.subtitle')}
         </p>
       </div>
 
       {/* GPS Required Toggle */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-text-light dark:text-text-dark">Require GPS for Check-in</p>
+          <p className="text-sm font-medium text-text-light dark:text-text-dark">{t('attendance.requireGps')}</p>
           <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">
-            Employees must be within the geofence to clock in (except Remote/WFH)
+            {t('attendance.requireGpsDesc')}
           </p>
         </div>
         <button
@@ -846,7 +847,7 @@ function GPSSettingsTab() {
       <div className="space-y-3 pt-1 border-t border-border-light dark:border-border-dark">
         <div className="flex items-center justify-between pt-1">
           <h3 className="text-sm font-medium text-text-light dark:text-text-dark flex items-center gap-1.5">
-            <MapPin size={14} className="text-text-muted-light dark:text-text-muted-dark" /> Office Location
+            <MapPin size={14} className="text-text-muted-light dark:text-text-muted-dark" /> {t('attendance.officeLocation')}
           </h3>
           <a
             href="https://maps.google.com/?q=Vanit+Place+Aree+Bangkok"
@@ -854,13 +855,13 @@ function GPSSettingsTab() {
             rel="noopener noreferrer"
             className="text-xs text-primary hover:underline"
           >
-            View on map
+            {t('attendance.viewOnMap')}
           </a>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelCls}>Latitude</label>
+            <label className={labelCls}>{t('attendance.latitude')}</label>
             <input
               type="number"
               step="0.000001"
@@ -871,7 +872,7 @@ function GPSSettingsTab() {
             />
           </div>
           <div>
-            <label className={labelCls}>Longitude</label>
+            <label className={labelCls}>{t('attendance.longitude')}</label>
             <input
               type="number"
               step="0.000001"
@@ -885,7 +886,7 @@ function GPSSettingsTab() {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelCls}>Geofence Radius (meters)</label>
+            <label className={labelCls}>{t('attendance.geofenceRadius')}</label>
             <input
               type="number"
               min="50"
@@ -902,22 +903,22 @@ function GPSSettingsTab() {
       {/* Office IP Allowlist */}
       <div className="space-y-3 pt-1 border-t border-border-light dark:border-border-dark">
         <div className="pt-1">
-          <h3 className="text-sm font-medium text-text-light dark:text-text-dark">Office IP Allowlist</h3>
+          <h3 className="text-sm font-medium text-text-light dark:text-text-dark">{t('attendance.officeIpAllowlist')}</h3>
           <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">
-            Desktop users on this network can clock in without GPS
+            {t('attendance.officeIpDesc')}
           </p>
         </div>
         <div>
-          <label className={labelCls}>Office Public IP(s) — separate with commas</label>
+          <label className={labelCls}>{t('attendance.officeIpLabel')}</label>
           <input
             type="text"
             value={officeIp}
             onChange={(e) => setOfficeIp(e.target.value)}
-            placeholder="e.g. 203.0.113.10, 203.0.113.11"
+            placeholder={t('attendance.officeIpPlaceholder')}
             className={inputCls}
           />
           <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">
-            Leave blank to disable IP-based check-in
+            {t('attendance.officeIpHint')}
           </p>
         </div>
       </div>
@@ -929,7 +930,7 @@ function GPSSettingsTab() {
           className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50"
         >
           <Save size={14} />
-          {updateMutation.isPending ? 'Saving…' : 'Save GPS Settings'}
+          {updateMutation.isPending ? t('attendance.saving') : t('attendance.saveButton')}
         </button>
       </div>
     </div>

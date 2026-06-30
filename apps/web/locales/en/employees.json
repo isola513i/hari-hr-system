@@ -1,4 +1,16 @@
 {
+  "attach": {
+    "attach": "Attach file",
+    "replace": "Replace",
+    "uploading": "Uploading…",
+    "uploaded": "File attached",
+    "uploadFailed": "Failed to attach file",
+    "downloadFailed": "Failed to download file",
+    "statusPending": "Not attached",
+    "statusUploaded": "Awaiting review",
+    "statusApproved": "Verified",
+    "statusRejected": "Rejected"
+  },
   "list": {
     "title": "Employee Directory",
     "subtitle": "Manage and view your organization's workforce",
@@ -59,7 +71,9 @@
     "actions": "Actions",
     "promote": "Promote",
     "transfer": "Transfer",
-    "terminate": "Terminate"
+    "terminate": "Terminate",
+    "downloadReport": "Download Report PDF",
+    "downloadReportFailed": "Failed to download report"
   },
   "overview": {
     "personalInfo": "Personal Information",
@@ -194,6 +208,7 @@
     "unlimited": "Unlimited",
     "custom": "Custom",
     "reset": "Reset",
+    "resetToDefault": "Reset to default",
     "days": "days",
     "updateSuccess": "Leave quotas updated successfully!",
     "updateFailed": "Failed to update leave quotas",
@@ -207,6 +222,13 @@
     "officeAddress": "Office Address",
     "currentAddress": "Current Address",
     "emergencyContact": "Emergency Contact",
+    "sensitiveInfo": "Sensitive Information",
+    "nationalId": "National ID",
+    "bankAccount": "Bank Account",
+    "showNationalId": "Show National ID",
+    "hideNationalId": "Hide National ID",
+    "showBankAccount": "Show bank account",
+    "hideBankAccount": "Hide bank account",
     "team": "Team",
     "reportsTo": "Reports To",
     "directReports": "Direct Reports",
@@ -260,6 +282,10 @@
     "emergencyContact": "Emergency Contact",
     "phoneNumber": "Phone Number",
     "bio": "Bio",
+    "nationalId": "National ID",
+    "nationalIdPlaceholder": "e.g. 1234567890123",
+    "bankAccountNumber": "Bank Account Number",
+    "bankAccountPlaceholder": "e.g. 123-4-56789-0",
     "cancel": "Cancel",
     "save": "Save Changes",
     "saving": "Saving...",
@@ -306,6 +332,8 @@
     "onboardEmail": "Email Address",
     "onboardStartDate": "Starting Date",
     "workType": "Work Type",
+    "workDays": "Work Days",
+    "workDaysNote": "Days this employee is scheduled to work. Affects attendance, payroll and leave.",
     "selectWorkType": "Select work type",
     "selectBirthDate": "Select birth date",
     "workTypes": {
@@ -356,7 +384,18 @@
     "quotaResetSuccess": "quota reset to default",
     "quotaResetFailed": "Failed to reset quota",
     "trainingStatusUpdated": "Training marked as {{status}}",
-    "bulkDeleted": "{{count}} employees terminated"
+    "bulkDeleted": "{{count}} employees terminated",
+    "jobHistoryUpdated": "Job history updated",
+    "jobHistoryUpdateFailed": "Failed to update job history",
+    "jobHistoryDeleted": "Job history entry deleted",
+    "jobHistoryDeleteFailed": "Failed to delete job history",
+    "trainingAssigned": "Training assigned successfully",
+    "trainingAssignFailed": "Failed to assign training",
+    "trainingDeleted": "Training record deleted",
+    "trainingDeleteFailed": "Failed to delete training",
+    "trainingStatusFailed": "Failed to update training status",
+    "offboardingInitiated": "Offboarding initiated — employee is now in Notice Period",
+    "offboardingInitiateFailed": "Failed to initiate offboarding"
   },
   "status": {
     "allStatuses": "All Statuses",

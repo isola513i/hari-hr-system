@@ -94,12 +94,12 @@ export const EmployeeSidebar: React.FC<EmployeeSidebarProps> = ({
                     {canEditSensitiveInfo && (employee.nationalId || employee.bankAccountNumber) && (
                         <div className="border-t border-border-light dark:border-border-dark pt-4 mt-2 space-y-3">
                             <p className="text-xs font-semibold uppercase text-text-muted-light dark:text-text-muted-dark tracking-wider flex items-center gap-1">
-                                <ShieldCheck size={12} /> Sensitive Information
+                                <ShieldCheck size={12} /> {t('employees:sidebar.sensitiveInfo')}
                             </p>
 
                             {employee.nationalId && (
                                 <div>
-                                    <p className="text-text-muted-light dark:text-text-muted-dark text-xs mb-0.5">National ID</p>
+                                    <p className="text-text-muted-light dark:text-text-muted-dark text-xs mb-0.5">{t('employees:sidebar.nationalId')}</p>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-mono text-text-light dark:text-text-dark">
                                             {showNationalId ? employee.nationalId : maskNationalId(employee.nationalId)}
@@ -107,7 +107,7 @@ export const EmployeeSidebar: React.FC<EmployeeSidebarProps> = ({
                                         <button
                                             onClick={() => setShowNationalId((v) => !v)}
                                             className="text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors"
-                                            title={showNationalId ? 'Hide National ID' : 'Show National ID'}
+                                            title={showNationalId ? t('employees:sidebar.hideNationalId') : t('employees:sidebar.showNationalId')}
                                         >
                                             {showNationalId ? <EyeOff size={14} /> : <Eye size={14} />}
                                         </button>
@@ -117,7 +117,7 @@ export const EmployeeSidebar: React.FC<EmployeeSidebarProps> = ({
 
                             {employee.bankAccountNumber && (
                                 <div>
-                                    <p className="text-text-muted-light dark:text-text-muted-dark text-xs mb-0.5">Bank Account</p>
+                                    <p className="text-text-muted-light dark:text-text-muted-dark text-xs mb-0.5">{t('employees:sidebar.bankAccount')}</p>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-mono text-text-light dark:text-text-dark">
                                             {showBankAccount ? employee.bankAccountNumber : maskBankAccount(employee.bankAccountNumber)}
@@ -125,7 +125,7 @@ export const EmployeeSidebar: React.FC<EmployeeSidebarProps> = ({
                                         <button
                                             onClick={() => setShowBankAccount((v) => !v)}
                                             className="text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors"
-                                            title={showBankAccount ? 'Hide bank account' : 'Show bank account'}
+                                            title={showBankAccount ? t('employees:sidebar.hideBankAccount') : t('employees:sidebar.showBankAccount')}
                                         >
                                             {showBankAccount ? <EyeOff size={14} /> : <Eye size={14} />}
                                         </button>

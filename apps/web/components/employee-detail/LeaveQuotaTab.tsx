@@ -184,7 +184,7 @@ export const LeaveQuotaTab: React.FC<LeaveQuotaTabProps> = ({ employeeId, showTo
                                                 onClick={() => handleReset(q.type)}
                                                 disabled={isSaving}
                                                 className="inline-flex items-center gap-1 px-2 py-1 text-xs text-text-muted-light dark:text-text-muted-dark hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50"
-                                                title="Reset to default"
+                                                title={t('employees:leaveQuota.resetToDefault')}
                                             >
                                                 <RotateCcw className="w-3 h-3" />
                                                 {t('employees:leaveQuota.reset')}

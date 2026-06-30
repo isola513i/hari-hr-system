@@ -779,7 +779,7 @@ export const EmployeeDashboard: React.FC = () => {
           <div className="p-4 flex-grow flex flex-col gap-3">
             {/* Note input */}
             <div className="relative">
-              <label htmlFor="employeeNote" className="sr-only">Personal Note</label>
+              <label htmlFor="employeeNote" className="sr-only">{t('dashboard:employee.personalNoteLabel')}</label>
               <textarea
                 id="employeeNote"
                 name="employeeNote"

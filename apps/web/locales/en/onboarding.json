@@ -103,7 +103,9 @@
     "progress": "Progress",
     "employee": "Employee",
     "itHr": "IT/HR",
-    "docs": "docs"
+    "docs": "docs",
+    "tasksEmployeeTooltip": "Tasks assigned to the employee",
+    "tasksItHrTooltip": "Tasks assigned to IT/HR"
   },
   "taskList": {
     "allAssignees": "All Assignees",

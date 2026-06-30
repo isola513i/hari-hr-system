@@ -1,4 +1,24 @@
 {
+  "initiate": {
+    "title": "Initiate Offboarding",
+    "descriptionBefore": "This will move the employee to",
+    "noticePeriod": "Notice Period",
+    "descriptionAfter": "and create an offboarding checklist. They will be fully terminated only after all tasks are completed.",
+    "reasonLabel": "Reason for Termination",
+    "selectReason": "Select a reason...",
+    "lastWorkingDay": "Last Working Day",
+    "notesLabel": "Notes",
+    "notesHint": "(HR only, optional)",
+    "notesPlaceholder": "Any additional context for the offboarding...",
+    "submit": "Initiate Offboarding"
+  },
+  "terminationReasons": {
+    "Resignation": "Resignation",
+    "Performance": "Performance",
+    "Restructuring": "Restructuring",
+    "Retirement": "Retirement",
+    "Other": "Other"
+  },
   "termination": {
     "details": "Termination Details",
     "status": "Status",

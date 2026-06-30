@@ -168,7 +168,7 @@ export const Breadcrumbs: React.FC = () => {
   return (
     <nav
       className="flex items-center text-sm text-text-muted-light dark:text-text-muted-dark mb-6 animate-fade-in"
-      aria-label="Breadcrumb"
+      aria-label={t('aria.breadcrumb')}
     >
       {/* Home link - always visible as the first breadcrumb */}
       <Link

@@ -75,7 +75,7 @@ export const BottomNav: React.FC = () => {
           navigator.geolocation.getCurrentPosition(
             doClockIn,
             () => {
-              showToast('Could not get your location. Please try again.', 'error');
+              showToast(t('gps.couldNotGetLocation'), 'error');
               setIsClocking(false);
             },
             { timeout: 8000, maximumAge: 60000, enableHighAccuracy: false }
@@ -111,7 +111,7 @@ export const BottomNav: React.FC = () => {
     }
 
     if (!navigator.geolocation) {
-      showToast('GPS is not supported on this device', 'error');
+      showToast(t('gps.notSupported'), 'error');
       return;
     }
 
