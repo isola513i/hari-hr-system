@@ -31,6 +31,8 @@ export interface Employee {
     onboardingPercentage?: number;
     bannerColor?: string | null;
     workType?: 'office' | 'remote' | 'hybrid';
+    /** Weekdays the employee is scheduled to work (0=Sun … 6=Sat). Default Mon–Fri. */
+    workDays?: number[];
     /** Decrypted National ID — null when not set or decrypt failed */
     nationalId?: string | null;
     /** Decrypted bank account number — null when not set or decrypt failed */
@@ -71,6 +73,7 @@ export interface UpdateEmployeeDTO extends Partial<CreateEmployeeDTO> {
     address?: EmployeeAddress | null;
     bannerColor?: string | null;
     workType?: 'office' | 'remote' | 'hybrid';
+    workDays?: number[];
     birthDate?: string | null;
     nationalId?: string | null;
     bankAccountNumber?: string | null;

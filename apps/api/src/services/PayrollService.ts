@@ -2,6 +2,7 @@ import pool, { query } from '../db';
 import SystemConfigService from './SystemConfigService';
 import OTRequestService from './OTRequestService';
 import { BusinessError } from '../utils/errorResponse';
+import { resolveWorkDays } from '../utils/workdays';
 import logger from '../utils/logger';
 
 export interface PayrollRecord {
@@ -276,24 +277,26 @@ export class PayrollService {
   }
 
   /**
-   * Count weekday (Mon–Fri) working days in a date range, excluding public holidays.
+   * Count the employee's scheduled working days in a date range, excluding public holidays.
+   * `workDays` = weekday numbers the employee works (0=Sun … 6=Sat); defaults to Mon–Fri.
    * Used to compute the daily rate for absent deductions.
    */
   private async getWorkingDays(
     payPeriodStart: string,
     payPeriodEnd: string,
+    workDays: number[],
     client?: { query: (sql: string, params: any[]) => Promise<any> }
   ): Promise<number> {
     const db = client || { query };
     const result = await db.query(
       `SELECT COUNT(*)::int AS working_days
        FROM generate_series($1::date, $2::date, '1 day'::interval) AS d(day)
-       WHERE EXTRACT(DOW FROM d.day) NOT IN (0, 6)
+       WHERE EXTRACT(DOW FROM d.day)::int = ANY($3::int[])
          AND NOT EXISTS (
            SELECT 1 FROM holidays h
            WHERE h.date = d.day::date
          )`,
-      [payPeriodStart, payPeriodEnd]
+      [payPeriodStart, payPeriodEnd, workDays]
     );
     return result.rows[0]?.working_days ?? 1;
   }
@@ -311,11 +314,14 @@ export class PayrollService {
     client?: { query: (sql: string, params: any[]) => Promise<any> }
   ): Promise<number> {
     const db = client || { query };
-    const workingDays = await this.getWorkingDays(payPeriodStart, payPeriodEnd, client);
+    // Resolve the employee's work-day schedule (default Mon–Fri preserves prior behavior)
+    const schedRes = await db.query('SELECT work_days FROM employees WHERE id = $1', [employeeId]);
+    const workDays: number[] = resolveWorkDays(schedRes.rows[0]?.work_days);
+    const workingDays = await this.getWorkingDays(payPeriodStart, payPeriodEnd, workDays, client);
     const result = await db.query(
       `SELECT COUNT(*)::int AS absent_days
        FROM generate_series($2::date, $3::date, '1 day'::interval) AS d(day)
-       WHERE EXTRACT(DOW FROM d.day) NOT IN (0, 6)
+       WHERE EXTRACT(DOW FROM d.day)::int = ANY($4::int[])
          AND NOT EXISTS (
            SELECT 1 FROM holidays h WHERE h.date = d.day::date
          )
@@ -336,7 +342,7 @@ export class PayrollService {
                AND ar.status = 'Absent' AND ar.deleted_at IS NULL
            )
          )`,
-      [employeeId, payPeriodStart, payPeriodEnd]
+      [employeeId, payPeriodStart, payPeriodEnd, workDays]
     );
     const absentDays: number = result.rows[0]?.absent_days ?? 0;
     if (absentDays === 0 || workingDays === 0) return 0;

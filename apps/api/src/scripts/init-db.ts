@@ -100,6 +100,8 @@ CREATE TABLE employees (
     daily_rate DECIMAL(12,2),
     manager_id UUID,
     work_type VARCHAR(20) DEFAULT 'office',
+    -- Weekdays this employee is scheduled to work (0=Sun … 6=Sat). Default Mon–Fri.
+    work_days INTEGER[] NOT NULL DEFAULT '{1,2,3,4,5}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

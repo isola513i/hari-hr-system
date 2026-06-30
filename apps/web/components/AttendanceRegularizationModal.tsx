@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { X, ClipboardClock, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useCreateRegularizationRequest } from '../hooks/queries';
+import { useCreateRegularizationRequest, useHolidayDateSet, useEmployeeDetail } from '../hooks/queries';
+import { useAuth } from '../contexts/AuthContext';
+import { DatePicker } from './DatePicker';
 
 interface Props {
   onClose: () => void;
   onSuccess: (msg: string) => void;
 }
+
+const ALL_WEEKDAYS = [0, 1, 2, 3, 4, 5, 6];
+const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5];
 
 /** Combine a yyyy-mm-dd date and an HH:mm time into an ISO string at +07:00 (Thai time). */
 const toIso = (date: string, time: string): string | undefined => {
@@ -25,6 +30,13 @@ export const AttendanceRegularizationModal: React.FC<Props> = ({ onClose, onSucc
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
 
+  const { user } = useAuth();
+  const { data: me } = useEmployeeDetail(user?.employeeId ?? user?.id);
+  const workDays = me?.workDays?.length ? me.workDays : DEFAULT_WORK_DAYS;
+  // Weekdays the employee does NOT work — blocked in the picker
+  const offWeekdays = ALL_WEEKDAYS.filter((d) => !workDays.includes(d));
+
+  const holidayDates = useHolidayDateSet();
   const createMutation = useCreateRegularizationRequest();
 
   useEffect(() => {
@@ -35,6 +47,9 @@ export const AttendanceRegularizationModal: React.FC<Props> = ({ onClose, onSucc
     e.preventDefault();
     if (!reason.trim()) { setError(t('regModal.errorNoReason')); return; }
     if (!clockIn && !clockOut) { setError(t('regModal.errorNoTime')); return; }
+    const dow = new Date(date + 'T00:00:00').getDay();
+    if (!workDays.includes(dow)) { setError(t('regModal.errorNonWorkingDay')); return; }
+    if (holidayDates.has(date)) { setError(t('regModal.errorHoliday')); return; }
 
     createMutation.mutate(
       {
@@ -69,17 +84,18 @@ export const AttendanceRegularizationModal: React.FC<Props> = ({ onClose, onSucc
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <p className="text-sm text-text-muted-light dark:text-text-muted-dark">{t('regModal.subtitle')}</p>
 
-          {/* Date */}
+          {/* Date — custom picker; past 30 days up to today, days-off + holidays blocked */}
           <div>
             <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">{t('regModal.date')}</label>
-            <input
-              type="date"
+            <DatePicker
               value={date}
-              min={thirtyDaysAgo}
-              max={today}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none"
+              onChange={setDate}
+              minDate={thirtyDaysAgo}
+              maxDate={today}
+              disabledWeekdays={offWeekdays}
+              disabledDates={holidayDates}
             />
+            <p className="mt-1 text-xs text-text-muted-light dark:text-text-muted-dark">{t('regModal.holidayHint')}</p>
           </div>
 
           {/* Time range */}

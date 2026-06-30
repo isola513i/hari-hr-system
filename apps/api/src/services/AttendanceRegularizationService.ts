@@ -3,6 +3,8 @@ import { BusinessError } from '../utils/errorResponse';
 import { withTransaction } from '../utils/transaction';
 import NotificationService from './NotificationService';
 import AttendanceService from './AttendanceService';
+import HolidayService from './HolidayService';
+import { isWorkDay } from '../utils/workdays';
 import logger from '../utils/logger';
 
 export interface RegularizationRequest {
@@ -51,6 +53,15 @@ export class AttendanceRegularizationService {
     // Regularization is for past/known dates — reject future dates
     if (new Date(date) > new Date(new Date().toISOString().slice(0, 10) + 'T23:59:59Z')) {
       throw new BusinessError('Cannot request a correction for a future date');
+    }
+    // The employee doesn't work this weekday — nothing to correct (per-employee schedule)
+    const schedule = await query('SELECT work_days FROM employees WHERE id = $1', [employeeId]);
+    if (!isWorkDay(date, schedule.rows[0]?.work_days)) {
+      throw new BusinessError('Cannot request a correction for a non-working day');
+    }
+    // No work happens on public holidays — there is nothing to correct
+    if (await HolidayService.isHoliday(date)) {
+      throw new BusinessError('Cannot request a correction for a public holiday');
     }
 
     const result = await query(

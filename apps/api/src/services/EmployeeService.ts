@@ -327,6 +327,12 @@ export class EmployeeService {
             updates.push(`work_type = $${paramIndex++}`);
             values.push(data.workType);
         }
+        if (data.workDays !== undefined) {
+            // Normalize: keep only valid 0–6 day numbers, sorted & de-duplicated
+            const normalized = Array.from(new Set((data.workDays ?? []).filter((d) => d >= 0 && d <= 6))).sort((a, b) => a - b);
+            updates.push(`work_days = $${paramIndex++}`);
+            values.push(normalized);
+        }
 
         // PII fields — encrypt ciphertext + update blind index
         if (data.nationalId !== undefined) {
@@ -477,6 +483,7 @@ export class EmployeeService {
             onboardingPercentage: row.onboarding_percentage || 0,
             bannerColor: row.banner_color || null,
             workType: row.work_type || 'office',
+            workDays: row.work_days ?? [1, 2, 3, 4, 5],
             // PII fields: transparently decrypt on read; null if not set or decrypt error
             nationalId: safeTryDecrypt(row.national_id),
             bankAccountNumber: safeTryDecrypt(row.bank_account_number),
@@ -511,7 +518,7 @@ export class EmployeeService {
      */
     async getDirectReports(employeeId: string): Promise<Employee[]> {
         const result = await query(
-            `SELECT id, name, email, role, department, join_date, created_at, birth_date, salary, avatar, status, bio, phone, phone_number, employee_code, address, location, slack, emergency_contact, manager_id, skills, onboarding_status, onboarding_percentage, banner_color, work_type, national_id, bank_account_number, termination_date, last_working_day, termination_reason, termination_notes, terminated_by, offboarding_initiated_at FROM employees WHERE manager_id = $1 ORDER BY name ASC`,
+            `SELECT id, name, email, role, department, join_date, created_at, birth_date, salary, avatar, status, bio, phone, phone_number, employee_code, address, location, slack, emergency_contact, manager_id, skills, onboarding_status, onboarding_percentage, banner_color, work_type, work_days, national_id, bank_account_number, termination_date, last_working_day, termination_reason, termination_notes, terminated_by, offboarding_initiated_at FROM employees WHERE manager_id = $1 ORDER BY name ASC`,
             [employeeId]
         );
         return result.rows.map(this.mapRowToEmployee);

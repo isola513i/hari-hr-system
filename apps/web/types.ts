@@ -106,6 +106,8 @@ export interface Employee {
   address?: EmployeeAddress | null;
   bannerColor?: string;
   workType?: 'office' | 'remote' | 'hybrid';
+  /** Weekdays the employee is scheduled to work (0=Sun … 6=Sat). Default Mon–Fri. */
+  workDays?: number[];
   /** Decrypted National ID — only present when the viewer has canEditSensitiveInfo */
   nationalId?: string | null;
   /** Decrypted bank account number — only present when the viewer has canEditSensitiveInfo */

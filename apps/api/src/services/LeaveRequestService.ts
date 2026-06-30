@@ -4,6 +4,7 @@ import SystemConfigService from './SystemConfigService';
 import EmployeeLeaveQuotaService from './EmployeeLeaveQuotaService';
 import NotificationService from './NotificationService';
 import HolidayService from './HolidayService';
+import { resolveWorkDays } from '../utils/workdays';
 import { withTransaction } from '../utils/transaction';
 import { getOrSet, invalidatePattern } from '../utils/cache';
 import { PaginationParams, PaginatedResult, createPaginatedResult, buildPaginationClause, buildSortClause } from '../utils/pagination';
@@ -33,7 +34,13 @@ const BASE_SELECT = `
     WHERE lr.deleted_at IS NULL`;
 
 export class LeaveRequestService {
-    static async calculateBusinessDays(startDate: string, endDate: string): Promise<number> {
+    /**
+     * Count working days between two dates, excluding public holidays.
+     * `workDays` = weekday numbers the employee works (0=Sun … 6=Sat); defaults to Mon–Fri
+     * when omitted (e.g. the company-wide /calculate-days endpoint).
+     */
+    static async calculateBusinessDays(startDate: string, endDate: string, workDays?: number[]): Promise<number> {
+        const days = resolveWorkDays(workDays);
         const holidayDates = await HolidayService.getHolidayDatesSet(startDate, endDate);
         const start = new Date(startDate);
         const end = new Date(endDate);
@@ -42,7 +49,7 @@ export class LeaveRequestService {
         while (current <= end) {
             const dayOfWeek = current.getDay();
             const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
-            if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidayDates.has(dateStr)) {
+            if (days.includes(dayOfWeek) && !holidayDates.has(dateStr)) {
                 count++;
             }
             current.setDate(current.getDate() + 1);
@@ -170,10 +177,11 @@ export class LeaveRequestService {
             }
         }
 
-        // Calculate business days (excluding weekends and holidays)
+        // Calculate business days (excluding the employee's days-off and holidays)
         const start = new Date(startDate);
         const end = new Date(endDate);
-        let days = await LeaveRequestService.calculateBusinessDays(startDate, endDate);
+        const schedRes = await query('SELECT work_days FROM employees WHERE id = $1', [employeeId]);
+        let days = await LeaveRequestService.calculateBusinessDays(startDate, endDate, schedRes.rows[0]?.work_days);
         if (isHalfDay) days = 0.5;
 
         // Validate leave quota using effective quotas (per-employee override > global default)
@@ -325,8 +333,9 @@ export class LeaveRequestService {
                 }
             }
 
-            // Calculate new business days (excluding weekends and holidays)
-            let newDays = await LeaveRequestService.calculateBusinessDays(editData.startDate, editData.endDate);
+            // Calculate new business days (excluding the employee's days-off and holidays)
+            const editSched = await query('SELECT work_days FROM employees WHERE id = $1', [row.employee_id]);
+            let newDays = await LeaveRequestService.calculateBusinessDays(editData.startDate, editData.endDate, editSched.rows[0]?.work_days);
             if (editData.isHalfDay) newDays = 0.5;
 
             // Re-validate quota using effective quotas (exclude current request from used-days count)

@@ -16,7 +16,8 @@
     "db:migrate:attendance-reg": "ts-node src/scripts/add-attendance-regularization.ts",
     "db:migrate:pii": "ts-node src/scripts/alter-pii-columns.ts",
     "db:migrate:offboarding": "ts-node src/scripts/add-offboarding-columns.ts",
-    "db:migrate:indexes": "ts-node src/scripts/add-missing-indexes.ts"
+    "db:migrate:indexes": "ts-node src/scripts/add-missing-indexes.ts",
+    "db:migrate:work-days": "ts-node src/scripts/add-employee-work-days.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.996.0",

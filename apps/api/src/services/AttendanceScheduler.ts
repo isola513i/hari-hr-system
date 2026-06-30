@@ -82,12 +82,8 @@ async function autoMarkAbsent(): Promise<void> {
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const prevDate = yesterday.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
 
-  // Skip weekends (Sat=6, Sun=0)
-  const dayOfWeek = new Date(`${prevDate}T12:00:00+07:00`).getDay();
-  if (dayOfWeek === 0 || dayOfWeek === 6) {
-    console.log(`[AttendanceScheduler] Auto-absent: skipping weekend (${prevDate})`);
-    return;
-  }
+  // Weekends are no longer skipped globally — each employee has their own
+  // work_days schedule (default Mon–Fri), enforced per-row in the INSERT below.
 
   // Skip public holidays
   const holidayCheck = await query(
@@ -109,6 +105,8 @@ async function autoMarkAbsent(): Promise<void> {
        SELECT e.id, $1, 'Absent', 'Auto-marked absent'
        FROM employees e
        WHERE e.status = 'Active'
+         -- Only employees scheduled to work this weekday (per-employee work_days, default Mon–Fri)
+         AND EXTRACT(DOW FROM $1::date)::int = ANY(e.work_days)
          AND NOT EXISTS (
            -- Intentionally counts soft-deleted rows too: they still occupy the
            -- UNIQUE (employee_id, date) slot, so inserting would violate it.
