@@ -438,6 +438,14 @@ function dateFmt(d: Date): string {
   return d.toISOString().split("T")[0];
 }
 
+// Format a Date using its LOCAL calendar components. Unlike dateFmt (which goes
+// through UTC via toISOString), this does not shift the day backward in UTC+
+// timezones — use it for dates built with new Date(y, m, d) at local midnight.
+function localYmd(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 function isWeekend(d: Date): boolean {
   const day = d.getDay();
   return day === 0 || day === 6;
@@ -529,15 +537,23 @@ async function seedAttendance() {
   // All active employees (skip intern for weekends logic)
   const empIds = ALL_EMP_IDS;
 
+  // Per-employee join dates so we never fabricate attendance before someone was hired.
+  const joinDates = new Map<string, Date>();
+  joinDates.set(ADMIN_EMP_ID, new Date("2020-01-01"));
+  for (const r of ROSTER) joinDates.set(E[r.key], new Date(r.joinDate));
+
   // 12 months back so trend/analytics charts have real historical depth.
   for (let dayOffset = 1; dayOffset <= 365; dayOffset++) {
     const d = new Date(today);
     d.setDate(d.getDate() - dayOffset);
     if (isWeekend(d)) continue;
 
-    const dateStr = dateFmt(d);
+    const dateStr = localYmd(d);
 
     for (const empId of empIds) {
+      // Skip dates before this employee's join date.
+      const jd = joinDates.get(empId);
+      if (jd && d < jd) continue;
       const luck = Math.random();
       let status: string;
       let clockIn: string | null = null;
@@ -645,8 +661,8 @@ async function seedLeaveRequests() {
       leaves.push({
         emp,
         type,
-        start: dateFmt(start),
-        end: dateFmt(end),
+        start: localYmd(start),
+        end: localYmd(end),
         reason: "Approved leave",
         status: "Approved",
         approver: E.ENG_MGR,
@@ -726,10 +742,10 @@ async function seedPayroll() {
     const start = new Date(y, mm, 1);
     const end = new Date(y, mm + 1, 0); // last day of month
     periods.push({
-      start: dateFmt(start),
-      end: dateFmt(end),
+      start: localYmd(start),
+      end: localYmd(end),
       status: monthsBack === 1 ? "Processed" : "Paid",
-      payDate: dateFmt(end),
+      payDate: localYmd(end),
     });
   }
 

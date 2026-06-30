@@ -166,8 +166,12 @@ export class EmployeeController {
     }
 
     /**
-     * Bulk-terminate employees. Loops the single-delete path per id and returns a
-     * per-item success/error breakdown (200 all-ok, 207 partial, 422 none).
+     * Bulk-terminate employees. Processes ids SEQUENTIALLY (not Promise.all) so we
+     * never saturate the pg pool with up to 100 concurrent transactions, and so the
+     * manager-reassignment cascade keeps the same deterministic ordering as the
+     * single-delete path (concurrent reparenting can orphan the hierarchy).
+     * Returns a per-item breakdown. Always 2xx (200 all-ok, 207 any failure) so the
+     * client receives the detailed results instead of a thrown error.
      */
     async bulkDeleteEmployees(req: Request, res: Response): Promise<void> {
         try {
@@ -181,20 +185,21 @@ export class EmployeeController {
                 return;
             }
 
-            const results = await Promise.all(
-                ids.map(async (id: string) => {
-                    try {
-                        await EmployeeService.deleteEmployee(id);
-                        return { id, success: true };
-                    } catch (error: any) {
-                        return { id, success: false, error: error.message || 'Failed to terminate' };
-                    }
-                })
-            );
+            const results: { id: string; success: boolean; error?: string }[] = [];
+            for (const id of ids) {
+                try {
+                    await EmployeeService.deleteEmployee(id);
+                    results.push({ id, success: true });
+                } catch (error: any) {
+                    results.push({ id, success: false, error: error.message || 'Failed to terminate' });
+                }
+            }
 
             const succeeded = results.filter((r) => r.success).length;
             const failed = ids.length - succeeded;
-            const httpStatus = succeeded === 0 ? 422 : failed > 0 ? 207 : 200;
+            // 207 Multi-Status for any failure (partial OR total) — still 2xx so the
+            // frontend resolves and can render the per-id failure report.
+            const httpStatus = failed > 0 ? 207 : 200;
             res.status(httpStatus).json({ total: ids.length, succeeded, failed, results });
         } catch (error: any) {
             logger.error(error, 'Bulk delete employees error:');
