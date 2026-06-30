@@ -1,8 +1,10 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { queryKeys } from '../../lib/queryKeys';
 import type { AuditLogItem, UpcomingEvent, PublicHoliday, PaginatedResponse } from '../../types';
 import { transformAvatarUrl } from './_shared';
+import { expandHolidayDates } from '../../lib/holidays';
 import type { PersistentAuditLog } from './compliance';
 
 export const useAuditLogs = () => {
@@ -54,6 +56,19 @@ export const useHolidays = () => {
     queryKey: queryKeys.holidays.list(),
     queryFn: () => api.get<PublicHoliday[]>('/holidays'),
   });
+};
+
+/**
+ * Returns a Set of "YYYY-MM-DD" holiday strings (recurring + multi-day expanded)
+ * for use with `<DatePicker disabledDates={...} />` to block holiday selection.
+ * Covers `yearsAround` years on each side of the current year.
+ */
+export const useHolidayDateSet = (yearsAround = 1): Set<string> => {
+  const { data: holidays } = useHolidays();
+  return useMemo(() => {
+    const thisYear = new Date().getFullYear();
+    return expandHolidayDates(holidays, thisYear - yearsAround, thisYear + yearsAround);
+  }, [holidays, yearsAround]);
 };
 
 export const useBulkCreateHolidays = () => {

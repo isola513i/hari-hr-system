@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MoreHorizontal, Mail, MapPin, Eye, User, Briefcase, Users, Calendar, Check, Circle, CheckCircle2, Clock, Pencil, Trash2, Upload, Download } from 'lucide-react';
+import { MoreHorizontal, Mail, MapPin, Eye, User, Briefcase, Users, Check, Circle, CheckCircle2, Clock, Pencil, Trash2, Upload, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,6 +8,7 @@ import { useEmployeeList, useAddEmployee, useDeleteEmployee, useBulkDeleteEmploy
 import type { BulkDeleteResult } from '../hooks/queries/employee';
 import { Modal } from '../components/Modal';
 import { Dropdown, DropdownOption } from '../components/Dropdown';
+import { DatePicker } from '../components/DatePicker';
 import { Avatar } from '../components/Avatar';
 import { StatusIndicator } from '../components/StatusIndicator';
 import { useUserStatus } from '../contexts/UserStatusContext';
@@ -529,14 +530,14 @@ export const Employees: React.FC = () => {
                     <button
                       onClick={(e) => { e.stopPropagation(); navigate(`/employees/${emp.id}?edit=true`); }}
                       className="px-3 py-2 border border-border-light dark:border-border-dark rounded-lg hover:bg-background-light dark:hover:bg-background-dark transition-colors"
-                      title="Edit"
+                      title={t('common:buttons.edit')}
                     >
                       <Pencil size={18} />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(emp.id); }}
                       className="px-3 py-2 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                      title="Delete"
+                      title={t('common:buttons.delete')}
                     >
                       <Trash2 size={18} />
                     </button>
@@ -643,7 +644,7 @@ export const Employees: React.FC = () => {
                 type="email"
                 value={newEmployee.email}
                 onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
-                placeholder="e.g. alex.m@nexus.hr"
+                placeholder={t('employees:addModal.emailPlaceholder')}
                 className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
               />
             </div>
@@ -651,16 +652,10 @@ export const Employees: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.onboardStartDate')}</label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
-              <input
-                required
-                type="date"
-                value={newEmployee.joinDate}
-                onChange={(e) => setNewEmployee({ ...newEmployee, joinDate: e.target.value })}
-                className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-              />
-            </div>
+            <DatePicker
+              value={newEmployee.joinDate}
+              onChange={(v) => setNewEmployee({ ...newEmployee, joinDate: v })}
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-4">

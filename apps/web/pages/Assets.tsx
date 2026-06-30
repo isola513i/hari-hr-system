@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useAssets, useCreateAsset, useUpdateAsset, useAssignAsset, useUnassignAsset, useDeleteAsset, useAllEmployees } from '../hooks/queries';
 import { useToast } from '../contexts/ToastContext';
 import { Dropdown } from '../components/Dropdown';
+import { DatePicker } from '../components/DatePicker';
 import type { CompanyAsset, AssetStatus } from '../types';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -118,7 +119,7 @@ function AssetFormModal({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('form.purchaseDate')}</label>
-              <input type="date" value={form.purchaseDate} onChange={f('purchaseDate')} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+              <DatePicker value={form.purchaseDate} onChange={(v) => setForm(prev => ({ ...prev, purchaseDate: v }))} maxDate={new Date().toISOString().split('T')[0]} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('form.purchasePrice')}</label>
@@ -183,7 +184,7 @@ function AssignModal({ asset, onClose, onAssign }: { asset: CompanyAsset; onClos
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function Assets() {
-  const { t } = useTranslation(['assets']);
+  const { t } = useTranslation(['assets', 'common']);
   const { isAdminView } = useAuth();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -361,20 +362,20 @@ export function Assets() {
                       {isAdminView && (
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => { setEditAsset(asset); setShowForm(true); }} className="p-1.5 text-gray-400 hover:text-primary rounded transition-colors" title="Edit">
+                            <button onClick={() => { setEditAsset(asset); setShowForm(true); }} className="p-1.5 text-gray-400 hover:text-primary rounded transition-colors" title={t('common:buttons.edit')}>
                               <Pencil size={14} />
                             </button>
                             {asset.status !== 'Assigned' && asset.status !== 'Retired' && (
-                              <button onClick={() => setAssignAsset(asset)} className="p-1.5 text-gray-400 hover:text-blue-500 rounded transition-colors" title="Assign">
+                              <button onClick={() => setAssignAsset(asset)} className="p-1.5 text-gray-400 hover:text-blue-500 rounded transition-colors" title={t('buttons.assign')}>
                                 <UserCheck size={14} />
                               </button>
                             )}
                             {asset.status === 'Assigned' && (
-                              <button onClick={() => handleUnassign(asset.id)} className="p-1.5 text-gray-400 hover:text-orange-500 rounded transition-colors" title="Unassign">
+                              <button onClick={() => handleUnassign(asset.id)} className="p-1.5 text-gray-400 hover:text-orange-500 rounded transition-colors" title={t('actions.unassign')}>
                                 <UserX size={14} />
                               </button>
                             )}
-                            <button onClick={() => handleDelete(asset.id)} className="p-1.5 text-gray-400 hover:text-red-500 rounded transition-colors" title="Delete">
+                            <button onClick={() => handleDelete(asset.id)} className="p-1.5 text-gray-400 hover:text-red-500 rounded transition-colors" title={t('common:buttons.delete')}>
                               <Trash2 size={14} />
                             </button>
                           </div>

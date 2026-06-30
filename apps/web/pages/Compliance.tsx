@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { Dropdown } from '../components/Dropdown';
+import { DatePicker } from '../components/DatePicker';
 import {
   useComplianceChecks,
   useComplianceAuditLogs,
@@ -364,14 +365,14 @@ export const Compliance: React.FC = () => {
                     <button
                       onClick={() => { setStatusChangeItem(item); setNewStatus(''); setStatusReason(''); }}
                       className="p-1 text-text-muted-light hover:text-primary rounded text-xs"
-                      title="Change Status"
+                      title={t('items.changeStatus')}
                     >
                       <FileEdit size={14} />
                     </button>
-                    <button onClick={() => openItemEdit(item)} className="p-1 text-text-muted-light hover:text-primary rounded" title="Edit">
+                    <button onClick={() => openItemEdit(item)} className="p-1 text-text-muted-light hover:text-primary rounded" title={t('common:buttons.edit')}>
                       <FileEdit size={14} />
                     </button>
-                    <button onClick={() => setDeleteConfirmId(item.id)} className="p-1 text-text-muted-light hover:text-red-500 rounded" title="Delete">
+                    <button onClick={() => setDeleteConfirmId(item.id)} className="p-1 text-text-muted-light hover:text-red-500 rounded" title={t('common:buttons.delete')}>
                       ×
                     </button>
                   </div>
@@ -440,11 +441,9 @@ export const Compliance: React.FC = () => {
           </div>
           <div>
             <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('items.dueDateLabel')}</label>
-            <input
-              type="date"
+            <DatePicker
               value={itemForm.dueDate}
-              onChange={(e) => setItemForm(f => ({ ...f, dueDate: e.target.value }))}
-              className="w-full px-3 py-2 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark"
+              onChange={(v) => setItemForm(f => ({ ...f, dueDate: v }))}
             />
           </div>
           <div className="flex justify-end gap-2 pt-2">

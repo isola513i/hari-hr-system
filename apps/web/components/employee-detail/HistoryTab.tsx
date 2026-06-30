@@ -3,6 +3,7 @@ import { Plus, Edit2, Briefcase, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { HistoryTabProps } from './EmployeeDetailTypes';
 import { formatDate } from '../../lib/date';
+import { DatePicker } from '../DatePicker';
 
 export const HistoryTab: React.FC<HistoryTabProps> = ({
     permissions,
@@ -67,22 +68,23 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
                                     </div>
                                     <div>
                                         <label className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark">{t('employees:history.startDate')}</label>
-                                        <input
-                                            type="date"
-                                            value={tempHistoryItem.startDate}
-                                            onChange={(e) => onSetTempHistoryItem({ ...tempHistoryItem, startDate: e.target.value })}
-                                            className="w-full mt-1 px-2 py-1.5 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded focus:outline-none focus:ring-1 focus:ring-primary text-text-light dark:text-text-dark"
-                                        />
+                                        <div className="mt-1">
+                                            <DatePicker
+                                                value={tempHistoryItem.startDate}
+                                                onChange={(v) => onSetTempHistoryItem({ ...tempHistoryItem, startDate: v })}
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="text-xs font-semibold text-text-muted-light dark:text-text-muted-dark">{t('employees:history.endDate')}</label>
-                                        <input
-                                            type="date"
-                                            value={tempHistoryItem.endDate && tempHistoryItem.endDate !== 'Present' ? tempHistoryItem.endDate : ''}
-                                            onChange={(e) => onSetTempHistoryItem({ ...tempHistoryItem, endDate: e.target.value })}
-                                            disabled={tempHistoryItem.endDate === 'Present'}
-                                            className="w-full mt-1 px-2 py-1.5 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded focus:outline-none focus:ring-1 focus:ring-primary text-text-light dark:text-text-dark disabled:opacity-50 disabled:cursor-not-allowed"
-                                        />
+                                        <div className="mt-1">
+                                            <DatePicker
+                                                value={tempHistoryItem.endDate && tempHistoryItem.endDate !== 'Present' ? tempHistoryItem.endDate : ''}
+                                                onChange={(v) => onSetTempHistoryItem({ ...tempHistoryItem, endDate: v })}
+                                                disabled={tempHistoryItem.endDate === 'Present'}
+                                                minDate={tempHistoryItem.startDate || undefined}
+                                            />
+                                        </div>
                                         <label className="flex items-center mt-1 cursor-pointer">
                                             <input
                                                 type="checkbox"
@@ -129,7 +131,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
                                                     <button
                                                         onClick={() => onStartEditHistory(job)}
                                                         className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-text-muted-light hover:text-primary"
-                                                        title="Edit"
+                                                        title={t('common:buttons.edit')}
                                                     >
                                                         <Edit2 size={14} />
                                                     </button>
@@ -137,7 +139,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
                                                         <button
                                                             onClick={() => onDeleteHistory(job.id)}
                                                             className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-text-muted-light hover:text-red-500"
-                                                            title="Delete"
+                                                            title={t('common:buttons.delete')}
                                                         >
                                                             <Trash2 size={14} />
                                                         </button>

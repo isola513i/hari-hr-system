@@ -9,6 +9,11 @@ interface DatePickerProps {
   placeholder?: string;
   label?: string;
   minDate?: string;
+  maxDate?: string;
+  /** Set of individual "YYYY-MM-DD" strings that cannot be selected (e.g. public holidays). */
+  disabledDates?: Set<string>;
+  /** Weekday numbers (0=Sun … 6=Sat) that cannot be selected (e.g. an employee's days off). */
+  disabledWeekdays?: number[];
   disabled?: boolean;
 }
 
@@ -31,6 +36,9 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   placeholder: placeholderProp,
   label,
   minDate,
+  maxDate,
+  disabledDates,
+  disabledWeekdays,
   disabled = false
 }) => {
   const { t, i18n } = useTranslation('common');
@@ -184,8 +192,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
     const dateString = formatDate(date);
 
-    // Check if date is before minDate
+    // Respect min/max bounds, non-working weekdays, and explicitly disabled dates (e.g. holidays)
     if (minDate && dateString < minDate) return;
+    if (maxDate && dateString > maxDate) return;
+    if (disabledWeekdays?.includes(date.getDay())) return;
+    if (disabledDates?.has(dateString)) return;
 
     onChange(dateString);
     setIsOpen(false);
@@ -211,8 +222,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
   const isDisabled = (date: Date): boolean => {
     if (date.getTime() === 0) return true;
-    if (!minDate) return false;
-    return formatDate(date) < minDate;
+    const dateString = formatDate(date);
+    if (minDate && dateString < minDate) return true;
+    if (maxDate && dateString > maxDate) return true;
+    if (disabledWeekdays?.includes(date.getDay())) return true;
+    if (disabledDates?.has(dateString)) return true;
+    return false;
   };
 
   const days = getDaysInMonth(currentMonth);

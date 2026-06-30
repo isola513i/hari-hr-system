@@ -67,6 +67,23 @@ export class HolidayService {
         return dates;
     }
 
+    /**
+     * True if a given "YYYY-MM-DD" date falls on a public holiday — covers
+     * single-day, multi-day (date..end_date) and recurring (annual, matched by MM-DD) holidays.
+     */
+    async isHoliday(date: string): Promise<boolean> {
+        const result = await query(
+            `SELECT 1 FROM holidays
+             WHERE (is_recurring = FALSE AND $1::date BETWEEN date AND COALESCE(end_date, date))
+                OR (is_recurring = TRUE
+                    AND TO_CHAR($1::date, 'MM-DD')
+                        BETWEEN TO_CHAR(date, 'MM-DD') AND TO_CHAR(COALESCE(end_date, date), 'MM-DD'))
+             LIMIT 1`,
+            [date]
+        );
+        return (result.rowCount ?? 0) > 0;
+    }
+
     async getHolidayById(id: string): Promise<Holiday | null> {
         const result = await query('SELECT id, date, end_date, name, is_recurring, created_at, updated_at FROM holidays WHERE id = $1', [id]);
         if (result.rows.length === 0) return null;

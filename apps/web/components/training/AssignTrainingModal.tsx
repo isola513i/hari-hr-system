@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '../Modal';
+import { DatePicker } from '../DatePicker';
 import { TrainingModule } from '../../types';
 
 interface AssignTrainingModalProps {
@@ -69,11 +70,10 @@ export const AssignTrainingModal: React.FC<AssignTrainingModalProps> = ({
           <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
             {t('assignModal.dueDateLabel')}
           </label>
-          <input
-            type="date"
+          <DatePicker
             value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className="w-full px-3 py-2 text-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
+            onChange={setDueDate}
+            minDate={new Date().toISOString().split('T')[0]}
           />
         </div>
 
