@@ -5,6 +5,7 @@ import SystemConfigService from './SystemConfigService';
 import { PaginationParams, PaginatedResult, createPaginatedResult } from '../utils/pagination';
 import JobHistoryService from './JobHistoryService';
 import { encrypt, decrypt, hashPII, isEncryptedFormat } from '../utils/encryption';
+import { NotFoundError, ConflictError } from '../utils/errorResponse';
 import { toInt } from '../utils/coerce';
 import { DEFAULT_WORK_DAYS } from '../utils/workdays';
 import logger from '../utils/logger';
@@ -429,10 +430,10 @@ export class EmployeeService {
 
             const emp = await client.query('SELECT id, status, manager_id FROM employees WHERE id = $1', [id]);
             if (emp.rowCount === 0) {
-                throw new Error('Employee not found');
+                throw new NotFoundError('Employee not found');
             }
             if (emp.rows[0].status === 'Terminated') {
-                throw new Error('Employee is already terminated');
+                throw new ConflictError('Employee is already terminated');
             }
 
             const parentManagerId: string | null = emp.rows[0].manager_id || null;
