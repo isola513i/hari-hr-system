@@ -661,3 +661,8 @@ HARI uses a **Monorepo** architecture with **npm workspaces** and **Clean Archit
 - [Setup Guide](./SETUP_GUIDE.md)
 - [API Documentation](./API_DOCUMENTATION.md)
 - [Contributing Guide](./CONTRIBUTING.md)
+
+## Architecture Decision Records
+
+The reasoning behind key technical choices (auth, migrations, state management, PII
+encryption, config storage) is documented as ADRs in [`docs/adr/`](adr/README.md).
