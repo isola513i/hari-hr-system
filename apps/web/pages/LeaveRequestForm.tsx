@@ -13,6 +13,7 @@ import {
   useLeaveTypeConfig,
 } from '../hooks/queries';
 import { resolveAvatarUrl } from '../lib/api';
+import { getErrorMessage } from '../lib/errorHandler';
 import { Dropdown } from '../components/Dropdown';
 import { DatePicker } from '../components/DatePicker';
 import { FileUpload } from '../components/FileUpload';
@@ -214,8 +215,8 @@ export function LeaveRequestForm() {
         showToast(t('leave:requestForm.submitSuccess'), 'success');
       }
       navigate('/time-off');
-    } catch (error: any) {
-      showToast(error?.message || 'Failed to submit leave request', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Failed to submit leave request'), 'error');
     }
   };
 

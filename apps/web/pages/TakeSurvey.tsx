@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useToast } from '../contexts/ToastContext';
 import { useSurveyDetail, useSubmitSurveyResponse } from '../hooks/queries';
 import type { SurveyQuestion } from '../types';
+import { getErrorMessage } from '../lib/errorHandler';
 
 // ---------------------------------------------------------------------------
 // Category color mapping
@@ -308,8 +309,8 @@ export const TakeSurvey: React.FC = () => {
       if (draftKey) localStorage.removeItem(draftKey);
       setRetaking(false);
       setSubmitted(true);
-    } catch (err: any) {
-      showToast(err.message || 'Failed to submit', 'error');
+    } catch (err) {
+      showToast(getErrorMessage(err, 'Failed to submit'), 'error');
     }
   };
 

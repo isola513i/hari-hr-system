@@ -18,6 +18,7 @@ import {
   useSentimentOverview,
 } from '../hooks/queries';
 import type { SurveyCategory, SentimentOverview } from '../types';
+import { getErrorMessage } from '../lib/errorHandler';
 
 const SURVEY_CATEGORIES: SurveyCategory[] = [
   'Workload', 'Team', 'Growth', 'Work-Life Balance', 'Management',
@@ -478,8 +479,8 @@ export const Surveys: React.FC = () => {
     try {
       await closeMutation.mutateAsync(id);
       showToast(t('surveys.toast.closedSuccess'));
-    } catch (err: any) {
-      showToast(err.message || t('surveys.toast.closeFailed'), 'error');
+    } catch (err) {
+      showToast(getErrorMessage(err, t('surveys.toast.closeFailed')), 'error');
     }
   };
 
@@ -487,8 +488,8 @@ export const Surveys: React.FC = () => {
     try {
       await reopenMutation.mutateAsync(id);
       showToast(t('surveys.toast.reopenedSuccess'));
-    } catch (err: any) {
-      showToast(err.message || t('surveys.toast.reopenFailed'), 'error');
+    } catch (err) {
+      showToast(getErrorMessage(err, t('surveys.toast.reopenFailed')), 'error');
     }
   };
 
@@ -496,8 +497,8 @@ export const Surveys: React.FC = () => {
     try {
       await deleteMutation.mutateAsync(id);
       showToast(t('surveys.toast.deletedSuccess'));
-    } catch (err: any) {
-      showToast(err.message || t('surveys.toast.deleteFailed'), 'error');
+    } catch (err) {
+      showToast(getErrorMessage(err, t('surveys.toast.deleteFailed')), 'error');
     }
   };
 

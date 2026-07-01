@@ -205,19 +205,19 @@ export const Analytics: React.FC = () => {
       '',
       t('attendanceTrends.title'),
       toCsvRow(['Day', 'On Time', 'Late', 'Absent']),
-      ...(data.attendance || []).map((r: any) => toCsvRow([r.day, r.onTime, r.late, r.absent])),
+      ...(data.attendance || []).map((r) => toCsvRow([r.day, r.onTime, r.late, r.absent])),
       '',
       t('leaveUsage.title'),
       toCsvRow(['Leave Type', 'Days', 'Requests']),
-      ...(data.leaveByType || []).map((r: any) => toCsvRow([r.type, r.days, r.requests])),
+      ...(data.leaveByType || []).map((r) => toCsvRow([r.type, r.days, r.requests])),
       '',
       t('performanceDistribution.title'),
       toCsvRow(['Rating', 'Label', 'Reviews']),
-      ...(data.performance || []).map((r: any) => toCsvRow([r.rating, r.label, r.count])),
+      ...(data.performance || []).map((r) => toCsvRow([r.rating, r.label, r.count])),
       '',
       t('turnover.title'),
       toCsvRow(['Month', 'Hires', 'Departures']),
-      ...(data.turnover || []).map((r: any) => toCsvRow([r.name, r.hires, r.departures])),
+      ...(data.turnover || []).map((r) => toCsvRow([r.name, r.hires, r.departures])),
     );
 
     downloadCsv(sections.join('\n'), `analytics-report-${selectedYear}-${date}.csv`);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Clock, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCreateOTRequest } from '../hooks/queries';
+import { getApiErrorMessage } from '../lib/errorHandler';
 import { DatePicker } from './DatePicker';
 
 interface Props {
@@ -44,7 +45,7 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
       { date, plannedStart, plannedEnd, plannedHours, otType, reason: reason.trim() },
       {
         onSuccess: () => onSuccess(t('otModal.success')),
-        onError: (err: any) => setError(err?.response?.data?.error || err?.message || t('otModal.failedSubmit')),
+        onError: (err) => setError(getApiErrorMessage(err, t('otModal.failedSubmit'))),
       }
     );
   };

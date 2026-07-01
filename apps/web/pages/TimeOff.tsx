@@ -14,6 +14,7 @@ import { LeaveDetailModal } from '../components/LeaveDetailModal';
 import { RejectReasonDialog } from '../components/RejectReasonDialog';
 import QueryErrorState from '../components/QueryErrorState';
 import type { LeaveBalance, LeaveRequest } from '../types';
+import { getErrorMessage } from '../lib/errorHandler';
 
 // ---------------------------------------------------------------------------
 // Circular Progress Ring
@@ -161,8 +162,8 @@ export const TimeOff: React.FC = () => {
           : t('leave:timeOff.cancelSuccess'),
         'success',
       );
-    } catch (error: any) {
-      showToast(error?.message || t('leave:timeOff.cancelFailed'), 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, t('leave:timeOff.cancelFailed')), 'error');
     } finally {
       setCancelModalRequest(null);
     }

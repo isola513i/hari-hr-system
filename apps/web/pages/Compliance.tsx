@@ -232,10 +232,10 @@ export const Compliance: React.FC = () => {
     if (!itemForm.title) return;
     try {
       if (editingItem) {
-        await updateItemMutation.mutateAsync({ id: editingItem.id, data: itemForm as any });
+        await updateItemMutation.mutateAsync({ id: editingItem.id, data: itemForm as Partial<ComplianceItem> });
         showToast(t('toast.itemUpdated'), 'success');
       } else {
-        await createItemMutation.mutateAsync(itemForm as any);
+        await createItemMutation.mutateAsync(itemForm as Partial<ComplianceItem>);
         showToast(t('toast.itemCreated'), 'success');
       }
       setIsItemFormOpen(false);

@@ -8,6 +8,7 @@ import {
     useDeleteLeaveQuotaOverride,
 } from '../../hooks/queries';
 import { translateLeaveType } from '../../lib/leaveTypeConfig';
+import { getErrorMessage } from '../../lib/errorHandler';
 
 interface LeaveQuotaTabProps {
     employeeId: string;
@@ -71,8 +72,8 @@ export const LeaveQuotaTab: React.FC<LeaveQuotaTabProps> = ({ employeeId, showTo
             }
             showToast(t('employees:toast.quotaUpdated'), 'success');
             setDirty(false);
-        } catch (error: any) {
-            showToast(error.message || t('employees:toast.quotaFailed'), 'error');
+        } catch (error) {
+            showToast(getErrorMessage(error, t('employees:toast.quotaFailed')), 'error');
         }
     };
 
@@ -80,8 +81,8 @@ export const LeaveQuotaTab: React.FC<LeaveQuotaTabProps> = ({ employeeId, showTo
         try {
             await deleteMutation.mutateAsync({ employeeId, leaveType: type });
             showToast(`${type} ${t('employees:toast.quotaResetSuccess')}`, 'success');
-        } catch (error: any) {
-            showToast(error.message || t('employees:toast.quotaResetFailed'), 'error');
+        } catch (error) {
+            showToast(getErrorMessage(error, t('employees:toast.quotaResetFailed')), 'error');
         }
     };
 

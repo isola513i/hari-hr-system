@@ -1,139 +1,23 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { OrgNode, Department, DEPARTMENTS, JOB_TITLES } from '../types';
+import { OrgNode, Department, DEPARTMENTS } from '../types';
 import {
-  Plus,
-  Edit2,
-  Trash2,
-  X,
   ZoomIn,
   ZoomOut,
   RotateCcw,
   Search,
-  Users,
-  ChevronDown,
-  ChevronUp,
-  Check,
   ArrowLeft,
   Move,
 } from 'lucide-react';
-
-// Avatar with fallback to initials
-const AvatarWithFallback: React.FC<{
-  src: string;
-  name: string;
-  size?: 'sm' | 'md' | 'lg';
-  isRoot?: boolean;
-}> = ({ src, name, size = 'md', isRoot = false }) => {
-  const [hasError, setHasError] = useState(false);
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((word) => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const getColorFromName = (name: string) => {
-    const colors = [
-      'bg-blue-500',
-      'bg-green-500',
-      'bg-purple-500',
-      'bg-pink-500',
-      'bg-indigo-500',
-      'bg-teal-500',
-      'bg-orange-500',
-      'bg-rose-500',
-      'bg-cyan-500',
-      'bg-emerald-500',
-    ];
-    const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return colors[index % colors.length];
-  };
-
-  const sizeClasses = {
-    sm: isRoot ? 'w-14 h-14 text-lg' : 'w-10 h-10 text-sm',
-    md: isRoot ? 'w-14 h-14 text-lg' : 'w-12 h-12 text-base',
-    lg: isRoot ? 'w-16 h-16 text-xl' : 'w-14 h-14 text-lg',
-  };
-
-  const ringClasses = isRoot ? 'ring-primary/30' : 'ring-gray-100 dark:ring-gray-700';
-
-  if (hasError || !src || src.startsWith('blob:')) {
-    return (
-      <div
-        className={`${sizeClasses[size]} ${getColorFromName(name)} rounded-full flex items-center justify-center text-white font-semibold ring-2 ${ringClasses}`}
-      >
-        {getInitials(name)}
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={src}
-      alt={name}
-      className={`${sizeClasses[size]} rounded-full object-cover ring-2 ${ringClasses}`}
-      onError={() => setHasError(true)}
-    />
-  );
-};
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserStatus } from '../contexts/UserStatusContext';
 import { useOrg } from '../contexts/OrgContext';
 import { useToast } from '../contexts/ToastContext';
 import { Dropdown } from '../components/Dropdown';
-import { StatusIndicator } from '../components/StatusIndicator';
-
-// Helper to build tree structure
-const buildTree = (nodes: OrgNode[]): OrgNode[] => {
-  const nodeMap = new Map<string, OrgNode>();
-
-  // Create map and shallow copies
-  nodes.forEach((node) => {
-    nodeMap.set(node.id, { ...node, children: [] });
-  });
-
-  const roots: OrgNode[] = [];
-
-  // Reconstruct hierarchy
-  nodeMap.forEach((node) => {
-    if (node.parentId) {
-      const parent = nodeMap.get(node.parentId);
-      if (parent) {
-        parent.children?.push(node);
-      } else {
-        // Parent not in dataset (terminated/deleted) — show as root
-        roots.push(node);
-      }
-    } else {
-      roots.push(node);
-    }
-  });
-
-  return roots;
-};
-
-// Helper to get all descendants of a node (to prevent cycles when picking a parent)
-const getDescendants = (parentId: string, allNodes: OrgNode[]): string[] => {
-  const children = allNodes.filter((n) => n.parentId === parentId);
-  let descendants: string[] = children.map((c) => c.id);
-  children.forEach((c) => {
-    descendants = [...descendants, ...getDescendants(c.id, allNodes)];
-  });
-  return descendants;
-};
-
-// Types for Modal
-type ModalType = 'add' | 'edit';
-interface ModalState {
-  isOpen: boolean;
-  type: ModalType;
-  nodeId: string | null; // For edit: node being edited, For add: parent node ID
-}
+import { buildTree, getDescendants, ModalState } from '../components/org-chart/orgChartHelpers';
+import { TreeNode } from '../components/org-chart/TreeNode';
+import { OrgNodeModal } from '../components/org-chart/OrgNodeModal';
+import { DeleteConfirmModal } from '../components/org-chart/DeleteConfirmModal';
 
 export const OrgChart: React.FC = () => {
   const { t } = useTranslation(['employees', 'common']);
@@ -638,174 +522,6 @@ export const OrgChart: React.FC = () => {
     return () => document.removeEventListener('keydown', handler);
   }, [draggedNodeId, cancelDrag]);
 
-  // Recursive Tree Component with visual tree connectors
-  const TreeNode: React.FC<{ node: OrgNode; isRoot?: boolean }> = ({ node, isRoot = false }) => {
-    const isCollapsed = collapsedNodes.has(node.id);
-    const hasChildren = node.children && node.children.length > 0;
-    const isHighlighted = node.id === highlightedId;
-    const childCount = node.children?.length || 0;
-
-    // Drag & drop state for this card
-    const isDragging = draggedNodeId === node.id;
-    const isDragOver = dragOverNodeId === node.id && draggedNodeId !== null;
-    const canDrop = isDragOver && draggedNodeId !== null && isValidDrop(draggedNodeId, node.id);
-    const isOrphan = !node.parentId && (!node.children || node.children.length === 0);
-    const isDraggable = isAdmin && (!!node.parentId || isOrphan);
-
-    return (
-      <div className="flex flex-col items-center">
-        <div className="group relative z-10">
-          {/* Card */}
-          <div
-            draggable={isDraggable}
-            onDragStart={(e) => handleDragStart(e, node.id)}
-            onDragOver={(e) => handleDragOver(e, node.id)}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, node.id)}
-            onDragEnd={handleDragEnd}
-            className={`flex flex-col items-center bg-card-light dark:bg-card-dark border transition-all duration-200 rounded-xl p-3 md:p-4 w-40 md:w-52 ${
-              isHighlighted
-                ? 'ring-4 ring-primary border-primary scale-105 shadow-lg shadow-primary/20'
-                : isDragging
-                  ? 'opacity-40 scale-95 border-border-light dark:border-border-dark shadow-sm'
-                  : isDragOver && canDrop
-                    ? 'ring-4 ring-green-400 border-green-400 bg-green-50 dark:bg-green-900/20 scale-105 shadow-lg'
-                    : isDragOver && !canDrop
-                      ? 'ring-4 ring-red-400 border-red-400'
-                      : 'border-border-light dark:border-border-dark shadow-sm'
-            } ${isRoot ? 'ring-2 ring-primary/30 shadow-md' : ''}
-              ${isDraggable ? 'cursor-grab active:cursor-grabbing' : ''}
-              ${isAdmin && !isDragging ? 'hover:shadow-lg hover:border-primary/50 hover:-translate-y-0.5' : ''}`}
-          >
-            {/* Avatar with fallback and availability status indicator */}
-            <div className="relative mb-3">
-              <AvatarWithFallback src={node.avatar} name={node.name} size="md" isRoot={isRoot} />
-              <StatusIndicator
-                status={getAvailabilityStatus(node.id)}
-                showTooltip
-                size="md"
-                className="absolute -bottom-0.5 -right-0.5"
-              />
-            </div>
-            <h3
-              className={`font-bold text-text-light dark:text-text-dark text-center ${isRoot ? 'text-sm' : 'text-sm'}`}
-            >
-              {node.name}
-            </h3>
-            <p className="text-xs text-text-muted-light dark:text-text-muted-dark text-center">
-              {node.role}
-            </p>
-
-            {/* Department badge */}
-            {node.department && (
-              <span className="mt-1.5 text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                {node.department}
-              </span>
-            )}
-
-            {/* Direct report count */}
-            {node.directReportCount !== undefined && node.directReportCount > 0 && (
-              <div
-                className="mt-1.5 flex items-center gap-1 text-[10px] text-text-muted-light dark:text-text-muted-dark cursor-pointer hover:text-primary transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  fetchSubTree(node.id);
-                }}
-                title={node.directReportCount > 1 ? t('orgChart.reports', { count: node.directReportCount }) : t('orgChart.report', { count: node.directReportCount })}
-              >
-                <Users size={10} />
-                <span>
-                  {node.directReportCount > 1 ? t('orgChart.reports', { count: node.directReportCount }) : t('orgChart.report', { count: node.directReportCount })}
-                </span>
-              </div>
-            )}
-
-            {hasChildren && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleCollapse(node.id);
-                }}
-                className="mt-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-text-muted-light transition-colors"
-              >
-                {isCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-              </button>
-            )}
-          </div>
-
-          {/* Hover Actions - ADMIN ONLY */}
-          {isAdmin && (
-            <div className="absolute -right-3 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-card-dark shadow-lg rounded-lg p-1 border border-border-light dark:border-border-dark z-20">
-              <button
-                onClick={() => openEditModal(node)}
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-blue-500"
-                title={t('orgChart.edit')}
-              >
-                <Edit2 size={14} />
-              </button>
-              <button
-                onClick={() => openAddModal(node.id)}
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-green-500"
-                title={t('orgChart.addSubordinate')}
-              >
-                <Plus size={14} />
-              </button>
-              {!node.parentId ? null : (
-                <button
-                  onClick={() => handleDelete(node.id)}
-                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-red-500"
-                  title={t('orgChart.delete')}
-                >
-                  <Trash2 size={14} />
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Tree Connectors & Children */}
-        {hasChildren && !isCollapsed && (
-          <div className="flex flex-col items-center animate-in fade-in slide-in-from-top-2 duration-300">
-            {/* Vertical line from parent to horizontal bar */}
-            <div className="w-[2px] h-6 bg-primary/30 dark:bg-primary/25"></div>
-
-            {/* Children row */}
-            <div className="flex">
-              {node.children!.map((child, index) => (
-                <div key={child.id} className="flex flex-col items-center px-2 md:px-4 relative">
-                  {/* Horizontal connector segment: first=right half, last=left half, middle=full */}
-                  {childCount > 1 && (
-                    <div
-                      className="absolute top-0 h-[2px] bg-primary/30 dark:bg-primary/25"
-                      style={{
-                        left: index === 0 ? '50%' : '0',
-                        right: index === node.children!.length - 1 ? '50%' : '0',
-                      }}
-                    />
-                  )}
-                  {/* Vertical drop line */}
-                  <div className="w-[2px] h-6 bg-primary/30 dark:bg-primary/25"></div>
-                  <TreeNode node={child} />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Collapsed indicator */}
-        {hasChildren && isCollapsed && (
-          <div className="flex flex-col items-center mt-1">
-            <div className="w-0.5 h-3 bg-primary/10"></div>
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[10px] text-primary/60 font-medium">
-              <Users size={10} />
-              {childCount}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-6 animate-fade-in h-full flex flex-col">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -917,170 +633,65 @@ export const OrgChart: React.FC = () => {
         >
           <div className="flex gap-6 md:gap-16">
             {tree.map((root) => (
-              <TreeNode key={root.id} node={root} isRoot />
+              <TreeNode
+                key={root.id}
+                node={root}
+                isRoot
+                isAdmin={isAdmin}
+                collapsedNodes={collapsedNodes}
+                highlightedId={highlightedId}
+                draggedNodeId={draggedNodeId}
+                dragOverNodeId={dragOverNodeId}
+                isValidDrop={isValidDrop}
+                getAvailabilityStatus={getAvailabilityStatus}
+                t={t}
+                handleDragStart={handleDragStart}
+                handleDragOver={handleDragOver}
+                handleDragLeave={handleDragLeave}
+                handleDrop={handleDrop}
+                handleDragEnd={handleDragEnd}
+                toggleCollapse={toggleCollapse}
+                fetchSubTree={fetchSubTree}
+                openEditModal={openEditModal}
+                openAddModal={openAddModal}
+                handleDelete={handleDelete}
+              />
             ))}
           </div>
         </div>
       </div>
 
       {/* Edit/Add Modal - Render only if open (and triggered by admin) */}
-      {modalState.isOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-              <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
-                {modalState.type === 'add' ? t('orgChart.addNewPosition') : t('orgChart.editPosition')}
-              </h3>
-              <button
-                onClick={() => setModalState({ ...modalState, isOpen: false })}
-                className="text-text-muted-light hover:text-text-light"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
-                  {t('orgChart.name')}
-                </label>
-                <input
-                  type="text"
-                  value={inputName}
-                  onChange={(e) => setInputName(e.target.value)}
-                  className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                  placeholder={t('orgChart.namePlaceholder')}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
-                  {t('orgChart.roleJobTitle')}
-                </label>
-                <Dropdown
-                  value={inputRole}
-                  onChange={(val) => setInputRole(val)}
-                  options={JOB_TITLES.map((title) => ({ value: title, label: title }))}
-                  placeholder={t('orgChart.rolePlaceholder')}
-                />
-              </div>
-
-              {/* Email - required for adding */}
-              {modalState.type === 'add' && (
-                <div>
-                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
-                    {t('orgChart.email')} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={inputEmail}
-                    onChange={(e) => setInputEmail(e.target.value)}
-                    className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
-                    placeholder={t('orgChart.emailPlaceholder')}
-                  />
-                </div>
-              )}
-
-              {/* Department */}
-              <div>
-                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
-                  {t('orgChart.department')}
-                </label>
-                <Dropdown
-                  value={inputDepartment}
-                  onChange={(value) => setInputDepartment(value as Department | '')}
-                  options={[
-                    { value: '', label: t('addModal.selectDepartment') },
-                    ...departments.map((dept) => ({ value: dept, label: dept }))
-                  ]}
-                  placeholder={t('addModal.selectDepartment')}
-                />
-              </div>
-
-              {modalState.type === 'edit' && (
-                <div>
-                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
-                    {t('orgChart.reportsTo')}
-                  </label>
-                  <Dropdown
-                    value={inputParentId || ''}
-                    onChange={(value) => setInputParentId(value)}
-                    options={[
-                      { value: '', label: t('orgChart.noManager') },
-                      ...availableParents.map((parent) => ({
-                        value: parent.id,
-                        label: `${parent.name} (${parent.role})`
-                      }))
-                    ]}
-                    placeholder={t('orgChart.selectManager')}
-                  />
-                  <p className="text-xs text-text-muted-light mt-1">
-                    {t('orgChart.reportsToHint')}
-                  </p>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
-                  {t('orgChart.avatarUrl')}
-                </label>
-                <input
-                  type="text"
-                  value={inputAvatar}
-                  onChange={(e) => setInputAvatar(e.target.value)}
-                  className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark text-xs font-mono"
-                />
-              </div>
-            </div>
-            <div className="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-end gap-3 bg-gray-50 dark:bg-gray-800/50">
-              <button
-                onClick={() => setModalState({ ...modalState, isOpen: false })}
-                className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light dark:text-text-muted-dark dark:hover:text-text-dark"
-              >
-                {t('common:buttons.cancel')}
-              </button>
-              <button
-                onClick={handleSave}
-                className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 flex items-center gap-2"
-              >
-                <Check size={16} /> {t('common:buttons.save')}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {modalState.isOpen && (
+        <OrgNodeModal
+          type={modalState.type}
+          t={t}
+          inputName={inputName}
+          setInputName={setInputName}
+          inputRole={inputRole}
+          setInputRole={setInputRole}
+          inputEmail={inputEmail}
+          setInputEmail={setInputEmail}
+          inputDepartment={inputDepartment}
+          setInputDepartment={setInputDepartment}
+          inputAvatar={inputAvatar}
+          setInputAvatar={setInputAvatar}
+          inputParentId={inputParentId}
+          setInputParentId={setInputParentId}
+          departments={departments}
+          availableParents={availableParents}
+          onClose={() => setModalState({ ...modalState, isOpen: false })}
+          onSave={handleSave}
+        />
       )}
 
       {/* Delete Confirmation Modal */}
-      {deleteConfirmId && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-6 text-center">
-              <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                <Trash2 className="text-red-600 dark:text-red-400" size={24} />
-              </div>
-              <h3 className="font-bold text-lg text-text-light dark:text-text-dark mb-2">
-                {t('orgChart.removeFromOrgChart')}
-              </h3>
-              <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
-                {t('orgChart.removeConfirm')}
-              </p>
-            </div>
-            <div className="flex justify-center gap-3 p-4 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800/50">
-              <button
-                onClick={() => setDeleteConfirmId(null)}
-                className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light transition-colors"
-              >
-                {t('common:buttons.cancel')}
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 flex items-center gap-2"
-              >
-                <Trash2 size={16} /> {t('common:buttons.delete')}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {deleteConfirmId && (
+        <DeleteConfirmModal
+          t={t}
+          onCancel={() => setDeleteConfirmId(null)}
+          onConfirm={confirmDelete}
+        />
       )}
 
     </div>

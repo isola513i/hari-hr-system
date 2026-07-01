@@ -172,7 +172,7 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                                     placeholder={t('common:placeholders.selectRole')}
                                     disabled={!canEditSensitiveInfo}
                                     options={[
-                                        ...(editForm.role && !JOB_TITLES.includes(editForm.role as any)
+                                        ...(editForm.role && !(JOB_TITLES as readonly string[]).includes(editForm.role)
                                             ? [{ value: editForm.role, label: editForm.role }]
                                             : []),
                                         ...JOB_TITLES.map((t) => ({ value: t, label: t })),
@@ -191,7 +191,7 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                                     placeholder={t('common:placeholders.selectDepartment')}
                                     disabled={!canEditSensitiveInfo}
                                     options={[
-                                        ...(editForm.department && !DEPARTMENTS.includes(editForm.department as any)
+                                        ...(editForm.department && !(DEPARTMENTS as readonly string[]).includes(editForm.department)
                                             ? [{ value: editForm.department, label: editForm.department }]
                                             : []),
                                         ...DEPARTMENTS.map((d) => ({ value: d, label: d })),
@@ -658,7 +658,7 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                                     onChange={(val) => onPromoteFormChange('role', val)}
                                     placeholder={t('common:placeholders.selectNewRole')}
                                     options={[
-                                        ...(promoteForm.role && !JOB_TITLES.includes(promoteForm.role as any)
+                                        ...(promoteForm.role && !(JOB_TITLES as readonly string[]).includes(promoteForm.role)
                                             ? [{ value: promoteForm.role, label: promoteForm.role }]
                                             : []),
                                         ...JOB_TITLES.map((t) => ({ value: t, label: t })),

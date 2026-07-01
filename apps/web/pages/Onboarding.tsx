@@ -16,6 +16,7 @@ import { useToast } from '../contexts/ToastContext';
 import { Dropdown } from '../components/Dropdown';
 import { api, BASE_URL, getAuthToken } from '../lib/api';
 import { queryKeys } from '../lib/queryKeys';
+import { getErrorMessage } from '../lib/errorHandler';
 import { useOnboardingTasks, useOnboardingContacts, useOnboardingDocuments, useAllEmployees, useCreateContact, useUpdateContact, useDeleteContact } from '../hooks/queries';
 import { TaskList, KeyContacts, DocumentChecklist, InviteModal, OnboardingOverview } from '../components/onboarding';
 
@@ -276,9 +277,9 @@ export const Onboarding: React.FC = () => {
                 // Employee exists - seed onboarding tasks for them
                 try {
                     await api.post(`/onboarding/tasks/seed/${existingEmployee.id}`, {});
-                } catch (seedError: any) {
+                } catch (seedError) {
                     // 409 = tasks already exist, which is fine
-                    if (!seedError.message?.includes('already exist')) {
+                    if (!getErrorMessage(seedError, '').includes('already exist')) {
                         console.log('Could not seed tasks:', seedError);
                     }
                 }
@@ -361,8 +362,8 @@ export const Onboarding: React.FC = () => {
                 (old || []).map(d => d.id === docId ? updatedDoc : d)
             );
             showToast(t('documentUploaded'), 'success');
-        } catch (error: any) {
-            showToast(error.message || t('uploadFailed'), 'error');
+        } catch (error) {
+            showToast(getErrorMessage(error, t('uploadFailed')), 'error');
         } finally {
             setUploadingDocId(null);
         }

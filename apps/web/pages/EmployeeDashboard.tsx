@@ -1,36 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  Users,
-  Plane,
-  Palmtree,
-  Wallet,
-  Clock,
-  StickyNote,
-  Megaphone,
-  MessageSquare,
-  Pin,
-  Pencil,
-  Send,
-  Trash2,
-  X,
-  Calendar as CalendarIcon,
-  Cake,
-  PartyPopper,
-  GraduationCap,
-  Flag,
-  Building2,
-  DollarSign,
-  Timer,
-  CheckCircle2,
-  XCircle,
-  ClipboardClock,
-} from 'lucide-react';
 import { LeaveGanttCalendar } from '../components/LeaveGanttCalendar';
-import { Avatar } from '../components/Avatar';
-import { StatusIndicator } from '../components/StatusIndicator';
 import { useUserStatus } from '../contexts/UserStatusContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -60,15 +31,24 @@ import { AttendanceRegularizationModal } from '../components/AttendanceRegulariz
 import { LocationPermissionModal } from '../components/LocationPermissionModal';
 import { queryKeys } from '../lib/queryKeys';
 import { translateLeaveType } from '../lib/leaveTypeConfig';
-import { SkeletonRow } from '../components/Skeleton';
+import {
+  DashboardHeader,
+  EmployeeQuickActions,
+  EmployeeStatsCards,
+  MyRecentRequests,
+  MyTeamCard,
+  UpcomingEventsCard,
+  AnnouncementsCard,
+  PersonalNotesCard,
+  MyOTRequestsCard,
+} from '../components/employee-dashboard';
 
 export const EmployeeDashboard: React.FC = () => {
-  const { t, i18n } = useTranslation(['dashboard', 'common']);
+  const { t } = useTranslation(['dashboard', 'common']);
   const { user } = useAuth();
   const { showToast } = useToast();
   const { getStatus, getStatusMessage } = useUserStatus();
   const { requests } = useLeave();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const myLeaveRequests = requests.filter(r => r.employeeName === user?.name);
@@ -375,162 +355,21 @@ export const EmployeeDashboard: React.FC = () => {
 
       <div className="space-y-6 animate-fade-in pb-8">
         {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark tracking-tight">{t('dashboard:employee.greeting', { name: user?.name?.split(' ')[0] })}</h1>
-          <p className="text-sm sm:text-base text-text-muted-light dark:text-text-muted-dark mt-1">{t('dashboard:employee.pendingRequests', { count: myRequests.filter(r => r.status === 'Pending').length })}</p>
-        </div>
-        <div className="flex flex-col items-end gap-2 w-full sm:w-auto">
-          {/* Attendance Status Badge */}
-          {attendanceStatus?.clockIn && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                attendanceStatus.clockOut
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                  : attendanceStatus.status === 'Late'
-                  ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
-                  : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-              }`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${
-                  attendanceStatus.clockOut
-                    ? 'bg-green-500'
-                    : attendanceStatus.status === 'Late'
-                    ? 'bg-orange-500 animate-pulse'
-                    : 'bg-blue-500 animate-pulse'
-                }`}></div>
-                <span>
-                  {attendanceStatus.clockOut
-                    ? (attendanceStatus.autoCheckout ? t('dashboard:employee.autoCheckout') : t('dashboard:employee.completed'))
-                    : attendanceStatus.status === 'Late'
-                    ? t('dashboard:employee.workingLate')
-                    : t('dashboard:employee.working')}
-                </span>
-              </div>
-              {attendanceStatus.checkInType && attendanceStatus.checkInType !== 'office' && (
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                  attendanceStatus.checkInType === 'wfh'
-                    ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
-                    : 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400'
-                }`}>
-                  {attendanceStatus.checkInType === 'wfh' ? 'WFH' : 'Remote'}
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Check In/Out + WFH request buttons */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowRegModal(true)}
-              title={t('dashboard:employee.requestCorrection')}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-muted-light dark:text-text-muted-dark border border-border-light dark:border-border-dark rounded-lg hover:border-teal-400 hover:text-teal-600 dark:hover:text-teal-400 transition-all"
-            >
-              <ClipboardClock size={15} />
-              <span className="hidden sm:inline">{t('dashboard:employee.requestCorrection')}</span>
-            </button>
-            {!attendanceStatus?.clockIn && (
-              <button
-                onClick={() => setShowWFHModal(true)}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-muted-light dark:text-text-muted-dark border border-border-light dark:border-border-dark rounded-lg hover:border-purple-400 hover:text-purple-600 dark:hover:text-purple-400 transition-all"
-              >
-                <Building2 size={15} />
-                WFH
-              </button>
-            )}
-            <button
-              onClick={handleClockAction}
-              disabled={isClockingIn || !!(attendanceStatus?.clockIn && attendanceStatus?.clockOut)}
-              className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg text-sm shadow-sm transition-all ${
-                attendanceStatus?.clockIn && !attendanceStatus?.clockOut
-                  ? 'bg-accent-orange text-white hover:bg-accent-orange/90 hover:shadow-md'
-                  : attendanceStatus?.clockOut
-                  ? 'bg-gray-400 text-white cursor-not-allowed'
-                  : 'bg-primary text-white hover:bg-primary/90 hover:shadow-md'
-              } ${isClockingIn ? 'opacity-70 cursor-wait' : ''}`}
-            >
-              <Clock size={18} />
-              {isClockingIn
-                ? (attendanceStatus?.clockIn ? t('common:buttons.loading') : t('dashboard:employee.gettingGPS'))
-                : attendanceStatus?.clockIn && !attendanceStatus?.clockOut
-                ? t('dashboard:employee.checkOut')
-                : attendanceStatus?.clockOut
-                ? t('dashboard:employee.doneForToday')
-                : t('dashboard:employee.checkIn')}
-            </button>
-          </div>
-        </div>
-      </div>
+      <DashboardHeader
+        userName={user?.name}
+        pendingRequestsCount={myRequests.filter(r => r.status === 'Pending').length}
+        attendanceStatus={attendanceStatus}
+        isClockingIn={isClockingIn}
+        onClockAction={handleClockAction}
+        onRequestCorrection={() => setShowRegModal(true)}
+        onRequestWFH={() => setShowWFHModal(true)}
+      />
 
       {/* Quick Actions for Employee */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
-        <button
-          onClick={() => navigate('/time-off')}
-          className="flex items-center justify-center gap-3 p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group"
-        >
-          <div className="p-2 bg-accent-teal/10 text-accent-teal rounded-lg group-hover:bg-accent-teal group-hover:text-white transition-colors">
-            <Palmtree size={20} />
-          </div>
-          <span className="font-medium text-text-light dark:text-text-dark">{t('dashboard:employee.timeOff')}</span>
-        </button>
-        <button
-          onClick={() => navigate('/expenses')}
-          className="flex items-center justify-center gap-3 p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group"
-        >
-          <div className="p-2 bg-accent-green/10 text-accent-green rounded-lg group-hover:bg-accent-green group-hover:text-white transition-colors">
-            <DollarSign size={20} />
-          </div>
-          <span className="font-medium text-text-light dark:text-text-dark">{t('common:nav.expenses')}</span>
-        </button>
-        <button
-          onClick={() => navigate('/surveys')}
-          className="flex items-center justify-center gap-3 p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group"
-        >
-          <div className="p-2 bg-accent-orange/10 text-accent-orange rounded-lg group-hover:bg-accent-orange group-hover:text-white transition-colors">
-            <MessageSquare size={20} />
-          </div>
-          <span className="font-medium text-text-light dark:text-text-dark">{t('dashboard:employee.surveys')}</span>
-        </button>
-        <button
-          onClick={() => navigate('/payroll')}
-          className="flex items-center justify-center gap-3 p-4 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group"
-        >
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/20 text-blue-500 rounded-lg group-hover:bg-blue-500 group-hover:text-white transition-colors">
-            <Wallet size={20} />
-          </div>
-          <span className="font-medium text-text-light dark:text-text-dark">{t('common:nav.payroll')}</span>
-        </button>
-      </div>
+      <EmployeeQuickActions />
 
       {/* Employee Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 sm:p-6 shadow-sm flex items-center justify-between cursor-pointer hover:border-primary/50 transition-colors" onClick={() => navigate('/time-off')}>
-          <div>
-            <p className="text-text-muted-light dark:text-text-muted-dark text-xs sm:text-sm font-medium mb-1">{t('dashboard:employee.leaveBalance')}</p>
-            <h3 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark">{employeeStats.leaveBalance} <span className="text-xs sm:text-sm font-normal text-text-muted-light">{t('dashboard:employee.daysUnit')}</span></h3>
-          </div>
-          <div className="p-2 sm:p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-lg">
-            <Plane size={20} className="sm:w-6 sm:h-6" />
-          </div>
-        </div>
-        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 sm:p-6 shadow-sm flex items-center justify-between cursor-pointer hover:border-primary/50 transition-colors" onClick={() => navigate('/payroll')}>
-          <div>
-            <p className="text-text-muted-light dark:text-text-muted-dark text-xs sm:text-sm font-medium mb-1">{t('dashboard:employee.nextPayday')}</p>
-            <h3 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark">{employeeStats.nextPayday ? new Date(employeeStats.nextPayday + 'T00:00:00').toLocaleDateString(i18n.language === 'th' ? 'th-TH' : 'en-US', { month: 'short', day: 'numeric' }) : '—'}</h3>
-          </div>
-          <div className="p-2 sm:p-3 bg-green-50 dark:bg-green-900/20 text-green-500 rounded-lg">
-            <Wallet size={20} className="sm:w-6 sm:h-6" />
-          </div>
-        </div>
-        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 sm:p-6 shadow-sm flex items-center justify-between cursor-pointer hover:border-primary/50 transition-colors" onClick={() => navigate('/surveys')}>
-          <div>
-            <p className="text-text-muted-light dark:text-text-muted-dark text-xs sm:text-sm font-medium mb-1">{t('dashboard:employee.pendingSurveys')}</p>
-            <h3 className="text-2xl sm:text-3xl font-bold text-text-light dark:text-text-dark">{employeeStats.pendingSurveys}</h3>
-          </div>
-          <div className="p-2 sm:p-3 bg-orange-50 dark:bg-orange-900/20 text-orange-500 rounded-lg">
-            <MessageSquare size={20} className="sm:w-6 sm:h-6" />
-          </div>
-        </div>
-      </div>
+      <EmployeeStatsCards employeeStats={employeeStats} />
 
       {/* Leave Gantt Calendar */}
       <LeaveGanttCalendar
@@ -543,419 +382,45 @@ export const EmployeeDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* My Tasks */}
-        <div className="lg:col-span-2 bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
-          <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
-            <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">{t('dashboard:employee.myRecentRequests')}</h2>
-            <button onClick={() => navigate('/time-off')} className="text-xs text-primary font-medium hover:underline">{t('common:buttons.viewAll')}</button>
-          </div>
-          <div className="p-4 space-y-3">
-            {myRequests.length > 0 ? (
-              myRequests.slice(0, 4).map(req => {
-                const statusColor = req.status === 'Approved' || req.status === 'Reimbursed'
-                  ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                  : req.status === 'Rejected' || req.status === 'Cancelled'
-                    ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-                    : 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400';
-                const badgeColor = req.status === 'Approved' || req.status === 'Reimbursed'
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
-                  : req.status === 'Rejected' || req.status === 'Cancelled'
-                    ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400'
-                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400';
-                return (
-                  <div key={req.id} className="flex items-center justify-between p-3 bg-background-light dark:bg-background-dark rounded-lg border border-border-light dark:border-border-dark">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${statusColor}`}>
-                        {req.kind === 'expense' ? <DollarSign size={18} /> : <Plane size={18} />}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-text-light dark:text-text-dark">{req.label}</p>
-                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.subtitle}</p>
-                      </div>
-                    </div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded ${badgeColor}`}>
-                      {t(`common:status.${req.status === 'Cancel Requested' ? 'cancelRequested' : req.status === 'Manager Approved' ? 'managerApproved' : req.status.toLowerCase()}`, { defaultValue: req.status })}
-                    </span>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="text-center py-4 text-text-muted-light">{t('dashboard:employee.noRequestsYet')}</div>
-            )}
-          </div>
-        </div>
+        <MyRecentRequests myRequests={myRequests} />
 
         {/* My Team */}
-        <div className="lg:col-span-1 bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
-          <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
-            <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">{t('dashboard:employee.myTeam')}</h2>
-            {teamHierarchy?.stats && (
-              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                {teamHierarchy.stats.totalDirectReports > 0
-                  ? t('dashboard:employee.reports', { count: teamHierarchy.stats.totalDirectReports })
-                  : t('dashboard:employee.peers', { count: teamHierarchy.stats.peersCount })}
-              </span>
-            )}
-          </div>
-          <div className="p-4 space-y-3">
-            {isTeamLoading && (
-              <>
-                <SkeletonRow />
-                <SkeletonRow />
-                <SkeletonRow />
-              </>
-            )}
-            {/* Manager info */}
-            {!isTeamLoading && teamHierarchy?.manager && (
-              <div className="flex items-center gap-3 pb-3 border-b border-border-light dark:border-border-dark">
-                <div className="relative">
-                  <Avatar
-                    src={teamHierarchy.manager.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(teamHierarchy.manager.name)}&background=random`}
-                    name={teamHierarchy.manager.name}
-                    size="lg"
-                  />
-                  <StatusIndicator
-                    status={getStatus(teamHierarchy.manager.id)}
-                    statusMessage={getStatusMessage(teamHierarchy.manager.id)}
-                    showTooltip
-                    size="sm"
-                    className="absolute -bottom-0.5 -right-0.5"
-                  />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-text-light dark:text-text-dark">{teamHierarchy.manager.name}</p>
-                  <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{teamHierarchy.manager.role}</p>
-                </div>
-                <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded font-medium">{t('dashboard:employee.manager')}</span>
-              </div>
-            )}
-
-            {/* Team members */}
-            {!isTeamLoading && myTeam.map(teammate => (
-              <div key={teammate.id} className="flex items-center gap-3">
-                <div className="relative">
-                  <Avatar src={teammate.avatar} name={teammate.name} size="lg" />
-                  <StatusIndicator
-                    status={getStatus(teammate.id)}
-                    statusMessage={getStatusMessage(teammate.id)}
-                    showTooltip
-                    size="sm"
-                    className="absolute -bottom-0.5 -right-0.5"
-                  />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-text-light dark:text-text-dark">{teammate.name}</p>
-                  <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{teammate.role}</p>
-                </div>
-              </div>
-            ))}
-            {!isTeamLoading && myTeam.length === 0 && !teamHierarchy?.manager && (
-              <p className="text-sm text-text-muted-light dark:text-text-muted-dark text-center py-2">{t('dashboard:employee.noTeamMembers')}</p>
-            )}
-          </div>
-        </div>
+        <MyTeamCard
+          teamHierarchy={teamHierarchy}
+          myTeam={myTeam}
+          isTeamLoading={isTeamLoading}
+          getStatus={getStatus}
+          getStatusMessage={getStatusMessage}
+        />
       </div>
 
       {/* Events, Announcements & Personal Notes */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Upcoming Events */}
-        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
-          <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-primary/10 text-primary rounded-lg">
-                <CalendarIcon size={16} />
-              </div>
-              <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">{t('dashboard:admin.events')}</h2>
-            </div>
-            <button onClick={() => navigate('/wellbeing')} className="text-xs text-primary font-medium hover:underline">{t('common:buttons.viewAll')}</button>
-          </div>
-          <div className="p-4 flex-grow flex flex-col">
-            {upcomingEvents.length > 0 ? (
-              <div className="space-y-3">
-                {upcomingEvents.slice(0, 4).map(event => (
-                  <div key={event.id} className="flex items-center gap-3 p-3 bg-background-light dark:bg-background-dark rounded-lg border border-border-light dark:border-border-dark">
-                    {event.avatar ? (
-                      <Avatar src={event.avatar} name={event.title} size="lg" className="ring-2 ring-white dark:ring-background-dark" />
-                    ) : (
-                      <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center ${
-                        event.type === 'Meeting' ? 'bg-accent-teal/10 text-accent-teal' :
-                        event.type === 'Birthday' ? 'bg-pink-100 text-pink-500 dark:bg-pink-500/10 dark:text-pink-400' :
-                        event.type === 'Social' ? 'bg-amber-100 text-amber-500 dark:bg-amber-500/10 dark:text-amber-400' :
-                        event.type === 'Training' ? 'bg-violet-100 text-violet-500 dark:bg-violet-500/10 dark:text-violet-400' :
-                        event.type === 'Holiday' ? 'bg-green-100 text-green-500 dark:bg-green-500/10 dark:text-green-400' :
-                        event.type === 'Deadline' ? 'bg-red-100 text-red-500 dark:bg-red-500/10 dark:text-red-400' :
-                        event.type === 'Company Event' ? 'bg-blue-100 text-blue-500 dark:bg-blue-500/10 dark:text-blue-400' :
-                        'bg-primary/10 text-primary'
-                      }`}>
-                        {event.type === 'Meeting' && <CalendarIcon size={18} />}
-                        {event.type === 'Birthday' && <Cake size={18} />}
-                        {event.type === 'Social' && <PartyPopper size={18} />}
-                        {event.type === 'Training' && <GraduationCap size={18} />}
-                        {event.type === 'Holiday' && <Flag size={18} />}
-                        {event.type === 'Deadline' && <Clock size={18} />}
-                        {event.type === 'Company Event' && <Building2 size={18} />}
-                        {!['Meeting', 'Birthday', 'Social', 'Training', 'Holiday', 'Deadline', 'Company Event'].includes(event.type) && <CalendarIcon size={18} />}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="font-medium text-sm text-text-light dark:text-text-dark truncate">{event.title}</p>
-                      <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">
-                        {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center flex-1 text-text-muted-light dark:text-text-muted-dark">
-                <CalendarIcon size={28} className="mb-2 opacity-20" />
-                <p className="text-sm">{t('dashboard:admin.noUpcomingEvents')}</p>
-              </div>
-            )}
-          </div>
-        </div>
+        <UpcomingEventsCard upcomingEvents={upcomingEvents} />
 
         {/* Latest Announcements */}
-        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
-          <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-lg">
-                <Megaphone size={16} />
-              </div>
-              <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">{t('dashboard:employee.announcements')}</h2>
-            </div>
-            <button onClick={() => navigate('/wellbeing')} className="text-xs text-primary font-medium hover:underline">{t('common:buttons.viewAll')}</button>
-          </div>
-          <div className="p-4 space-y-3 flex-grow flex flex-col">
-            {announcementsData.length > 0 ? (
-              announcementsData.slice(0, 3).map(ann => (
-                <div key={ann.id} className="p-3 bg-background-light dark:bg-background-dark rounded-lg border border-border-light dark:border-border-dark hover:border-primary/30 transition-colors">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wide ${
-                      ann.type === 'announcement' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                      ann.type === 'policy' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
-                      'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400'
-                    }`}>
-                      {ann.type}
-                    </span>
-                  </div>
-                  <p className="text-sm font-medium text-text-light dark:text-text-dark mb-0.5">{ann.title}</p>
-                  <p className="text-xs text-text-muted-light dark:text-text-muted-dark line-clamp-2 leading-relaxed">{ann.description}</p>
-                  <div className="flex items-center gap-2 mt-2 text-[10px] text-text-muted-light dark:text-text-muted-dark">
-                    {ann.author && (
-                      <span className="flex items-center gap-1">
-                        <Users size={10} />
-                        {ann.author}
-                      </span>
-                    )}
-                    {ann.author && ann.createdAt && <span>·</span>}
-                    {ann.createdAt && (
-                      <span>{new Date(ann.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                    )}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="flex flex-col items-center justify-center flex-1 text-text-muted-light dark:text-text-muted-dark">
-                <Megaphone size={28} className="mb-2 opacity-20" />
-                <p className="text-sm">{t('dashboard:employee.noAnnouncements')}</p>
-              </div>
-            )}
-          </div>
-        </div>
+        <AnnouncementsCard announcementsData={announcementsData} />
 
         {/* Personal Notes */}
-        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark flex flex-col shadow-sm">
-          <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-lg">
-                <StickyNote size={16} />
-              </div>
-              <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">{t('dashboard:employee.personalNotes')}</h2>
-            </div>
-            {notesData.length > 0 && (
-              <span className="text-xs text-text-muted-light dark:text-text-muted-dark">{t('dashboard:admin.saved', { count: notesData.length })}</span>
-            )}
-          </div>
-          <div className="p-4 flex-grow flex flex-col gap-3">
-            {/* Note input */}
-            <div className="relative">
-              <label htmlFor="employeeNote" className="sr-only">{t('dashboard:employee.personalNoteLabel')}</label>
-              <textarea
-                id="employeeNote"
-                name="employeeNote"
-                value={quickNote}
-                onChange={(e) => setQuickNote(e.target.value)}
-                placeholder={t('dashboard:employee.writeNote')}
-                className="w-full h-20 px-3 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-sm text-text-light dark:text-text-dark placeholder:text-text-muted-light transition-colors"
-              />
-              <div className="flex items-center justify-between mt-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-text-muted-light dark:text-text-muted-dark">{t('dashboard:admin.chars', { count: quickNote.length })}</span>
-                  {editingNoteId && (
-                    <button onClick={() => { setEditingNoteId(null); setQuickNote(''); }} className="text-[10px] text-text-muted-light hover:text-text-light dark:hover:text-text-dark transition-colors">
-                      {t('common:buttons.cancel')}
-                    </button>
-                  )}
-                </div>
-                <button
-                  onClick={handleSaveNote}
-                  disabled={isSavingNote || !quickNote.trim()}
-                  className={`flex items-center gap-1.5 text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-hover transition-colors font-medium ${isSavingNote || !quickNote.trim() ? 'opacity-40 cursor-not-allowed' : 'shadow-sm'}`}
-                >
-                  <Send size={12} />
-                  {isSavingNote ? t('common:buttons.saving') : editingNoteId ? t('common:buttons.update') : t('dashboard:employee.saveNote')}
-                </button>
-              </div>
-            </div>
-
-            {/* Recent notes list */}
-            {notesData.length > 0 && (
-              <div className="flex-grow">
-                <p className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-2 uppercase tracking-wide">{t('dashboard:admin.recent')}</p>
-                <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
-                  {notesData.slice(0, 5).map(note => (
-                    <div
-                      key={note.id}
-                      className={`group flex items-start gap-2 p-2 rounded-lg transition-colors ${
-                        note.pinned
-                          ? 'bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30'
-                          : 'hover:bg-background-light dark:hover:bg-background-dark'
-                      }`}
-                    >
-                      <div className="flex-shrink-0 mt-0.5">
-                        {note.pinned ? (
-                          <Pin size={12} className="text-amber-500 fill-amber-500" />
-                        ) : (
-                          <div className="w-1.5 h-1.5 rounded-full bg-border-light dark:bg-border-dark mt-1"></div>
-                        )}
-                      </div>
-                      <div className="flex-grow min-w-0">
-                        <p className="text-xs text-text-light dark:text-text-dark truncate">
-                          {note.content.substring(0, 60)}{note.content.length > 60 ? '...' : ''}
-                        </p>
-                        {note.createdAt && (
-                          <p className="text-[10px] text-text-muted-light dark:text-text-muted-dark mt-0.5">
-                            {new Date(note.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </p>
-                        )}
-                      </div>
-                      {deleteConfirmNoteId === note.id ? (
-                        <div className="flex-shrink-0 flex items-center gap-1">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDeleteNote(note.id); }}
-                            disabled={deletingNoteId === note.id}
-                            className="text-[10px] text-red-500 hover:text-red-600 font-medium transition-colors"
-                          >
-                            {t('common:buttons.confirm')}
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setDeleteConfirmNoteId(null); }}
-                            className="p-0.5 text-text-muted-light hover:text-text-light dark:hover:text-text-dark transition-colors"
-                          >
-                            <X size={12} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex-shrink-0 flex items-center gap-0.5">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleTogglePin(note.id); }}
-                            className={`p-1 rounded transition-all ${
-                              note.pinned
-                                ? 'text-amber-500 opacity-100'
-                                : 'text-text-muted-light hover:text-amber-500 opacity-0 group-hover:opacity-100'
-                            }`}
-                            title={note.pinned ? t('dashboard:admin.unpinNote') : t('dashboard:admin.pinNote')}
-                          >
-                            <Pin size={12} className={note.pinned ? 'fill-amber-500' : ''} />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setEditingNoteId(note.id); setQuickNote(note.content); }}
-                            className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-1 text-text-muted-light hover:text-primary transition-all rounded"
-                            title={t('dashboard:admin.editNote')}
-                          >
-                            <Pencil size={12} />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setDeleteConfirmNoteId(note.id); }}
-                            disabled={deletingNoteId === note.id}
-                            className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-1 text-text-muted-light hover:text-red-500 transition-all rounded"
-                            title={t('dashboard:admin.deleteNote')}
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {notesData.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-4 text-text-muted-light dark:text-text-muted-dark">
-                <StickyNote size={24} className="mb-1.5 opacity-20" />
-                <p className="text-xs">{t('dashboard:employee.noNotes')}</p>
-              </div>
-            )}
-          </div>
-        </div>
+        <PersonalNotesCard
+          notesData={notesData}
+          quickNote={quickNote}
+          setQuickNote={setQuickNote}
+          isSavingNote={isSavingNote}
+          editingNoteId={editingNoteId}
+          setEditingNoteId={setEditingNoteId}
+          deletingNoteId={deletingNoteId}
+          deleteConfirmNoteId={deleteConfirmNoteId}
+          setDeleteConfirmNoteId={setDeleteConfirmNoteId}
+          onSaveNote={handleSaveNote}
+          onDeleteNote={handleDeleteNote}
+          onTogglePin={handleTogglePin}
+        />
       </div>
 
       {/* My OT Requests */}
-      <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
-        <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-amber-100 dark:bg-amber-900/20 text-amber-500 rounded-lg">
-              <Timer size={16} />
-            </div>
-            <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">{t('dashboard:employee.myOTRequests')}</h2>
-          </div>
-          <button
-            onClick={() => setShowOTModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
-          >
-            <Timer size={12} />
-            {t('dashboard:employee.requestOT')}
-          </button>
-        </div>
-        <div className="p-4">
-          {myOTRequests.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-6 text-text-muted-light dark:text-text-muted-dark">
-              <Timer size={28} className="mb-2 opacity-20" />
-              <p className="text-sm">{t('dashboard:employee.noOTRequests')}</p>
-              <button onClick={() => setShowOTModal(true)} className="mt-2 text-xs text-primary hover:underline font-medium">{t('dashboard:employee.submitFirstOT')}</button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {(myOTRequests as any[]).slice(0, 3).map((req) => (
-                <div key={req.id} className="flex items-center justify-between p-3 bg-background-light dark:bg-background-dark rounded-lg border border-border-light dark:border-border-dark">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className={`p-1.5 rounded-lg shrink-0 ${
-                      req.status === 'approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                      : req.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                      : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
-                    }`}>
-                      {req.status === 'approved' ? <CheckCircle2 size={14} /> : req.status === 'rejected' ? <XCircle size={14} /> : <Clock size={14} />}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-text-light dark:text-text-dark">
-                        {req.plannedHours}h OT · <span className="text-text-muted-light dark:text-text-muted-dark">{req.otType === 'holiday' ? '3×' : '1.5×'}</span>
-                      </p>
-                      <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{req.date} · {req.plannedStart}–{req.plannedEnd}</p>
-                    </div>
-                  </div>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize shrink-0 ml-2 ${
-                    req.status === 'approved' ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-                    : req.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400'
-                    : 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400'
-                  }`}>
-                    {t(`dashboard:employee.otStatus.${req.status}`, req.status)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+      <MyOTRequestsCard myOTRequests={myOTRequests} onRequestOT={() => setShowOTModal(true)} />
       </div>
     </>
   );

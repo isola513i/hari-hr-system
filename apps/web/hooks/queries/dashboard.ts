@@ -103,7 +103,7 @@ export const useTeamCalendar = (month: string, department?: string) => {
     queryFn: () => {
       const params = new URLSearchParams({ month });
       if (department) params.set('department', department);
-      return api.get<{ month: string; events: any[]; departments: string[] }>(`/calendar/team?${params.toString()}`);
+      return api.get<{ month: string; events: unknown[]; departments: string[] }>(`/calendar/team?${params.toString()}`);
     },
     staleTime: 30000,
   });

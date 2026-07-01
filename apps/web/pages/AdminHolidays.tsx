@@ -8,6 +8,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Modal } from '../components/Modal';
 import { DatePicker } from '../components/DatePicker';
 import type { PublicHoliday } from '../types';
+import { getErrorMessage } from '../lib/errorHandler';
 
 interface HolidayFormState {
   date: string;
@@ -68,8 +69,8 @@ export const AdminHolidays: React.FC = () => {
         showToast(t('leave:holidays.createSuccess'), 'success');
       }
       setModalOpen(false);
-    } catch (err: any) {
-      showToast(err?.message || 'Failed', 'error');
+    } catch (err) {
+      showToast(getErrorMessage(err, 'Failed'), 'error');
     }
   };
 
@@ -78,8 +79,8 @@ export const AdminHolidays: React.FC = () => {
       await deleteHoliday.mutateAsync(id);
       showToast(t('leave:holidays.deleteSuccess'), 'success');
       setDeleteConfirmId(null);
-    } catch (err: any) {
-      showToast(err?.message || 'Failed', 'error');
+    } catch (err) {
+      showToast(getErrorMessage(err, 'Failed'), 'error');
     }
   };
 

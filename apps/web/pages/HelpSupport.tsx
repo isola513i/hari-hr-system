@@ -17,6 +17,7 @@ import {
   Receipt,
 } from 'lucide-react';
 import { api } from '../lib/api';
+import { getErrorMessage } from '../lib/errorHandler';
 
 export const HelpSupport: React.FC = () => {
   const { t } = useTranslation(['help', 'common']);
@@ -69,8 +70,8 @@ export const HelpSupport: React.FC = () => {
       });
       setSent(true);
       setForm({ subject: '', message: '' });
-    } catch (err: any) {
-      setSendError(err.message || 'Failed to send message. Please try again.');
+    } catch (err) {
+      setSendError(getErrorMessage(err, 'Failed to send message. Please try again.'));
     } finally {
       setIsSending(false);
     }

@@ -27,9 +27,9 @@ export const LeaveProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const payload = {
         employeeId: request.employeeId,
         type: request.type,
-        startDate: (request as any).startDate,
-        endDate: (request as any).endDate,
-        reason: (request as any).reason,
+        startDate: request.startDate,
+        endDate: request.endDate,
+        reason: request.reason,
       };
       await addMutation.mutateAsync(payload);
       // Socket handles real-time update

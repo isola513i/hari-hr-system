@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../contexts/ToastContext';
 import { api } from '../lib/api';
+import { getErrorMessage } from '../lib/errorHandler';
 
 export function usePasswordChange() {
   const { t } = useTranslation('settings');
@@ -53,15 +54,16 @@ export function usePasswordChange() {
       setPasswords({ current: '', new: '', confirm: '' });
       setPasswordErrors({});
       setShowPasswords({ current: false, new: false, confirm: false });
-    } catch (error: any) {
+    } catch (error) {
       let errorMessage = t('security.changeFailed');
-      if (error.message) {
-        if (error.message.includes('Incorrect current password')) {
+      const msg = getErrorMessage(error, '');
+      if (msg) {
+        if (msg.includes('Incorrect current password')) {
           errorMessage = t('security.incorrectCurrent');
-        } else if (error.message.includes('must be different')) {
+        } else if (msg.includes('must be different')) {
           errorMessage = t('security.samePassword');
         } else {
-          errorMessage = error.message;
+          errorMessage = msg;
         }
       }
       showToast(errorMessage, 'error');

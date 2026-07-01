@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { api } from '../lib/api';
 import { TotpSetupResponse, TotpStatusResponse } from '../types';
+import { getErrorMessage } from '../lib/errorHandler';
 
 interface UseTwoFactorReturn {
   // Status
@@ -61,8 +62,8 @@ export function useTwoFactor(): UseTwoFactorReturn {
     try {
       const data = await api.auth.getTotpStatus();
       setStatus(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch 2FA status');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to fetch 2FA status'));
     } finally {
       setStatusLoading(false);
     }
@@ -73,8 +74,8 @@ export function useTwoFactor(): UseTwoFactorReturn {
     try {
       const data = await api.auth.setupTotp();
       setSetup(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to generate QR code');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to generate QR code'));
     } finally {
       setSetupLoading(false);
     }
@@ -87,8 +88,8 @@ export function useTwoFactor(): UseTwoFactorReturn {
       setBackupCodes(data.backupCodes);
       setStatus(prev => prev ? { ...prev, enabled: true, backupCodesRemaining: 8 } : null);
       return true;
-    } catch (err: any) {
-      setError(err.message || 'Failed to enable 2FA');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to enable 2FA'));
       return false;
     } finally {
       setEnableLoading(false);
@@ -101,8 +102,8 @@ export function useTwoFactor(): UseTwoFactorReturn {
       await api.auth.disableTotp(password);
       setStatus(prev => prev ? { ...prev, enabled: false, backupCodesRemaining: 0 } : null);
       return true;
-    } catch (err: any) {
-      setError(err.message || 'Failed to disable 2FA');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to disable 2FA'));
       return false;
     } finally {
       setDisableLoading(false);
@@ -116,8 +117,8 @@ export function useTwoFactor(): UseTwoFactorReturn {
       setRegeneratedCodes(data.backupCodes);
       setStatus(prev => prev ? { ...prev, backupCodesRemaining: 8 } : null);
       return true;
-    } catch (err: any) {
-      setError(err.message || 'Failed to regenerate backup codes');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to regenerate backup codes'));
       return false;
     } finally {
       setBackupCodesLoading(false);
@@ -129,8 +130,8 @@ export function useTwoFactor(): UseTwoFactorReturn {
     try {
       await api.auth.adminResetTotp(userId);
       return true;
-    } catch (err: any) {
-      setError(err.message || 'Failed to reset 2FA');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to reset 2FA'));
       return false;
     } finally {
       setAdminResetLoading(false);

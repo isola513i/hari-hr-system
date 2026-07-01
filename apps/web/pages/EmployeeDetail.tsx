@@ -5,6 +5,7 @@ import { JobHistoryItem, Employee, PerformanceReview, DocumentItem } from '../ty
 import { useAuth } from '../contexts/AuthContext';
 import { api, API_HOST, BASE_URL, getAuthToken } from '../lib/api';
 import { queryKeys } from '../lib/queryKeys';
+import { getErrorMessage } from '../lib/errorHandler';
 import {
     useEmployeeDetail,
     useJobHistory,
@@ -106,7 +107,7 @@ export const EmployeeDetail: React.FC = () => {
     useEffect(() => { if (historyQ.data) setHistoryList(historyQ.data); }, [historyQ.data]);
     useEffect(() => {
         if (docsQ.data && employee) {
-            setDocumentsList(docsQ.data.filter((d: any) =>
+            setDocumentsList(docsQ.data.filter((d) =>
                 d.employeeId === employee.id || d.owner === employee.name
             ));
         }
@@ -227,8 +228,8 @@ export const EmployeeDetail: React.FC = () => {
         }
     };
 
-    const handleProfileChange = (field: keyof Employee, value: any) => {
-        setEditForm(prev => ({ ...prev, [field]: value }));
+    const handleProfileChange = (field: keyof Employee, value: Employee[keyof Employee]) => {
+        setEditForm(prev => ({ ...prev, [field]: value } as Partial<Employee>));
     };
 
     // Avatar Handlers
@@ -480,9 +481,9 @@ export const EmployeeDetail: React.FC = () => {
                 qc.invalidateQueries({ queryKey: queryKeys.employeeDocuments.byEmployee(id!) });
 
                 e.target.value = '';
-            } catch (error: any) {
+            } catch (error) {
                 console.error('Upload error:', error);
-                showToast(error.message || t('employees:toast.documentFailed'), 'error');
+                showToast(getErrorMessage(error, t('employees:toast.documentFailed')), 'error');
             }
         }
     };
@@ -609,8 +610,8 @@ export const EmployeeDetail: React.FC = () => {
             showToast(t('employees:toast.offboardingInitiated'), 'success');
             qc.invalidateQueries({ queryKey: queryKeys.employees.all });
             qc.invalidateQueries({ queryKey: queryKeys.orgChart.all });
-        } catch (error: any) {
-            const msg = error?.message || t('employees:toast.offboardingInitiateFailed');
+        } catch (error) {
+            const msg = getErrorMessage(error, t('employees:toast.offboardingInitiateFailed'));
             showToast(msg, 'error');
         }
     };

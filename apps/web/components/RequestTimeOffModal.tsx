@@ -9,6 +9,7 @@ import type { SearchableSelectOption } from './SearchableSelect';
 import { useLeaveBalance, useEmployeeSearch, useLeaveTypeConfig } from '../hooks/queries';
 import { resolveAvatarUrl } from '../lib/api';
 import { buildLeaveOptions, requiresMedicalCert, showMedicalCertUpload } from '../lib/leaveTypeConfig';
+import { getErrorMessage } from '../lib/errorHandler';
 import type { LeaveBalance } from '../types';
 
 interface RequestTimeOffModalProps {
@@ -174,8 +175,8 @@ export const RequestTimeOffModal: React.FC<RequestTimeOffModalProps> = ({
     try {
       await onSubmit(formData);
       setForm(initialForm);
-    } catch (err: any) {
-      setError(err?.message || t('leave:requestModal.submitFailed'));
+    } catch (err) {
+      setError(getErrorMessage(err, t('leave:requestModal.submitFailed')));
     }
   };
 

@@ -114,7 +114,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return false; // not fully authenticated yet
       }
 
-      _persistSession(data as { token: string; accessToken: string; refreshToken: string; user: any }, rememberMe);
+      _persistSession(data as Parameters<typeof _persistSession>[0], rememberMe);
       return true;
     } catch (err) {
       console.error(err);
@@ -127,7 +127,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!pendingTotpToken) return false;
     try {
       const data = await api.auth.verifyTotp(pendingTotpToken, code, pendingRememberMe);
-      _persistSession(data as { token: string; accessToken: string; refreshToken: string; user: any }, pendingRememberMe);
+      _persistSession(data as Parameters<typeof _persistSession>[0], pendingRememberMe);
       // Clear TOTP state
       setTotpRequired(false);
       setPendingTotpToken(null);

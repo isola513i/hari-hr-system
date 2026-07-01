@@ -10,7 +10,7 @@ interface ErrorContext {
   userId?: string;
   page?: string;
   action?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 class ErrorLoggingService {
@@ -79,7 +79,7 @@ class ErrorLoggingService {
   /**
    * Send error data to backend for logging
    */
-  private async sendToBackend(data: any): Promise<void> {
+  private async sendToBackend(data: unknown): Promise<void> {
     try {
       await fetch('/api/logs/client-error', {
         method: 'POST',

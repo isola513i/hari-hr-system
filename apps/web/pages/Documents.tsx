@@ -1,36 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BASE_URL, getAuthToken } from '../lib/api';
-import { Dropdown } from '../components/Dropdown';
 import { useDocumentList, useDocumentTrash, useDocumentStorage, useDeleteDocument, useRestoreDocument, usePermanentDeleteDocument } from '../hooks/queries';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryKeys';
 import {
   FileText,
-  Download,
-  UploadCloud,
   Search,
   ShieldCheck,
   FolderOpen,
   Grid,
   List,
-  MoreVertical,
   FileSpreadsheet,
-  FileImage,
-  File,
   Clock,
-  HardDrive,
-  Share2,
   Filter,
-  X,
   Trash2,
-  RotateCcw,
 } from 'lucide-react';
 import { DocumentItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { formatDate } from '../lib/date';
 import { useToast } from '../contexts/ToastContext';
 import { Pagination } from '../components/Pagination';
+import { UsersIcon, Trash2Icon } from '../components/documents/documentHelpers';
+import { DocumentSidebar } from '../components/documents/DocumentSidebar';
+import { DocumentGridView } from '../components/documents/DocumentGridView';
+import { DocumentListView } from '../components/documents/DocumentListView';
+import { DocumentPreviewModal } from '../components/documents/DocumentPreviewModal';
+import { UploadModal } from '../components/documents/UploadModal';
 
 export const Documents: React.FC = () => {
   const { t } = useTranslation(['documents', 'common']);
@@ -54,11 +49,6 @@ export const Documents: React.FC = () => {
   const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
 
   const blobUrlRefs = useRef<{ image: string | null; pdf: string | null }>({ image: null, pdf: null });
-
-  const displaySize = (size: string | undefined) => {
-    if (!size || /^0(\.0+)?\s*(B|KB|MB|GB)$/i.test(size)) return '-';
-    return size;
-  };
 
   // Upload State
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -221,22 +211,6 @@ export const Documents: React.FC = () => {
     return matchesSearch && matchesCategory && matchesType;
   });
 
-  const getFileIcon = (type: string, size: number = 24) => {
-    switch (type) {
-      case 'PDF':
-        return <FileText className="text-red-500" size={size} />;
-      case 'DOCX':
-        return <FileText className="text-blue-500" size={size} />;
-      case 'XLSX':
-        return <FileSpreadsheet className="text-green-500" size={size} />;
-      case 'JPG':
-      case 'PNG':
-        return <FileImage className="text-purple-500" size={size} />;
-      default:
-        return <File className="text-gray-500" size={size} />;
-    }
-  };
-
   const handleDownload = async (e: React.MouseEvent, docId: string) => {
     e.stopPropagation();
     try {
@@ -370,57 +344,13 @@ export const Documents: React.FC = () => {
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-8rem)] animate-fade-in gap-6 relative">
       {/* Left Sidebar */}
-      <aside className="w-full lg:w-64 flex-shrink-0 flex flex-col gap-6">
-        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 shadow-sm">
-          <button
-            onClick={() => setIsUploadModalOpen(true)}
-            className="w-full py-2.5 bg-primary text-white font-medium rounded-lg text-sm shadow-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 mb-6"
-          >
-            <UploadCloud size={18} />
-            {t('uploadNew')}
-          </button>
-
-          <nav className="space-y-1">
-            {categories.map((cat) => (
-              <button
-                key={cat.name}
-                onClick={() => handleCategoryChange(cat.name)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  selectedCategory === cat.name
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-              >
-                {cat.icon}
-                {cat.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-2 text-text-light dark:text-text-dark font-semibold">
-            <HardDrive size={18} />
-            <h3>{t('storage')}</h3>
-          </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden mb-2">
-            <div
-              className={`h-full rounded-full transition-all ${
-                (storageStats?.percentage ?? 0) > 90
-                  ? 'bg-red-500'
-                  : (storageStats?.percentage ?? 0) > 70
-                    ? 'bg-accent-orange'
-                    : 'bg-green-500'
-              }`}
-              style={{ width: `${storageStats?.percentage ?? 0}%` }}
-            ></div>
-          </div>
-          <div className="flex justify-between text-xs text-text-muted-light dark:text-text-muted-dark">
-            <span>{t('usedOfTotal', { used: storageStats?.usedFormatted ?? '0 B' })}</span>
-            <span>{t('totalStorage', { total: storageStats?.totalFormatted ?? '100 GB' })}</span>
-          </div>
-        </div>
-      </aside>
+      <DocumentSidebar
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onCategoryChange={handleCategoryChange}
+        onUploadClick={() => setIsUploadModalOpen(true)}
+        storageStats={storageStats}
+      />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
@@ -501,232 +431,26 @@ export const Documents: React.FC = () => {
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-background-light/50 dark:bg-background-dark/50">
           {viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filteredDocuments.map((doc) => (
-                <div
-                  key={doc.id}
-                  onClick={() => setPreviewDoc(doc)}
-                  className="group bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 hover:shadow-md hover:border-primary/50 transition-all cursor-pointer relative"
-                >
-                  {/* Menu Button */}
-                  <div className="absolute top-2 right-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenMenuId(openMenuId === doc.id ? null : doc.id);
-                      }}
-                      className="p-1.5 text-text-muted-light hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-                    >
-                      <MoreVertical size={16} />
-                    </button>
-
-                    {/* Dropdown Menu */}
-                    {openMenuId === doc.id && (
-                      <div className="absolute right-0 top-8 w-44 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-border-light dark:border-border-dark py-1 z-10">
-                        {selectedCategory === 'Trash' ? (
-                          <>
-                            <button
-                              onClick={(e) => {
-                                handleRestore(e, doc.id);
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full px-3 py-2 text-left text-sm text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center gap-2"
-                            >
-                              <RotateCcw size={14} /> {t('actions.restore')}
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                handlePermanentDelete(e, doc.id);
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                            >
-                              <Trash2 size={14} /> {t('actions.deletePermanently')}
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={(e) => {
-                                handleDownload(e, doc.id);
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full px-3 py-2 text-left text-sm text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                            >
-                              <Download size={14} /> {t('actions.download')}
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                handleShare(e, doc);
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full px-3 py-2 text-left text-sm text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                            >
-                              <Share2 size={14} /> {t('actions.share')}
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                handleDelete(e, doc.id);
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                            >
-                              <Trash2 size={14} /> {t('actions.moveToTrash')}
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="h-24 flex items-center justify-center bg-white dark:bg-card-dark rounded-lg mb-3">
-                    {getFileIcon(doc.type)}
-                  </div>
-                  <div className="min-w-0">
-                    <h4
-                      className="font-medium text-text-light dark:text-text-dark text-sm truncate mb-1"
-                      title={doc.name}
-                    >
-                      {doc.name}
-                    </h4>
-                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark truncate">
-                      {displaySize(doc.size)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <DocumentGridView
+              documents={filteredDocuments}
+              selectedCategory={selectedCategory}
+              openMenuId={openMenuId}
+              setOpenMenuId={setOpenMenuId}
+              onPreview={setPreviewDoc}
+              handleDownload={handleDownload}
+              handleShare={handleShare}
+              handleDelete={handleDelete}
+              handleRestore={handleRestore}
+              handlePermanentDelete={handlePermanentDelete}
+            />
           ) : (
-            <>
-              {/* Desktop Table View */}
-              <div className="hidden md:block bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-text-muted-light dark:text-text-muted-dark font-semibold">
-                    <tr>
-                      <th className="px-6 py-4">{t('table.name')}</th>
-                      <th className="px-6 py-4">{t('table.category')}</th>
-                      <th className="px-6 py-4">{t('table.size')}</th>
-                      <th className="px-6 py-4">{t('table.owner')}</th>
-                      <th className="px-6 py-4">{t('table.lastModified')}</th>
-                      <th className="px-6 py-4 text-right">{t('table.actions')}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border-light dark:divide-border-dark">
-                    {filteredDocuments.map((doc) => (
-                      <tr
-                        key={doc.id}
-                        onClick={() => setPreviewDoc(doc)}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group cursor-pointer"
-                      >
-                        <td className="px-6 py-3 font-medium text-text-light dark:text-text-dark flex items-center gap-3">
-                          {getFileIcon(doc.type)}
-                          {doc.name}
-                        </td>
-                        <td className="px-6 py-3 text-text-muted-light dark:text-text-muted-dark">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
-                            {doc.category}
-                          </span>
-                        </td>
-                        <td className="px-6 py-3 text-text-muted-light dark:text-text-muted-dark font-mono text-xs">
-                          {displaySize(doc.size)}
-                        </td>
-                        <td className="px-6 py-3 text-text-muted-light dark:text-text-muted-dark">
-                          {doc.owner}
-                        </td>
-                        <td className="px-6 py-3 text-text-muted-light dark:text-text-muted-dark">
-                          {formatDate(doc.lastAccessed)}
-                        </td>
-                        <td className="px-6 py-3 text-right">
-                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={(e) => handleDownload(e, doc.id)}
-                              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-text-muted-light hover:text-primary transition-colors"
-                              title={t('actions.download')}
-                            >
-                              <Download size={16} />
-                            </button>
-                            <button
-                              onClick={(e) => handleShare(e, doc)}
-                              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-text-muted-light hover:text-primary transition-colors"
-                              title={t('actions.share')}
-                            >
-                              <Share2 size={16} />
-                            </button>
-                            <button
-                              onClick={(e) => handleDelete(e, doc.id)}
-                              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-text-muted-light hover:text-red-500 transition-colors"
-                              title={t('common:buttons.delete')}
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile Card View */}
-              <div className="md:hidden space-y-3">
-                {filteredDocuments.map((doc) => (
-                  <div
-                    key={doc.id}
-                    onClick={() => setPreviewDoc(doc)}
-                    className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 hover:shadow-md hover:border-primary/50 transition-all cursor-pointer"
-                  >
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="flex-shrink-0">{getFileIcon(doc.type, 32)}</div>
-                      <div className="flex-1 min-w-0">
-                        <h4
-                          className="font-medium text-text-light dark:text-text-dark text-sm mb-1 truncate"
-                          title={doc.name}
-                        >
-                          {doc.name}
-                        </h4>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
-                          {doc.category}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-xs text-text-muted-light dark:text-text-muted-dark mb-3">
-                      <div>
-                        <span className="font-medium">{t('card.size')}</span> {displaySize(doc.size)}
-                      </div>
-                      <div>
-                        <span className="font-medium">{t('card.owner')}</span> {doc.owner}
-                      </div>
-                      <div className="col-span-2">
-                        <span className="font-medium">{t('card.modified')}</span> {formatDate(doc.lastAccessed)}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-3 border-t border-border-light dark:border-border-dark">
-                      <button
-                        onClick={(e) => handleDownload(e, doc.id)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-lg text-xs font-medium hover:bg-primary/20 transition-colors"
-                      >
-                        <Download size={14} /> {t('actions.download')}
-                      </button>
-                      <button
-                        onClick={(e) => handleShare(e, doc)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-text-light dark:text-text-dark rounded-lg text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        <Share2 size={14} /> {t('actions.share')}
-                      </button>
-                      <button
-                        onClick={(e) => handleDelete(e, doc.id)}
-                        className="p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
-                        title={t('common:buttons.delete')}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
+            <DocumentListView
+              documents={filteredDocuments}
+              onPreview={setPreviewDoc}
+              handleDownload={handleDownload}
+              handleShare={handleShare}
+              handleDelete={handleDelete}
+            />
           )}
 
           {filteredDocuments.length === 0 && (
@@ -756,181 +480,29 @@ export const Documents: React.FC = () => {
 
       {/* File Preview Modal */}
       {previewDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-card-dark rounded-xl shadow-2xl border border-border-light dark:border-border-dark w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800/50">
-              <div className="flex items-center gap-3">
-                {getFileIcon(previewDoc.type)}
-                <div>
-                  <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
-                    {previewDoc.name}
-                  </h3>
-                  <p className="text-xs text-text-muted-light">
-                    {displaySize(previewDoc.size)} • {formatDate(previewDoc.lastAccessed)}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={(e) => handleDownload(e, previewDoc.id)}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
-                >
-                  <Download size={16} /> {t('actions.download')}
-                </button>
-                <button
-                  onClick={() => setPreviewDoc(null)}
-                  className="p-2 text-text-muted-light hover:text-text-light dark:hover:text-text-dark hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-8 overflow-auto">
-              {/* Preview Content */}
-              {['JPG', 'PNG', 'JPEG', 'GIF'].includes(previewDoc.type) ? (
-                <div className="relative shadow-lg">
-                  {previewImageUrl ? (
-                    <img
-                      src={previewImageUrl}
-                      alt={t('preview.previewAlt')}
-                      className="max-w-full max-h-full rounded-lg"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-64 w-64 bg-gray-200 dark:bg-gray-700 rounded-lg">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                    </div>
-                  )}
-                </div>
-              ) : previewDoc.type === 'PDF' ? (
-                previewPdfUrl ? (
-                  <iframe
-                    src={previewPdfUrl}
-                    className="w-full h-full rounded-lg bg-white"
-                    title={t('preview.pdfPreview')}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-64 w-64 bg-gray-200 dark:bg-gray-700 rounded-lg">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                )
-              ) : (
-                <div className="text-center p-12 bg-white dark:bg-gray-800 rounded-xl shadow-sm max-w-lg w-full border border-border-light dark:border-border-dark">
-                  <div className="flex justify-center mb-6">{getFileIcon(previewDoc.type, 64)}</div>
-                  <h4 className="text-xl font-semibold text-text-light dark:text-text-dark mb-2">
-                    {t('preview.notAvailable')}
-                  </h4>
-                  <p className="text-text-muted-light mb-6">
-                    {t('preview.notAvailableDesc')}
-                  </p>
-                  <button
-                    onClick={(e) => handleDownload(e, previewDoc.id)}
-                    className="px-6 py-2.5 border border-border-light dark:border-border-dark rounded-lg font-medium text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    {t('preview.downloadFile')}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <DocumentPreviewModal
+          previewDoc={previewDoc}
+          previewImageUrl={previewImageUrl}
+          previewPdfUrl={previewPdfUrl}
+          onClose={() => setPreviewDoc(null)}
+          handleDownload={handleDownload}
+        />
       )}
 
       {/* Upload Modal */}
       {isUploadModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-card-dark rounded-xl shadow-2xl border border-border-light dark:border-border-dark w-full max-w-md overflow-hidden">
-            <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
-              <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
-                {t('upload.title')}
-              </h3>
-              <button
-                onClick={() => {
-                  setIsUploadModalOpen(false);
-                  setSelectedFile(null);
-                }}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              {/* File Input Zone */}
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-border-light dark:border-border-dark rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif"
-                />
-                {selectedFile ? (
-                  <div className="flex flex-col items-center gap-2">
-                    <FileText size={48} className="text-primary" />
-                    <p className="text-sm font-medium text-text-light dark:text-text-dark">
-                      {selectedFile.name}
-                    </p>
-                    <p className="text-xs text-text-muted-light">
-                      {(selectedFile.size / 1024).toFixed(1)} KB
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-2">
-                    <UploadCloud size={48} className="text-text-muted-light" />
-                    <p className="text-sm text-text-light dark:text-text-dark">
-                      {t('upload.dragDrop')}
-                    </p>
-                    <p className="text-xs text-text-muted-light">
-                      {t('upload.hint')}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Category Selector */}
-              <div>
-                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
-                  {t('upload.category')}
-                </label>
-                <Dropdown
-                  id="upload-category"
-                  name="category"
-                  value={uploadCategory}
-                  onChange={(value) => setUploadCategory(value)}
-                  options={[
-                    { value: 'HR', label: t('categories.hr') },
-                    { value: 'Contracts', label: t('categories.contracts') },
-                    { value: 'Policies', label: t('categories.policies') },
-                    { value: 'Finance', label: t('categories.finance') },
-                    { value: 'Personal', label: t('categories.personal') },
-                  ]}
-                  placeholder={t('common:placeholders.selectCategory')}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 p-4 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800/50">
-              <button
-                onClick={() => {
-                  setIsUploadModalOpen(false);
-                  setSelectedFile(null);
-                }}
-                className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light transition-colors"
-              >
-                {t('upload.cancel')}
-              </button>
-              <button
-                onClick={handleUpload}
-                disabled={!selectedFile}
-                className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {t('upload.upload')}
-              </button>
-            </div>
-          </div>
-        </div>
+        <UploadModal
+          onClose={() => {
+            setIsUploadModalOpen(false);
+            setSelectedFile(null);
+          }}
+          fileInputRef={fileInputRef}
+          selectedFile={selectedFile}
+          handleFileSelect={handleFileSelect}
+          uploadCategory={uploadCategory}
+          setUploadCategory={setUploadCategory}
+          handleUpload={handleUpload}
+        />
       )}
 
       {/* Delete Confirmation Modal */}
@@ -969,42 +541,3 @@ export const Documents: React.FC = () => {
     </div>
   );
 };
-
-const UsersIcon = ({ size }: { size: number }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-);
-
-const Trash2Icon = ({ size }: { size: number }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M3 6h18" />
-    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-    <line x1="10" x2="10" y1="11" y2="17" />
-    <line x1="14" x2="14" y1="11" y2="17" />
-  </svg>
-);
