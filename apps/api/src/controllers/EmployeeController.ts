@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import EmployeeService from '../services/EmployeeService';
 import { getPaginationParams, getSortParams } from '../utils/pagination';
 import AuditLogService from '../services/AuditLogService';
+import { AppError } from '../utils/errorResponse';
 import logger from '../utils/logger';
 
 export class EmployeeController {
@@ -155,13 +156,10 @@ export class EmployeeController {
             res.json({ message: 'Employee terminated successfully' });
         } catch (error: any) {
             logger.error(error, 'Delete employee error:');
-            if (error.message === 'Employee not found') {
-                res.status(404).json({ error: error.message });
-            } else if (error.message === 'Employee is already terminated') {
-                res.status(409).json({ error: error.message });
-            } else {
-                res.status(500).json({ error: 'Failed to terminate employee' });
-            }
+            // Typed AppError (NotFoundError/ConflictError) carries its own status;
+            // anything else is masked as a 500.
+            const status = error instanceof AppError ? error.statusCode : 500;
+            res.status(status).json({ error: status < 500 ? error.message : 'Failed to terminate employee' });
         }
     }
 
