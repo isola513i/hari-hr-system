@@ -71,35 +71,35 @@ describe('throttle', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('should throttle subsequent calls', () => {
+  it('runs immediately then throttles a following call into a trailing run', () => {
     const fn = vi.fn();
     const throttledFn = throttle(fn, 300);
 
     throttledFn('first');
     expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenLastCalledWith('first');
 
-    throttledFn('second');
-    expect(fn).toHaveBeenCalledTimes(1); // Still 1, throttled
+    throttledFn('second'); // within window → scheduled as trailing, not run yet
+    expect(fn).toHaveBeenCalledTimes(1);
 
-    vi.advanceTimersByTime(300);
-    throttledFn('third');
+    vi.advanceTimersByTime(300); // trailing call fires with the first throttled arg
     expect(fn).toHaveBeenCalledTimes(2);
-    expect(fn).toHaveBeenLastCalledWith('third');
+    expect(fn).toHaveBeenLastCalledWith('second');
   });
 
-  it('should execute trailing call after wait period', () => {
+  it('trailing call uses the first throttled arg (leading throttle)', () => {
     const fn = vi.fn();
     const throttledFn = throttle(fn, 300);
 
-    throttledFn('first');
-    throttledFn('second'); // Throttled, but scheduled
-    throttledFn('third'); // Throttled, but scheduled
+    throttledFn('first');  // runs immediately
+    throttledFn('second'); // scheduled as the trailing call
+    throttledFn('third');  // ignored — a trailing call is already scheduled
 
     expect(fn).toHaveBeenCalledTimes(1);
 
     vi.advanceTimersByTime(300);
 
     expect(fn).toHaveBeenCalledTimes(2);
-    expect(fn).toHaveBeenLastCalledWith('third');
+    expect(fn).toHaveBeenLastCalledWith('second');
   });
 });

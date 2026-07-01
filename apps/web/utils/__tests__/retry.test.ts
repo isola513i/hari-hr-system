@@ -1,84 +1,76 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { retryWithBackoff, retryable } from '../retry';
+
+// retryWithBackoff only retries errors it deems retryable: GET method + a
+// retryable HTTP status. Build errors that carry a retryable response.status.
+const retryableError = (msg: string) => {
+  const e: any = new Error(msg);
+  e.response = { status: 503 };
+  return e;
+};
 
 describe('retryWithBackoff', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    // Remove jitter so backoff delays are deterministic (1000, 2000, ...).
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
-  it('should return result on first success', async () => {
-    const fn = vi.fn().mockResolvedValue('success');
-
+  it('returns result on first success without retrying', async () => {
+    const fn = vi.fn().mockResolvedValue('ok');
     const promise = retryWithBackoff(fn, { maxRetries: 3 });
-
-    // Fast-forward timers
     await vi.runAllTimersAsync();
-    const result = await promise;
-
-    expect(result).toBe('success');
+    await expect(promise).resolves.toBe('ok');
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('should retry on failure', async () => {
-    const fn = vi
-      .fn()
-      .mockRejectedValueOnce(new Error('fail 1'))
-      .mockRejectedValueOnce(new Error('fail 2'))
-      .mockResolvedValue('success');
-
+  it('retries retryable failures then succeeds', async () => {
+    const fn = vi.fn()
+      .mockRejectedValueOnce(retryableError('fail 1'))
+      .mockRejectedValueOnce(retryableError('fail 2'))
+      .mockResolvedValue('ok');
     const onRetry = vi.fn();
-
-    const promise = retryWithBackoff(fn, {
-      maxRetries: 3,
-      initialDelay: 100,
-      onRetry,
-    });
-
+    const promise = retryWithBackoff(fn, { maxRetries: 3, initialDelay: 100, onRetry });
     await vi.runAllTimersAsync();
-    const result = await promise;
-
-    expect(result).toBe('success');
+    await expect(promise).resolves.toBe('ok');
     expect(fn).toHaveBeenCalledTimes(3);
     expect(onRetry).toHaveBeenCalledTimes(2);
   });
 
-  it('should throw after max retries', async () => {
-    const error = new Error('persistent failure');
-    const fn = vi.fn().mockRejectedValue(error);
-
-    const promise = retryWithBackoff(fn, {
-      maxRetries: 2,
-      initialDelay: 100,
-    });
-
+  it('throws after exhausting max retries', async () => {
+    const fn = vi.fn().mockRejectedValue(retryableError('persistent'));
+    const promise = retryWithBackoff(fn, { maxRetries: 2, initialDelay: 100 });
+    // Attach a rejection handler up front so the run doesn't surface as unhandled.
+    const assertion = expect(promise).rejects.toThrow('persistent');
     await vi.runAllTimersAsync();
-
-    await expect(promise).rejects.toThrow('persistent failure');
-    expect(fn).toHaveBeenCalledTimes(3); // Initial + 2 retries
+    await assertion;
+    expect(fn).toHaveBeenCalledTimes(3); // initial + 2 retries
   });
 
-  it('should use exponential backoff', async () => {
-    const fn = vi
-      .fn()
-      .mockRejectedValueOnce(new Error('fail 1'))
-      .mockRejectedValueOnce(new Error('fail 2'))
-      .mockResolvedValue('success');
+  it('does NOT retry a non-retryable error', async () => {
+    const fn = vi.fn().mockRejectedValue(new Error('plain error'));
+    const promise = retryWithBackoff(fn, { maxRetries: 3, initialDelay: 100 });
+    const assertion = expect(promise).rejects.toThrow('plain error');
+    await vi.runAllTimersAsync();
+    await assertion;
+    expect(fn).toHaveBeenCalledTimes(1); // thrown immediately, no retry
+  });
 
-    const onRetry = vi.fn();
-
-    retryWithBackoff(fn, {
-      maxRetries: 3,
-      initialDelay: 1000,
-      backoffMultiplier: 2,
-      onRetry,
-    });
-
-    // First retry after ~1000ms
-    await vi.advanceTimersByTimeAsync(1500);
+  it('uses exponential backoff timing', async () => {
+    const fn = vi.fn()
+      .mockRejectedValueOnce(retryableError('fail 1'))
+      .mockRejectedValueOnce(retryableError('fail 2'))
+      .mockResolvedValue('ok');
+    const promise = retryWithBackoff(fn, { maxRetries: 3, initialDelay: 1000, backoffMultiplier: 2 });
+    promise.catch(() => {});
+    expect(fn).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1000); // first retry at 1000ms
     expect(fn).toHaveBeenCalledTimes(2);
-
-    // Second retry after ~2000ms (exponential)
-    await vi.advanceTimersByTimeAsync(2500);
+    await vi.advanceTimersByTimeAsync(2000); // second retry at +2000ms
     expect(fn).toHaveBeenCalledTimes(3);
   });
 });
@@ -86,32 +78,22 @@ describe('retryWithBackoff', () => {
 describe('retryable', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
-  it('should create a retryable function', async () => {
-    const fn = vi
-      .fn()
-      .mockRejectedValueOnce(new Error('fail'))
-      .mockResolvedValue('success');
-
-    const retryableFn = retryable(fn, { maxRetries: 2, initialDelay: 100 });
-
-    const promise = retryableFn('arg1', 'arg2');
+  it('wraps a function and forwards its arguments', async () => {
+    const fn = vi.fn()
+      .mockRejectedValueOnce(retryableError('fail'))
+      .mockResolvedValue('ok');
+    const wrapped = retryable(fn, { maxRetries: 2, initialDelay: 100 });
+    const promise = wrapped('a', 'b');
     await vi.runAllTimersAsync();
-    const result = await promise;
-
-    expect(result).toBe('success');
-    expect(fn).toHaveBeenCalledWith('arg1', 'arg2');
+    await expect(promise).resolves.toBe('ok');
+    expect(fn).toHaveBeenCalledWith('a', 'b');
     expect(fn).toHaveBeenCalledTimes(2);
-  });
-
-  it('should preserve function arguments', async () => {
-    const fn = vi.fn().mockResolvedValue('success');
-    const retryableFn = retryable(fn, { maxRetries: 1 });
-
-    await vi.runAllTimersAsync();
-    await retryableFn('test', 123, { key: 'value' });
-
-    expect(fn).toHaveBeenCalledWith('test', 123, { key: 'value' });
   });
 });
