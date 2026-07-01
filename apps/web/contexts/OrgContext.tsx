@@ -10,9 +10,20 @@ import { api } from '../lib/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryKeys';
 
+interface AddNodeInput {
+    name: string;
+    email: string;
+    role: string;
+    department: string;
+    parentId?: string;
+    startDate?: string;
+    id?: string;
+    avatar?: string;
+}
+
 interface OrgContextType {
     nodes: OrgNode[];
-    addNode: (node: any) => void;
+    addNode: (node: AddNodeInput) => void;
     updateNode: (id: string, updates: Partial<OrgNode>) => void;
     deleteNode: (id: string) => void;
     fetchSubTree: (employeeId: string) => void;
@@ -51,7 +62,7 @@ export const OrgProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         qc.invalidateQueries({ queryKey: queryKeys.orgChart.tree() });
     }, [qc]);
 
-    const addNode = useCallback(async (nodeData: any) => {
+    const addNode = useCallback(async (nodeData: AddNodeInput) => {
         try {
             const payload = {
                 name: nodeData.name,
@@ -69,7 +80,7 @@ export const OrgProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const updateNode = useCallback(async (id: string, updates: Partial<OrgNode>) => {
         try {
-            const payload: any = {};
+            const payload: Record<string, unknown> = {};
             if (updates.name) payload.name = updates.name;
             if (updates.role !== undefined) payload.role = updates.role;
             if (updates.department !== undefined) payload.department = updates.department;

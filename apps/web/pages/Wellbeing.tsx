@@ -7,6 +7,7 @@ import { useToast } from '../contexts/ToastContext';
 import { Dropdown } from '../components/Dropdown';
 import { DatePicker } from '../components/DatePicker';
 import { useAnnouncements, useUpcomingEvents, useAddAnnouncement, useUpdateAnnouncement, useDeleteAnnouncement, useAddEvent, useDeleteEvent, useSentimentOverview, useHolidays, useLeaveRequests } from '../hooks/queries';
+import { getErrorMessage } from '../lib/errorHandler';
 import { useAuth } from '../contexts/AuthContext';
 
 export const Wellbeing: React.FC = () => {
@@ -163,9 +164,9 @@ export const Wellbeing: React.FC = () => {
       setIsModalOpen(false);
       setEditingAnnouncementId(null);
       setNewAnnouncement({ type: 'announcement', title: '', description: '', date: '' });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving announcement:', error);
-      showToast(error.message || t('announcements.saveFailed'), 'error');
+      showToast(getErrorMessage(error, t('announcements.saveFailed')), 'error');
     }
   };
 
@@ -179,9 +180,9 @@ export const Wellbeing: React.FC = () => {
     try {
       await deleteAnnouncementMutation.mutateAsync(id);
       showToast(t('announcements.deleted'), 'success');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting announcement:', error);
-      showToast(error.message || t('announcements.deleteFailed'), 'error');
+      showToast(getErrorMessage(error, t('announcements.deleteFailed')), 'error');
     }
   };
 
@@ -197,9 +198,9 @@ export const Wellbeing: React.FC = () => {
     try {
       await deleteEventMutation.mutateAsync(eventId);
       showToast(t('eventModal.deleteSuccess'), 'success');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting event:', error);
-      showToast(error.message || t('eventModal.deleteError'), 'error');
+      showToast(getErrorMessage(error, t('eventModal.deleteError')), 'error');
     }
   };
 
@@ -220,9 +221,9 @@ export const Wellbeing: React.FC = () => {
       setIsEventModalOpen(false);
       setNewEvent({ type: 'Meeting', title: '', date: '' });
       showToast(t('eventModal.createSuccess'), 'success');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating event:', error);
-      showToast(error.message || t('eventModal.createError'), 'error');
+      showToast(getErrorMessage(error, t('eventModal.createError')), 'error');
     }
   };
 
@@ -699,7 +700,7 @@ export const Wellbeing: React.FC = () => {
                   <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('announcementModal.type')}</label>
                   <Dropdown
                     value={newAnnouncement.type || 'announcement'}
-                    onChange={(value) => setNewAnnouncement({ ...newAnnouncement, type: value as any })}
+                    onChange={(value) => setNewAnnouncement({ ...newAnnouncement, type: value as Announcement['type'] })}
                     options={[
                       { value: 'announcement', label: t('announcementModal.typeAnnouncement') },
                       { value: 'policy', label: t('announcementModal.typePolicy') },
@@ -797,7 +798,7 @@ export const Wellbeing: React.FC = () => {
                   <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('eventModal.eventType')}</label>
                   <Dropdown
                     value={newEvent.type || 'Meeting'}
-                    onChange={(value) => setNewEvent({ ...newEvent, type: value as any })}
+                    onChange={(value) => setNewEvent({ ...newEvent, type: value as UpcomingEvent['type'] })}
                     options={eventTypeOptions}
                     placeholder={t('common:placeholders.selectEventType')}
                   />

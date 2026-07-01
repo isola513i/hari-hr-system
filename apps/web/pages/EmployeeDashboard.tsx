@@ -926,7 +926,7 @@ export const EmployeeDashboard: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {(myOTRequests as any[]).slice(0, 3).map((req) => (
+              {myOTRequests.slice(0, 3).map((req) => (
                 <div key={req.id} className="flex items-center justify-between p-3 bg-background-light dark:bg-background-dark rounded-lg border border-border-light dark:border-border-dark">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className={`p-1.5 rounded-lg shrink-0 ${

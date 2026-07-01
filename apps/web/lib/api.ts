@@ -167,8 +167,8 @@ export const api = {
             return handleResponse(response, () =>
                 fetch(`${BASE_URL}${endpoint}`, { method: 'GET', headers: getHeaders(), cache: 'no-store' })
             );
-        } catch (error: any) {
-            errorLogging.logError(error, { endpoint, method: 'GET' });
+        } catch (error) {
+            errorLogging.logError(error instanceof Error ? error : new Error(String(error)), { endpoint, method: 'GET' });
             throw error;
         }
     },

@@ -6,6 +6,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { api, API_HOST, BASE_URL, getAuthToken } from '../lib/api';
 import { queryKeys } from '../lib/queryKeys';
 import { parsePhoneNumber } from '../lib/phoneUtils';
+import { getErrorMessage } from '../lib/errorHandler';
+import type { User } from '../types';
 
 export function useProfileSettings() {
   const { t } = useTranslation('settings');
@@ -142,7 +144,7 @@ export function useProfileSettings() {
       await api.patch(`/employees/${user.employeeId}`, patchPayload);
 
       // Update AuthContext (only include avatar if changed)
-      const contextUpdate: Record<string, unknown> = {
+      const contextUpdate: Partial<User> = {
         name: fullName,
         email: profile.email,
         phone: fullPhoneNumber,
@@ -151,16 +153,17 @@ export function useProfileSettings() {
       if (avatarRawPath) {
         contextUpdate.avatar = avatarRawPath;
       }
-      updateUser(contextUpdate as any);
+      updateUser(contextUpdate);
 
       showToast(t('general.profileSaved'), 'success');
 
       // Invalidate React Query caches so employee lists stay in sync
       qc.invalidateQueries({ queryKey: queryKeys.employees.all });
-    } catch (error: any) {
+    } catch (error) {
       let errorMessage = t('general.saveFailed');
-      if (error.message) {
-        errorMessage = error.message;
+      const msg = getErrorMessage(error, '');
+      if (msg) {
+        errorMessage = msg;
       }
       showToast(errorMessage, 'error');
     } finally {

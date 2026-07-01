@@ -55,7 +55,7 @@ const calculateDelay = (
  * Check if an error is retryable
  */
 const isRetryableError = (
-  error: any,
+  error: unknown,
   method: string,
   options: Required<RetryOptions>
 ): boolean => {
@@ -64,14 +64,16 @@ const isRetryableError = (
     return false;
   }
 
+  const err = error as { response?: { status?: number }; message?: string };
+
   // Network errors (no response) are retryable
-  if (!error.response && error.message?.includes('fetch')) {
+  if (!err.response && err.message?.includes('fetch')) {
     return true;
   }
 
   // Check if status code is retryable
-  if (error.response?.status) {
-    return options.retryableStatusCodes.includes(error.response.status);
+  if (err.response?.status) {
+    return options.retryableStatusCodes.includes(err.response.status);
   }
 
   return false;
@@ -96,8 +98,8 @@ export async function retryWithBackoff<T>(
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
     try {
       return await fn();
-    } catch (error: any) {
-      lastError = error;
+    } catch (error) {
+      lastError = error as Error;
 
       // If this is the last attempt, throw the error
       if (attempt === config.maxRetries) {
@@ -118,7 +120,7 @@ export async function retryWithBackoff<T>(
       );
 
       // Call onRetry callback
-      config.onRetry(attempt + 1, error);
+      config.onRetry(attempt + 1, error as Error);
 
       // Wait before retrying
       await new Promise(resolve => setTimeout(resolve, delay));
@@ -154,7 +156,7 @@ export async function retryFetch(
         !response.ok &&
         config.retryableStatusCodes.includes(response.status)
       ) {
-        const error: any = new Error(`HTTP ${response.status}`);
+        const error: Error & { response?: { status: number } } = new Error(`HTTP ${response.status}`);
         error.response = { status: response.status };
         throw error;
       }

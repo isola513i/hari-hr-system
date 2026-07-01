@@ -3,6 +3,7 @@ import { X, ClipboardClock, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCreateRegularizationRequest, useHolidayDateSet, useEmployeeDetail } from '../hooks/queries';
 import { useAuth } from '../contexts/AuthContext';
+import { getApiErrorMessage } from '../lib/errorHandler';
 import { DatePicker } from './DatePicker';
 
 interface Props {
@@ -60,7 +61,7 @@ export const AttendanceRegularizationModal: React.FC<Props> = ({ onClose, onSucc
       },
       {
         onSuccess: () => onSuccess(t('regModal.success')),
-        onError: (err: any) => setError(err?.response?.data?.error || err?.message || t('regModal.failedSubmit')),
+        onError: (err) => setError(getApiErrorMessage(err, t('regModal.failedSubmit'))),
       }
     );
   };

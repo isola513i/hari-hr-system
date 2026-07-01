@@ -1,4 +1,4 @@
-import { Employee, JobHistoryItem, PerformanceReview, DocumentItem, OffboardingTask, ExitInterview, OffboardingProgress } from '../../types';
+import { Employee, JobHistoryItem, PerformanceReview, DocumentItem, OffboardingTask, ExitInterview, OffboardingProgress, EmployeeTrainingRecord } from '../../types';
 
 // Shared types
 export interface EmployeePermissions {
@@ -68,7 +68,7 @@ export interface DocumentsTabProps {
 
 export interface TrainingTabProps {
     isAdmin: boolean;
-    trainingRecords: any[];
+    trainingRecords: EmployeeTrainingRecord[];
     showToast: ShowToastFn;
 }
 
@@ -95,7 +95,7 @@ export interface EmployeeModalsProps {
     editForm: Partial<Employee>;
     permissions: EmployeePermissions;
     onCloseEditProfile: () => void;
-    onProfileChange: (field: keyof Employee, value: any) => void;
+    onProfileChange: (field: keyof Employee, value: Employee[keyof Employee]) => void;
     onProfileSave: () => void;
 
     // Add History Modal

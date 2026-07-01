@@ -9,6 +9,30 @@ export interface ApiError {
 }
 
 /**
+ * Safely extract a human-readable message from an unknown caught value.
+ */
+export function getErrorMessage(e: unknown, fallback = 'Something went wrong'): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === 'string') return e;
+  return fallback;
+}
+
+/**
+ * Extract a message from an unknown error, preferring an API response body
+ * (`error.response.data.error`) before the plain `error.message`.
+ * Mirrors the `err?.response?.data?.error || err?.message || fallback` pattern.
+ */
+export function getApiErrorMessage(e: unknown, fallback = 'Something went wrong'): string {
+  if (e && typeof e === 'object') {
+    const responseError = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+    if (typeof responseError === 'string' && responseError) return responseError;
+    const message = (e as { message?: unknown }).message;
+    if (typeof message === 'string' && message) return message;
+  }
+  return fallback;
+}
+
+/**
  * Parse error from API response
  */
 export const parseApiError = (error: NetworkError | Error): ApiError => {

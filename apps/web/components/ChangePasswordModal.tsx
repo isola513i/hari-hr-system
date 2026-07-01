@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { X, Lock, Check, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../lib/api';
+import { getErrorMessage } from '../lib/errorHandler';
 
 interface ChangePasswordModalProps {
     isOpen: boolean;
@@ -100,8 +101,8 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
                 setNewPassword('');
                 setConfirmPassword('');
             }, 2000);
-        } catch (err: any) {
-            setError(err.message || t('changePassword.errorFailed'));
+        } catch (err) {
+            setError(getErrorMessage(err, t('changePassword.errorFailed')));
         } finally {
             setIsLoading(false);
         }
