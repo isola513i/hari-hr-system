@@ -1380,7 +1380,7 @@ async function seedSystemConfigs() {
 // ============================================================
 
 async function seedTerminations() {
-  console.log("  [21/22] Terminated Employees...");
+  console.log("  [21/27] Terminated Employees...");
 
   // Self-sufficient: ensure offboarding columns exist even if that migration
   // hasn't run on this DB (seed may run standalone before server startup).
@@ -1427,7 +1427,7 @@ async function seedTerminations() {
 // ============================================================
 
 async function seedPeerFeedback() {
-  console.log("  [22/22] 360 Peer Feedback...");
+  console.log("  [22/27] 360 Peer Feedback...");
 
   // Self-sufficient: ensure the table exists (mirrors runLightMigrations).
   await query(`
@@ -1483,6 +1483,299 @@ async function seedPeerFeedback() {
   }
 }
 
+// ============================================================
+// SECTION 23-27: REQUESTS FLOW, ASSETS, SHIFTS
+// ============================================================
+
+const NOW_ISO = new Date().toISOString();
+
+// A recent past weekday (skips Sat/Sun so requests land on working days).
+function pastWeekday(daysBack: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - daysBack);
+  while (isWeekend(d)) d.setDate(d.getDate() - 1);
+  return localYmd(d);
+}
+
+// An upcoming weekday (for pending requests that are still in the future).
+function futureWeekday(daysAhead: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysAhead);
+  while (isWeekend(d)) d.setDate(d.getDate() + 1);
+  return localYmd(d);
+}
+
+// Bangkok-local timestamp on a given YYYY-MM-DD (UTC+7).
+function tsAt(ymd: string, hhmm: string): string {
+  return `${ymd}T${hhmm}:00+07:00`;
+}
+
+async function seedWFHRequests() {
+  console.log("  [23/27] WFH Requests...");
+
+  // Self-sufficient: table lives in init-db, manager columns in a migration.
+  await query(`
+    CREATE TABLE IF NOT EXISTS wfh_requests (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+      date DATE NOT NULL,
+      reason TEXT,
+      status VARCHAR(20) DEFAULT 'pending',
+      reviewed_by UUID REFERENCES employees(id),
+      reviewed_at TIMESTAMP WITH TIME ZONE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT unique_wfh_request UNIQUE (employee_id, date)
+    )
+  `);
+  await query(`ALTER TABLE wfh_requests ADD COLUMN IF NOT EXISTS manager_reviewed_by UUID REFERENCES employees(id)`);
+  await query(`ALTER TABLE wfh_requests ADD COLUMN IF NOT EXISTS manager_reviewed_at TIMESTAMP WITH TIME ZONE`);
+
+  const rows = [
+    // Pending — awaiting a manager (upcoming days)
+    { emp: E.JR_DEV, day: futureWeekday(2), reason: "Focus day for feature work, fewer interruptions at home", status: "pending" },
+    { emp: E.CONTENT, day: futureWeekday(3), reason: "Waiting for a home repair technician", status: "pending" },
+    { emp: E.UI, day: futureWeekday(5), reason: "Remote design sprint with the overseas team", status: "pending" },
+    // Manager approved — forwarded to HR
+    { emp: E.FS_DEV, day: futureWeekday(1), reason: "Morning doctor appointment near home", status: "manager_approved", mgr: E.ENG_MGR },
+    // Approved (manager then HR)
+    { emp: E.SR_ENG, day: pastWeekday(4), reason: "Deep work on the release", status: "approved", mgr: E.ENG_MGR, hr: E.HR_SPEC },
+    { emp: E.UX, day: pastWeekday(7), reason: "Family commitment", status: "approved", mgr: E.DESIGN_DIR, hr: E.HR_SPEC },
+    // Rejected
+    { emp: E.DEVOPS, day: pastWeekday(6), reason: "Personal errands", status: "rejected", hr: E.ENG_MGR },
+  ] as Array<{ emp: string; day: string; reason: string; status: string; mgr?: string; hr?: string }>;
+
+  for (const r of rows) {
+    const managerBy = r.mgr ?? null;
+    const managerAt = r.mgr ? NOW_ISO : null;
+    const finalBy = r.hr ?? null;
+    const finalAt = r.hr ? NOW_ISO : null;
+    await query(
+      `INSERT INTO wfh_requests
+         (employee_id, date, reason, status, manager_reviewed_by, manager_reviewed_at, reviewed_by, reviewed_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       ON CONFLICT (employee_id, date) DO NOTHING`,
+      [r.emp, r.day, r.reason, r.status, managerBy, managerAt, finalBy, finalAt]
+    );
+  }
+}
+
+async function seedOTRequests() {
+  console.log("  [24/27] OT Requests...");
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS ot_requests (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+      date DATE NOT NULL,
+      planned_start TIME NOT NULL,
+      planned_end TIME NOT NULL,
+      planned_hours DECIMAL(4,2) NOT NULL,
+      actual_hours DECIMAL(4,2),
+      ot_type VARCHAR(20) DEFAULT 'regular',
+      reason TEXT NOT NULL,
+      status VARCHAR(20) DEFAULT 'pending',
+      reviewed_by UUID REFERENCES employees(id),
+      reviewed_at TIMESTAMP WITH TIME ZONE,
+      notes TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  const rows = [
+    { emp: E.SR_ENG, day: pastWeekday(2), start: "18:00", end: "21:00", hours: 3, type: "regular", reason: "Production hotfix deployment after hours", status: "pending" },
+    { emp: E.DEVOPS, day: futureWeekday(4), start: "09:00", end: "17:00", hours: 8, type: "holiday", reason: "Scheduled server migration on a public holiday", status: "pending" },
+    { emp: E.FS_DEV, day: pastWeekday(6), start: "18:30", end: "22:00", hours: 3.5, type: "regular", reason: "Sprint release preparation", status: "approved", by: E.ENG_MGR, actual: 3.5 },
+    { emp: E.ACCT, day: pastWeekday(9), start: "18:00", end: "20:30", hours: 2.5, type: "regular", reason: "Month-end financial closing", status: "approved", by: E.FIN_MGR, actual: 2.5 },
+    { emp: E.JR_DEV, day: pastWeekday(11), start: "19:00", end: "23:00", hours: 4, type: "regular", reason: "Catching up on personal tasks", status: "rejected", by: E.ENG_MGR, note: "Not pre-approved OT, please plan ahead with your lead" },
+  ] as Array<{ emp: string; day: string; start: string; end: string; hours: number; type: string; reason: string; status: string; by?: string; actual?: number; note?: string }>;
+
+  for (const r of rows) {
+    await query(
+      `INSERT INTO ot_requests
+         (employee_id, date, planned_start, planned_end, planned_hours, actual_hours, ot_type, reason, status, reviewed_by, reviewed_at, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [
+        r.emp, r.day, r.start, r.end, r.hours, r.actual ?? null, r.type, r.reason, r.status,
+        r.by ?? null, r.by ? NOW_ISO : null, r.note ?? null,
+      ]
+    );
+  }
+}
+
+async function seedRegularizationRequests() {
+  console.log("  [25/27] Attendance Correction Requests...");
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS attendance_regularization_requests (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+      date DATE NOT NULL,
+      requested_clock_in  TIMESTAMP WITH TIME ZONE,
+      requested_clock_out TIMESTAMP WITH TIME ZONE,
+      reason TEXT NOT NULL,
+      status VARCHAR(20) DEFAULT 'pending',
+      manager_reviewed_by UUID REFERENCES employees(id),
+      manager_reviewed_at TIMESTAMP WITH TIME ZONE,
+      reviewed_by UUID REFERENCES employees(id),
+      reviewed_at TIMESTAMP WITH TIME ZONE,
+      notes TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT unique_reg_request UNIQUE (employee_id, date)
+    )
+  `);
+
+  const rows = [
+    { emp: E.UX, day: pastWeekday(1), in: "09:05", out: "18:10", reason: "Badge reader failed, could not clock in on arrival", status: "pending" },
+    { emp: E.CONTENT, day: pastWeekday(2), in: "08:55", out: "18:00", reason: "Attendance system was down during clock-in", status: "pending" },
+    { emp: E.FS_DEV, day: pastWeekday(4), in: "09:00", out: "19:30", reason: "Worked late on release, forgot to clock out", status: "manager_approved", mgr: E.ENG_MGR },
+    { emp: E.SR_ENG, day: pastWeekday(6), in: "08:45", out: "18:00", reason: "Clock-in terminal error at the office", status: "approved", mgr: E.ENG_MGR, hr: E.HR_SPEC },
+    { emp: E.JR_DEV, day: pastWeekday(8), in: "10:30", out: "18:00", reason: "Late arrival due to heavy traffic", status: "rejected", hr: E.ENG_MGR, note: "Please file a leave request for the late hours instead" },
+  ] as Array<{ emp: string; day: string; in: string; out: string; reason: string; status: string; mgr?: string; hr?: string; note?: string }>;
+
+  for (const r of rows) {
+    await query(
+      `INSERT INTO attendance_regularization_requests
+         (employee_id, date, requested_clock_in, requested_clock_out, reason, status,
+          manager_reviewed_by, manager_reviewed_at, reviewed_by, reviewed_at, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       ON CONFLICT (employee_id, date) DO NOTHING`,
+      [
+        r.emp, r.day, tsAt(r.day, r.in), tsAt(r.day, r.out), r.reason, r.status,
+        r.mgr ?? null, r.mgr ? NOW_ISO : null,
+        r.hr ?? null, r.hr ? NOW_ISO : null,
+        r.note ?? null,
+      ]
+    );
+  }
+}
+
+async function seedAssets() {
+  console.log("  [26/27] Company Assets...");
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS company_assets (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      name VARCHAR(255) NOT NULL,
+      asset_type VARCHAR(100) NOT NULL,
+      serial_number VARCHAR(255),
+      status VARCHAR(50) DEFAULT 'Available',
+      assigned_to UUID REFERENCES employees(id) ON DELETE SET NULL,
+      assigned_at TIMESTAMP WITH TIME ZONE,
+      purchase_date DATE,
+      purchase_price DECIMAL(12,2),
+      notes TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  const rows = [
+    { name: 'MacBook Pro 16" M3', type: "Laptop", serial: "C02XL0ATJGH7", status: "Assigned", to: E.SR_ENG, price: 89900, purchase: "2024-06-15", notes: "Engineering standard issue" },
+    { name: 'MacBook Pro 14" M3', type: "Laptop", serial: "C02XL0ATJGH8", status: "Assigned", to: E.FS_DEV, price: 72900, purchase: "2024-06-15", notes: null },
+    { name: "MacBook Air M2", type: "Laptop", serial: "C02XL0ATJGH9", status: "Assigned", to: E.UX, price: 42900, purchase: "2024-02-10", notes: null },
+    { name: 'Dell UltraSharp 27" 4K', type: "Monitor", serial: "CN-0M1234", status: "Assigned", to: E.SR_ENG, price: 18900, purchase: "2024-06-20", notes: null },
+    { name: "iPhone 15 Pro", type: "Phone", serial: "F2LXK9ABCDEF", status: "Assigned", to: E.MKT_MGR, price: 42900, purchase: "2024-09-25", notes: "Marketing device" },
+    { name: 'iPad Pro 12.9"', type: "Tablet", serial: "DMPWK1XYZ", status: "Assigned", to: E.DESIGN_DIR, price: 39900, purchase: "2024-03-01", notes: null },
+    { name: "MacBook Air M2 (Spare)", type: "Laptop", serial: "C02XL0ATSP01", status: "Available", to: null, price: 42900, purchase: "2024-11-05", notes: null },
+    { name: 'Dell UltraSharp 27" (Spare)', type: "Monitor", serial: "CN-0M9999", status: "Available", to: null, price: 18900, purchase: "2024-11-05", notes: null },
+    { name: "Logitech MX Keys Combo", type: "Equipment", serial: null, status: "Available", to: null, price: 5900, purchase: "2024-11-05", notes: null },
+    { name: "ThinkPad X1 Carbon", type: "Laptop", serial: "PF3ABCDE", status: "Under Maintenance", to: null, price: 65900, purchase: "2023-05-12", notes: "Keyboard replacement in progress" },
+    { name: "Company Car (Toyota Camry)", type: "Vehicle", serial: "1HGBH41JXMN109186", status: "Available", to: null, price: 1350000, purchase: "2022-01-20", notes: null },
+    { name: "Dell OptiPlex Desktop", type: "Desktop", serial: "7XYZ123", status: "Retired", to: null, price: 24900, purchase: "2020-03-15", notes: "End of life, pending disposal" },
+  ] as Array<{ name: string; type: string; serial: string | null; status: string; to: string | null; price: number; purchase: string; notes: string | null }>;
+
+  for (const a of rows) {
+    await query(
+      `INSERT INTO company_assets
+         (name, asset_type, serial_number, status, assigned_to, assigned_at, purchase_date, purchase_price, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [
+        a.name, a.type, a.serial, a.status, a.to,
+        a.to ? tsAt(a.purchase, "09:00") : null,
+        a.purchase, a.price, a.notes,
+      ]
+    );
+  }
+}
+
+async function seedShifts() {
+  console.log("  [27/27] Shifts & Assignments...");
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS shifts (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      name VARCHAR(100) NOT NULL,
+      start_time TIME NOT NULL,
+      end_time TIME NOT NULL,
+      color VARCHAR(20) DEFAULT 'blue',
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS shift_assignments (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+      shift_id UUID NOT NULL REFERENCES shifts(id) ON DELETE CASCADE,
+      date DATE NOT NULL,
+      notes TEXT,
+      created_by UUID REFERENCES users(id),
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT unique_shift_per_day UNIQUE (employee_id, date)
+    )
+  `);
+
+  const SHIFT = {
+    MORNING: "ffffffff-0000-0000-0000-0000000000a1",
+    EVENING: "ffffffff-0000-0000-0000-0000000000a2",
+    NIGHT: "ffffffff-0000-0000-0000-0000000000a3",
+  };
+  const shifts = [
+    { id: SHIFT.MORNING, name: "Morning", start: "09:00", end: "18:00", color: "blue" },
+    { id: SHIFT.EVENING, name: "Evening", start: "14:00", end: "23:00", color: "orange" },
+    { id: SHIFT.NIGHT, name: "Night", start: "22:00", end: "07:00", color: "purple" },
+  ];
+  for (const s of shifts) {
+    await query(
+      `INSERT INTO shifts (id, name, start_time, end_time, color, is_active)
+       VALUES ($1,$2,$3,$4,$5,TRUE) ON CONFLICT (id) DO NOTHING`,
+      [s.id, s.name, s.start, s.end, s.color]
+    );
+  }
+
+  // Assign shifts across the current work week (Mon–Fri).
+  const now = new Date();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const weekday = (i: number): string => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return localYmd(d);
+  };
+
+  const plan = [
+    { emp: E.SR_ENG, shift: SHIFT.MORNING, days: [0, 1, 2, 3, 4] },
+    { emp: E.FS_DEV, shift: SHIFT.MORNING, days: [0, 1, 2, 3, 4] },
+    { emp: E.ACCT, shift: SHIFT.MORNING, days: [0, 1, 2, 3, 4] },
+    { emp: E.UX, shift: SHIFT.MORNING, days: [0, 2, 4] },
+    { emp: E.DEVOPS, shift: SHIFT.EVENING, days: [0, 1, 2] },
+    { emp: E.DEVOPS, shift: SHIFT.NIGHT, days: [3, 4] },
+    { emp: E.CONTENT, shift: SHIFT.EVENING, days: [1, 3] },
+  ];
+  for (const p of plan) {
+    for (const dayIdx of p.days) {
+      await query(
+        `INSERT INTO shift_assignments (employee_id, shift_id, date, created_by)
+         VALUES ($1,$2,$3,$4) ON CONFLICT (employee_id, date) DO NOTHING`,
+        [p.emp, p.shift, weekday(dayIdx), ADMIN_USER_ID]
+      );
+    }
+  }
+}
+
 export async function seedDemoData() {
   // Idempotency check
   const existing = await query(
@@ -1519,6 +1812,11 @@ export async function seedDemoData() {
   await seedSystemConfigs();
   await seedTerminations();
   await seedPeerFeedback();
+  await seedWFHRequests();
+  await seedOTRequests();
+  await seedRegularizationRequests();
+  await seedAssets();
+  await seedShifts();
 
   console.log("\nDemo data seeded successfully!");
   console.log("──────────────────────────────────────");
