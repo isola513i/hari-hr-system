@@ -9,6 +9,7 @@ import { DatePicker } from '../components/DatePicker';
 import { useAnnouncements, useUpcomingEvents, useAddAnnouncement, useUpdateAnnouncement, useDeleteAnnouncement, useAddEvent, useDeleteEvent, useSentimentOverview, useHolidays, useLeaveRequests } from '../hooks/queries';
 import { getErrorMessage } from '../lib/errorHandler';
 import { useAuth } from '../contexts/AuthContext';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 export const Wellbeing: React.FC = () => {
   const { t, i18n } = useTranslation(['wellbeing', 'common']);
@@ -41,6 +42,11 @@ export const Wellbeing: React.FC = () => {
 
   const { showToast } = useToast();
 
+  // Accessibility refs for the hand-rolled modals (Escape-close + focus management).
+  const closeAnnouncementModal = () => { setIsModalOpen(false); setEditingAnnouncementId(null); setNewAnnouncement({ type: 'announcement' }); };
+  const announcementDialogRef = useModalA11y(isModalOpen, closeAnnouncementModal);
+  const eventDialogRef = useModalA11y(isEventModalOpen, () => setIsEventModalOpen(false));
+
   const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
   const toYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -58,12 +64,12 @@ export const Wellbeing: React.FC = () => {
 
   // Count approved leaves per date in visible month (admin only)
   const calLeaveCounts = useMemo(() => {
-    if (!isAdminView) return new Map<string, number>();
+    if (!isAdminView) {return new Map<string, number>();}
     const map = new Map<string, number>();
     const monthStart = new Date(currentYear, currentMonth, 1);
     const monthEnd = new Date(currentYear, currentMonth + 1, 0);
     for (const leave of leaveRequests) {
-      if (leave.status !== 'Approved' || !leave.startDate || !leave.endDate) continue;
+      if (leave.status !== 'Approved' || !leave.startDate || !leave.endDate) {continue;}
       const start = new Date(leave.startDate.slice(0, 10) + 'T00:00:00');
       const end = new Date(leave.endDate.slice(0, 10) + 'T00:00:00');
       const cur = new Date(Math.max(start.getTime(), monthStart.getTime()));
@@ -665,14 +671,15 @@ export const Wellbeing: React.FC = () => {
 
       {/* Add Announcement Modal */}
       {isModalOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) {closeAnnouncementModal();} }}>
+          <div ref={announcementDialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="wellbeing-announcement-title" className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-              <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
+              <h3 id="wellbeing-announcement-title" className="font-bold text-lg text-text-light dark:text-text-dark">
                 {editingAnnouncementId ? t('announcements.editTitle') : t('announcementModal.title')}
               </h3>
               <button
                 onClick={() => { setIsModalOpen(false); setEditingAnnouncementId(null); setNewAnnouncement({ type: 'announcement' }); }}
+                aria-label={t('common:buttons.close')}
                 className="text-text-muted-light hover:text-text-light"
               >
                 <X size={20} />
@@ -763,14 +770,15 @@ export const Wellbeing: React.FC = () => {
 
       {/* Add Event Modal */}
       {isEventModalOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) {setIsEventModalOpen(false);} }}>
+          <div ref={eventDialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="wellbeing-event-title" className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-              <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
+              <h3 id="wellbeing-event-title" className="font-bold text-lg text-text-light dark:text-text-dark">
                 {t('eventModal.title')}
               </h3>
               <button
                 onClick={() => setIsEventModalOpen(false)}
+                aria-label={t('common:buttons.close')}
                 className="text-text-muted-light hover:text-text-light"
               >
                 <X size={20} />

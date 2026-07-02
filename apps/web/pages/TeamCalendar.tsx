@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTeamCalendar } from '../hooks/queries';
 import { useAuth } from '../contexts/AuthContext';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,13 +34,13 @@ const EVENT_COLORS: Record<CalendarEvent['event_type'], { bg: string; text: stri
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function toDateStr(raw: string): string {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {return raw;}
   const m = raw.match(/^(\d{4}-\d{2}-\d{2})/);
   return m ? m[1]! : raw;
 }
 
 function expandRange(start: string | undefined, end: string | undefined): string[] {
-  if (!start || !end) return [];
+  if (!start || !end) {return [];}
   const dates: string[] = [];
   const s = new Date(toDateStr(start) + 'T00:00:00');
   const e = new Date(toDateStr(end) + 'T00:00:00');
@@ -67,13 +68,19 @@ function EventPill({ event, onClick }: { event: CalendarEvent; onClick: () => vo
 // ─── Detail Modal ─────────────────────────────────────────────────────────────
 
 function EventModal({ event, onClose }: { event: CalendarEvent; onClose: () => void }) {
-  const { t } = useTranslation(['leave']);
+  const { t } = useTranslation(['leave', 'common']);
+  const dialogRef = useModalA11y(true, onClose);
   const cfg = EVENT_COLORS[event.event_type];
   const isMultiDay = event.start_date !== event.end_date;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" role="presentation" onClick={onClose}>
       <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="teamcal-event-title"
         className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
@@ -83,11 +90,11 @@ function EventModal({ event, onClose }: { event: CalendarEvent; onClose: () => v
               <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
               <span className={`text-xs font-semibold uppercase tracking-wide ${cfg.text}`}>{t(`teamCalendar.eventTypes.${event.event_type}`)}</span>
             </div>
-            <h3 className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
+            <h3 id="teamcal-event-title" className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
               {event.event_type === 'holiday' ? event.employee_name : event.employee_name}
             </h3>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <button onClick={onClose} aria-label={t('common:buttons.close')} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
             <X size={16} className="text-gray-500" />
           </button>
         </div>
@@ -148,18 +155,18 @@ export function TeamCalendar() {
   // Build a map: dateStr → events[]
   const dateEventMap = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
-    if (!data?.events) return map;
+    if (!data?.events) {return map;}
     for (const ev of data.events as CalendarEvent[]) {
       for (const d of expandRange(ev.start_date, ev.end_date)) {
-        if (!map.has(d)) map.set(d, []);
+        if (!map.has(d)) {map.set(d, []);}
         map.get(d)!.push(ev);
       }
     }
     return map;
   }, [data]);
 
-  const prevMonth = () => { if (month === 0) { setYear(y => y - 1); setMonth(11); } else setMonth(m => m - 1); };
-  const nextMonth = () => { if (month === 11) { setYear(y => y + 1); setMonth(0); } else setMonth(m => m + 1); };
+  const prevMonth = () => { if (month === 0) { setYear(y => y - 1); setMonth(11); } else {setMonth(m => m - 1);} };
+  const nextMonth = () => { if (month === 11) { setYear(y => y + 1); setMonth(0); } else {setMonth(m => m + 1);} };
 
   // Build calendar grid
   const firstDayOfMonth = new Date(year, month, 1).getDay();
@@ -169,7 +176,7 @@ export function TeamCalendar() {
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
   // Pad to complete last row
-  while (cells.length % 7 !== 0) cells.push(null);
+  while (cells.length % 7 !== 0) {cells.push(null);}
 
   const todayStr = today.toISOString().slice(0, 10);
 

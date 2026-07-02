@@ -4,6 +4,7 @@ import { Download, X } from 'lucide-react';
 import { DocumentItem } from '../../types';
 import { formatDate } from '../../lib/date';
 import { getFileIcon, displaySize } from './documentHelpers';
+import { useModalA11y } from '../../hooks/useModalA11y';
 
 interface DocumentPreviewModalProps {
   previewDoc: DocumentItem;
@@ -21,15 +22,27 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
   handleDownload,
 }) => {
   const { t } = useTranslation(['documents', 'common']);
+  const dialogRef = useModalA11y(true, onClose);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-card-dark rounded-xl shadow-2xl border border-border-light dark:border-border-dark w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) {onClose();} }}
+    >
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="doc-preview-title"
+        className="bg-white dark:bg-card-dark rounded-xl shadow-2xl border border-border-light dark:border-border-dark w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+      >
         <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800/50">
           <div className="flex items-center gap-3">
             {getFileIcon(previewDoc.type)}
             <div>
-              <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
+              <h3 id="doc-preview-title" className="font-bold text-lg text-text-light dark:text-text-dark">
                 {previewDoc.name}
               </h3>
               <p className="text-xs text-text-muted-light">
@@ -46,6 +59,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
             </button>
             <button
               onClick={onClose}
+              aria-label={t('common:buttons.close')}
               className="p-2 text-text-muted-light hover:text-text-light dark:hover:text-text-dark hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               <X size={20} />

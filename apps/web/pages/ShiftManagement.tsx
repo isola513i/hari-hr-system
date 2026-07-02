@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Dropdown } from '../components/Dropdown';
 import { WeekPicker } from '../components/WeekPicker';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 const AVATAR_PALETTE = [
   'bg-blue-100 text-blue-700',
@@ -25,7 +26,7 @@ const AVATAR_PALETTE = [
 
 function avatarColor(id: string): string {
   let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  for (let i = 0; i < id.length; i++) {h = (h * 31 + id.charCodeAt(i)) >>> 0;}
   return AVATAR_PALETTE[h % AVATAR_PALETTE.length]!;
 }
 
@@ -115,20 +116,21 @@ interface ShiftModalProps {
 }
 
 const ShiftModal: React.FC<ShiftModalProps> = ({ initial, onClose, onSave, saving }) => {
-  const { t } = useTranslation(['shifts']);
+  const { t } = useTranslation(['shifts', 'common']);
+  const dialogRef = useModalA11y(true, onClose);
   const [name, setName] = useState(initial?.name ?? '');
   const [startTime, setStartTime] = useState(initial?.startTime?.slice(0, 5) ?? '09:00');
   const [endTime, setEndTime] = useState(initial?.endTime?.slice(0, 5) ?? '18:00');
   const [color, setColor] = useState(initial?.color ?? 'blue');
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
-      <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl w-full max-w-md border border-border-light dark:border-border-dark">
+    <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) {onClose();} }}>
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="shift-modal-title" className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl w-full max-w-md border border-border-light dark:border-border-dark">
         <div className="flex items-center justify-between p-5 border-b border-border-light dark:border-border-dark">
-          <h2 className="text-lg font-bold text-text-light dark:text-text-dark">
+          <h2 id="shift-modal-title" className="text-lg font-bold text-text-light dark:text-text-dark">
             {initial ? t('shiftModal.titleEdit') : t('shiftModal.titleNew')}
           </h2>
-          <button onClick={onClose} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark">
+          <button onClick={onClose} aria-label={t('common:buttons.close')} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark">
             <X size={20} />
           </button>
         </div>
@@ -213,7 +215,8 @@ interface AssignModalProps {
 const AssignModal: React.FC<AssignModalProps> = ({
   shifts, employees, preSelectedEmployee, preSelectedDate, weekDates, dayLabels, onClose, onAssign, saving,
 }) => {
-  const { t } = useTranslation(['shifts']);
+  const { t } = useTranslation(['shifts', 'common']);
+  const dialogRef = useModalA11y(true, onClose);
   const [shiftId, setShiftId] = useState(shifts[0]?.id ?? '');
   const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(
     new Set(preSelectedEmployee ? [preSelectedEmployee] : [])
@@ -240,11 +243,11 @@ const AssignModal: React.FC<AssignModalProps> = ({
   };
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
-      <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl w-full max-w-lg border border-border-light dark:border-border-dark max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) {onClose();} }}>
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="assign-modal-title" className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl w-full max-w-lg border border-border-light dark:border-border-dark max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-5 border-b border-border-light dark:border-border-dark flex-shrink-0">
-          <h2 className="text-lg font-bold text-text-light dark:text-text-dark">{t('assignModal.title')}</h2>
-          <button onClick={onClose} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark">
+          <h2 id="assign-modal-title" className="text-lg font-bold text-text-light dark:text-text-dark">{t('assignModal.title')}</h2>
+          <button onClick={onClose} aria-label={t('common:buttons.close')} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark">
             <X size={20} />
           </button>
         </div>

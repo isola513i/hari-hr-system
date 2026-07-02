@@ -6,6 +6,7 @@ import { StarRating } from './PerformanceStatusBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useAllEmployees } from '../hooks/queries';
+import { useModalA11y } from '../hooks/useModalA11y';
 import {
   usePeerFeedback,
   useRequestPeerReviews,
@@ -41,7 +42,7 @@ function ScoreBar({ label, value, max = 5 }: { label: string; value: number | nu
 function AggregateBreakdown({ aggregate }: { aggregate: AggregateScore }) {
   const { t } = useTranslation(['performance-reviews']);
   const hasData = aggregate.managerRating !== null || aggregate.peerCount > 0;
-  if (!hasData) return null;
+  if (!hasData) {return null;}
 
   return (
     <div className="bg-primary/5 dark:bg-primary/10 rounded-lg p-4 space-y-3">
@@ -88,6 +89,7 @@ function PeerSelectModal({
   loading: boolean;
 }) {
   const { t } = useTranslation(['performance-reviews', 'common']);
+  const dialogRef = useModalA11y(true, onClose);
   const { data: employees = [] } = useAllEmployees();
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -98,23 +100,28 @@ function PeerSelectModal({
   const toggle = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {next.delete(id);}
+      else {next.add(id);}
       return next;
     });
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="presentation" onClick={onClose}>
       <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="peer-select-title"
         className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border-light dark:border-border-dark">
-          <h3 className="font-semibold text-text-primary-light dark:text-text-primary-dark">
+          <h3 id="peer-select-title" className="font-semibold text-text-primary-light dark:text-text-primary-dark">
             {t('peer.selectTitle', 'Request Peer Feedback')}
           </h3>
-          <button onClick={onClose} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-primary-light">
+          <button onClick={onClose} aria-label={t('common:buttons.close')} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-primary-light">
             <X size={18} />
           </button>
         </div>

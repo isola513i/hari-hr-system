@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useModalA11y } from '../../hooks/useModalA11y';
 import { Clock, CheckCircle2, XCircle, Download, Search } from 'lucide-react';
 import { Avatar } from '../Avatar';
 import { Dropdown, DropdownOption } from '../Dropdown';
@@ -41,6 +42,10 @@ export const AttendanceRegularizationTab: React.FC = () => {
   const [rejectNotes, setRejectNotes] = useState('');
   const [actionId, setActionId] = useState<string | null>(null);
 
+  // Accessibility for the hand-rolled reject dialog
+  const closeReject = useCallback(() => { setRejectId(null); setRejectNotes(''); }, []);
+  const rejectDialogRef = useModalA11y(!!rejectId, closeReject);
+
   const { data: requests = [], isPending: loading } = useAllRegularizationRequests();
   const approveMutation = useApproveRegularization();
   const rejectMutation = useRejectRegularization();
@@ -52,12 +57,12 @@ export const AttendanceRegularizationTab: React.FC = () => {
     const pending = all.filter(r => r.status === 'pending' || r.status === 'manager_approved').length;
     const now = new Date();
     const approvedThisMonth = all.filter(r => {
-      if (r.status !== 'approved') return false;
+      if (r.status !== 'approved') {return false;}
       const d = new Date(r.date);
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     }).length;
     const rejectedThisMonth = all.filter(r => {
-      if (r.status !== 'rejected') return false;
+      if (r.status !== 'rejected') {return false;}
       const d = new Date(r.date);
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     }).length;
@@ -71,8 +76,8 @@ export const AttendanceRegularizationTab: React.FC = () => {
 
   const filtered = useMemo(() => all
     .filter(r => {
-      if (statusFilter !== 'all' && r.status !== statusFilter) return false;
-      if (search && !r.employeeName?.toLowerCase().includes(search.toLowerCase())) return false;
+      if (statusFilter !== 'all' && r.status !== statusFilter) {return false;}
+      if (search && !r.employeeName?.toLowerCase().includes(search.toLowerCase())) {return false;}
       return true;
     })
     .sort((a, b) => b.date.localeCompare(a.date)),
@@ -114,7 +119,7 @@ export const AttendanceRegularizationTab: React.FC = () => {
   }, [rejectMutation, showToast, t]);
 
   const handleRejectSubmit = useCallback(() => {
-    if (!rejectId) return;
+    if (!rejectId) {return;}
     setActionId(rejectId);
     rejectMutation.mutate({ id: rejectId, notes: rejectNotes || undefined }, {
       onSuccess: () => { showToast(t('attendanceReg.toast.rejected'), 'success'); setRejectId(null); setRejectNotes(''); },
@@ -336,9 +341,20 @@ export const AttendanceRegularizationTab: React.FC = () => {
 
       {/* Reject Dialog */}
       {rejectId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4">
-            <h3 className="text-base font-semibold text-text-light dark:text-text-dark">{t('attendanceReg.rejectDialog.title')}</h3>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          role="presentation"
+          onClick={(e) => { if (e.target === e.currentTarget) {closeReject();} }}
+        >
+          <div
+            ref={rejectDialogRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="attreg-reject-title"
+            className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4"
+          >
+            <h3 id="attreg-reject-title" className="text-base font-semibold text-text-light dark:text-text-dark">{t('attendanceReg.rejectDialog.title')}</h3>
             <p className="text-sm text-text-muted-light dark:text-text-muted-dark">{t('attendanceReg.rejectDialog.subtitle')}</p>
             <textarea
               value={rejectNotes}

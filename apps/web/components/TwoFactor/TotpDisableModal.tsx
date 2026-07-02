@@ -5,6 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Lock, ShieldOff, Eye, EyeOff } from 'lucide-react';
 import { useTwoFactor } from '../../hooks/useTwoFactor';
+import { useModalA11y } from '../../hooks/useModalA11y';
 
 interface TotpDisableModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export const TotpDisableModal: React.FC<TotpDisableModalProps> = ({ isOpen, onCl
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useModalA11y(isOpen, onClose);
 
   const { disableLoading, disableTotp, error, clearError } = useTwoFactor();
 
@@ -38,11 +40,22 @@ export const TotpDisableModal: React.FC<TotpDisableModalProps> = ({ isOpen, onCl
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-2xl border border-border-light dark:border-border-dark w-full max-w-sm animate-fade-in-up">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) {onClose();} }}
+    >
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="totp-disable-title"
+        className="bg-card-light dark:bg-card-dark rounded-2xl shadow-2xl border border-border-light dark:border-border-dark w-full max-w-sm animate-fade-in-up"
+      >
 
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border-light dark:border-border-dark">
@@ -50,7 +63,7 @@ export const TotpDisableModal: React.FC<TotpDisableModalProps> = ({ isOpen, onCl
             <div className="flex items-center justify-center h-10 w-10 bg-accent-red/10 rounded-xl">
               <ShieldOff size={20} className="text-accent-red" />
             </div>
-            <h2 className="font-semibold text-text-light dark:text-text-dark">{t('auth:totp.disable.title')}</h2>
+            <h2 id="totp-disable-title" className="font-semibold text-text-light dark:text-text-dark">{t('auth:totp.disable.title')}</h2>
           </div>
           <button onClick={onClose} aria-label={t('auth:totp.disable.closeAriaLabel')} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark transition-colors">
             <X size={20} />

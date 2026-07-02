@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { MapPin, Shield, X, Settings, AlertTriangle, CheckCircle } from 'lucide-react';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface Props {
   mode: 'request' | 'denied';
@@ -9,9 +10,21 @@ interface Props {
 }
 
 export function LocationPermissionModal({ mode, onAllow, onDismiss }: Props) {
+  const { t } = useTranslation(['attendance', 'common']);
+  const dialogRef = useModalA11y(true, onDismiss);
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
-      <div className="bg-card-light dark:bg-card-dark w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl shadow-2xl border border-border-light dark:border-border-dark animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 overflow-hidden">
+    <div
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) {onDismiss();} }}
+    >
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label={mode === 'request' ? t('locationPermission.requestTitle') : t('locationPermission.deniedTitle')}
+        className="bg-card-light dark:bg-card-dark w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl shadow-2xl border border-border-light dark:border-border-dark animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 overflow-hidden">
 
         {/* Drag handle for mobile */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
@@ -22,6 +35,7 @@ export function LocationPermissionModal({ mode, onAllow, onDismiss }: Props) {
         <div className="flex justify-end px-4 pt-2 sm:pt-4">
           <button
             onClick={onDismiss}
+            aria-label={t('common:buttons.close')}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1"
           >
             <X size={20} />

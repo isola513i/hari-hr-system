@@ -9,6 +9,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, ShieldCheck, Copy, Download, Check, KeyRound, ChevronRight } from 'lucide-react';
 import { useTwoFactor } from '../../hooks/useTwoFactor';
+import { useModalA11y } from '../../hooks/useModalA11y';
 
 interface TotpSetupModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export const TotpSetupModal: React.FC<TotpSetupModalProps> = ({ isOpen, onClose,
   const [token, setToken] = useState('');
   const [copied, setCopied] = useState(false);
   const tokenRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useModalA11y(isOpen, onClose);
 
   const {
     setup, setupLoading, fetchSetup,
@@ -51,7 +53,7 @@ export const TotpSetupModal: React.FC<TotpSetupModalProps> = ({ isOpen, onClose,
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!setup || token.length !== 6) return;
+    if (!setup || token.length !== 6) {return;}
     const ok = await enableTotp(setup.secret, token);
     if (ok) {
       setStep('backup');
@@ -78,11 +80,22 @@ export const TotpSetupModal: React.FC<TotpSetupModalProps> = ({ isOpen, onClose,
     URL.revokeObjectURL(url);
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-2xl border border-border-light dark:border-border-dark w-full max-w-md animate-fade-in-up">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) {onClose();} }}
+    >
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="totp-setup-title"
+        className="bg-card-light dark:bg-card-dark rounded-2xl shadow-2xl border border-border-light dark:border-border-dark w-full max-w-md animate-fade-in-up"
+      >
 
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border-light dark:border-border-dark">
@@ -91,7 +104,7 @@ export const TotpSetupModal: React.FC<TotpSetupModalProps> = ({ isOpen, onClose,
               <ShieldCheck size={20} className="text-primary" />
             </div>
             <div>
-              <h2 className="font-semibold text-text-light dark:text-text-dark">{t('auth:totp.setup.title')}</h2>
+              <h2 id="totp-setup-title" className="font-semibold text-text-light dark:text-text-dark">{t('auth:totp.setup.title')}</h2>
               <p className="text-xs text-text-muted-light dark:text-text-muted-dark" role="status" aria-live="polite">
                 {step === 'qr' && t('auth:totp.setup.stepQr')}
                 {step === 'verify' && t('auth:totp.setup.stepVerify')}

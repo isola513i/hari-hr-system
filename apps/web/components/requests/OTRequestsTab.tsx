@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useModalA11y } from '../../hooks/useModalA11y';
 import { Clock, CheckCircle2, XCircle, Timer, Download, Search } from 'lucide-react';
 import { Avatar } from '../Avatar';
 import { Dropdown, DropdownOption } from '../Dropdown';
@@ -37,6 +38,10 @@ export const OTRequestsTab: React.FC = () => {
   const [rejectNotes, setRejectNotes] = useState('');
   const [actionId, setActionId] = useState<string | null>(null);
 
+  // Accessibility for the hand-rolled reject dialog
+  const closeReject = useCallback(() => { setRejectId(null); setRejectNotes(''); }, []);
+  const rejectDialogRef = useModalA11y(!!rejectId, closeReject);
+
   const { data: otRequests = [], isPending: loading } = useAllOTRequests();
   const { data: otStatsData } = useOTStats();
   const approveOTMutation = useApproveOT();
@@ -57,8 +62,8 @@ export const OTRequestsTab: React.FC = () => {
 
   const filtered = useMemo(() => (otRequests as OTRequest[])
     .filter(r => {
-      if (statusFilter !== 'all' && r.status !== statusFilter) return false;
-      if (search && !r.employeeName?.toLowerCase().includes(search.toLowerCase())) return false;
+      if (statusFilter !== 'all' && r.status !== statusFilter) {return false;}
+      if (search && !r.employeeName?.toLowerCase().includes(search.toLowerCase())) {return false;}
       return true;
     })
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
@@ -82,7 +87,7 @@ export const OTRequestsTab: React.FC = () => {
   }, [approveOTMutation, showToast, t]);
 
   const handleRejectSubmit = useCallback(() => {
-    if (!rejectId) return;
+    if (!rejectId) {return;}
     setActionId(rejectId);
     rejectOTMutation.mutate({ id: rejectId, notes: rejectNotes || undefined }, {
       onSuccess: () => { showToast(t('ot.toast.rejected'), 'success'); setRejectId(null); setRejectNotes(''); },
@@ -320,9 +325,20 @@ export const OTRequestsTab: React.FC = () => {
 
       {/* Reject Dialog */}
       {rejectId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4">
-            <h3 className="text-base font-semibold text-text-light dark:text-text-dark">{t('ot.rejectDialog.title')}</h3>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          role="presentation"
+          onClick={(e) => { if (e.target === e.currentTarget) {closeReject();} }}
+        >
+          <div
+            ref={rejectDialogRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ot-reject-title"
+            className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4"
+          >
+            <h3 id="ot-reject-title" className="text-base font-semibold text-text-light dark:text-text-dark">{t('ot.rejectDialog.title')}</h3>
             <p className="text-sm text-text-muted-light dark:text-text-muted-dark">{t('ot.rejectDialog.subtitle')}</p>
             <textarea
               value={rejectNotes}

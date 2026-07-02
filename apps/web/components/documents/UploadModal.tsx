@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileText, UploadCloud, X } from 'lucide-react';
 import { Dropdown } from '../Dropdown';
+import { useModalA11y } from '../../hooks/useModalA11y';
 
 interface UploadModalProps {
   onClose: () => void;
@@ -23,16 +24,29 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   handleUpload,
 }) => {
   const { t } = useTranslation(['documents', 'common']);
+  const dialogRef = useModalA11y(true, onClose);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-card-dark rounded-xl shadow-2xl border border-border-light dark:border-border-dark w-full max-w-md overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) {onClose();} }}
+    >
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="upload-modal-title"
+        className="bg-white dark:bg-card-dark rounded-xl shadow-2xl border border-border-light dark:border-border-dark w-full max-w-md overflow-hidden"
+      >
         <div className="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
-          <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
+          <h3 id="upload-modal-title" className="font-bold text-lg text-text-light dark:text-text-dark">
             {t('upload.title')}
           </h3>
           <button
             onClick={onClose}
+            aria-label={t('common:buttons.close')}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             <X size={20} />

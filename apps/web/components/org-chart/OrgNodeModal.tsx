@@ -5,6 +5,7 @@ import { X, Check } from 'lucide-react';
 import { OrgNode, Department, JOB_TITLES } from '../../types';
 import { Dropdown } from '../Dropdown';
 import { ModalType } from './orgChartHelpers';
+import { useModalA11y } from '../../hooks/useModalA11y';
 
 export interface OrgNodeModalProps {
   type: ModalType;
@@ -48,15 +49,28 @@ export const OrgNodeModal: React.FC<OrgNodeModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const dialogRef = useModalA11y(true, onClose);
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) {onClose();} }}
+    >
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="orgnode-modal-title"
+        className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200"
+      >
         <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-          <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
+          <h3 id="orgnode-modal-title" className="font-bold text-lg text-text-light dark:text-text-dark">
             {type === 'add' ? t('orgChart.addNewPosition') : t('orgChart.editPosition')}
           </h3>
           <button
             onClick={onClose}
+            aria-label={t('common:buttons.close')}
             className="text-text-muted-light hover:text-text-light"
           >
             <X size={20} />

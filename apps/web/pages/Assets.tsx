@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { useModalA11y } from '../hooks/useModalA11y';
 import { Package, Plus, X, Pencil, UserCheck, UserX, Trash2, Search, Monitor, Smartphone, Car, Wrench } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAssets, useCreateAsset, useUpdateAsset, useAssignAsset, useUnassignAsset, useDeleteAsset, useAllEmployees } from '../hooks/queries';
@@ -56,7 +57,8 @@ function AssetFormModal({
   onClose: () => void;
   onSave: (data: AssetFormData) => Promise<void>;
 }) {
-  const { t } = useTranslation(['assets']);
+  const { t } = useTranslation(['assets', 'common']);
+  const dialogRef = useModalA11y(true, onClose);
   const [form, setForm] = useState<AssetFormData>(
     asset ? {
       name: asset.name,
@@ -83,11 +85,19 @@ function AssetFormModal({
     setForm(prev => ({ ...prev, [field]: e.target.value }));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
-      <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" role="presentation" onClick={onClose}>
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="asset-form-title"
+        className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-text-light dark:text-text-dark">{asset ? t('form.editTitle') : t('form.addTitle')}</h3>
-          <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
+          <h3 id="asset-form-title" className="text-lg font-bold text-text-light dark:text-text-dark">{asset ? t('form.editTitle') : t('form.addTitle')}</h3>
+          <button onClick={onClose} aria-label={t('common:buttons.close')}><X size={18} className="text-gray-400" /></button>
         </div>
         <form onSubmit={handle} className="space-y-3">
           <div>
@@ -143,24 +153,33 @@ function AssetFormModal({
 // ─── Assign Modal ─────────────────────────────────────────────────────────────
 
 function AssignModal({ asset, onClose, onAssign }: { asset: CompanyAsset; onClose: () => void; onAssign: (employeeId: string) => Promise<void> }) {
-  const { t } = useTranslation(['assets']);
+  const { t } = useTranslation(['assets', 'common']);
+  const dialogRef = useModalA11y(true, onClose);
   const { data: employees = [] } = useAllEmployees();
   const [employeeId, setEmployeeId] = useState('');
   const [saving, setSaving] = useState(false);
 
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!employeeId) return;
+    if (!employeeId) {return;}
     setSaving(true);
     try { await onAssign(employeeId); } finally { setSaving(false); }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
-      <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" role="presentation" onClick={onClose}>
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="asset-assign-title"
+        className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-text-light dark:text-text-dark">{t('assignModal.title', { name: asset.name })}</h3>
-          <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
+          <h3 id="asset-assign-title" className="text-lg font-bold text-text-light dark:text-text-dark">{t('assignModal.title', { name: asset.name })}</h3>
+          <button onClick={onClose} aria-label={t('common:buttons.close')}><X size={18} className="text-gray-400" /></button>
         </div>
         <form onSubmit={handle} className="space-y-3">
           <Dropdown
@@ -244,7 +263,7 @@ export function Assets() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(t('confirm.delete'))) return;
+    if (!confirm(t('confirm.delete'))) {return;}
     try {
       await deleteMutation.mutateAsync(id);
       showToast(t('toast.assetDeleted'));

@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useModalA11y } from '../hooks/useModalA11y';
 import { Clock, CheckCircle2, XCircle, Search, Download, FileText } from 'lucide-react';
 import {
   useLeaveRequests,
@@ -64,6 +65,10 @@ export const AdminLeaveRequests: React.FC = () => {
   const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
   const [bulkRejectReason, setBulkRejectReason] = useState('');
 
+  // Accessibility for the hand-rolled bulk-reject modal
+  const closeBulkReject = useCallback(() => { setBulkRejectOpen(false); setBulkRejectReason(''); }, []);
+  const bulkRejectRef = useModalA11y(bulkRejectOpen, closeBulkReject);
+
   const { data: leaveRequests = [], isPending: isLoadingRequests } = useLeaveRequests();
   const { data: employees = [], isPending: isLoadingEmployees } = useAllEmployees();
   const { data: leaveConfigs = [] } = useLeaveTypeConfig();
@@ -98,13 +103,13 @@ export const AdminLeaveRequests: React.FC = () => {
     const cancelRequested = leaveRequests.filter((r) => r.status === 'Cancel Requested').length;
 
     const approvedThisMonth = leaveRequests.filter((r) => {
-      if (r.status !== 'Approved') return false;
+      if (r.status !== 'Approved') {return false;}
       const d = new Date(r.updatedAt || r.startDate);
       return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     }).length;
 
     const rejectedThisMonth = leaveRequests.filter((r) => {
-      if (r.status !== 'Rejected') return false;
+      if (r.status !== 'Rejected') {return false;}
       const d = new Date(r.updatedAt || r.startDate);
       return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     }).length;
@@ -131,16 +136,16 @@ export const AdminLeaveRequests: React.FC = () => {
   // Filter & sort requests
   const filteredRequests = useMemo(() => {
     const filtered = leaveRequests.filter((request) => {
-      if (statusFilter !== 'All' && request.status !== statusFilter) return false;
-      if (typeFilter !== 'All' && request.type !== typeFilter) return false;
+      if (statusFilter !== 'All' && request.status !== statusFilter) {return false;}
+      if (typeFilter !== 'All' && request.type !== typeFilter) {return false;}
       if (departmentFilter !== 'All') {
         const emp = employeeMap.get(request.employeeId);
-        if (emp?.department !== departmentFilter) return false;
+        if (emp?.department !== departmentFilter) {return false;}
       }
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const name = (request.employeeName || employeeMap.get(request.employeeId)?.name || '').toLowerCase();
-        if (!name.includes(q)) return false;
+        if (!name.includes(q)) {return false;}
       }
       return true;
     });
@@ -239,8 +244,8 @@ export const AdminLeaveRequests: React.FC = () => {
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {next.delete(id);}
+      else {next.add(id);}
       return next;
     });
   };
@@ -297,12 +302,12 @@ export const AdminLeaveRequests: React.FC = () => {
     setIsExportingPdf(true);
     try {
       const params = new URLSearchParams();
-      if (statusFilter !== 'All') params.set('status', statusFilter);
-      if (typeFilter !== 'All') params.set('type', typeFilter);
+      if (statusFilter !== 'All') {params.set('status', statusFilter);}
+      if (typeFilter !== 'All') {params.set('type', typeFilter);}
       const res = await fetch(`${BASE_URL}/leave-requests/export/pdf?${params.toString()}`, {
         headers: { Authorization: `Bearer ${getAuthToken()}` },
       });
-      if (!res.ok) throw new Error('Export failed');
+      if (!res.ok) {throw new Error('Export failed');}
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -836,9 +841,20 @@ export const AdminLeaveRequests: React.FC = () => {
 
       {/* Bulk Reject Modal */}
       {bulkRejectOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
-            <h2 className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark mb-4">
+        <div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+          role="presentation"
+          onClick={(e) => { if (e.target === e.currentTarget) {closeBulkReject();} }}
+        >
+          <div
+            ref={bulkRejectRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="bulk-reject-title"
+            className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
+          >
+            <h2 id="bulk-reject-title" className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark mb-4">
               {t('leave:admin.bulkReject', { count: selectedIds.size })}
             </h2>
             <textarea

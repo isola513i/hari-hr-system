@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useModalA11y } from '../hooks/useModalA11y';
 import { BASE_URL, getAuthToken } from '../lib/api';
 import { useDocumentList, useDocumentTrash, useDocumentStorage, useDeleteDocument, useRestoreDocument, usePermanentDeleteDocument } from '../hooks/queries';
 import { useQueryClient } from '@tanstack/react-query';
@@ -101,8 +102,8 @@ export const Documents: React.FC = () => {
   // Fetch file preview with auth token (images + PDF)
   useEffect(() => {
     // Revoke previous blob URLs
-    if (blobUrlRefs.current.image) URL.revokeObjectURL(blobUrlRefs.current.image);
-    if (blobUrlRefs.current.pdf) URL.revokeObjectURL(blobUrlRefs.current.pdf);
+    if (blobUrlRefs.current.image) {URL.revokeObjectURL(blobUrlRefs.current.image);}
+    if (blobUrlRefs.current.pdf) {URL.revokeObjectURL(blobUrlRefs.current.pdf);}
     blobUrlRefs.current = { image: null, pdf: null };
 
     if (!previewDoc) {
@@ -152,8 +153,8 @@ export const Documents: React.FC = () => {
 
     return () => {
       cancelled = true;
-      if (blobUrlRefs.current.image) URL.revokeObjectURL(blobUrlRefs.current.image);
-      if (blobUrlRefs.current.pdf) URL.revokeObjectURL(blobUrlRefs.current.pdf);
+      if (blobUrlRefs.current.image) {URL.revokeObjectURL(blobUrlRefs.current.image);}
+      if (blobUrlRefs.current.pdf) {URL.revokeObjectURL(blobUrlRefs.current.pdf);}
       blobUrlRefs.current = { image: null, pdf: null };
     };
   }, [previewDoc]);
@@ -190,7 +191,7 @@ export const Documents: React.FC = () => {
     // 1. Filter by User Role Permission
     // Admins see all. Employees see their own docs OR public policies.
     const hasPermission = isAdmin || doc.owner === user?.name || doc.category === 'Policies';
-    if (!hasPermission) return false;
+    if (!hasPermission) {return false;}
 
     // 2. Filter by Search
     const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -266,7 +267,7 @@ export const Documents: React.FC = () => {
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {return;}
 
     try {
       const formData = new FormData();
@@ -305,11 +306,11 @@ export const Documents: React.FC = () => {
   };
 
   const confirmDelete = async () => {
-    if (!deleteConfirmId) return;
+    if (!deleteConfirmId) {return;}
 
     try {
       await deleteDocMutation.mutateAsync(deleteConfirmId);
-      if (previewDoc?.id === deleteConfirmId) setPreviewDoc(null);
+      if (previewDoc?.id === deleteConfirmId) {setPreviewDoc(null);}
       showToast(t('toast.movedToTrash'), 'success');
     } catch (error) {
       console.error('Error deleting document:', error);
@@ -318,6 +319,10 @@ export const Documents: React.FC = () => {
       setDeleteConfirmId(null);
     }
   };
+
+  // Accessibility for the hand-rolled delete-confirmation modal
+  const closeDeleteConfirm = useCallback(() => setDeleteConfirmId(null), []);
+  const deleteConfirmRef = useModalA11y(!!deleteConfirmId, closeDeleteConfirm);
 
   const handleRestore = async (e: React.MouseEvent, docId: string) => {
     e.stopPropagation();
@@ -507,13 +512,24 @@ export const Documents: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-card-dark rounded-xl shadow-2xl border border-border-light dark:border-border-dark w-full max-w-sm overflow-hidden">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          role="presentation"
+          onClick={(e) => { if (e.target === e.currentTarget) {closeDeleteConfirm();} }}
+        >
+          <div
+            ref={deleteConfirmRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="doc-delete-title"
+            className="bg-white dark:bg-card-dark rounded-xl shadow-2xl border border-border-light dark:border-border-dark w-full max-w-sm overflow-hidden"
+          >
             <div className="p-6 text-center">
               <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
                 <Trash2 className="text-red-600 dark:text-red-400" size={24} />
               </div>
-              <h3 className="font-bold text-lg text-text-light dark:text-text-dark mb-2">
+              <h3 id="doc-delete-title" className="font-bold text-lg text-text-light dark:text-text-dark mb-2">
                 {t('deleteDialog.title')}
               </h3>
               <p className="text-sm text-text-muted-light dark:text-text-muted-dark">

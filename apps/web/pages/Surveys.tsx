@@ -19,6 +19,7 @@ import {
 } from '../hooks/queries';
 import type { SurveyCategory, SentimentOverview } from '../types';
 import { getErrorMessage } from '../lib/errorHandler';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 const SURVEY_CATEGORIES: SurveyCategory[] = [
   'Workload', 'Team', 'Growth', 'Work-Life Balance', 'Management',
@@ -107,6 +108,7 @@ const CreateSurveyModal: React.FC<{
   onCreated: () => void;
 }> = ({ isOpen, onClose, onCreated }) => {
   const { t } = useTranslation(['help', 'common']);
+  const dialogRef = useModalA11y(isOpen, onClose);
   const createMutation = useCreateSurvey();
   const [title, setTitle] = useState('');
   const [allowRetake, setAllowRetake] = useState(false);
@@ -136,9 +138,9 @@ const CreateSurveyModal: React.FC<{
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim()) {return;}
     const validQuestions = questions.filter((q) => q.questionText.trim());
-    if (validQuestions.length === 0) return;
+    if (validQuestions.length === 0) {return;}
 
     try {
       await createMutation.mutateAsync({
@@ -161,17 +163,18 @@ const CreateSurveyModal: React.FC<{
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   return createPortal(
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) {onClose();} }}
     >
-      <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="survey-create-title" className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-          <h3 className="font-bold text-lg text-text-light dark:text-text-dark">{t('surveys.createTitle')}</h3>
-          <button onClick={onClose} className="text-text-muted-light hover:text-text-light"><X size={20} /></button>
+          <h3 id="survey-create-title" className="font-bold text-lg text-text-light dark:text-text-dark">{t('surveys.createTitle')}</h3>
+          <button onClick={onClose} aria-label={t('common:buttons.close')} className="text-text-muted-light hover:text-text-light"><X size={20} /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
@@ -326,7 +329,7 @@ const CreateSurveyModal: React.FC<{
 // ---------------------------------------------------------------------------
 
 function RadarChart({ categories }: { categories: { category: string; score: number }[] }) {
-  if (categories.length < 3) return null;
+  if (categories.length < 3) {return null;}
   const cx = 160, cy = 160, r = 120;
   const n = categories.length;
   const levels = [25, 50, 75, 100];

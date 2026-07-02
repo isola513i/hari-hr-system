@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, LogOut, RefreshCw } from 'lucide-react';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface SessionTimeoutWarningProps {
   isOpen: boolean;
@@ -16,22 +17,34 @@ export const SessionTimeoutWarning: React.FC<SessionTimeoutWarningProps> = ({
   onLogout
 }) => {
   const { t } = useTranslation('common');
+  const dialogRef = useModalA11y(isOpen, onExtendSession);
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-card-dark rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border-2 border-yellow-500">
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) {onExtendSession();} }}
+    >
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="session-timeout-title"
+        className="bg-white dark:bg-card-dark rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border-2 border-yellow-500"
+      >
         <div className="p-6">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center flex-shrink-0">
               <AlertTriangle className="text-yellow-600 dark:text-yellow-400" size={24} />
             </div>
             <div>
-              <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
+              <h3 id="session-timeout-title" className="font-bold text-lg text-text-light dark:text-text-dark">
                 {t('session.timeoutTitle')}
               </h3>
               <p className="text-sm text-text-muted-light dark:text-text-muted-dark">

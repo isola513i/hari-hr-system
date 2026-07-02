@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { useModalA11y } from '../hooks/useModalA11y';
 import {
   Megaphone,
   ScrollText,
@@ -130,11 +131,14 @@ export const Announcements: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setIsModalOpen(false);
     setEditingAnnouncement(null);
     setFormData({ ...EMPTY_ANNOUNCEMENT });
-  };
+  }, []);
+
+  // Accessibility for the hand-rolled create/edit modal
+  const modalRef = useModalA11y(isModalOpen, closeModal);
 
   // ---------------------------------------------------------------------------
   // CRUD handlers
@@ -341,17 +345,29 @@ export const Announcements: React.FC = () => {
       {/* Create / Edit Modal */}
       {isModalOpen &&
         createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-            <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
+            role="presentation"
+            onClick={(e) => { if (e.target === e.currentTarget) {closeModal();} }}
+          >
+            <div
+              ref={modalRef}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="announcement-modal-title"
+              className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200"
+            >
               {/* Modal header */}
               <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-                <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
+                <h3 id="announcement-modal-title" className="font-bold text-lg text-text-light dark:text-text-dark">
                   {editingAnnouncement
                     ? t('announcementModal.editTitle', 'Edit Announcement')
                     : t('announcementModal.title')}
                 </h3>
                 <button
                   onClick={closeModal}
+                  aria-label={t('common:buttons.close')}
                   className="text-text-muted-light hover:text-text-light"
                 >
                   <X size={20} />

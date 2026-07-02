@@ -19,6 +19,7 @@ import {
     IdCard,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useModalA11y } from '../../hooks/useModalA11y';
 import { DatePicker } from '../../components/DatePicker';
 import { WorkDaysSelector } from '../../components/WorkDaysSelector';
 import { ProfileDocumentAttachment } from './ProfileDocumentAttachment';
@@ -87,6 +88,15 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
     const [phoneCode, setPhoneCode] = useState('+66');
     const [phoneNumber, setPhoneNumber] = useState('');
 
+    // Accessibility: one hook per sub-modal (Escape-close, focus-in, focus-restore)
+    const editRef = useModalA11y(isEditProfileOpen, onCloseEditProfile);
+    const addHistoryRef = useModalA11y(isAddHistoryModalOpen, onCloseAddHistory);
+    const reviewRef = useModalA11y(isReviewModalOpen, onCloseReviewModal);
+    const promoteRef = useModalA11y(isPromoteOpen, onClosePromote);
+    const transferRef = useModalA11y(isTransferOpen, onCloseTransfer);
+    const terminateRef = useModalA11y(isTerminateOpen, onCloseTerminate);
+    const deleteRef = useModalA11y(!!deleteConfirmId, onCancelDelete);
+
     useEffect(() => {
         if (isEditProfileOpen) {
             const parsed = parsePhoneNumber(editForm.phone || '');
@@ -121,7 +131,7 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
             );
             const idx = focusable.indexOf(target);
             const next = idx >= 0 ? focusable[idx + 1] : undefined;
-            if (next) next.focus();
+            if (next) {next.focus();}
         }
     };
 
@@ -129,10 +139,21 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
         <>
             {/* Edit Profile Modal */}
             {isEditProfileOpen && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
+                    role="presentation"
+                    onClick={(e) => { if (e.target === e.currentTarget) {onCloseEditProfile();} }}
+                >
+                    <div
+                        ref={editRef}
+                        tabIndex={-1}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="edit-profile-title"
+                        className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
+                    >
                         <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-                            <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
+                            <h3 id="edit-profile-title" className="font-bold text-lg text-text-light dark:text-text-dark">
                                 {t('employees:modals.editTitle')}
                             </h3>
                             <button
@@ -352,7 +373,7 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                                             value={phoneNumber}
                                             onChange={(e) => {
                                                 const val = e.target.value.replace(/\D/g, '');
-                                                if (val.length <= 10) handlePhoneChange(phoneCode, val);
+                                                if (val.length <= 10) {handlePhoneChange(phoneCode, val);}
                                             }}
                                             maxLength={10}
                                             className="w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-text-light dark:text-text-dark"
@@ -451,10 +472,21 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
 
             {/* Add History Modal */}
             {isAddHistoryModalOpen && (isAdmin || isOwnProfile) && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
+                    role="presentation"
+                    onClick={(e) => { if (e.target === e.currentTarget) {onCloseAddHistory();} }}
+                >
+                    <div
+                        ref={addHistoryRef}
+                        tabIndex={-1}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="add-history-title"
+                        className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200"
+                    >
                         <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-                            <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
+                            <h3 id="add-history-title" className="font-bold text-lg text-text-light dark:text-text-dark">
                                 {t('employees:modals.addHistory')}
                             </h3>
                             <button
@@ -551,10 +583,21 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
 
             {/* Performance Review Modal */}
             {isReviewModalOpen && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
+                    role="presentation"
+                    onClick={(e) => { if (e.target === e.currentTarget) {onCloseReviewModal();} }}
+                >
+                    <div
+                        ref={reviewRef}
+                        tabIndex={-1}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="review-title"
+                        className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200"
+                    >
                         <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-                            <h3 className="font-bold text-lg text-text-light dark:text-text-dark">
+                            <h3 id="review-title" className="font-bold text-lg text-text-light dark:text-text-dark">
                                 {reviewForm.id ? t('employees:modals.editReview') : t('employees:modals.newReview')}
                             </h3>
                             <button
@@ -640,13 +683,24 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
 
             {/* Promote Modal */}
             {isPromoteOpen && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
+                    role="presentation"
+                    onClick={(e) => { if (e.target === e.currentTarget) {onClosePromote();} }}
+                >
+                    <div
+                        ref={promoteRef}
+                        tabIndex={-1}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="promote-title"
+                        className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200"
+                    >
                         <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-                            <h3 className="font-bold text-lg text-text-light dark:text-text-dark flex items-center gap-2">
+                            <h3 id="promote-title" className="font-bold text-lg text-text-light dark:text-text-dark flex items-center gap-2">
                                 <TrendingUp size={20} className="text-primary" /> {t('employees:modals.promoteTitle')}
                             </h3>
-                            <button onClick={onClosePromote} className="text-text-muted-light hover:text-text-light">
+                            <button onClick={onClosePromote} aria-label={t('common:buttons.close')} className="text-text-muted-light hover:text-text-light">
                                 <X size={20} />
                             </button>
                         </div>
@@ -695,13 +749,24 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
 
             {/* Transfer Modal */}
             {isTransferOpen && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
+                    role="presentation"
+                    onClick={(e) => { if (e.target === e.currentTarget) {onCloseTransfer();} }}
+                >
+                    <div
+                        ref={transferRef}
+                        tabIndex={-1}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="transfer-title"
+                        className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200"
+                    >
                         <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-                            <h3 className="font-bold text-lg text-text-light dark:text-text-dark flex items-center gap-2">
+                            <h3 id="transfer-title" className="font-bold text-lg text-text-light dark:text-text-dark flex items-center gap-2">
                                 <ArrowRightLeft size={20} className="text-primary" /> {t('employees:modals.transferTitle')}
                             </h3>
-                            <button onClick={onCloseTransfer} className="text-text-muted-light hover:text-text-light">
+                            <button onClick={onCloseTransfer} aria-label={t('common:buttons.close')} className="text-text-muted-light hover:text-text-light">
                                 <X size={20} />
                             </button>
                         </div>
@@ -735,19 +800,30 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
 
             {/* Initiate Offboarding Modal (replaces simple yes/no terminate) */}
             {isTerminateOpen && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
+                    role="presentation"
+                    onClick={(e) => { if (e.target === e.currentTarget) {onCloseTerminate();} }}
+                >
+                    <div
+                        ref={terminateRef}
+                        tabIndex={-1}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="terminate-title"
+                        className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200"
+                    >
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-border-light dark:border-border-dark">
                             <div className="flex items-center gap-3">
                                 <div className="w-9 h-9 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
                                     <AlertTriangle className="text-red-600 dark:text-red-400" size={18} />
                                 </div>
-                                <h3 className="font-bold text-base text-text-light dark:text-text-dark">
+                                <h3 id="terminate-title" className="font-bold text-base text-text-light dark:text-text-dark">
                                     {t('offboarding:initiate.title')}
                                 </h3>
                             </div>
-                            <button onClick={onCloseTerminate} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark">
+                            <button onClick={onCloseTerminate} aria-label={t('common:buttons.close')} className="text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-text-dark">
                                 <X size={20} />
                             </button>
                         </div>
@@ -835,13 +911,24 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
 
             {/* Delete Confirmation Modal */}
             {deleteConfirmId && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
+                    role="presentation"
+                    onClick={(e) => { if (e.target === e.currentTarget) {onCancelDelete();} }}
+                >
+                    <div
+                        ref={deleteRef}
+                        tabIndex={-1}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="delete-review-title"
+                        className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200"
+                    >
                         <div className="p-6 text-center">
                             <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
                                 <Trash2 className="text-red-600 dark:text-red-400" size={24} />
                             </div>
-                            <h3 className="font-bold text-lg text-text-light dark:text-text-dark mb-2">
+                            <h3 id="delete-review-title" className="font-bold text-lg text-text-light dark:text-text-dark mb-2">
                                 {t('employees:modals.deleteReviewTitle')}
                             </h3>
                             <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
