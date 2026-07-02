@@ -68,7 +68,7 @@ export const Modal: React.FC<ModalProps> = ({
             <button
               onClick={onClose}
               aria-label={t('common:buttons.close', { defaultValue: 'Close' })}
-              className="text-text-muted-light hover:text-text-light dark:hover:text-text-dark transition-colors"
+              className="p-2 -m-2 rounded-lg text-text-muted-light hover:text-text-light dark:hover:text-text-dark transition-colors"
             >
               <X size={20} />
             </button>

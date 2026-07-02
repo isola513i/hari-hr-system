@@ -80,6 +80,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             <button
               onClick={onRequestCorrection}
               title={t('dashboard:employee.requestCorrection')}
+              aria-label={t('dashboard:employee.requestCorrection')}
               className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-muted-light dark:text-text-muted-dark border border-border-light dark:border-border-dark rounded-lg hover:border-teal-400 hover:text-teal-600 dark:hover:text-teal-400 transition-all"
             >
               <ClipboardClock size={15} />
