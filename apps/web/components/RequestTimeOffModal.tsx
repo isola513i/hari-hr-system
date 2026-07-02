@@ -266,7 +266,7 @@ export const RequestTimeOffModal: React.FC<RequestTimeOffModalProps> = ({
               : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
           }`}>
             {dayCount} {dayCount === 1 ? t('common:time.day') : t('common:time.days')} {t('leave:requestModal.requested')}
-            {quotaExceeded && ` — ${t('leave:requestModal.exceedsBalance')}`}
+            {quotaExceeded && `: ${t('leave:requestModal.exceedsBalance')}`}
           </div>
         )}
 

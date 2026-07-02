@@ -33,7 +33,7 @@
     "doneCount": "{{completed}}/{{total}} done",
     "tasksSuffix": "{{completed}}/{{total}} tasks",
     "noTasks": "No offboarding tasks found.",
-    "allComplete": "All tasks completed — employee status will be automatically updated to Terminated.",
+    "allComplete": "All tasks completed. Employee status will be automatically updated to Terminated.",
     "markComplete": "Mark as complete",
     "completedTitle": "Completed"
   },

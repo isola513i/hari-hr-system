@@ -39,7 +39,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   const { t } = useTranslation('common');
 
   const label = t(`availability.${status}`);
-  const tooltip = statusMessage ? `${label} — ${statusMessage}` : label;
+  const tooltip = statusMessage ? `${label}: ${statusMessage}` : label;
 
   return (
     <span

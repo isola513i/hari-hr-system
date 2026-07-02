@@ -394,7 +394,7 @@
     "trainingDeleted": "ลบบันทึกการอบรมแล้ว",
     "trainingDeleteFailed": "ไม่สามารถลบการอบรมได้",
     "trainingStatusFailed": "ไม่สามารถอัปเดตสถานะการอบรมได้",
-    "offboardingInitiated": "เริ่มกระบวนการออกจากงานแล้ว — พนักงานอยู่ในช่วงแจ้งลาออกแล้ว",
+    "offboardingInitiated": "เริ่มกระบวนการออกจากงานแล้ว พนักงานอยู่ในช่วงแจ้งลาออกแล้ว",
     "offboardingInitiateFailed": "ไม่สามารถเริ่มกระบวนการออกจากงานได้"
   },
   "status": {
@@ -416,7 +416,7 @@
     "findEmployee": "ค้นหาพนักงาน...",
     "dragToZoom": "ลากเพื่อเลื่อน • เลื่อนเพื่อซูม",
     "dragging": "กำลังลาก",
-    "dropToReassign": "— วางบนการ์ดเพื่อเปลี่ยนผู้จัดการ",
+    "dropToReassign": "วางบนการ์ดเพื่อเปลี่ยนผู้จัดการ",
     "addNewPosition": "เพิ่มตำแหน่งใหม่",
     "editPosition": "แก้ไขตำแหน่ง",
     "name": "ชื่อ",

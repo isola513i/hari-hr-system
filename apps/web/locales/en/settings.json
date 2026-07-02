@@ -197,7 +197,7 @@
     "geofenceRadius": "Geofence Radius (meters)",
     "officeIpAllowlist": "Office IP Allowlist",
     "officeIpDesc": "Desktop users on this network can clock in without GPS",
-    "officeIpLabel": "Office Public IP(s) — separate with commas",
+    "officeIpLabel": "Office Public IP(s), separate with commas",
     "officeIpPlaceholder": "e.g. 203.0.113.10, 203.0.113.11",
     "officeIpHint": "Leave blank to disable IP-based check-in",
     "saving": "Saving…",

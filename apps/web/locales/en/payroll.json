@@ -184,7 +184,7 @@
   "batch": {
     "runPayroll": "Run Payroll",
     "title": "Run Payroll for All Employees",
-    "description": "Generate payroll records for all active employees in one go. Records will be created as Pending — you can then edit individual OT, bonuses, and deductions before processing.",
+    "description": "Generate payroll records for all active employees in one go. Records will be created as Pending. You can then edit individual OT, bonuses, and deductions before processing.",
     "generate": "Generate Payroll",
     "created": "Created",
     "skipped": "Skipped",

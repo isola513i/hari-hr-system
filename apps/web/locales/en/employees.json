@@ -394,7 +394,7 @@
     "trainingDeleted": "Training record deleted",
     "trainingDeleteFailed": "Failed to delete training",
     "trainingStatusFailed": "Failed to update training status",
-    "offboardingInitiated": "Offboarding initiated — employee is now in Notice Period",
+    "offboardingInitiated": "Offboarding initiated. Employee is now in Notice Period",
     "offboardingInitiateFailed": "Failed to initiate offboarding"
   },
   "status": {
@@ -416,7 +416,7 @@
     "findEmployee": "Find employee...",
     "dragToZoom": "Drag to pan • Scroll to zoom",
     "dragging": "Dragging",
-    "dropToReassign": "— drop on a card to reassign manager",
+    "dropToReassign": ", drop on a card to reassign manager",
     "addNewPosition": "Add New Position",
     "editPosition": "Edit Position",
     "name": "Name",

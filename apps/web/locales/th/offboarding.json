@@ -33,7 +33,7 @@
     "doneCount": "{{completed}}/{{total}} เสร็จแล้ว",
     "tasksSuffix": "{{completed}}/{{total}} งาน",
     "noTasks": "ไม่พบงานในกระบวนการลาออก",
-    "allComplete": "งานทั้งหมดเสร็จสิ้น — สถานะพนักงานจะเปลี่ยนเป็น Terminated อัตโนมัติ",
+    "allComplete": "งานทั้งหมดเสร็จสิ้น สถานะพนักงานจะเปลี่ยนเป็น Terminated อัตโนมัติ",
     "markComplete": "ทำเครื่องหมายว่าเสร็จสิ้น",
     "completedTitle": "เสร็จสิ้น"
   },

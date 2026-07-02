@@ -122,7 +122,7 @@
     "requestTitle": "Allow Location Access",
     "requestDesc": "We need your location to verify you're checking in from the office. Your location is only used during check-in and is never tracked continuously.",
     "feature1": "Verify office proximity for check-in",
-    "feature2": "One-time permission — remembered by browser",
+    "feature2": "One-time permission, remembered by browser",
     "feature3": "Location not stored after check-in completes",
     "allowBtn": "Allow Location Access",
     "notNow": "Not Now",

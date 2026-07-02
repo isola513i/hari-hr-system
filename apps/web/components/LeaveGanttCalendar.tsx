@@ -771,7 +771,7 @@ export const LeaveGanttCalendar: React.FC<LeaveCalendarProps> = ({
                         height: 26,
                         alignSelf: 'center',
                       }}
-                      title={`${bar.request.employeeName} — ${translateLeaveType(bar.request.type)} (${bar.request.status})`}
+                      title={`${bar.request.employeeName}: ${translateLeaveType(bar.request.type)} (${bar.request.status})`}
                       onClick={canClick ? () => onLeaveClick!(bar.request) : undefined}
                     >
                       <span className="truncate">{label}</span>
