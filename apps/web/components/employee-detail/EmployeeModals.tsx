@@ -170,10 +170,11 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                             onKeyDown={handleFormKeyDown}
                         >
                             <div>
-                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.fullName')}</label>
+                                <label htmlFor="emp-name" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.fullName')}</label>
                                 <div className="relative">
                                     <User className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                                     <input
+                                        id="emp-name"
                                         type="text"
                                         value={editForm.name || ''}
                                         onChange={(e) => onProfileChange('name', e.target.value)}
@@ -221,10 +222,11 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.email')}</label>
+                                <label htmlFor="emp-email" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.email')}</label>
                                 <div className="relative">
                                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                                     <input
+                                        id="emp-email"
                                         type="email"
                                         value={editForm.email || ''}
                                         onChange={(e) => onProfileChange('email', e.target.value)}
@@ -234,10 +236,11 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.slackHandle')}</label>
+                                <label htmlFor="emp-slack" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.slackHandle')}</label>
                                 <div className="relative">
                                     <Hash className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                                     <input
+                                        id="emp-slack"
                                         type="text"
                                         value={editForm.slack || ''}
                                         onChange={(e) => onProfileChange('slack', e.target.value)}
@@ -344,10 +347,11 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.emergencyContact')}</label>
+                                <label htmlFor="emp-emergencyContact" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.emergencyContact')}</label>
                                 <div className="relative">
                                     <HeartPulse className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                                     <input
+                                        id="emp-emergencyContact"
                                         type="text"
                                         value={editForm.emergencyContact || ''}
                                         onChange={(e) => onProfileChange('emergencyContact', e.target.value)}
@@ -358,7 +362,7 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.phoneNumber')}</label>
+                                <label htmlFor="emp-phone" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.phoneNumber')}</label>
                                 <div className="flex gap-2">
                                     <Dropdown
                                         value={phoneCode}
@@ -369,6 +373,7 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                                     <div className="relative flex-1">
                                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                                         <input
+                                            id="emp-phone"
                                             type="tel"
                                             value={phoneNumber}
                                             onChange={(e) => {
@@ -384,10 +389,11 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.bio')}</label>
+                                <label htmlFor="emp-bio" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.bio')}</label>
                                 <div className="relative">
                                     <AlignLeft className="absolute left-3 top-3 text-text-muted-light" size={16} />
                                     <textarea
+                                        id="emp-bio"
                                         rows={3}
                                         value={editForm.bio || ''}
                                         onChange={(e) => onProfileChange('bio', e.target.value)}
@@ -407,12 +413,13 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                             {canEditSensitiveInfo && (
                                 <>
                                     <div>
-                                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                                        <label htmlFor="emp-nationalId" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                                             {t('employees:modals.nationalId')}
                                         </label>
                                         <div className="relative">
                                             <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                                             <input
+                                                id="emp-nationalId"
                                                 type="text"
                                                 value={editForm.nationalId ?? ''}
                                                 onChange={(e) => onProfileChange('nationalId', e.target.value)}
@@ -427,12 +434,13 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                                        <label htmlFor="emp-bankAccountNumber" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                                             {t('employees:modals.bankAccountNumber')}
                                         </label>
                                         <div className="relative">
                                             <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                                             <input
+                                                id="emp-bankAccountNumber"
                                                 type="text"
                                                 value={editForm.bankAccountNumber ?? ''}
                                                 onChange={(e) => onProfileChange('bankAccountNumber', e.target.value)}
@@ -500,8 +508,9 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
 
                         <div className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.historyRole')}</label>
+                                <label htmlFor="emp-historyRole" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.historyRole')}</label>
                                 <input
+                                    id="emp-historyRole"
                                     type="text"
                                     value={newHistoryForm.role || ''}
                                     onChange={(e) => onSetNewHistoryForm({ ...newHistoryForm, role: e.target.value })}
@@ -511,8 +520,9 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.historyDepartment')}</label>
+                                <label htmlFor="emp-historyDepartment" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.historyDepartment')}</label>
                                 <input
+                                    id="emp-historyDepartment"
                                     type="text"
                                     value={newHistoryForm.department || ''}
                                     onChange={(e) => onSetNewHistoryForm({ ...newHistoryForm, department: e.target.value })}
@@ -551,8 +561,9 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.historyDescription')}</label>
+                                <label htmlFor="emp-historyDescription" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.historyDescription')}</label>
                                 <textarea
+                                    id="emp-historyDescription"
                                     value={newHistoryForm.description || ''}
                                     onChange={(e) => onSetNewHistoryForm({ ...newHistoryForm, description: e.target.value })}
                                     rows={3}
@@ -611,8 +622,9 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
 
                         <div className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.reviewReviewer')}</label>
+                                <label htmlFor="emp-reviewReviewer" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.reviewReviewer')}</label>
                                 <input
+                                    id="emp-reviewReviewer"
                                     type="text"
                                     value={reviewForm.reviewer || ''}
                                     onChange={(e) => isAdmin ? onSetReviewForm({ ...reviewForm, reviewer: e.target.value }) : undefined}
@@ -651,8 +663,9 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.reviewNotes')}</label>
+                                <label htmlFor="emp-reviewNotes" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.reviewNotes')}</label>
                                 <textarea
+                                    id="emp-reviewNotes"
                                     value={reviewForm.notes || ''}
                                     onChange={(e) => onSetReviewForm({ ...reviewForm, notes: e.target.value })}
                                     rows={4}
@@ -720,8 +733,9 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.promoteNewSalary')}</label>
+                                <label htmlFor="emp-promoteSalary" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('employees:modals.promoteNewSalary')}</label>
                                 <input
+                                    id="emp-promoteSalary"
                                     type="number"
                                     value={promoteForm.salary}
                                     onChange={(e) => onPromoteFormChange('salary', e.target.value)}
@@ -842,10 +856,11 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
 
                             {/* Termination Reason */}
                             <div>
-                                <label className="block text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-1.5">
+                                <label htmlFor="emp-terminationReason" className="block text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-1.5">
                                     {t('offboarding:initiate.reasonLabel')} <span className="text-red-500">*</span>
                                 </label>
                                 <select
+                                    id="emp-terminationReason"
                                     value={terminateForm.terminationReason}
                                     onChange={(e) => onTerminateFormChange('terminationReason', e.target.value)}
                                     required
@@ -874,10 +889,11 @@ export const EmployeeModals: React.FC<EmployeeModalsProps> = ({
 
                             {/* Notes */}
                             <div>
-                                <label className="block text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-1.5">
+                                <label htmlFor="emp-terminationNotes" className="block text-xs font-medium text-text-muted-light dark:text-text-muted-dark mb-1.5">
                                     {t('offboarding:initiate.notesLabel')} <span className="text-text-muted-light dark:text-text-muted-dark font-normal">{t('offboarding:initiate.notesHint')}</span>
                                 </label>
                                 <textarea
+                                    id="emp-terminationNotes"
                                     value={terminateForm.terminationNotes}
                                     onChange={(e) => onTerminateFormChange('terminationNotes', e.target.value)}
                                     rows={3}

@@ -87,10 +87,11 @@ export function WFHRequestModal({ onClose, onSuccess }: Props) {
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-medium text-text-light dark:text-text-dark flex items-center gap-1.5">
+              <label htmlFor="wfh-reason" className="text-sm font-medium text-text-light dark:text-text-dark flex items-center gap-1.5">
                 <FileText size={14} /> {t('wfhModal.reason')} <span className="text-text-muted-light dark:text-text-muted-dark font-normal">{t('wfhModal.optional')}</span>
               </label>
               <textarea
+                id="wfh-reason"
                 rows={3}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}

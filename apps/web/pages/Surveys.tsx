@@ -179,8 +179,9 @@ const CreateSurveyModal: React.FC<{
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('surveys.surveyTitle')}</label>
+            <label htmlFor="survey-title" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('surveys.surveyTitle')}</label>
             <input
+              id="survey-title"
               required
               type="text"
               value={title}

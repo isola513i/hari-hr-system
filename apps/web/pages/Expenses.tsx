@@ -251,9 +251,9 @@ export const Expenses: React.FC = () => {
       <Modal isOpen={isFormOpen} onClose={() => { setIsFormOpen(false); resetForm(); }} title={editingClaim ? t('expenses:form.editExpense') : t('expenses:form.newExpense')} maxWidth="lg">
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('expenses:form.title')}</label>
-            <input type="text" value={formTitle} onChange={e => { setFormTitle(e.target.value); setFormErrors(p => ({ ...p, title: false })); }} placeholder={t('expenses:form.titlePlaceholder')} className={`w-full px-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.title ? 'border-red-500' : 'border-border-light dark:border-border-dark'}`} />
-            {formErrors.title && <p className="text-xs text-red-500 mt-1">{t('expenses:toast.titleRequired')}</p>}
+            <label htmlFor="exp-title" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('expenses:form.title')}</label>
+            <input id="exp-title" aria-invalid={!!formErrors.title} aria-describedby="exp-title-error" type="text" value={formTitle} onChange={e => { setFormTitle(e.target.value); setFormErrors(p => ({ ...p, title: false })); }} placeholder={t('expenses:form.titlePlaceholder')} className={`w-full px-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.title ? 'border-red-500' : 'border-border-light dark:border-border-dark'}`} />
+            {formErrors.title && <p id="exp-title-error" className="text-xs text-red-500 mt-1">{t('expenses:toast.titleRequired')}</p>}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -268,9 +268,9 @@ export const Expenses: React.FC = () => {
               {formErrors.category && <p className="text-xs text-red-500 mt-1">{t('expenses:toast.categoryRequired')}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('expenses:form.amount')}</label>
-              <input type="number" min="0" step="0.01" value={formAmount} onChange={e => { setFormAmount(e.target.value); setFormErrors(p => ({ ...p, amount: false })); }} placeholder={t('expenses:form.amountPlaceholder')} className={`w-full px-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.amount ? 'border-red-500' : 'border-border-light dark:border-border-dark'}`} />
-              {formErrors.amount && <p className="text-xs text-red-500 mt-1">{t('expenses:toast.amountRequired')}</p>}
+              <label htmlFor="exp-amount" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('expenses:form.amount')}</label>
+              <input id="exp-amount" aria-invalid={!!formErrors.amount} aria-describedby="exp-amount-error" type="number" min="0" step="0.01" value={formAmount} onChange={e => { setFormAmount(e.target.value); setFormErrors(p => ({ ...p, amount: false })); }} placeholder={t('expenses:form.amountPlaceholder')} className={`w-full px-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.amount ? 'border-red-500' : 'border-border-light dark:border-border-dark'}`} />
+              {formErrors.amount && <p id="exp-amount-error" className="text-xs text-red-500 mt-1">{t('expenses:toast.amountRequired')}</p>}
             </div>
           </div>
           <div>
@@ -282,12 +282,12 @@ export const Expenses: React.FC = () => {
             {formErrors.date && <p className="text-xs text-red-500 mt-1">{t('expenses:toast.dateRequired')}</p>}
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('expenses:form.description')}</label>
-            <textarea value={formDescription} onChange={e => setFormDescription(e.target.value)} placeholder={t('expenses:form.descriptionPlaceholder')} rows={3} className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark resize-none focus:outline-none focus:ring-2 focus:ring-primary" />
+            <label htmlFor="exp-description" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('expenses:form.description')}</label>
+            <textarea id="exp-description" value={formDescription} onChange={e => setFormDescription(e.target.value)} placeholder={t('expenses:form.descriptionPlaceholder')} rows={3} className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark resize-none focus:outline-none focus:ring-2 focus:ring-primary" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('expenses:form.receipt')}</label>
-            <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setFormReceipt(e.target.files?.[0] || null)} className="w-full text-sm text-text-muted-light file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
+            <label htmlFor="exp-receipt" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('expenses:form.receipt')}</label>
+            <input id="exp-receipt" type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setFormReceipt(e.target.files?.[0] || null)} className="w-full text-sm text-text-muted-light file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={() => { setIsFormOpen(false); resetForm(); }} className="px-4 py-2 text-sm font-medium text-text-muted-light hover:text-text-light">{t('common:buttons.cancel')}</button>
@@ -301,8 +301,8 @@ export const Expenses: React.FC = () => {
       {/* Reject Modal */}
       <Modal isOpen={!!rejectModalId} onClose={() => setRejectModalId(null)} title={t('expenses:actions.reject')} maxWidth="sm">
         <div className="p-6 space-y-4">
-          <label className="block text-sm font-medium text-text-light dark:text-text-dark">{t('expenses:rejectReason')}</label>
-          <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder={t('expenses:rejectReasonPlaceholder')} rows={3} className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark resize-none focus:outline-none focus:ring-2 focus:ring-primary" />
+          <label htmlFor="exp-reject-reason" className="block text-sm font-medium text-text-light dark:text-text-dark">{t('expenses:rejectReason')}</label>
+          <textarea id="exp-reject-reason" value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder={t('expenses:rejectReasonPlaceholder')} rows={3} className="w-full px-3 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-text-light dark:text-text-dark resize-none focus:outline-none focus:ring-2 focus:ring-primary" />
           <div className="flex justify-end gap-3">
             <button onClick={() => setRejectModalId(null)} className="px-4 py-2 text-sm text-text-muted-light">{t('common:buttons.cancel')}</button>
             <button onClick={handleReject} className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700">{t('expenses:actions.reject')}</button>

@@ -113,12 +113,13 @@ export const InviteModal: React.FC<InviteModalProps> = ({
             <form onSubmit={onSubmit} noValidate className="p-6 space-y-4">
                 {/* Full Name */}
                 <div>
-                    <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                    <label htmlFor="invite-name" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                         {t('inviteModal.fullName')} <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                         <input
+                            id="invite-name"
                             type="text"
                             value={inviteForm.name}
                             onChange={(e) => {
@@ -142,12 +143,13 @@ export const InviteModal: React.FC<InviteModalProps> = ({
 
                 {/* Email Address */}
                 <div>
-                    <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                    <label htmlFor="invite-email" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                         {t('inviteModal.email')} <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light z-10" size={16} />
                         <input
+                            id="invite-email"
                             ref={emailInputRef}
                             type="email"
                             value={inviteForm.email}
@@ -239,12 +241,13 @@ export const InviteModal: React.FC<InviteModalProps> = ({
                 {/* Role & Department */}
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                        <label htmlFor="invite-role" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                             {t('inviteModal.role')} <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
                             <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                             <input
+                                id="invite-role"
                                 type="text"
                                 value={inviteForm.role}
                                 onChange={(e) => {
@@ -267,12 +270,13 @@ export const InviteModal: React.FC<InviteModalProps> = ({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                        <label htmlFor="invite-department" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                             {t('inviteModal.department')} <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
                             <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
                             <input
+                                id="invite-department"
                                 type="text"
                                 value={inviteForm.department}
                                 onChange={(e) => {

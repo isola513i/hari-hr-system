@@ -161,16 +161,19 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       <form onSubmit={handleSubmit} className="p-6 space-y-4">
         {/* Full Name Field */}
         <div>
-          <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+          <label htmlFor="add-name" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
             {t('employees:addModal.fullName')}
           </label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
             <input
+              id="add-name"
               type="text"
               value={newEmployee.name}
               onChange={(e) => updateField('name', e.target.value)}
               placeholder={t('common:placeholders.egFullName')}
+              aria-invalid={!!validationErrors.name}
+              aria-describedby="add-name-error"
               className={`w-full pl-10 pr-3 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
                 validationErrors.name
                   ? 'border-red-500 focus:ring-red-500'
@@ -182,7 +185,7 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
             )}
           </div>
           {validationErrors.name && (
-            <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+            <p id="add-name-error" className="mt-1 text-xs text-red-500 flex items-center gap-1">
               {validationErrors.name}
             </p>
           )}
@@ -224,16 +227,19 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
 
         {/* Email Field */}
         <div>
-          <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+          <label htmlFor="add-email" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
             {t('employees:addModal.email')}
           </label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light" size={16} />
             <input
+              id="add-email"
               type="email"
               value={newEmployee.email}
               onChange={(e) => updateField('email', e.target.value)}
               placeholder={t('addModal.emailPlaceholder')}
+              aria-invalid={!!validationErrors.email}
+              aria-describedby="add-email-error"
               className={`w-full pl-10 pr-10 py-2 bg-background-light dark:bg-background-dark border rounded-lg focus:outline-none focus:ring-2 text-text-light dark:text-text-dark ${
                 validationErrors.email
                   ? 'border-red-500 focus:ring-red-500'
@@ -245,7 +251,7 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
             )}
           </div>
           {validationErrors.email && (
-            <p className="mt-1 text-xs text-red-500">{validationErrors.email}</p>
+            <p id="add-email-error" className="mt-1 text-xs text-red-500">{validationErrors.email}</p>
           )}
         </div>
 

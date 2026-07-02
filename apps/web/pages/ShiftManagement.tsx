@@ -136,8 +136,9 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ initial, onClose, onSave, savin
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('shiftModal.shiftName')}</label>
+            <label htmlFor="shift-name" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('shiftModal.shiftName')}</label>
             <input
+              id="shift-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -147,8 +148,9 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ initial, onClose, onSave, savin
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('shiftModal.startTime')}</label>
+              <label htmlFor="shift-start-time" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('shiftModal.startTime')}</label>
               <input
+                id="shift-start-time"
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
@@ -156,8 +158,9 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ initial, onClose, onSave, savin
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('shiftModal.endTime')}</label>
+              <label htmlFor="shift-end-time" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('shiftModal.endTime')}</label>
               <input
+                id="shift-end-time"
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}

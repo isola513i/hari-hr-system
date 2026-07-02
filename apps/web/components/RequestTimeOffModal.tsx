@@ -297,8 +297,9 @@ export const RequestTimeOffModal: React.FC<RequestTimeOffModalProps> = ({
 
         {/* 4. Reason */}
         <div>
-          <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('leave:requestModal.reason')}</label>
+          <label htmlFor="rto-reason" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('leave:requestModal.reason')}</label>
           <textarea
+            id="rto-reason"
             rows={3}
             value={form.reason}
             onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))}
@@ -335,8 +336,9 @@ export const RequestTimeOffModal: React.FC<RequestTimeOffModalProps> = ({
         {/* 7. Handover Notes — conditional: only when handover person selected */}
         {showHandoverNotes && (
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('leave:requestModal.handoverNotes')}</label>
+            <label htmlFor="rto-handoverNotes" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('leave:requestModal.handoverNotes')}</label>
             <textarea
+              id="rto-handoverNotes"
               rows={3}
               value={form.handoverNotes}
               onChange={(e) => setForm((p) => ({ ...p, handoverNotes: e.target.value }))}

@@ -397,10 +397,11 @@ export function LeaveRequestForm() {
 
               {/* Reason */}
               <div>
-                <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                <label htmlFor="leave-reason" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                   {t('leave:requestForm.reason')}
                 </label>
                 <textarea
+                  id="leave-reason"
                   value={form.reason}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}
                   maxLength={500}
@@ -449,10 +450,11 @@ export function LeaveRequestForm() {
               {/* Handover Notes */}
               {form.handoverEmployeeId && (
                 <div>
-                  <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
+                  <label htmlFor="leave-handoverNotes" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">
                     {t('leave:requestModal.handoverNotes')}
                   </label>
                   <textarea
+                    id="leave-handoverNotes"
                     value={form.handoverNotes}
                     onChange={(e) => setForm({ ...form, handoverNotes: e.target.value })}
                     rows={3}
