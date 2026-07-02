@@ -95,6 +95,10 @@ jobs:
     env:
       DATABASE_URL: postgresql://hari_ci:hari_ci_pass@localhost:5432/hari_ci
       JWT_SECRET: ci-test-secret-key-that-is-at-least-32-chars-long
+      # 64 hex chars — src/utils/encryption.ts calls process.exit(1) at import
+      # time without it, which crashed the API on startup so the "Wait for API
+      # to be ready" step timed out and the E2E specs never ran.
+      TOTP_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       NODE_ENV: test
       PORT: 3001
       ALLOWED_ORIGINS: http://localhost:5173
