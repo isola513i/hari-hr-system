@@ -43,7 +43,7 @@ export const WorkDaysSelector: React.FC<WorkDaysSelectorProps> = ({ value, onCha
             onClick={() => toggle(num)}
             disabled={disabled}
             aria-pressed={active}
-            className={`px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+            className={`min-w-[40px] min-h-[40px] px-2.5 text-xs font-medium rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               active
                 ? 'bg-primary text-white border-primary'
                 : 'bg-card-light dark:bg-card-dark text-text-muted-light dark:text-text-muted-dark border-border-light dark:border-border-dark hover:border-primary/40'

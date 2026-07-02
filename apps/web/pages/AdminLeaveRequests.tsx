@@ -392,7 +392,7 @@ export const AdminLeaveRequests: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl p-5 border-l-4 border-l-blue-500">
+        <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl p-5 border-l-4 border-l-amber-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
@@ -406,10 +406,10 @@ export const AdminLeaveRequests: React.FC = () => {
               </p>
             </div>
             <div className="flex flex-col items-center gap-1">
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                <Clock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
               </div>
-              <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+              <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
                 {stats.pendingRate}%
               </span>
             </div>

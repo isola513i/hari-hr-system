@@ -112,7 +112,9 @@
     "dismissNotification": "Dismiss notification",
     "notifications": "Notifications",
     "loading": "Loading",
-    "breadcrumb": "Breadcrumb"
+    "breadcrumb": "Breadcrumb",
+    "openMenu": "Open menu",
+    "search": "Search"
   },
   "fileUpload": {
     "clickToUpload": "Click to upload",

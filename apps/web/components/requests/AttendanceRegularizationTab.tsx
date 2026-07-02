@@ -8,6 +8,7 @@ import { LeaveActionBar } from '../LeaveActionBar';
 import { Pagination } from '../Pagination';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { getRequestStatusPill } from '../../lib/requestStatusStyles';
 import {
   useAllRegularizationRequests,
   useApproveRegularization,
@@ -145,14 +146,7 @@ export const AttendanceRegularizationTab: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const getStatusBadge = (status: RegularizationRequest['status']) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
-      case 'manager_approved': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
-      case 'approved': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
-      case 'rejected': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-    }
-  };
+  const getStatusBadge = (status: RegularizationRequest['status']) => getRequestStatusPill(status);
 
   const getStatusLabel = (status: RegularizationRequest['status']) => t(`attendanceReg.status.${status}`);
 

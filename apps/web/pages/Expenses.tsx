@@ -221,15 +221,15 @@ export const Expenses: React.FC = () => {
                   <div className="flex gap-1">
                     {isAdmin && claim.status === 'Pending' && (
                       <>
-                        <button onClick={() => handleApprove(claim.id)} className="p-2 text-green-600 bg-green-50 dark:bg-green-900/20 rounded-lg"><Check size={16} /></button>
-                        <button onClick={() => { setRejectModalId(claim.id); setRejectReason(''); }} className="p-2 text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg"><X size={16} /></button>
+                        <button onClick={() => handleApprove(claim.id)} aria-label={t('expenses:actions.approve')} className="p-2 text-green-600 bg-green-50 dark:bg-green-900/20 rounded-lg"><Check size={16} /></button>
+                        <button onClick={() => { setRejectModalId(claim.id); setRejectReason(''); }} aria-label={t('expenses:actions.reject')} className="p-2 text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg"><X size={16} /></button>
                       </>
                     )}
                     {isAdmin && claim.status === 'Approved' && (
-                      <button onClick={() => handleReimburse(claim.id)} className="p-2 text-blue-600 bg-blue-50 dark:bg-blue-900/20 rounded-lg"><DollarSign size={16} /></button>
+                      <button onClick={() => handleReimburse(claim.id)} aria-label={t('expenses:actions.markReimbursed')} className="p-2 text-blue-600 bg-blue-50 dark:bg-blue-900/20 rounded-lg"><DollarSign size={16} /></button>
                     )}
                     {!isAdmin && claim.status === 'Pending' && (
-                      <button onClick={() => setCancelConfirmId(claim.id)} className="p-2 text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg"><Ban size={16} /></button>
+                      <button onClick={() => setCancelConfirmId(claim.id)} aria-label={t('expenses:actions.cancel')} className="p-2 text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg"><Ban size={16} /></button>
                     )}
                   </div>
                 </div>

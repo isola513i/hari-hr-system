@@ -93,7 +93,7 @@ export const HelpSupport: React.FC = () => {
             placeholder={t('searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 rounded-xl text-gray-800 shadow-xl focus:outline-none focus:ring-4 focus:ring-primary/30 transition-shadow"
+            className="w-full pl-12 pr-4 py-4 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 shadow-xl focus:outline-none focus:ring-4 focus:ring-primary/30 transition-shadow"
           />
         </div>
       </div>

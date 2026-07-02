@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, ClipboardClock, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCreateRegularizationRequest, useHolidayDateSet, useEmployeeDetail } from '../hooks/queries';
@@ -39,10 +39,20 @@ export const AttendanceRegularizationModal: React.FC<Props> = ({ onClose, onSucc
 
   const holidayDates = useHolidayDateSet();
   const createMutation = useCreateRegularizationRequest();
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setError('');
   }, [date, clockIn, clockOut, reason]);
+
+  // Close on Escape; focus the dialog on open and restore focus on close.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    const prev = document.activeElement as HTMLElement | null;
+    dialogRef.current?.focus();
+    return () => { document.removeEventListener('keydown', onKey); prev?.focus?.(); };
+  }, [onClose]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,15 +77,26 @@ export const AttendanceRegularizationModal: React.FC<Props> = ({ onClose, onSucc
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl w-full max-w-md">
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reg-modal-title"
+        className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-md max-h-[90vh] overflow-y-auto focus:outline-none animate-in fade-in zoom-in-95 duration-200"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-border-light dark:border-border-dark">
           <div className="flex items-center gap-2">
             <div className="p-1.5 bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 rounded-lg">
               <ClipboardClock size={18} />
             </div>
-            <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">{t('regModal.title')}</h2>
+            <h2 id="reg-modal-title" className="text-lg font-semibold text-text-light dark:text-text-dark">{t('regModal.title')}</h2>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-text-muted-light dark:text-text-muted-dark">
             <X size={18} />
@@ -102,8 +123,9 @@ export const AttendanceRegularizationModal: React.FC<Props> = ({ onClose, onSucc
           {/* Time range */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">{t('regModal.clockIn')}</label>
+              <label htmlFor="reg-clock-in" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">{t('regModal.clockIn')}</label>
               <input
+                id="reg-clock-in"
                 type="time"
                 value={clockIn}
                 onChange={(e) => setClockIn(e.target.value)}
@@ -111,8 +133,9 @@ export const AttendanceRegularizationModal: React.FC<Props> = ({ onClose, onSucc
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">{t('regModal.clockOut')}</label>
+              <label htmlFor="reg-clock-out" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">{t('regModal.clockOut')}</label>
               <input
+                id="reg-clock-out"
                 type="time"
                 value={clockOut}
                 onChange={(e) => setClockOut(e.target.value)}
@@ -123,10 +146,13 @@ export const AttendanceRegularizationModal: React.FC<Props> = ({ onClose, onSucc
 
           {/* Reason */}
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">
+            <label htmlFor="reg-reason" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">
               {t('regModal.reason')} <span className="text-red-500">*</span>
             </label>
             <textarea
+              id="reg-reason"
+              required
+              aria-required="true"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder={t('regModal.reasonPlaceholder')}
@@ -137,7 +163,7 @@ export const AttendanceRegularizationModal: React.FC<Props> = ({ onClose, onSucc
 
           {/* Error */}
           {error && (
-            <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg">
+            <div role="alert" className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg">
               <AlertCircle size={15} className="text-red-500 mt-0.5 shrink-0" />
               <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
             </div>

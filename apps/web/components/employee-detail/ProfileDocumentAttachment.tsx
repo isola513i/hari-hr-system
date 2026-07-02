@@ -85,7 +85,7 @@ export const ProfileDocumentAttachment: React.FC<Props> = ({ employeeId, slot, d
       case 'Approved':
         return { icon: <CheckCircle2 size={13} />, cls: 'text-green-600 dark:text-green-400', label: t('employees:attach.statusApproved') };
       case 'Rejected':
-        return { icon: <XCircle size={13} />, cls: 'text-red-500', label: t('employees:attach.statusRejected') };
+        return { icon: <XCircle size={13} />, cls: 'text-red-500 dark:text-red-400', label: t('employees:attach.statusRejected') };
       case 'Uploaded':
         return { icon: <Clock size={13} />, cls: 'text-amber-600 dark:text-amber-400', label: t('employees:attach.statusUploaded') };
       default:
@@ -94,7 +94,7 @@ export const ProfileDocumentAttachment: React.FC<Props> = ({ employeeId, slot, d
   })();
 
   return (
-    <div className="mt-1.5 flex items-center gap-2 text-xs">
+    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
       <input ref={fileRef} type="file" accept={ACCEPT} onChange={handleFile} className="hidden" disabled={disabled || uploading} />
 
       {hasFile ? (
@@ -103,7 +103,7 @@ export const ProfileDocumentAttachment: React.FC<Props> = ({ employeeId, slot, d
             {statusVisual.icon}
             {statusVisual.label}
           </span>
-          <button type="button" onClick={handleDownload} className="inline-flex items-center gap-1 text-primary hover:underline">
+          <button type="button" onClick={handleDownload} className="inline-flex items-center gap-1 py-1 -my-1 text-primary hover:underline">
             <Download size={13} /> {doc?.fileType || t('common:buttons.download')}
           </button>
           {!disabled && (
@@ -111,7 +111,7 @@ export const ProfileDocumentAttachment: React.FC<Props> = ({ employeeId, slot, d
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="inline-flex items-center gap-1 text-text-muted-light dark:text-text-muted-dark hover:text-primary disabled:opacity-50"
+              className="inline-flex items-center gap-1 py-1 -my-1 text-text-muted-light dark:text-text-muted-dark hover:text-primary disabled:opacity-50"
             >
               {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
               {t('employees:attach.replace')}
@@ -123,7 +123,7 @@ export const ProfileDocumentAttachment: React.FC<Props> = ({ employeeId, slot, d
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={disabled || uploading}
-          className="inline-flex items-center gap-1 text-primary hover:underline disabled:opacity-50 disabled:no-underline disabled:text-text-muted-light"
+          className="inline-flex items-center gap-1 py-1 -my-1 text-primary hover:underline disabled:opacity-50 disabled:no-underline disabled:text-text-muted-light"
         >
           {uploading ? <Loader2 size={13} className="animate-spin" /> : <Paperclip size={13} />}
           {uploading ? t('employees:attach.uploading') : t('employees:attach.attach')}

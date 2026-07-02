@@ -289,6 +289,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         {/* Mobile Menu Button — 44px touch target */}
         <button
           onClick={onMenuClick}
+          aria-label={t('aria.openMenu')}
           className="md:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-background-light dark:hover:bg-background-dark text-text-light dark:text-text-dark transition-colors active:bg-background-light"
         >
           <Menu size={24} />
@@ -335,6 +336,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           {/* Mobile Search Toggle — 44px touch target */}
           <button
             onClick={() => setIsMobileSearchOpen(true)}
+            aria-label={t('aria.search')}
             className="md:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-background-light dark:hover:bg-background-dark text-text-muted-light dark:text-text-muted-dark transition-colors active:bg-background-light"
           >
             <Search size={20} />
@@ -344,6 +346,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           <div className="relative" ref={notificationRef}>
             <button
               onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+              aria-label={t('aria.notifications')}
               className="relative min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-background-light dark:hover:bg-background-dark text-text-muted-light dark:text-text-muted-dark transition-colors active:bg-background-light"
             >
               <Bell size={20} />
@@ -402,7 +405,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                   className="absolute -bottom-0.5 -right-0.5"
                 />
               </div>
-              <div className="text-left hidden sm:block min-w-0 max-w-[130px]">
+              <div className="text-left hidden sm:block min-w-0 max-w-[160px]">
                 <p className="text-sm font-semibold text-text-light dark:text-text-dark leading-none truncate">
                   {user?.name}
                 </p>

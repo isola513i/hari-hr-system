@@ -112,7 +112,9 @@
     "dismissNotification": "ปิดการแจ้งเตือน",
     "notifications": "การแจ้งเตือน",
     "loading": "กำลังโหลด",
-    "breadcrumb": "เส้นทางนำทาง"
+    "breadcrumb": "เส้นทางนำทาง",
+    "openMenu": "เปิดเมนู",
+    "search": "ค้นหา"
   },
   "fileUpload": {
     "clickToUpload": "คลิกเพื่ออัปโหลด",

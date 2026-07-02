@@ -73,7 +73,7 @@ export const HeadcountChart: React.FC<HeadcountChartProps> = React.memo(({
             <Tooltip
               contentStyle={{
                 backgroundColor: 'rgba(255,255,255,0.95)',
-                border: '1px solid #e5e7eb',
+                border: '1px solid var(--color-border, #e5e7eb)',
                 borderRadius: '8px',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
               }}

@@ -9,19 +9,11 @@ import { Avatar } from '../Avatar';
 import { Dropdown } from '../Dropdown';
 import { FilterToolbar } from '../FilterToolbar';
 import { Pagination } from '../Pagination';
-import type { ExpenseClaimStatus } from '../../types';
 import { useExpensePage } from '../../hooks/useExpensePage';
+import { getRequestStatusPill } from '../../lib/requestStatusStyles';
 
 const categoryIcons: Record<string, React.ElementType> = {
   Travel: Plane, Meals: Utensils, Equipment: Monitor, 'Office Supplies': Package, Training: GraduationCap, Other: FileText,
-};
-
-const statusColors: Record<ExpenseClaimStatus, string> = {
-  Pending:    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  Approved:   'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  Rejected:   'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  Reimbursed: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  Cancelled:  'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400',
 };
 
 const ITEMS_PER_PAGE = 10;
@@ -120,7 +112,7 @@ export const ExpenseRequestsTab: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl p-5 border-l-4 border-l-blue-500">
+        <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl p-5 border-l-4 border-l-amber-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-text-muted-light dark:text-text-muted-dark">{t('expenses:stats.pendingCount')}</p>
@@ -128,8 +120,8 @@ export const ExpenseRequestsTab: React.FC = () => {
               <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">{tReq('expense.ofAllClaims', { rate: pendingRate })}</p>
             </div>
             <div className="flex flex-col items-center gap-1">
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg"><Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" /></div>
-              <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">{pendingRate}%</span>
+              <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg"><Clock className="w-6 h-6 text-amber-600 dark:text-amber-400" /></div>
+              <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">{pendingRate}%</span>
             </div>
           </div>
         </div>
@@ -207,7 +199,7 @@ export const ExpenseRequestsTab: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap font-semibold text-text-light dark:text-text-dark">{formatAmount(claim.amount)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-text-muted-light dark:text-text-muted-dark">{new Date(claim.expenseDate).toLocaleDateString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[claim.status]}`}>
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getRequestStatusPill(claim.status)}`}>
                         {t(`expenses:status.${claim.status}`)}
                       </span>
                     </td>
@@ -253,19 +245,19 @@ export const ExpenseRequestsTab: React.FC = () => {
                           <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{claim.employeeName} · {t(`expenses:categories.${claim.category}`)}</p>
                         </div>
                       </div>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[claim.status]}`}>{t(`expenses:status.${claim.status}`)}</span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getRequestStatusPill(claim.status)}`}>{t(`expenses:status.${claim.status}`)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <p className="text-lg font-bold text-text-light dark:text-text-dark">{formatAmount(claim.amount)}</p>
                       <div className="flex gap-1">
                         {claim.status === 'Pending' && (
                           <>
-                            <button onClick={() => handleApprove(claim.id)} className="p-2 text-green-600 bg-green-50 dark:bg-green-900/20 rounded-lg"><Check size={16} /></button>
-                            <button onClick={() => { setRejectModalId(claim.id); setRejectReason(''); }} className="p-2 text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg"><X size={16} /></button>
+                            <button onClick={() => handleApprove(claim.id)} aria-label={t('expenses:actions.approve')} className="p-2 text-green-600 bg-green-50 dark:bg-green-900/20 rounded-lg"><Check size={16} /></button>
+                            <button onClick={() => { setRejectModalId(claim.id); setRejectReason(''); }} aria-label={t('expenses:actions.reject')} className="p-2 text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg"><X size={16} /></button>
                           </>
                         )}
                         {claim.status === 'Approved' && (
-                          <button onClick={() => handleReimburse(claim.id)} className="p-2 text-blue-600 bg-blue-50 dark:bg-blue-900/20 rounded-lg"><DollarSign size={16} /></button>
+                          <button onClick={() => handleReimburse(claim.id)} aria-label={t('expenses:actions.markReimbursed')} className="p-2 text-blue-600 bg-blue-50 dark:bg-blue-900/20 rounded-lg"><DollarSign size={16} /></button>
                         )}
                       </div>
                     </div>

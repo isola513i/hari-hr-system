@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Clock, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCreateOTRequest } from '../hooks/queries';
@@ -23,6 +23,7 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
   const [error, setError] = useState('');
 
   const createMutation = useCreateOTRequest();
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const plannedHours = (() => {
     if (!plannedStart || !plannedEnd) return 0;
@@ -34,6 +35,15 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
   useEffect(() => {
     setError('');
   }, [date, plannedStart, plannedEnd, reason]);
+
+  // Close on Escape; focus the dialog on open and restore focus on close.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    const prev = document.activeElement as HTMLElement | null;
+    dialogRef.current?.focus();
+    return () => { document.removeEventListener('keydown', onKey); prev?.focus?.(); };
+  }, [onClose]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,15 +61,26 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl w-full max-w-md">
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ot-modal-title"
+        className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-md max-h-[90vh] overflow-y-auto focus:outline-none animate-in fade-in zoom-in-95 duration-200"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-border-light dark:border-border-dark">
           <div className="flex items-center gap-2">
             <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg">
               <Clock size={18} />
             </div>
-            <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">{t('otModal.title')}</h2>
+            <h2 id="ot-modal-title" className="text-lg font-semibold text-text-light dark:text-text-dark">{t('otModal.title')}</h2>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-text-muted-light dark:text-text-muted-dark">
             <X size={18} />
@@ -76,8 +97,9 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
           {/* Time range */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">{t('otModal.startTime')}</label>
+              <label htmlFor="ot-start-time" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">{t('otModal.startTime')}</label>
               <input
+                id="ot-start-time"
                 type="time"
                 value={plannedStart}
                 onChange={(e) => setPlannedStart(e.target.value)}
@@ -85,8 +107,9 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">{t('otModal.endTime')}</label>
+              <label htmlFor="ot-end-time" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">{t('otModal.endTime')}</label>
               <input
+                id="ot-end-time"
                 type="time"
                 value={plannedEnd}
                 onChange={(e) => setPlannedEnd(e.target.value)}
@@ -129,10 +152,13 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
 
           {/* Reason */}
           <div>
-            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">
+            <label htmlFor="ot-reason" className="block text-sm font-medium text-text-light dark:text-text-dark mb-1.5">
               {t('otModal.reason')} <span className="text-red-500">*</span>
             </label>
             <textarea
+              id="ot-reason"
+              required
+              aria-required="true"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder={t('otModal.reasonPlaceholder')}
@@ -143,7 +169,7 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
 
           {/* Error */}
           {error && (
-            <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg">
+            <div role="alert" className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg">
               <AlertCircle size={15} className="text-red-500 mt-0.5 shrink-0" />
               <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
             </div>

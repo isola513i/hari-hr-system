@@ -390,7 +390,7 @@ function SurveyAnalytics({ data }: { data: SentimentOverview }) {
 
       <div className="p-5 space-y-5">
         {/* Summary stats row */}
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { value: String(overallScore), suffix: '/100', label: t('surveyAnalytics.overallScore'), color: scoreColor },
             { value: String(responseRate), suffix: '%', label: t('surveyAnalytics.responseRate'), color: 'text-primary' },
@@ -418,7 +418,7 @@ function SurveyAnalytics({ data }: { data: SentimentOverview }) {
               {distribution.negative > 0 && <div style={{ flex: distribution.negative }} className="bg-red-400" />}
             </div>
             {/* 3 metric tiles */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {[
                 { label: t('surveyAnalytics.positive'), value: distribution.positive, bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-600 dark:text-green-400', border: 'border-green-200 dark:border-green-800' },
                 { label: t('surveyAnalytics.neutral'), value: distribution.neutral, bg: 'bg-yellow-50 dark:bg-yellow-900/20', text: 'text-yellow-600 dark:text-yellow-400', border: 'border-yellow-200 dark:border-yellow-800' },

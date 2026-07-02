@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
@@ -19,6 +19,21 @@ export const Modal: React.FC<ModalProps> = ({
   maxWidth = 'md'
 }) => {
   const { t } = useTranslation('common');
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Close on Escape; move focus into the dialog on open and restore it on close.
+  useEffect(() => {
+    if (!isOpen) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    dialogRef.current?.focus();
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      previouslyFocused?.focus?.();
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const widthClass = {
@@ -38,7 +53,9 @@ export const Modal: React.FC<ModalProps> = ({
       aria-label={t('common:modal.backdropDismiss', { defaultValue: 'Press Escape or click outside to close' })}
     >
       <div
-        className={`bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-full ${widthClass} overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]`}
+        ref={dialogRef}
+        tabIndex={-1}
+        className={`bg-card-light dark:bg-card-dark rounded-xl shadow-xl border border-border-light dark:border-border-dark w-full max-w-full ${widthClass} overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] focus:outline-none`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? 'modal-title' : undefined}

@@ -100,7 +100,7 @@ export function WFHRequestModal({ onClose, onSuccess }: Props) {
             </div>
 
             {errorMsg && (
-              <p className="text-sm text-red-600 dark:text-red-400">{errorMsg}</p>
+              <p role="alert" className="text-sm text-red-600 dark:text-red-400">{errorMsg}</p>
             )}
 
             <div className="flex gap-3 justify-end pt-1">
