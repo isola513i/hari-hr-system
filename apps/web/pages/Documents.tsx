@@ -27,6 +27,8 @@ import { DocumentGridView } from '../components/documents/DocumentGridView';
 import { DocumentListView } from '../components/documents/DocumentListView';
 import { DocumentPreviewModal } from '../components/documents/DocumentPreviewModal';
 import { UploadModal } from '../components/documents/UploadModal';
+import QueryErrorState from '../components/QueryErrorState';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 export const Documents: React.FC = () => {
   const { t } = useTranslation(['documents', 'common']);
@@ -61,7 +63,7 @@ export const Documents: React.FC = () => {
   const qc = useQueryClient();
 
   // React Query
-  const { data: docsResponse } = useDocumentList({
+  const { data: docsResponse, isError, error, refetch, isPending } = useDocumentList({
     page: currentPage,
     limit: itemsPerPage,
     category: selectedCategory !== 'All Files' && selectedCategory !== 'Recent' && selectedCategory !== 'Trash' ? selectedCategory : undefined,
@@ -345,6 +347,15 @@ export const Documents: React.FC = () => {
       showToast(t('toast.permanentDeleteFailed'), 'error');
     }
   };
+
+  if (isError) { return <QueryErrorState error={error} onRetry={() => refetch()} />; }
+  if (isPending) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-8rem)] animate-fade-in gap-6 relative">

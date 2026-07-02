@@ -17,6 +17,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import { NotificationType } from '../types';
 import { translateNotifTitle, translateNotifMessage, formatNotifTimeAgo } from '../utils/notificationTranslation';
+import QueryErrorState from '../components/QueryErrorState';
 
 const typeConfig: Record<NotificationType, { icon: React.ElementType; bg: string; text: string }> = {
   info: { icon: Info, bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' },
@@ -32,7 +33,7 @@ type FilterTab = 'all' | 'unread';
 
 const Notifications: React.FC = () => {
   const { t } = useTranslation(['common']);
-  const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
+  const { notifications, unreadCount, isLoading, isError, error, refetch, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
@@ -67,6 +68,10 @@ const Notifications: React.FC = () => {
     await markAllAsRead();
     showToast(t('notifications.allMarkedRead'), 'success');
   };
+
+  if (isError) {
+    return <QueryErrorState error={error} onRetry={() => refetch()} />;
+  }
 
   if (isLoading && notifications.length === 0) {
     return (

@@ -19,6 +19,8 @@ import { queryKeys } from '../lib/queryKeys';
 import { getErrorMessage } from '../lib/errorHandler';
 import { useOnboardingTasks, useOnboardingContacts, useOnboardingDocuments, useAllEmployees, useCreateContact, useUpdateContact, useDeleteContact } from '../hooks/queries';
 import { TaskList, KeyContacts, DocumentChecklist, InviteModal, OnboardingOverview } from '../components/onboarding';
+import QueryErrorState from '../components/QueryErrorState';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 export const Onboarding: React.FC = () => {
     const { t, i18n } = useTranslation(['onboarding', 'common']);
@@ -29,7 +31,7 @@ export const Onboarding: React.FC = () => {
     const { showToast } = useToast();
 
     // React Query hooks for data fetching
-    const { data: tasks = [] } = useOnboardingTasks();
+    const { data: tasks = [], isError: isTasksError, error: tasksError, refetch: refetchTasks, isPending } = useOnboardingTasks();
     const { data: keyContacts = [] } = useOnboardingContacts();
     const createContactMutation = useCreateContact();
     const updateContactMutation = useUpdateContact();
@@ -417,6 +419,15 @@ export const Onboarding: React.FC = () => {
             startDate: employee.joinDate || ''
         });
     };
+
+    if (isTasksError) { return <QueryErrorState error={tasksError} onRetry={() => refetchTasks()} />; }
+    if (isPending) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <LoadingSpinner />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 animate-fade-in relative">

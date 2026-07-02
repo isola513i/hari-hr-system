@@ -11,6 +11,8 @@ interface NotificationContextType {
   notifications: NotificationItem[];
   unreadCount: number;
   isLoading: boolean;
+  isError: boolean;
+  error: Error | null;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
@@ -20,7 +22,7 @@ interface NotificationContextType {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { data: notifications = [], isPending: isLoading, refetch } = useNotificationsList();
+  const { data: notifications = [], isPending: isLoading, isError, error, refetch } = useNotificationsList();
   const markReadMutation = useMarkNotificationRead();
   const markAllReadMutation = useMarkAllNotificationsRead();
   const deleteMutation = useDeleteNotification();
@@ -61,6 +63,8 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       notifications,
       unreadCount,
       isLoading,
+      isError,
+      error,
       markAsRead,
       markAllAsRead,
       deleteNotification: handleDelete,

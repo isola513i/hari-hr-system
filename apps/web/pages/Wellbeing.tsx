@@ -10,13 +10,15 @@ import { useAnnouncements, useUpcomingEvents, useAddAnnouncement, useUpdateAnnou
 import { getErrorMessage } from '../lib/errorHandler';
 import { useAuth } from '../contexts/AuthContext';
 import { useModalA11y } from '../hooks/useModalA11y';
+import QueryErrorState from '../components/QueryErrorState';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 export const Wellbeing: React.FC = () => {
   const { t, i18n } = useTranslation(['wellbeing', 'common']);
   const { isAdminView } = useAuth();
-  const { data: announcementsList = [] } = useAnnouncements();
-  const { data: upcomingEvents = [] } = useUpcomingEvents();
-  const { data: sentiment } = useSentimentOverview();
+  const { data: announcementsList = [], isPending: annLoading, isError: isAnnError, error: annError, refetch: refetchAnn } = useAnnouncements();
+  const { data: upcomingEvents = [], isError: isEventsError, error: eventsError, refetch: refetchEvents } = useUpcomingEvents();
+  const { data: sentiment, isError: isSentimentError, error: sentimentError, refetch: refetchSentiment } = useSentimentOverview();
   const addAnnouncementMutation = useAddAnnouncement();
   const updateAnnouncementMutation = useUpdateAnnouncement();
   const deleteAnnouncementMutation = useDeleteAnnouncement();
@@ -274,6 +276,13 @@ export const Wellbeing: React.FC = () => {
     { value: 'Deadline', label: t('eventTypes.deadline') },
     { value: 'Company Event', label: t('eventTypes.companyEvent') },
   ];
+
+  if (isAnnError || isEventsError || isSentimentError) {
+    return <QueryErrorState error={annError ?? eventsError ?? sentimentError} onRetry={() => { refetchAnn(); refetchEvents(); refetchSentiment(); }} />;
+  }
+  if (annLoading) {
+    return <div className="flex items-center justify-center h-64"><LoadingSpinner /></div>;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in relative">

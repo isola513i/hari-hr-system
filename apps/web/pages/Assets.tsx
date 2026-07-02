@@ -9,6 +9,7 @@ import { useToast } from '../contexts/ToastContext';
 import { Dropdown } from '../components/Dropdown';
 import { DatePicker } from '../components/DatePicker';
 import type { CompanyAsset, AssetStatus } from '../types';
+import QueryErrorState from '../components/QueryErrorState';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -217,7 +218,7 @@ export function Assets() {
     ...ASSET_STATUSES.map(s => ({ value: s, label: t(`status.${s}`) })),
   ];
 
-  const { data: assets = [], isLoading } = useAssets({ status: statusFilter || undefined, search: search || undefined });
+  const { data: assets = [], isLoading, isError, error, refetch } = useAssets({ status: statusFilter || undefined, search: search || undefined });
   const createMutation = useCreateAsset();
   const updateMutation = useUpdateAsset();
   const assignMutation = useAssignAsset();
@@ -328,7 +329,11 @@ export function Assets() {
 
       {/* Table */}
       <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden shadow-sm">
-        {isLoading ? (
+        {isError ? (
+          <div className="py-16">
+            <QueryErrorState error={error} onRetry={() => refetch()} />
+          </div>
+        ) : isLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>

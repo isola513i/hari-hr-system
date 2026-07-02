@@ -27,6 +27,8 @@ import {
   useDeleteAnnouncement,
 } from '../hooks/queries';
 import { useAuth } from '../contexts/AuthContext';
+import QueryErrorState from '../components/QueryErrorState';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 type AnnouncementType = Announcement['type'];
 type FilterType = 'all' | AnnouncementType;
@@ -36,7 +38,7 @@ const EMPTY_ANNOUNCEMENT: Partial<Announcement> = { type: 'announcement' };
 export const Announcements: React.FC = () => {
   const { t } = useTranslation(['wellbeing', 'common']);
   const { isAdminView } = useAuth();
-  const { data: announcementsList = [] } = useAnnouncements();
+  const { data: announcementsList = [], isError, error, refetch, isPending } = useAnnouncements();
   const addMutation = useAddAnnouncement();
   const updateMutation = useUpdateAnnouncement();
   const deleteMutation = useDeleteAnnouncement();
@@ -180,6 +182,15 @@ export const Announcements: React.FC = () => {
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
+  if (isError) { return <QueryErrorState error={error} onRetry={() => refetch()} />; }
+  if (isPending) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
