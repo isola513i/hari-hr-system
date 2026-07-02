@@ -18,7 +18,7 @@ const STATUS_BG_TEXT: Record<AssetStatus, { bg: string; text: string }> = {
   'Available':         { bg: 'bg-green-100 dark:bg-green-900/30',  text: 'text-green-700 dark:text-green-400' },
   'Assigned':          { bg: 'bg-blue-100 dark:bg-blue-900/30',   text: 'text-blue-700 dark:text-blue-400' },
   'Under Maintenance': { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-400' },
-  'Retired':           { bg: 'bg-gray-100 dark:bg-gray-800',      text: 'text-gray-500 dark:text-gray-400' },
+  'Retired':           { bg: 'bg-gray-100 dark:bg-gray-800',      text: 'text-text-muted-light dark:text-text-muted-dark' },
 };
 
 const TYPE_ICON: Record<string, React.ReactNode> = {
@@ -84,19 +84,19 @@ function AssetFormModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
+      <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{asset ? t('form.editTitle') : t('form.addTitle')}</h3>
+          <h3 className="text-lg font-bold text-text-light dark:text-text-dark">{asset ? t('form.editTitle') : t('form.addTitle')}</h3>
           <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
         </div>
         <form onSubmit={handle} className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('form.name')}</label>
-            <input value={form.name} onChange={f('name')} required className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('form.name')}</label>
+            <input value={form.name} onChange={f('name')} required className="w-full px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('form.type')}</label>
+              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('form.type')}</label>
               <Dropdown
                 options={ASSET_TYPE_OPTIONS}
                 value={form.assetType}
@@ -104,7 +104,7 @@ function AssetFormModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('form.status')}</label>
+              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('form.status')}</label>
               <Dropdown
                 options={ASSET_STATUS_OPTIONS}
                 value={form.status}
@@ -113,25 +113,25 @@ function AssetFormModal({
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('form.serialNumber')}</label>
-            <input value={form.serialNumber} onChange={f('serialNumber')} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('form.serialNumber')}</label>
+            <input value={form.serialNumber} onChange={f('serialNumber')} className="w-full px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('form.purchaseDate')}</label>
+              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('form.purchaseDate')}</label>
               <DatePicker value={form.purchaseDate} onChange={(v) => setForm(prev => ({ ...prev, purchaseDate: v }))} maxDate={new Date().toISOString().split('T')[0]} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('form.purchasePrice')}</label>
-              <input type="number" min="0" step="0.01" value={form.purchasePrice} onChange={f('purchasePrice')} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+              <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('form.purchasePrice')}</label>
+              <input type="number" min="0" step="0.01" value={form.purchasePrice} onChange={f('purchasePrice')} className="w-full px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('form.notes')}</label>
-            <textarea value={form.notes} onChange={f('notes')} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
+            <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{t('form.notes')}</label>
+            <textarea value={form.notes} onChange={f('notes')} rows={2} className="w-full px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
           </div>
           <div className="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">{t('buttons.cancel')}</button>
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">{t('buttons.cancel')}</button>
             <button type="submit" disabled={saving} className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-60">{saving ? t('buttons.saving') : t('buttons.save')}</button>
           </div>
         </form>
@@ -157,9 +157,9 @@ function AssignModal({ asset, onClose, onAssign }: { asset: CompanyAsset; onClos
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+      <div className="bg-card-light dark:bg-card-dark rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('assignModal.title', { name: asset.name })}</h3>
+          <h3 className="text-lg font-bold text-text-light dark:text-text-dark">{t('assignModal.title', { name: asset.name })}</h3>
           <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
         </div>
         <form onSubmit={handle} className="space-y-3">
@@ -172,7 +172,7 @@ function AssignModal({ asset, onClose, onAssign }: { asset: CompanyAsset; onClos
             onChange={(val) => setEmployeeId(val)}
           />
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">{t('buttons.cancel')}</button>
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">{t('buttons.cancel')}</button>
             <button type="submit" disabled={saving || !employeeId} className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-60">{saving ? t('buttons.assigning') : t('buttons.assign')}</button>
           </div>
         </form>
@@ -263,8 +263,8 @@ export function Assets() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('page.title')}</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t('page.subtitle')}</p>
+          <h1 className="text-2xl font-bold text-text-light dark:text-text-dark">{t('page.title')}</h1>
+          <p className="text-sm text-text-muted-light dark:text-text-muted-dark mt-0.5">{t('page.subtitle')}</p>
         </div>
         {isAdminView && (
           <button onClick={() => { setEditAsset(null); setShowForm(true); }} className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors">
@@ -276,14 +276,14 @@ export function Assets() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: t('stats.total'),       value: stats.total,       color: 'text-gray-900 dark:text-white' },
+          { label: t('stats.total'),       value: stats.total,       color: 'text-text-light dark:text-text-dark' },
           { label: t('stats.available'),   value: stats.available,   color: 'text-green-600 dark:text-green-400' },
           { label: t('stats.assigned'),    value: stats.assigned,    color: 'text-blue-600 dark:text-blue-400' },
           { label: t('stats.maintenance'), value: stats.maintenance, color: 'text-yellow-600 dark:text-yellow-400' },
         ].map(s => (
-          <div key={s.label} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 text-center">
+          <div key={s.label} className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 text-center">
             <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{s.label}</div>
+            <div className="text-xs text-text-muted-light dark:text-text-muted-dark mt-0.5">{s.label}</div>
           </div>
         ))}
       </div>
@@ -296,7 +296,7 @@ export function Assets() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={t('filters.search')}
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
         <Dropdown
@@ -308,7 +308,7 @@ export function Assets() {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+      <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden shadow-sm">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -316,19 +316,19 @@ export function Assets() {
         ) : assets.length === 0 ? (
           <div className="text-center py-16">
             <Package size={40} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">{t('empty.noAssets')}</p>
+            <p className="text-sm text-text-muted-light dark:text-text-muted-dark">{t('empty.noAssets')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">{t('table.asset')}</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">{t('table.type')}</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">{t('table.status')}</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">{t('table.assignedTo')}</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">{t('table.purchaseDate')}</th>
-                  {isAdminView && <th className="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">{t('table.actions')}</th>}
+                <tr className="border-b border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800/50">
+                  <th className="text-left px-4 py-3 font-semibold text-text-muted-light dark:text-text-muted-dark">{t('table.asset')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-text-muted-light dark:text-text-muted-dark">{t('table.type')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-text-muted-light dark:text-text-muted-dark">{t('table.status')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-text-muted-light dark:text-text-muted-dark">{t('table.assignedTo')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-text-muted-light dark:text-text-muted-dark">{t('table.purchaseDate')}</th>
+                  {isAdminView && <th className="text-right px-4 py-3 font-semibold text-text-muted-light dark:text-text-muted-dark">{t('table.actions')}</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -337,26 +337,26 @@ export function Assets() {
                   return (
                     <tr key={asset.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                       <td className="px-4 py-3">
-                        <div className="font-medium text-gray-900 dark:text-white">{asset.name}</div>
+                        <div className="font-medium text-text-light dark:text-text-dark">{asset.name}</div>
                         {asset.serialNumber && <div className="text-xs text-gray-400 dark:text-gray-500">S/N: {asset.serialNumber}</div>}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+                        <span className="flex items-center gap-1.5 text-text-muted-light dark:text-text-muted-dark">
                           {getIcon(asset.assetType)} {t(`assetType.${asset.assetType}`)}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sc.bg} ${sc.text}`}>{t(`status.${asset.status}`)}</span>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                      <td className="px-4 py-3 text-text-muted-light dark:text-text-muted-dark">
                         {asset.assignedToName ? (
                           <div>
-                            <div className="font-medium text-gray-900 dark:text-white">{asset.assignedToName}</div>
+                            <div className="font-medium text-text-light dark:text-text-dark">{asset.assignedToName}</div>
                             {asset.assignedToDepartment && <div className="text-xs text-gray-400">{asset.assignedToDepartment}</div>}
                           </div>
                         ) : '—'}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                      <td className="px-4 py-3 text-text-muted-light dark:text-text-muted-dark">
                         {asset.purchaseDate ? new Date(asset.purchaseDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                       </td>
                       {isAdminView && (
