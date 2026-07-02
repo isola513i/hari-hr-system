@@ -132,6 +132,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
                                                         onClick={() => onStartEditHistory(job)}
                                                         className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-text-muted-light hover:text-primary"
                                                         title={t('common:buttons.edit')}
+                                                        aria-label={t('common:buttons.edit')}
                                                     >
                                                         <Edit2 size={14} />
                                                     </button>
@@ -140,6 +141,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
                                                             onClick={() => onDeleteHistory(job.id)}
                                                             className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-text-muted-light hover:text-red-500"
                                                             title={t('common:buttons.delete')}
+                                                            aria-label={t('common:buttons.delete')}
                                                         >
                                                             <Trash2 size={14} />
                                                         </button>

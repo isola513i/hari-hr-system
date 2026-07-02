@@ -68,6 +68,7 @@ export const DocumentListView: React.FC<DocumentListViewProps> = ({
                       onClick={(e) => handleDownload(e, doc.id)}
                       className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-text-muted-light hover:text-primary transition-colors"
                       title={t('actions.download')}
+                      aria-label={t('actions.download')}
                     >
                       <Download size={16} />
                     </button>
@@ -75,6 +76,7 @@ export const DocumentListView: React.FC<DocumentListViewProps> = ({
                       onClick={(e) => handleShare(e, doc)}
                       className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-text-muted-light hover:text-primary transition-colors"
                       title={t('actions.share')}
+                      aria-label={t('actions.share')}
                     >
                       <Share2 size={16} />
                     </button>
@@ -82,6 +84,7 @@ export const DocumentListView: React.FC<DocumentListViewProps> = ({
                       onClick={(e) => handleDelete(e, doc.id)}
                       className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-text-muted-light hover:text-red-500 transition-colors"
                       title={t('common:buttons.delete')}
+                      aria-label={t('common:buttons.delete')}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -145,6 +148,7 @@ export const DocumentListView: React.FC<DocumentListViewProps> = ({
                 onClick={(e) => handleDelete(e, doc.id)}
                 className="p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
                 title={t('common:buttons.delete')}
+                aria-label={t('common:buttons.delete')}
               >
                 <Trash2 size={14} />
               </button>

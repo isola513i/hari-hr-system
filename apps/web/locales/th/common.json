@@ -114,7 +114,9 @@
     "loading": "กำลังโหลด",
     "breadcrumb": "เส้นทางนำทาง",
     "openMenu": "เปิดเมนู",
-    "search": "ค้นหา"
+    "search": "ค้นหา",
+    "clearSearch": "ล้างการค้นหา",
+    "closeSearch": "ปิดการค้นหา"
   },
   "fileUpload": {
     "clickToUpload": "คลิกเพื่ออัปโหลด",

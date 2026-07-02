@@ -153,6 +153,7 @@ export const TreeNode: React.FC<TreeNodeProps> = (props) => {
               onClick={() => openEditModal(node)}
               className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-blue-500"
               title={t('orgChart.edit')}
+              aria-label={t('orgChart.edit')}
             >
               <Edit2 size={14} />
             </button>
@@ -160,6 +161,7 @@ export const TreeNode: React.FC<TreeNodeProps> = (props) => {
               onClick={() => openAddModal(node.id)}
               className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-green-500"
               title={t('orgChart.addSubordinate')}
+              aria-label={t('orgChart.addSubordinate')}
             >
               <Plus size={14} />
             </button>
@@ -168,6 +170,7 @@ export const TreeNode: React.FC<TreeNodeProps> = (props) => {
                 onClick={() => handleDelete(node.id)}
                 className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-red-500"
                 title={t('orgChart.delete')}
+                aria-label={t('orgChart.delete')}
               >
                 <Trash2 size={14} />
               </button>

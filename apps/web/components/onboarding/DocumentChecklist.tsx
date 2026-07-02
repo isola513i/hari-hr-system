@@ -116,6 +116,7 @@ export const DocumentChecklist: React.FC<DocumentChecklistProps> = ({
                                             }}
                                             className="p-1.5 text-text-muted-light hover:text-primary hover:bg-primary/10 rounded transition-colors"
                                             title={t('documentChecklist.uploadFile')}
+                                            aria-label={t('documentChecklist.uploadFile')}
                                         >
                                             <Upload size={14} />
                                         </button>
@@ -126,6 +127,7 @@ export const DocumentChecklist: React.FC<DocumentChecklistProps> = ({
                                             onClick={() => onDocDownload(doc.id)}
                                             className="p-1.5 text-text-muted-light hover:text-primary rounded transition-colors"
                                             title={t('documentChecklist.download')}
+                                            aria-label={t('documentChecklist.download')}
                                         >
                                             <Download size={14} />
                                         </button>
@@ -137,6 +139,7 @@ export const DocumentChecklist: React.FC<DocumentChecklistProps> = ({
                                                 onClick={() => onDocReview(doc.id, 'Approved')}
                                                 className="p-1.5 text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded transition-colors"
                                                 title={t('documentChecklist.approve')}
+                                                aria-label={t('documentChecklist.approve')}
                                             >
                                                 <ThumbsUp size={14} />
                                             </button>
@@ -147,6 +150,7 @@ export const DocumentChecklist: React.FC<DocumentChecklistProps> = ({
                                                 }}
                                                 className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                                                 title={t('documentChecklist.reject')}
+                                                aria-label={t('documentChecklist.reject')}
                                             >
                                                 <ThumbsDown size={14} />
                                             </button>

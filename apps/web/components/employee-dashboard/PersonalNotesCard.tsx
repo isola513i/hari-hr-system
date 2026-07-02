@@ -142,6 +142,7 @@ export const PersonalNotesCard: React.FC<PersonalNotesCardProps> = ({
                                 : 'text-text-muted-light hover:text-amber-500 opacity-0 group-hover:opacity-100'
                             }`}
                             title={note.pinned ? t('dashboard:admin.unpinNote') : t('dashboard:admin.pinNote')}
+                            aria-label={note.pinned ? t('dashboard:admin.unpinNote') : t('dashboard:admin.pinNote')}
                           >
                             <Pin size={12} className={note.pinned ? 'fill-amber-500' : ''} />
                           </button>
@@ -149,6 +150,7 @@ export const PersonalNotesCard: React.FC<PersonalNotesCardProps> = ({
                             onClick={(e) => { e.stopPropagation(); setEditingNoteId(note.id); setQuickNote(note.content); }}
                             className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-1 text-text-muted-light hover:text-primary transition-all rounded"
                             title={t('dashboard:admin.editNote')}
+                            aria-label={t('dashboard:admin.editNote')}
                           >
                             <Pencil size={12} />
                           </button>
@@ -157,6 +159,7 @@ export const PersonalNotesCard: React.FC<PersonalNotesCardProps> = ({
                             disabled={deletingNoteId === note.id}
                             className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-1 text-text-muted-light hover:text-red-500 transition-all rounded"
                             title={t('dashboard:admin.deleteNote')}
+                            aria-label={t('dashboard:admin.deleteNote')}
                           >
                             <Trash2 size={12} />
                           </button>

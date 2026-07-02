@@ -125,6 +125,7 @@ export const KeyContacts: React.FC<KeyContactsProps> = ({
                                             onClick={() => startEdit(contact)}
                                             className="p-1.5 opacity-0 group-hover:opacity-100 text-text-muted-light hover:text-primary transition-all"
                                             title={t('common:buttons.edit')}
+                                            aria-label={t('common:buttons.edit')}
                                         >
                                             <Pencil size={14} />
                                         </button>
@@ -132,6 +133,7 @@ export const KeyContacts: React.FC<KeyContactsProps> = ({
                                             onClick={() => onDeleteContact?.(contact.id)}
                                             className="p-1.5 opacity-0 group-hover:opacity-100 text-text-muted-light hover:text-red-500 transition-all"
                                             title={t('common:buttons.delete')}
+                                            aria-label={t('common:buttons.delete')}
                                         >
                                             <Trash2 size={14} />
                                         </button>
@@ -144,6 +146,7 @@ export const KeyContacts: React.FC<KeyContactsProps> = ({
                                     }}
                                     className="p-2 text-text-muted-light hover:text-primary transition-colors"
                                     title={contact.email}
+                                    aria-label={contact.email}
                                 >
                                     <Mail size={16} />
                                 </button>

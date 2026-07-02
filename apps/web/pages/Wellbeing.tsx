@@ -517,6 +517,7 @@ export const Wellbeing: React.FC = () => {
                         onClick={() => handleEditAnnouncement(item)}
                         className="p-1.5 rounded-lg text-text-muted-light dark:text-text-muted-dark hover:text-primary hover:bg-primary/10 transition-colors"
                         title={t('announcements.edit')}
+                        aria-label={t('announcements.edit')}
                       >
                         <Edit3 size={14} />
                       </button>
@@ -524,6 +525,7 @@ export const Wellbeing: React.FC = () => {
                         onClick={() => handleDeleteAnnouncement(item.id)}
                         className="p-1.5 rounded-lg text-text-muted-light dark:text-text-muted-dark hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         title={t('announcements.delete')}
+                        aria-label={t('announcements.delete')}
                       >
                         <Trash2 size={14} />
                       </button>

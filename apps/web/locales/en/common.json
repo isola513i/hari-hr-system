@@ -114,7 +114,9 @@
     "loading": "Loading",
     "breadcrumb": "Breadcrumb",
     "openMenu": "Open menu",
-    "search": "Search"
+    "search": "Search",
+    "clearSearch": "Clear search",
+    "closeSearch": "Close search"
   },
   "fileUpload": {
     "clickToUpload": "Click to upload",

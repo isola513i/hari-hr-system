@@ -174,21 +174,21 @@ export const Expenses: React.FC = () => {
                       <div className="flex items-center justify-end gap-1">
                         {isAdmin && claim.status === 'Pending' && (
                           <>
-                            <button onClick={() => handleApprove(claim.id)} className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors" title={t('expenses:actions.approve')}><Check size={16} /></button>
-                            <button onClick={() => { setRejectModalId(claim.id); setRejectReason(''); }} className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title={t('expenses:actions.reject')}><X size={16} /></button>
+                            <button onClick={() => handleApprove(claim.id)} className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors" title={t('expenses:actions.approve')} aria-label={t('expenses:actions.approve')}><Check size={16} /></button>
+                            <button onClick={() => { setRejectModalId(claim.id); setRejectReason(''); }} className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title={t('expenses:actions.reject')} aria-label={t('expenses:actions.reject')}><X size={16} /></button>
                           </>
                         )}
                         {isAdmin && claim.status === 'Approved' && (
-                          <button onClick={() => handleReimburse(claim.id)} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title={t('expenses:actions.markReimbursed')}><DollarSign size={16} /></button>
+                          <button onClick={() => handleReimburse(claim.id)} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title={t('expenses:actions.markReimbursed')} aria-label={t('expenses:actions.markReimbursed')}><DollarSign size={16} /></button>
                         )}
                         {!isAdmin && claim.status === 'Pending' && (
                           <>
-                            <button onClick={() => openEdit(claim)} className="p-1.5 text-text-muted-light hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title={t('expenses:actions.edit')}><Pencil size={16} /></button>
-                            <button onClick={() => setCancelConfirmId(claim.id)} className="p-1.5 text-text-muted-light hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title={t('expenses:actions.cancel')}><Ban size={16} /></button>
+                            <button onClick={() => openEdit(claim)} className="p-1.5 text-text-muted-light hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title={t('expenses:actions.edit')} aria-label={t('expenses:actions.edit')}><Pencil size={16} /></button>
+                            <button onClick={() => setCancelConfirmId(claim.id)} className="p-1.5 text-text-muted-light hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title={t('expenses:actions.cancel')} aria-label={t('expenses:actions.cancel')}><Ban size={16} /></button>
                           </>
                         )}
                         {isAdmin && (
-                          <button onClick={() => setDeleteConfirmId(claim.id)} className="p-1.5 text-text-muted-light hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title={t('expenses:actions.delete')}><Trash2 size={16} /></button>
+                          <button onClick={() => setDeleteConfirmId(claim.id)} className="p-1.5 text-text-muted-light hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title={t('expenses:actions.delete')} aria-label={t('expenses:actions.delete')}><Trash2 size={16} /></button>
                         )}
                       </div>
                     </td>

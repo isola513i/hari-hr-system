@@ -317,6 +317,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                   setSearchQuery("");
                   setShowResults(false);
                 }}
+                aria-label={t('aria.clearSearch')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted-light hover:text-text-light transition-colors"
               >
                 <X size={16} />
@@ -441,6 +442,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           <div className="flex items-center gap-2 px-3 h-14 border-b border-border-light dark:border-border-dark flex-shrink-0">
             <button
               onClick={closeMobileSearch}
+              aria-label={t('aria.closeSearch')}
               className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-text-muted-light dark:text-text-muted-dark active:bg-background-light dark:active:bg-background-dark"
             >
               <ArrowLeft size={22} />
@@ -459,6 +461,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
+                  aria-label={t('aria.clearSearch')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted-light"
                 >
                   <X size={16} />

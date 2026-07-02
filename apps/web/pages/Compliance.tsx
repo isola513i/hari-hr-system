@@ -366,10 +366,11 @@ export const Compliance: React.FC = () => {
                       onClick={() => { setStatusChangeItem(item); setNewStatus(''); setStatusReason(''); }}
                       className="p-1 text-text-muted-light hover:text-primary rounded text-xs"
                       title={t('items.changeStatus')}
+                      aria-label={t('items.changeStatus')}
                     >
                       <FileEdit size={14} />
                     </button>
-                    <button onClick={() => openItemEdit(item)} className="p-1 text-text-muted-light hover:text-primary rounded" title={t('common:buttons.edit')}>
+                    <button onClick={() => openItemEdit(item)} className="p-1 text-text-muted-light hover:text-primary rounded" title={t('common:buttons.edit')} aria-label={t('common:buttons.edit')}>
                       <FileEdit size={14} />
                     </button>
                     <button onClick={() => setDeleteConfirmId(item.id)} className="p-1 text-text-muted-light hover:text-red-500 rounded" title={t('common:buttons.delete')}>
