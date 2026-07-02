@@ -264,6 +264,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             <button
               type="button"
               onClick={handlePrevMonth}
+              aria-label={t('datePicker.prevMonth')}
               className="p-1 hover:bg-background-light dark:hover:bg-background-dark rounded transition-colors"
             >
               <ChevronLeft size={20} className="text-text-light dark:text-text-dark" />
@@ -276,6 +277,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             <button
               type="button"
               onClick={handleNextMonth}
+              aria-label={t('datePicker.nextMonth')}
               className="p-1 hover:bg-background-light dark:hover:bg-background-dark rounded transition-colors"
             >
               <ChevronRight size={20} className="text-text-light dark:text-text-dark" />

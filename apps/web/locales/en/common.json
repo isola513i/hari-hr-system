@@ -166,7 +166,9 @@
   "datePicker": {
     "today": "Today",
     "clear": "Clear",
-    "selectDate": "Select date"
+    "selectDate": "Select date",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month"
   },
   "time": {
     "today": "Today",
