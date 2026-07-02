@@ -96,7 +96,7 @@ export function WFHRequestModal({ onClose, onSuccess }: Props) {
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder={t('wfhModal.reasonPlaceholder')}
-                className="w-full px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                className="w-full px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
               />
             </div>
 

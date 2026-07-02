@@ -96,7 +96,7 @@ export const AttendanceRegularizationModal: React.FC<Props> = ({ onClose, onSucc
             <div className="p-1.5 bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 rounded-lg">
               <ClipboardClock size={18} />
             </div>
-            <h2 id="reg-modal-title" className="text-lg font-semibold text-text-light dark:text-text-dark">{t('regModal.title')}</h2>
+            <h3 id="reg-modal-title" className="text-lg font-semibold text-text-light dark:text-text-dark">{t('regModal.title')}</h3>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-text-muted-light dark:text-text-muted-dark">
             <X size={18} />

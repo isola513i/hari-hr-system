@@ -80,7 +80,7 @@ export const OTRequestModal: React.FC<Props> = ({ onClose, onSuccess }) => {
             <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg">
               <Clock size={18} />
             </div>
-            <h2 id="ot-modal-title" className="text-lg font-semibold text-text-light dark:text-text-dark">{t('otModal.title')}</h2>
+            <h3 id="ot-modal-title" className="text-lg font-semibold text-text-light dark:text-text-dark">{t('otModal.title')}</h3>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-text-muted-light dark:text-text-muted-dark">
             <X size={18} />
