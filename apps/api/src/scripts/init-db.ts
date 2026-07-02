@@ -10,37 +10,18 @@ import pool from "../db";
 import bcrypt from "bcrypt";
 
 const schema = `
--- Clean up existing tables
-DROP TABLE IF EXISTS survey_completions CASCADE;
-DROP TABLE IF EXISTS survey_responses CASCADE;
-DROP TABLE IF EXISTS survey_questions CASCADE;
-DROP TABLE IF EXISTS surveys CASCADE;
-DROP TABLE IF EXISTS personal_notes CASCADE;
-DROP TABLE IF EXISTS notifications CASCADE;
-DROP TABLE IF EXISTS upcoming_events CASCADE;
-DROP TABLE IF EXISTS audit_logs_persistent CASCADE;
-DROP TABLE IF EXISTS audit_logs CASCADE;
-DROP TABLE IF EXISTS compliance_items CASCADE;
-DROP TABLE IF EXISTS sentiment_stats CASCADE;
-DROP TABLE IF EXISTS stats_headcount CASCADE;
-DROP TABLE IF EXISTS salary_history CASCADE;
-DROP TABLE IF EXISTS payroll_records CASCADE;
-DROP TABLE IF EXISTS attendance_records CASCADE;
-DROP TABLE IF EXISTS performance_reviews CASCADE;
-DROP TABLE IF EXISTS job_history CASCADE;
-DROP TABLE IF EXISTS documents CASCADE;
-DROP TABLE IF EXISTS employee_training CASCADE;
-DROP TABLE IF EXISTS training_modules CASCADE;
-DROP TABLE IF EXISTS tasks CASCADE;
-DROP TABLE IF EXISTS leave_requests CASCADE;
-DROP TABLE IF EXISTS contacts CASCADE;
-DROP TABLE IF EXISTS events CASCADE;
-DROP TABLE IF EXISTS announcements CASCADE;
-DROP TABLE IF EXISTS employees CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
+-- Reset: drop the whole public schema so this script is safe to re-run on ANY
+-- database state (partial, fully-migrated, or fresh), not only an empty one.
+-- (The old per-table DROP list missed tables added later by migrations, so a
+-- CREATE on a surviving table failed with "already exists".)
+DROP SCHEMA IF EXISTS public CASCADE;
+CREATE SCHEMA public;
+GRANT ALL ON SCHEMA public TO public;
 
 -- Extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS pgcrypto;   -- gen_random_uuid() (built-in on PG13+, extension for older)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;    -- gin_trgm_ops text-search indexes
 
 -- 0. Users (Auth)
 CREATE TABLE users (
@@ -722,6 +703,288 @@ CREATE TABLE employee_leave_quotas (
     CONSTRAINT unique_employee_leave_type UNIQUE (employee_id, leave_type)
 );
 CREATE INDEX idx_elq_employee_id ON employee_leave_quotas(employee_id);
+
+-- ============================================================
+-- FOLDED-IN MIGRATIONS
+-- Everything below mirrors the standalone migrate-*/add-* scripts in this
+-- folder so that running init-db ALONE yields the full production schema
+-- (no separate migration step needed before seed-demo). All statements are
+-- idempotent. Ordered deliberately: (1) new tables, (2) column additions,
+-- (3) indexes & constraints — so indexes never reference a not-yet-added column.
+-- ============================================================
+
+-- ---- (1) Tables added by later migrations ----
+CREATE TABLE IF NOT EXISTS expense_claims (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  category VARCHAR(50) NOT NULL,
+  amount DECIMAL(12, 2) NOT NULL,
+  currency VARCHAR(3) DEFAULT 'THB',
+  expense_date DATE NOT NULL,
+  description TEXT,
+  receipt_path TEXT,
+  status VARCHAR(20) DEFAULT 'Pending',
+  rejection_reason TEXT,
+  approver_id UUID REFERENCES employees(id) ON DELETE SET NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS company_assets (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(255) NOT NULL,
+  asset_type VARCHAR(100) NOT NULL,
+  serial_number VARCHAR(255),
+  status VARCHAR(50) DEFAULT 'Available',
+  assigned_to UUID REFERENCES employees(id) ON DELETE SET NULL,
+  assigned_at TIMESTAMP WITH TIME ZONE,
+  purchase_date DATE,
+  purchase_price DECIMAL(12,2),
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS offboarding_tasks (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  employee_id UUID        NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+  title       VARCHAR(255) NOT NULL,
+  description TEXT,
+  stage       VARCHAR(50)  NOT NULL,
+  assignee    VARCHAR(50)  NOT NULL,
+  due_date    DATE,
+  completed   BOOLEAN      NOT NULL DEFAULT FALSE,
+  priority    VARCHAR(20)  DEFAULT 'Medium',
+  created_at  TIMESTAMPTZ  DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ  DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS exit_interviews (
+  id                     UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  employee_id            UUID        NOT NULL REFERENCES employees(id) ON DELETE CASCADE UNIQUE,
+  reason_for_leaving     VARCHAR(100),
+  satisfaction_rating    INT         CHECK (satisfaction_rating BETWEEN 1 AND 5),
+  would_rehire           BOOLEAN,
+  feedback               TEXT,
+  improvements_suggested TEXT,
+  conducted_by           UUID        REFERENCES users(id),
+  conducted_at           TIMESTAMPTZ DEFAULT NOW(),
+  created_at             TIMESTAMPTZ DEFAULT NOW(),
+  updated_at             TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS totp_backup_codes (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  code_hash  VARCHAR(255) NOT NULL,
+  used_at    TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS performance_peer_feedback (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  review_id UUID NOT NULL REFERENCES performance_reviews(id) ON DELETE CASCADE,
+  reviewer_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+  rating INT CHECK (rating BETWEEN 1 AND 5),
+  feedback TEXT,
+  is_anonymous BOOLEAN DEFAULT FALSE,
+  status VARCHAR(20) DEFAULT 'pending',
+  requested_by UUID REFERENCES users(id),
+  requested_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  submitted_at TIMESTAMP WITH TIME ZONE,
+  CONSTRAINT unique_peer_per_review UNIQUE (review_id, reviewer_id)
+);
+
+-- ---- (2) Column additions ----
+-- employees
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS termination_date DATE;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS last_working_day DATE;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS termination_reason VARCHAR(100);
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS termination_notes TEXT;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS terminated_by UUID REFERENCES users(id);
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS offboarding_initiated_at TIMESTAMPTZ;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS availability_status VARCHAR(20) DEFAULT 'online';
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS status_message VARCHAR(100) DEFAULT '';
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS work_days INTEGER[] NOT NULL DEFAULT '{1,2,3,4,5}';
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS work_type VARCHAR(20) DEFAULT 'office';
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS birth_date DATE;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS employee_code VARCHAR(20) UNIQUE;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS address JSONB;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS daily_rate DECIMAL(12,2);
+-- users
+ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret TEXT DEFAULT NULL;
+-- attendance_records
+ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS modified_by UUID REFERENCES users(id);
+ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS clock_in_lat  DECIMAL(10, 8);
+ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS clock_in_lng  DECIMAL(11, 8);
+ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS clock_in_accuracy FLOAT;
+ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS check_in_type VARCHAR(20) DEFAULT 'office';
+ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL;
+-- leave_requests
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS manager_approved_by UUID REFERENCES employees(id);
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS manager_approved_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL;
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS is_half_day BOOLEAN DEFAULT FALSE;
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS half_day_period VARCHAR(10);
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS business_days DECIMAL(5,1);
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS handover_employee_id UUID REFERENCES employees(id);
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS handover_notes TEXT;
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS medical_certificate_path VARCHAR(500);
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
+-- leave_request_history
+ALTER TABLE leave_request_history ADD COLUMN IF NOT EXISTS is_half_day BOOLEAN DEFAULT FALSE;
+ALTER TABLE leave_request_history ADD COLUMN IF NOT EXISTS half_day_period VARCHAR(10);
+ALTER TABLE leave_request_history ADD COLUMN IF NOT EXISTS business_days DECIMAL(5,1);
+-- wfh_requests
+ALTER TABLE wfh_requests ADD COLUMN IF NOT EXISTS manager_reviewed_by UUID REFERENCES employees(id);
+ALTER TABLE wfh_requests ADD COLUMN IF NOT EXISTS manager_reviewed_at TIMESTAMP WITH TIME ZONE;
+-- expense_claims
+ALTER TABLE expense_claims ADD COLUMN IF NOT EXISTS manager_reviewed_by UUID REFERENCES employees(id) ON DELETE SET NULL;
+ALTER TABLE expense_claims ADD COLUMN IF NOT EXISTS manager_reviewed_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE expense_claims ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL;
+-- employee_training
+ALTER TABLE employee_training ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL;
+ALTER TABLE employee_training ADD COLUMN IF NOT EXISTS due_date DATE;
+ALTER TABLE employee_training ADD COLUMN IF NOT EXISTS assigned_by UUID REFERENCES employees(id) ON DELETE SET NULL;
+ALTER TABLE employee_training ADD COLUMN IF NOT EXISTS assigned_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+ALTER TABLE employee_training ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+-- training_modules
+ALTER TABLE training_modules ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE training_modules ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES employees(id) ON DELETE SET NULL;
+ALTER TABLE training_modules ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+ALTER TABLE training_modules ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+ALTER TABLE training_modules ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+-- compliance_items
+ALTER TABLE compliance_items ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE compliance_items ADD COLUMN IF NOT EXISTS priority VARCHAR(20) NOT NULL DEFAULT 'Medium';
+ALTER TABLE compliance_items ADD COLUMN IF NOT EXISTS risk_level VARCHAR(20) NOT NULL DEFAULT 'Low';
+ALTER TABLE compliance_items ADD COLUMN IF NOT EXISTS assigned_to UUID REFERENCES employees(id) ON DELETE SET NULL;
+ALTER TABLE compliance_items ADD COLUMN IF NOT EXISTS assigned_department VARCHAR(100);
+ALTER TABLE compliance_items ADD COLUMN IF NOT EXISTS due_date DATE;
+ALTER TABLE compliance_items ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE compliance_items ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+ALTER TABLE compliance_items ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+-- holidays
+ALTER TABLE holidays ADD COLUMN IF NOT EXISTS end_date DATE DEFAULT NULL;
+-- payroll_records
+ALTER TABLE payroll_records ADD COLUMN IF NOT EXISTS ssf_employee DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE payroll_records ADD COLUMN IF NOT EXISTS ssf_employer DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE payroll_records ADD COLUMN IF NOT EXISTS pvf_employee DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE payroll_records ADD COLUMN IF NOT EXISTS pvf_employer DECIMAL(12,2) DEFAULT 0;
+-- performance_reviews
+ALTER TABLE performance_reviews ADD COLUMN IF NOT EXISTS reviewer_user_id UUID REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE performance_reviews ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'completed';
+ALTER TABLE performance_reviews ADD COLUMN IF NOT EXISTS self_review TEXT;
+ALTER TABLE performance_reviews ADD COLUMN IF NOT EXISTS manager_comment TEXT;
+ALTER TABLE performance_reviews ADD COLUMN IF NOT EXISTS hr_comment TEXT;
+ALTER TABLE performance_reviews ADD COLUMN IF NOT EXISTS review_period VARCHAR(20);
+ALTER TABLE performance_reviews ADD COLUMN IF NOT EXISTS manager_reviewed_by UUID REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE performance_reviews ADD COLUMN IF NOT EXISTS manager_reviewed_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE performance_reviews ADD COLUMN IF NOT EXISTS hr_reviewed_by UUID REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE performance_reviews ADD COLUMN IF NOT EXISTS hr_reviewed_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE performance_reviews ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+ALTER TABLE performance_reviews ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+-- surveys
+ALTER TABLE surveys ADD COLUMN IF NOT EXISTS allow_retake BOOLEAN DEFAULT FALSE;
+-- job_history
+ALTER TABLE job_history ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+ALTER TABLE job_history ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+ALTER TABLE job_history ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id) ON DELETE SET NULL;
+
+-- ---- (3) Indexes & constraints ----
+-- expense_claims
+CREATE INDEX IF NOT EXISTS idx_expense_claims_employee_id ON expense_claims(employee_id);
+CREATE INDEX IF NOT EXISTS idx_expense_claims_status ON expense_claims(status);
+CREATE INDEX IF NOT EXISTS idx_expense_claims_expense_date ON expense_claims(expense_date DESC);
+CREATE INDEX IF NOT EXISTS idx_expense_claims_created_at ON expense_claims(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_expense_claims_manager ON expense_claims(manager_reviewed_by);
+CREATE INDEX IF NOT EXISTS idx_expense_claims_deleted_at ON expense_claims (deleted_at);
+CREATE INDEX IF NOT EXISTS idx_expense_claims_not_deleted ON expense_claims (id) WHERE deleted_at IS NULL;
+-- company_assets
+CREATE INDEX IF NOT EXISTS idx_company_assets_assigned_to ON company_assets(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_company_assets_status ON company_assets(status);
+-- offboarding_tasks
+CREATE INDEX IF NOT EXISTS idx_offboarding_tasks_employee ON offboarding_tasks (employee_id);
+-- totp
+CREATE INDEX IF NOT EXISTS idx_users_totp_enabled ON users (id) WHERE totp_enabled = TRUE;
+CREATE INDEX IF NOT EXISTS idx_totp_backup_codes_user_id ON totp_backup_codes (user_id);
+CREATE INDEX IF NOT EXISTS idx_totp_backup_codes_unused ON totp_backup_codes (user_id) WHERE used_at IS NULL;
+-- performance_peer_feedback
+CREATE INDEX IF NOT EXISTS idx_peer_feedback_review ON performance_peer_feedback(review_id);
+CREATE INDEX IF NOT EXISTS idx_peer_feedback_reviewer ON performance_peer_feedback(reviewer_id);
+CREATE INDEX IF NOT EXISTS idx_peer_feedback_status ON performance_peer_feedback(status);
+-- attendance_records
+CREATE INDEX IF NOT EXISTS idx_attendance_date_status ON attendance_records(date DESC, status);
+CREATE INDEX IF NOT EXISTS idx_attendance_date_range ON attendance_records(date DESC, employee_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_employee_date ON attendance_records(employee_id, date DESC, status);
+CREATE INDEX IF NOT EXISTS idx_attendance_records_deleted_at ON attendance_records (deleted_at);
+CREATE INDEX IF NOT EXISTS idx_attendance_not_deleted ON attendance_records (employee_id, date) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_attendance_records_emp_date_active ON attendance_records (employee_id, date) WHERE deleted_at IS NULL;
+-- attendance_regularization_requests
+CREATE INDEX IF NOT EXISTS idx_attendance_reg_employee ON attendance_regularization_requests(employee_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_reg_date ON attendance_regularization_requests(date);
+CREATE INDEX IF NOT EXISTS idx_attendance_reg_status ON attendance_regularization_requests(status);
+-- leave_requests
+CREATE INDEX IF NOT EXISTS idx_leave_requests_employee_status ON leave_requests(employee_id, status, start_date DESC);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_status_type ON leave_requests(status, leave_type, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_deleted_at ON leave_requests (deleted_at);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_not_deleted ON leave_requests (id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_leave_requests_emp_status_active ON leave_requests (employee_id, status) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_leave_requests_dates ON leave_requests (start_date, end_date);
+-- wfh_requests / ot_requests
+CREATE INDEX IF NOT EXISTS idx_wfh_requests_employee ON wfh_requests(employee_id);
+CREATE INDEX IF NOT EXISTS idx_wfh_requests_date ON wfh_requests(date);
+CREATE INDEX IF NOT EXISTS idx_wfh_requests_status ON wfh_requests(status);
+CREATE INDEX IF NOT EXISTS idx_ot_requests_employee ON ot_requests(employee_id);
+CREATE INDEX IF NOT EXISTS idx_ot_requests_date ON ot_requests(date);
+CREATE INDEX IF NOT EXISTS idx_ot_requests_status ON ot_requests(status);
+-- documents / employees / tasks / notifications / payroll
+CREATE INDEX IF NOT EXISTS idx_documents_status_category ON documents(status, category, uploaded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_documents_employee_status ON documents(employee_id, status, uploaded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_documents_deleted_at ON documents (deleted_at);
+CREATE INDEX IF NOT EXISTS idx_employees_status_department ON employees(status, department, name);
+CREATE INDEX IF NOT EXISTS idx_tasks_employee_completed ON tasks(employee_id, completed, due_date);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, read, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payroll_employee_period ON payroll_records(employee_id, pay_period_start DESC, status);
+-- trigram text-search (needs pg_trgm, created above)
+CREATE INDEX IF NOT EXISTS idx_documents_name_trgm ON documents USING gin(name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_employees_name_trgm ON employees USING gin(name gin_trgm_ops);
+-- employee_training / training_modules
+CREATE INDEX IF NOT EXISTS idx_employee_training_employee_status ON employee_training(employee_id, status, completion_date DESC);
+CREATE INDEX IF NOT EXISTS idx_employee_training_not_deleted ON employee_training (employee_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_employee_training_due_date ON employee_training(due_date);
+CREATE INDEX IF NOT EXISTS idx_employee_training_module_id ON employee_training(module_id);
+CREATE INDEX IF NOT EXISTS idx_training_modules_is_active ON training_modules(is_active);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_employee_training_unique_assignment ON employee_training(employee_id, module_id) WHERE module_id IS NOT NULL;
+-- compliance
+CREATE INDEX IF NOT EXISTS idx_compliance_items_status ON compliance_items(status);
+CREATE INDEX IF NOT EXISTS idx_compliance_items_category ON compliance_items(category);
+CREATE INDEX IF NOT EXISTS idx_compliance_items_assigned_to ON compliance_items(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_compliance_items_due_date ON compliance_items(due_date);
+CREATE INDEX IF NOT EXISTS idx_compliance_status_history_item ON compliance_status_history(compliance_item_id);
+CREATE INDEX IF NOT EXISTS idx_compliance_evidence_item ON compliance_evidence(compliance_item_id);
+-- holidays (non-unique; the unique date index was intentionally dropped when
+-- multi-day holidays via end_date were introduced)
+CREATE INDEX IF NOT EXISTS idx_holidays_is_recurring ON holidays(is_recurring);
+-- personal_notes
+CREATE INDEX IF NOT EXISTS idx_personal_notes_user_id ON personal_notes(user_id);
+CREATE INDEX IF NOT EXISTS idx_personal_notes_pinned ON personal_notes(pinned DESC);
+CREATE INDEX IF NOT EXISTS idx_personal_notes_updated_at ON personal_notes(updated_at DESC);
+-- performance_reviews
+CREATE INDEX IF NOT EXISTS idx_performance_reviews_status ON performance_reviews(status);
+CREATE INDEX IF NOT EXISTS idx_performance_reviews_review_period ON performance_reviews(review_period);
+-- job_history date-order constraint
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_job_history_dates') THEN
+    ALTER TABLE job_history ADD CONSTRAINT chk_job_history_dates
+      CHECK (end_date IS NULL OR end_date >= start_date);
+  END IF;
+END $$;
 `;
 
 export const runMigration = async () => {
@@ -765,7 +1028,7 @@ INSERT INTO job_history (employee_id, role, department, start_date, end_date, de
 -- ==========================================
 
 INSERT INTO surveys (id, title, status, created_by)
-VALUES ('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ISO 45003 — Psychosocial Health & Safety Assessment', 'active', '11111111-1111-1111-1111-111111111111');
+VALUES ('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ISO 45003: Psychosocial Health & Safety Assessment', 'active', '11111111-1111-1111-1111-111111111111');
 
 INSERT INTO survey_questions (survey_id, question_text, category, sort_order) VALUES
   -- Workload  (ISO 45003 §A3 Job Demands, §A6 Workload, §A1 Role Clarity, §A2 Autonomy, §C1 Tools)
