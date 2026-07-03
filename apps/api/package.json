@@ -21,6 +21,7 @@
     "db:migrate:work-days": "ts-node src/scripts/add-employee-work-days.ts"
   },
   "dependencies": {
+    "@hari/shared-types": "*",
     "@aws-sdk/client-s3": "^3.996.0",
     "@aws-sdk/client-ses": "^3.1027.0",
     "@sentry/node": "^8.45.0",
