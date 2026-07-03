@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Users,
@@ -204,6 +205,25 @@ const AdminAttendance: React.FC = () => {
   // Column visibility (persisted to localStorage)
   const [visibleColumns, setVisibleColumns] = useState<Record<ToggleCol, boolean>>(loadVisibleColumns);
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
+  const [columnsMenuPos, setColumnsMenuPos] = useState<{ top: number; right: number } | null>(null);
+  const columnsButtonRef = useRef<HTMLButtonElement>(null);
+  const openColumnsMenu = () => {
+    if (!columnsMenuOpen && columnsButtonRef.current) {
+      const rect = columnsButtonRef.current.getBoundingClientRect();
+      setColumnsMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    }
+    setColumnsMenuOpen((v) => !v);
+  };
+  useEffect(() => {
+    if (!columnsMenuOpen) return;
+    const close = () => setColumnsMenuOpen(false);
+    window.addEventListener('resize', close);
+    window.addEventListener('scroll', close, true);
+    return () => {
+      window.removeEventListener('resize', close);
+      window.removeEventListener('scroll', close, true);
+    };
+  }, [columnsMenuOpen]);
   useEffect(() => {
     try { localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(visibleColumns)); } catch { /* ignore */ }
   }, [visibleColumns]);
@@ -466,9 +486,10 @@ const AdminAttendance: React.FC = () => {
           <div className="flex items-center gap-2">
             <DatePicker value={selectedDate} onChange={setSelectedDate} placeholder={t('attendance:admin.selectDate')} />
             {/* Columns show/hide (desktop) */}
-            <div className="relative hidden md:block">
+            <div className="hidden md:block">
               <button
-                onClick={() => setColumnsMenuOpen((v) => !v)}
+                ref={columnsButtonRef}
+                onClick={openColumnsMenu}
                 className="flex items-center gap-2 px-4 py-2.5 border border-border-light dark:border-border-dark text-text-light dark:text-text-dark rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm font-medium whitespace-nowrap"
                 aria-haspopup="true"
                 aria-expanded={columnsMenuOpen}
@@ -476,10 +497,13 @@ const AdminAttendance: React.FC = () => {
                 <Columns3 size={16} />
                 <span>{t('attendance:admin.columns', { defaultValue: 'Columns' })}</span>
               </button>
-              {columnsMenuOpen && (
+              {columnsMenuOpen && columnsMenuPos && createPortal(
                 <>
-                  <div className="fixed inset-0 z-10" onClick={() => setColumnsMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg shadow-lg z-20 py-1">
+                  <div className="fixed inset-0 z-[99998]" onClick={() => setColumnsMenuOpen(false)} />
+                  <div
+                    style={{ position: 'fixed', top: columnsMenuPos.top, right: columnsMenuPos.right, zIndex: 99999 }}
+                    className="w-48 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg shadow-lg py-1"
+                  >
                     {TOGGLEABLE_COLUMNS.map((key) => (
                       <label
                         key={key}
@@ -495,7 +519,8 @@ const AdminAttendance: React.FC = () => {
                       </label>
                     ))}
                   </div>
-                </>
+                </>,
+                document.body
               )}
             </div>
             <button
