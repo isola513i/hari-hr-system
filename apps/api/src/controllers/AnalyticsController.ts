@@ -70,7 +70,27 @@ class AnalyticsController {
    */
   async getHeadcountStats(_req: Request, res: Response): Promise<void> {
     try {
-      const data = await this.fetchHeadcountGrowth(new Date().getFullYear());
+      // "Headcount Trends" = total active headcount at each of the last 6
+      // month-ends (cumulative), NOT new hires per month. Mirrors the
+      // AdminDashboard client-side fallback so the line reflects real growth.
+      const result = await query(`
+        WITH months AS (
+          SELECT (date_trunc('month', CURRENT_DATE) - (interval '1 month' * g))::date AS month_start
+          FROM generate_series(5, 0, -1) g
+        )
+        SELECT
+          EXTRACT(MONTH FROM month_start)::int AS month_num,
+          (SELECT COUNT(*) FROM employees e
+            WHERE e.join_date <= (month_start + interval '1 month - 1 day')
+              AND (e.termination_date IS NULL OR e.termination_date > (month_start + interval '1 month - 1 day'))
+          ) AS headcount
+        FROM months
+        ORDER BY month_start
+      `);
+      const data = result.rows.map((r: { month_num: number; headcount: string }) => ({
+        name: MONTH_NAMES[r.month_num - 1],
+        value: parseInt(r.headcount, 10),
+      }));
       res.json(data);
     } catch (err) {
       logger.error(err, 'Error fetching headcount stats:');
